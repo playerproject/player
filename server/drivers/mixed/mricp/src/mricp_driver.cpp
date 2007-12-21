@@ -21,7 +21,7 @@
  */
 
 /*
- * Mricp.cc, v3.0 15/05/2006 
+ * mricp_driver.cpp, v3.0 21/12/2007 
  * This is a Map Reference ICP plugin Driver for real time Map building and 
  * Localization using Iterative Closest Point laser scan matching and 
  * odom correction. Currently The driver is in stable release stage, more modifications
@@ -61,7 +61,7 @@ using namespace std;
 using namespace Geom2D;
 
 #define MAP_IDX(mf, i, j) ((mf->map_size) * (j) + (i))// compute linear index for given map coords
-#define MAP_VALID(mf, i, j) ((i >= 0) && (i < mf->map_size*2/mf->map_resolution) && (j >= 0) && (j < mf->map_size*2/mf->map_resolution))
+#define MAP_VALID(mf, i, j) ((i >= 0) && (i < mf->map_size*2/mf->map_resolution) && (j >= 0) && (j <= mf->map_size*2/mf->map_resolution))
 #define MAXLASERS 4
 #define MAXRANGES 10
 /** @ingroup drivers */
@@ -200,26 +200,23 @@ them named:
 @verbatim
 driver
 (
-  name "MRICP_Driver"
-  requires ["position:0" "laser:0"]
-  provides ["position:1" "opaque:0" "map:0"]
-  plugin "MRICP.so"
-  MINR 0.05
+  name "mricp"
+  provides ["position2d:1" "map:0"]
+  requires ["position2d:0" "laser:0"]
+  number_of_lasers 1
+  laser0_ranges [-120 120]
+  playerv_debug 0
+  period 0.2
   MAXR 3.9
-  period 1
-  map_resolution 0.6
-  map_path maps/
-  use_max_range 1
-  number_of_lasers 2
-  free_space_prob 0.4
+  MINR 0.05
+  map_resolution 0.05
+  map_saving_period 5
+  map_size 10
+  use_max_range 4
   sparse_scans_rate 3
-  laser0_ranges [-90 -50 -30 90]
-  laser1_ranges [-120 120]
-  start_in 1
-  interpolate 0
-  use_odom 1
-  robot_id 1
-  NIT 15
+  map_path "logs/"
+  debug 0
+  alwayson 1
   log 1
 )
 @endverbatim
@@ -250,7 +247,7 @@ bool is_directory(string fname)
   	if (stat(fname.c_str(),&stat_buf) != 0) return false;
   	return (stat_buf.st_mode & S_IFMT) == S_IFDIR;
 }
-class MrIcpDriver : public Driver
+class MrIcp : public Driver
  {
 	// Must implement the following methods.
   	public :	
@@ -258,7 +255,7 @@ class MrIcpDriver : public Driver
 	    virtual int Shutdown();
 	    virtual int ProcessMessage(QueuePointer& resp_queue, player_msghdr * hdr, void * data);
 	// Constructor
-	public:  	MrIcpDriver(ConfigFile* cf, int section); 
+	public:  	MrIcp(ConfigFile* cf, int section); 
 	// Main function for device thread.
     private:	
     		virtual void Main();
@@ -284,19 +281,16 @@ class MrIcpDriver : public Driver
 	// Position interface / IN
   	private: 	
   			player_devaddr_t          position_in_addr;
-  		 	player_position2d_data_t  position_in_data;
 			player_position2d_geom_t  geom;
 			Device  			     *position_device;
 	// Position interface / OUT
   	private: 	
   			player_devaddr_t         position_out_addr;
   		 	player_position2d_data_t position_out_data;
-	// Laser interface
+	// Lasers interfaces
   	private: 	
-			// Supports 2 Lasers
+			// Supports MAXLASERS Lasers
   			player_devaddr_t       laser_addr[MAXLASERS];
-  		 	player_laser_data_t    laser_data;
-  			player_laser_config_t  laser_cfg;
 			player_laser_geom_t    *laser_geom;
 			// Used to communicate with the laser Driver
 			Device                 *laser_device[MAXLASERS]; 
@@ -305,7 +299,6 @@ class MrIcpDriver : public Driver
   			player_devaddr_t 	   map_addr;
   		 	player_map_data_t 	   map_data;
 			player_map_info_t      map_info;
-			Driver                 *map_driver;   // Used to communicate with Map Driver
 	// Variables
 	public :
 			FILE *file,*config_file;
@@ -315,10 +308,9 @@ class MrIcpDriver : public Driver
 			// defines a set of ranges (max 10) for each attached laser
 		 	laser_range range[MAXLASERS][MAXRANGES];
 			float maxr,minr,period,map_resolution,gate1,gate2,map_size,map_saving_period,
-				  use_max_range;
+				  use_max_range,local_map_margine;
 		    float PoseX,PoseY,PoseTheta; // Laser Pose
 			double px, py, pa,speed,turn_rate,delta_time,start_in,free_space_prob;
-			double sanitycheck_distance, sanitycheck_angle; 
 			bool log,debug,interpolate,sample_initialized,
 			     playerv_debug,position_in_exists,use_odom,reset_timer,warning_misalign;
 			struct timeval last_time[MAXLASERS],current_time,laser_timestamp,position_timestamp,
@@ -330,27 +322,18 @@ class MrIcpDriver : public Driver
 			MAP *map;
 			Timer delta_t_estimation;
 };
-Driver* MrIcpDriver_Init(ConfigFile* cf, int section) // Create and return a new instance of this driver
+Driver* MrIcp_Init(ConfigFile* cf, int section) // Create and return a new instance of this driver
 {
-  	return ((Driver*) (new MrIcpDriver(cf, section)));
+  	return ((Driver*) (new MrIcp(cf, section)));
 }
 
 void MrIcp_Register(DriverTable* table)
 {
-  	table->AddDriver("MrIcpDriver", MrIcpDriver_Init);
+	puts("Driver added to table"); fflush(stdout);
+  	table->AddDriver("mricp", MrIcp_Init);
 }
-/* need the extern to avoid C++ name-mangling  */
-/*extern "C"
-//{
-//  int player_driver_init(DriverTable* table)
-//  {
-//    puts("	--->>>Initializing Pluggin Driver ==>  MRICP Driver ...");
-//    MrIcpDriver_Register(table);
-//    return(0);
-//  }
-//}
-*/
-MrIcpDriver::MrIcpDriver(ConfigFile* cf, int section)  : Driver(cf, section)
+
+MrIcp::MrIcp(ConfigFile* cf, int section)  : Driver(cf, section)
 {
 	char config_temp[40];
   	this->maxr =             cf->ReadFloat(section,"MAXR",7.8);
@@ -374,8 +357,7 @@ MrIcpDriver::MrIcpDriver(ConfigFile* cf, int section)  : Driver(cf, section)
 	this->sparse_scans_rate= cf->ReadInt(section,  "sparse_scans_rate",1);
 	this->free_space_prob =  cf->ReadFloat(section,"free_space_prob",0.4);
 	this->map_saving_period= cf->ReadFloat(section,"map_saving_period",10);
-	this->sanitycheck_distance= cf->ReadFloat(section,"sanitycheck_distance",1);
-	this->sanitycheck_angle= cf->ReadFloat(section,"sanitycheck_angle",30);
+
 	if (sparse_scans_rate <= 0 )
 	{
 		cout <<"\nSparse Scans Rate should be positive integer > 0";
@@ -438,7 +420,8 @@ MrIcpDriver::MrIcpDriver(ConfigFile* cf, int section)  : Driver(cf, section)
 			cout<<"\n MAP Interface Loaded";	  	
   	}  
   	// Adding LASER interfaces
-	// cout<<"N of Lasers:"<<number_of_lasers;
+    if(this->debug)
+    	cout<<"N of Lasers:"<<number_of_lasers;
 	for(int i=0; i<this->number_of_lasers;i++)
 	{
   		if(cf->ReadDeviceAddr(&this->laser_addr[i], section, "requires", PLAYER_LASER_CODE,-1, NULL) == 0)
@@ -471,11 +454,12 @@ MrIcpDriver::MrIcpDriver(ConfigFile* cf, int section)  : Driver(cf, section)
   		position_in_exists = false;
   		this->position_device = NULL;
   	}
-  	cout<<"\n	--->>>Gate1 ="<<gate1<<" Gate2="<<gate2<<" NIT="<<nit<<" MAXR="<<maxr<<" MINR="<<minr<<endl;
+	if(this->debug)
+		cout<<"\n	--->>>Gate1 ="<<gate1<<" Gate2="<<gate2<<" NIT="<<nit<<" MAXR="<<maxr<<" MINR="<<minr<<endl;
   	return;
 }
 
-int MrIcpDriver::Setup()
+int MrIcp::Setup()
 {
 	char filename[40],command[40];
 	printf("\n- Setting UP MRICP Plugin Driver.");
@@ -495,10 +479,11 @@ int MrIcpDriver::Setup()
   	for(int i=0;i<number_of_lasers;i++)
 		gettimeofday(&last_time[i],NULL);
 	this->global_pose.p.x = this->global_pose.p.y = this->global_pose.phi = 0;
+	// what extra area(margine) in the stored map around the local map should be included in the ICP 
+	this->local_map_margine = 0.5;
 	this->px=0;
 	this->py=0;
 	this->pa=0;
-	this->debug = 0;
 	nu = 0; map_number = 1;
 	gchar * g_filename=g_strdup_printf("%sMAP_PATCH0",map_path);
 	this->map = new MAP(g_filename,this->map_resolution,this->map_size*2);
@@ -522,7 +507,7 @@ int MrIcpDriver::Setup()
   	this->StartThread();
 	return(0);
 };
-void MrIcpDriver::SetupPositionDriver()
+void MrIcp::SetupPositionDriver()
 {
 	Pose initial_pose;
 	// Subscribe to the underlyin odometry device
@@ -555,25 +540,7 @@ void MrIcpDriver::SetupPositionDriver()
 	this->pa = initial_pose.phi;
 };
 
-//Pose MrIcpDriver::GetOdomReading()
-//{
-//	Pose P;
-//	size_t size;
-//	player_position_data_t data;
-//	// Get the odom device data.
-//	size = this->position_device->GetData(this->position_in_addr,(void*) &data,sizeof(data), &this->position_timestamp);
-//	if (size == 0)
-//		return P;
-//	// Get the pose
-//	P.p.x = (double) ((int32_t) ntohl(data.xpos)) / 1000.0;
-//	P.p.y = (double) ((int32_t) ntohl(data.ypos)) / 1000.0;
-//	P.phi = (double) ((int32_t) ntohl(data.yaw)) * M_PI / 180;
-//	if(this->debug)
-//		cout<<"\n	--->>> Odom pose from Position:0 XYTheta=["<<P.p.x<<"]["<<P.p.y<<"]["<<P.phi<<"]";
-//	return P;
-//};
-
-int MrIcpDriver::SetupLaser(int index)
+int MrIcp::SetupLaser(int index)
 {
 	// Subscribe to the Laser device
   	if (!(this->laser_device[index] = deviceTable->GetDevice(this->laser_addr[index])))
@@ -602,7 +569,7 @@ int MrIcpDriver::SetupLaser(int index)
   	}
   	return -1;
 };
-void MrIcpDriver::ResetMap()
+void MrIcp::ResetMap()
 {
 	char filename[40];
 	gchar * savefile;
@@ -622,7 +589,7 @@ void MrIcpDriver::ResetMap()
 	fprintf(config_file,"%s %.3f %.3f %.3f\n",filename,global_pose.p.x,global_pose.p.y,global_pose.phi);
 	this->global_pose.p.x = this->global_pose.p.y = this->global_pose.phi = 0;
 }
-int MrIcpDriver::Shutdown()
+int MrIcp::Shutdown()
 {
 	// Stop and join the driver thread
 	cout<<"\n- Shutting Down MRICP Driver - Cleaning up Mess ..\n"; fflush(stdout);
@@ -654,7 +621,7 @@ int MrIcpDriver::Shutdown()
 	return(0);
 }; 
 // this function will run in a separate thread
-void MrIcpDriver::Main()
+void MrIcp::Main()
 {
 	Timer loop_timer,map_timer,test;
 	double time_elapsed;
@@ -674,11 +641,12 @@ void MrIcpDriver::Main()
 		loop_timer.Reset();
 		test.Reset();
 		pthread_testcancel();     // Thread cancellation point.
-	    this->ProcessMessages();	
+	    this->ProcessMessages();
 		BuildMap();		          // Launch the MrICP on two laser scans
 		RefreshData();            // Update Data
-		//time_elapsed = loop_timer.TimeElapsed();
-		//cout<<"\n Min Loop took="<<time_elapsed/1e3<<"usec";
+		time_elapsed = loop_timer.TimeElapsed();
+		if(this->debug)
+			cout<<"\n Min Loop took="<<time_elapsed/1e3<<"usec";
 		loop_timer.Synch(this->period*1e3);
 		time_elapsed = map_timer.TimeElapsed();
 		if( time_elapsed >= this->map_saving_period*1e6)
@@ -686,15 +654,16 @@ void MrIcpDriver::Main()
 		    this->map->SavePgm();
 			map_timer.Reset();
 		}
-		//time_elapsed = loop_timer.TimeElapsed();
-		//cout<<"\n Time Synch="<<time_elapsed/1e3<<"usec";	
+		time_elapsed = loop_timer.TimeElapsed();
+		if(this->debug)
+			cout<<"\n Time Synch="<<time_elapsed/1e3<<"usec";	
 	}
 	pthread_exit(NULL);
 }
 /*! Forwards the Messeges  from the messege queue to their
  *  specific handler
  */
-int MrIcpDriver::ProcessMessage(QueuePointer& resp_queue, player_msghdr * hdr, void * data)
+int MrIcp::ProcessMessage(QueuePointer& resp_queue, player_msghdr * hdr, void * data)
 {
   	// Forward the Messages
   	switch (hdr->type)
@@ -712,7 +681,7 @@ int MrIcpDriver::ProcessMessage(QueuePointer& resp_queue, player_msghdr * hdr, v
 /*! Gets the Laser and Position Data from the underlying Devices
  *  If they are provided.
  */
-int MrIcpDriver::HandleData(QueuePointer& resp_queue, player_msghdr * hdr, void * idata)
+int MrIcp::HandleData(QueuePointer& resp_queue, player_msghdr * hdr, void * idata)
 {
   	struct timeval currtime;
   	double t1,t2, min_angle, scan_res,r,b,time_diff;
@@ -791,7 +760,7 @@ int MrIcpDriver::HandleData(QueuePointer& resp_queue, player_msghdr * hdr, void 
   	}
   	return -1;
 };  
-int MrIcpDriver::HandleConfigs(QueuePointer &resp_queue,player_msghdr * hdr,void * data)
+int MrIcp::HandleConfigs(QueuePointer &resp_queue,player_msghdr * hdr,void * data)
 {
 	// Handle Position REQ
 	// I didn't like the stupid MessageMatch Method
@@ -888,7 +857,7 @@ int MrIcpDriver::HandleConfigs(QueuePointer &resp_queue,player_msghdr * hdr,void
   	}
   	return -1;
 }
-int  MrIcpDriver::HandleCommands(QueuePointer& resp_queue,player_msghdr * hdr,void * data)
+int  MrIcp::HandleCommands(QueuePointer& resp_queue,player_msghdr * hdr,void * data)
 {
   	if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_POSITION2D_CMD_VEL,this->position_out_addr))
   	{
@@ -898,41 +867,45 @@ int  MrIcpDriver::HandleCommands(QueuePointer& resp_queue,player_msghdr * hdr,vo
 	  		fflush(stdout);	 		
 	  		return -1;
 	 	}
-    	this->Publish(this->position_in_addr, resp_queue,PLAYER_MSGTYPE_CMD,PLAYER_POSITION2D_CMD_VEL,
-		    			  (void*)data, sizeof(data), NULL);
+	 	player_position2d_cmd_vel_t* cmd = reinterpret_cast<player_position2d_cmd_vel_t *> (data);
+	 	// cout<<"\n	--->>Me Strong, ME handle commands :)";
+        this->position_device->PutMsg(this->InQueue,
+                             PLAYER_MSGTYPE_CMD,
+                             PLAYER_POSITION2D_CMD_VEL,
+                             (void*)cmd,sizeof(cmd),NULL);    	
 		return 0;
 	}
   	return -1;
 }
 // Handle map info request
-int MrIcpDriver::ProcessMapInfoReq(QueuePointer& resp_queue,player_msghdr * hdr,void * data)
+int MrIcp::ProcessMapInfoReq(QueuePointer& resp_queue,player_msghdr * hdr,void * data)
 {
   	// Is it a request for map meta-data?
-  	if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_MAP_REQ_GET_INFO, 
-                           this->device_addr) && !this->map->occ_grid)
+	cout<<"\n Processing Map Info request!!!"; fflush(stdout);
+  	if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_MAP_REQ_GET_INFO,this->device_addr) && this->map->occ_grid)
   	{
+  		cout<<"\n Processing Map Info request Inside!!!"; fflush(stdout);
     	if(hdr->size != 0)
     	{
 	      	PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",hdr->size, sizeof(player_laser_config_t));
 	      	return(-1);
     	}
-	    player_map_info_t info;
-	    info.scale = this->map_resolution;
-	    info.width = ((uint32_t) (int)ceil(2*map_size/map_resolution));
-	    info.height =((uint32_t) (int)ceil(2*map_size/map_resolution + 1));
+    	map_info.scale = this->map_resolution;
+    	map_info.width = ((uint32_t) (int)ceil(2*map_size/map_resolution));
+    	map_info.height =((uint32_t) (int)ceil(2*map_size/map_resolution + 1));
 	    // Did the user specify an origin?
-    	info.origin.px = -map_size;
-      	info.origin.py = -map_size;
-      	info.origin.pa = 0.0;
+    	map_info.origin.px = -map_size;
+    	map_info.origin.py = -map_size;
+    	map_info.origin.pa = 0.0;
 	    this->Publish(this->map_addr, resp_queue,PLAYER_MSGTYPE_RESP_ACK,PLAYER_MAP_REQ_GET_INFO,
-	                  (void*)&info, sizeof(info), NULL);
+	                  (void*)&map_info, sizeof(map_info), NULL);
 	    return(0);
   }
   return -1;
 }
 
 // Handle map data request
-int MrIcpDriver::ProcessMapDataReq(QueuePointer& resp_queue,player_msghdr * hdr,void * data)
+int MrIcp::ProcessMapDataReq(QueuePointer& resp_queue,player_msghdr * hdr,void * data)
 {
 	if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
                            PLAYER_MAP_REQ_GET_DATA,
@@ -940,40 +913,36 @@ int MrIcpDriver::ProcessMapDataReq(QueuePointer& resp_queue,player_msghdr * hdr,
   	{
     	player_map_data_t* mapreq = (player_map_data_t*)data;
 
-   		// Can't declare a map tile on the stack (it's too big)
-    	/*
-    	size_t mapsize = (sizeof(player_map_data_t) - PLAYER_MAP_MAX_TILE_SIZE + 
-                      (mapreq->width * mapreq->height));
-        */
-	    size_t mapsize = sizeof(player_map_data_t);
-	    player_map_data_t* mapresp = (player_map_data_t*)calloc(1,mapsize);
-	    assert(mapresp);
-		mapresp->data = (int8_t*)calloc(1,64*64);// allocate room for a 64x64 tile
-		assert(mapresp->data);
-    
+	    player_map_data_t mapresp ;
+   
 	    int i, j;
 	    int oi, oj, si, sj,last_row = map->size_y -1;;
 		int16_t temp;
 	  	double prob;
 	    // Construct reply
-	    oi = mapresp->col = mapreq->col;
-	    oj = mapresp->row = mapreq->row;
-	    si = mapresp->width = mapreq->width;
-	    sj = mapresp->height = mapreq->height;
+	    oi = mapresp.col = mapreq->col;
+	    oj = mapresp.row = mapreq->row;
+	    si = mapresp.width = mapreq->width;
+	    sj = mapresp.height = mapreq->height;
+		long int tile_size = si*sj;
+	    mapresp.data = (int8_t*)calloc(1,tile_size);
+	    
   		// Grab the Information from the occupancy data
 	  	for(j = oj; j < (sj+oj); j++)
 	  	{
 	  		// Proccess Last Row with the patch data
-	  		if(j == last_row )
+	  		if(j == last_row)
 	  		{
+	  			if(this->playerv_debug)
+	  				continue;
 	  			// Saving Creation Map Time Stamp 
 	 			gettimeofday(&map_timestamp,NULL);
 				// Storing Map ID can be between -127 and 127 (assumed +ve all the time)
-				mapresp->data[0 + (j-oj) * si] = map_number;
+				mapresp.data[0 + (j-oj) * si] = map_number;
 				// Storing Robot ID can be between -127 and 127 (assumed +ve all the time)			
-				mapresp->data[1 + (j-oj) * si] = robot_id;
+				mapresp.data[1 + (j-oj) * si] = robot_id;
 				/* Storing Pose X */
-				int8_t* offset = mapresp->data + (j-oj)*si+2; 
+				int8_t* offset = mapresp.data + (j-oj)*si+2; 
 				temp = (int)(global_pose.p.x*1e3);
 				memcpy(offset,&temp, sizeof(temp));
 				offset += sizeof(temp);   
@@ -1006,7 +975,7 @@ int MrIcpDriver::ProcessMapDataReq(QueuePointer& resp_queue,player_msghdr * hdr,
 	  		}
 	    	for(i= oi; i < (si+oi); i++)
 	    	{
-	      		if(((i-oi) * (j-oj)) <= 64*64 )
+	      		if(((i-oi) * (j-oj)) <= tile_size )
 	      		{
 	        		if(MAP_VALID(this, i, j))
 	        		{
@@ -1015,28 +984,22 @@ int MrIcpDriver::ProcessMapDataReq(QueuePointer& resp_queue,player_msghdr * hdr,
 	       				if(this->playerv_debug)
 	       				{
 		        			if(prob > 0.9)
-		        				mapresp->data[(i-oi) + (j-oj) * si] = +1;
+		        				mapresp.data[(i-oi) + (j-oj) * si] = +1;
 		        			else if(prob < 0.1)
-		        				mapresp->data[(i-oi) + (j-oj) * si] = -1;
+		        				mapresp.data[(i-oi) + (j-oj) * si] = -1;
 		        			else
-		        				mapresp->data[(i-oi) + (j-oj) * si] =  0;
+		        				mapresp.data[(i-oi) + (j-oj) * si] =  0;
 	       				}
 	       				else
 	       				{
 	       					uint8_t value = (uint8_t)(double(255)*prob);
-	       					memcpy(mapresp->data + (i-oi) + (j-oj)*si,&value, sizeof(value));
-	       					//if(prob <= 0.5)
-	       					//{
-	       					//	printf("\n Prob =%f",prob);
-	       					//	printf(" Scaled Before Casting=%f",double(255)*prob);
-	       					//	printf(" After Scaled Prob=%u",value);
-	       					//}
+	       					memcpy(mapresp.data + (i-oi) + (j-oj)*si,&value, sizeof(value));
 	       				}
 	        		}
 	        		else
 	        		{
 	          			PLAYER_WARN2("requested cell (%d,%d) is offmap", i+oi, j+oj);
-	          			mapresp->data[i + j * si] = 0;
+	          			mapresp.data[i + j * si] = 0;
 		        		cout<<"\nData Sent";fflush(stdout);
 	        		}
 	      		}
@@ -1046,31 +1009,27 @@ int MrIcpDriver::ProcessMapDataReq(QueuePointer& resp_queue,player_msghdr * hdr,
 	        		cout<<"\nMap Too Large";fflush(stdout);
 	        		if(i == 0)
 	        		{
-	          			mapresp->width = htonl(si-1);
-	          			mapresp->height = htonl(j-1);
+	          			mapresp.width = (si-1);
+	          			mapresp.height = (j-1);
 	        		}
 	        		else
 	       			{
-	          			mapresp->width = htonl(i);
-	          			mapresp->height = htonl(j);
+	          			mapresp.width = (i);
+	          			mapresp.height = (j);
 	        		}
 	      		}
 	    	}
 	  }
-    	// recompute size, in case the tile got truncated
-    	//mapsize = (sizeof(player_map_data_t) - PLAYER_MAP_MAX_TILE_SIZE + 
-        //(mapresp->width * mapresp->height));
-       	mapresp->data_count = mapresp->width * mapresp->height;
+       	mapresp.data_count = mapresp.width * mapresp.height;
     	cout<<"\n	--->>> Columns="<<oi<<" Rows="<<oj<<" width="<<si<<" height="<<sj;
-       	this->Publish(this->device_addr, resp_queue,PLAYER_MSGTYPE_RESP_ACK,PLAYER_MAP_REQ_GET_DATA,(void*)mapresp, mapsize, NULL);
-		free(mapresp->data);
-	   	free(mapresp);
+       	this->Publish(this->device_addr, resp_queue,PLAYER_MSGTYPE_RESP_ACK,PLAYER_MAP_REQ_GET_DATA,(void*)(&mapresp), sizeof(mapresp), NULL);
+		free(mapresp.data);
        	return(0);
 	}	
   	return -1;
 };
 
-void MrIcpDriver::RefreshData()
+void MrIcp::RefreshData()
 {
   	// Write position data//
 	this->position_out_data.pos.px = this->px; 
@@ -1082,18 +1041,18 @@ void MrIcpDriver::RefreshData()
 	return;
 };
 // Check if the laser beam is in the allowed range
-int MrIcpDriver::InRange(double angle,int laser_index)
+// This is useful if you have something or part of the robot obstructing the field of view
+// of the laser
+int MrIcp::InRange(double angle,int laser_index)
 {
 	for(int i=0;i<range_count[laser_index];i++)
 	{
-//		if(RTOD(angle)>60)
-//			cout<<"\n Laser:"<<laser_index<<" Angle="<<RTOD(angle)<<" Min"<<range[laser_index][i].begins<<" MAX"<<range[laser_index][i].ends;
 		if(range[laser_index][i].begins <= RTOD(angle) && RTOD(angle) <= range[laser_index][i].ends)
-			return 0; // Allowed Beam
+			return 0;
 	}
 	return -1; // Beam to be ignored
 };
-Point MrIcpDriver::TransformToGlobal(Point p,Pose pose)
+Point MrIcp::TransformToGlobal(Point p,Pose pose)
 {
 	// Rotate + Translate
 	Point temp = p;
@@ -1101,7 +1060,7 @@ Point MrIcpDriver::TransformToGlobal(Point p,Pose pose)
 	p.y = temp.x*sin(pose.phi) + temp.y*cos(pose.phi) + pose.p.y ;
 	return p;
 };
-Pose MrIcpDriver::TransformToGlobal(Pose p,Pose pose)
+Pose MrIcp::TransformToGlobal(Pose p,Pose pose)
 {
 	// Rotate + Translate
 	Point temp = p.p;
@@ -1111,21 +1070,21 @@ Pose MrIcpDriver::TransformToGlobal(Pose p,Pose pose)
 	return p;
 };
 // transfers from Pixel to the Map coordinate
-Point MrIcpDriver :: ConvertPixel(Point  p) 
+Point MrIcp :: ConvertPixel(Point  p) 
 {
 	p.x = ( p.x*this->map_resolution - this->map_size) ;
 	p.y = (-p.y*this->map_resolution + this->map_size) ;
 	return p;
 };
 // transfers from Map into the Pixel Coordinate 
-Point MrIcpDriver :: ConvertToPixel(Point p) 
+Point MrIcp :: ConvertToPixel(Point p) 
 {
 	//  This is a NxN Map with N = 2*map_size
 	p.x = rint (( p.x + this->map_size)/this->map_resolution);
 	p.y = rint ((-p.y + this->map_size)/this->map_resolution);
 	return p;
 };
-mapgrid_t MrIcpDriver::ComputeRangeProb(double range,bool free)
+mapgrid_t MrIcp::ComputeRangeProb(double range,bool free)
 {
 	double bad_range;
 	mapgrid_t prob;
@@ -1152,10 +1111,9 @@ mapgrid_t MrIcpDriver::ComputeRangeProb(double range,bool free)
 		prob.prob_free = 1;
 		prob.prob_occ  = 0;
 	}
-	//cout<<"\n Prob Free="<<prob.prob_free<<" Prob Occ="<<prob.prob_occ;
 	return prob;	
 }
-void MrIcpDriver::AddToMap(vector<Point> laser_data,Pose pose)
+void MrIcp::AddToMap(vector<Point> laser_data,Pose pose)
 {
 	Point p,pixel_point,d,in_p;
 	Pose relative_laser_pose;
@@ -1223,7 +1181,7 @@ void MrIcpDriver::AddToMap(vector<Point> laser_data,Pose pose)
 		  color_prob =  this->map->occ_grid[(int)(temp.x)][(int)(temp.y)].prob_occ;
 		  if(color_prob>1 || color_prob<0)
 		  {
-		  	cout <<"\n UNEXPECTED Probability !!! "<< color_prob;
+		  	cout <<"\n WTF : UNEXPECTED Probability !!! "<< color_prob;
 		  }
 		  gradient = 255.0 - color_prob * 255.0;
 		  map->DrawPixel((int)(gradient),(int)(gradient),(int)(gradient),(int)temp.x,(int)temp.y);  
@@ -1263,12 +1221,12 @@ void MrIcpDriver::AddToMap(vector<Point> laser_data,Pose pose)
 	}
 };
 // Only get the Existing Map points that are useful for Allignement
-void MrIcpDriver::GenerateLocalMap(Pose pse)
+void MrIcp::GenerateLocalMap(Pose pse)
 {
-	double farest_laser_dist=0,dist; //num_pixels;
-	//Point location,grid_start,temp;
-	//location.x = pse.p.x;
-	//location.y = pse.p.y;
+	double farest_laser_dist=0,dist,num_pixels;
+	Point location,grid_start,temp;
+	location.x = pse.p.x;
+	location.y = pse.p.y;
 	local_map.clear();
 	for(int i=0;i<this->number_of_lasers;i++)
 	{
@@ -1277,32 +1235,34 @@ void MrIcpDriver::GenerateLocalMap(Pose pse)
 		if( dist > farest_laser_dist )
 			farest_laser_dist = dist;
 	}
-	for (unsigned int i=0;i<map_points.size();i++)
-	{
-		if (sqrt (pow(pse.p.x - map_points[i].x,2) + pow(pse.p.y - map_points[i].y,2)) <= (maxr + farest_laser_dist + 0.2))
-			local_map.push_back(map_points[i]);
-	}
-//	num_pixels = (farest_laser_dist + this->maxr) /this->map_resolution + 10;
-//	location = ConvertToPixel(location);
-//	grid_start.x = location.x - num_pixels; 
-//	if(grid_start.x < 0) grid_start.x = 0;
-//	grid_start.y = location.y - num_pixels; 
-//	if(grid_start.y < 0) grid_start.y = 0;
-//    cout<<"\nStart grid: "<<grid_start.x<<" y:"<<grid_start.y<<" pixels:"<<num_pixels; fflush(stdout);
-//	for(int i= (int)(grid_start.x) ; i< (2*num_pixels + grid_start.x); i++)
-//		for(int j=(int)(grid_start.y);j<(2*num_pixels + grid_start.y); j++)
-//		{
-//			 y is -2 because last row is meta data
-//			if(i<(map->size_x - 1)  && j<(map->size_y - 2)) 
-//				if (map->occ_grid[i][j].prob_occ > 0.9)
-//				{
-//					temp.x = i;
-//					temp.y = j;
-//					local_map.push_back(ConvertPixel(temp));
-//				}
-//		}
+//	for (unsigned int i=0;i<map_points.size();i++)
+//	{
+//		if (sqrt (pow(pse.p.x - map_points[i].x,2) + pow(pse.p.y - map_points[i].y,2)) <= (maxr + farest_laser_dist + local_map_margine))
+//			local_map.push_back(map_points[i]);
+//	}
+	num_pixels = (farest_laser_dist + this->maxr + local_map_margine) /this->map_resolution;
+	location = ConvertToPixel(location);
+	grid_start.x = location.x - num_pixels; 
+	if(grid_start.x < 0) 
+		grid_start.x = 0;
+	grid_start.y = location.y - num_pixels; 
+	if(grid_start.y < 0) 
+		grid_start.y = 0;
+    //cout<<"\nStart grid: "<<grid_start.x<<" y:"<<grid_start.y<<" pixels:"<<num_pixels; fflush(stdout);
+	for(int i= (int)(grid_start.x) ; i< (2*num_pixels + grid_start.x); i++)
+		for(int j=(int)(grid_start.y);j<(2*num_pixels + grid_start.y); j++)
+		{
+			 // y is -2 because last row is meta data
+			if(i<(map->size_x - 1)  && j<(map->size_y - 2)) 
+				if (map->occ_grid[i][j].prob_occ > 0.9)
+				{
+					temp.x = i;
+					temp.y = j;
+					local_map.push_back(ConvertPixel(temp));
+				}
+		}
 };
-void MrIcpDriver::BuildMap()     
+void MrIcp::BuildMap()     
 {
 //	double estimated_delta_d,estimated_delta_phi;
 	this->delta_time = delta_t_estimation.TimeElapsed()/1e6;
@@ -1310,30 +1270,28 @@ void MrIcpDriver::BuildMap()
 		delta_t_estimation.Reset();
 	if (!sample_initialized)
 	{
-//		laser_set_1 = GetLaserSample();
 		laser_set_1 = laser_set;
 		if (laser_set_1.size() != 0)
 			sample_initialized = TRUE;
 		else
 			return;
 		// Read Pose if postion driver exists
-//		if(this->position_device)	pose_1 = GetOdomReading(); 
 		if(this->position_device)	pose_1 = P; 
 		global_pose.p.x = global_pose.p.y = global_pose.phi = 0;
 		AddToMap(laser_set_1,global_pose);
 		gettimeofday(&last_delta,NULL);
 		return;
 	}
-//	laser_set_2 =  GetLaserSample();
 	laser_set_2 =  laser_set;
 	if (laser_set_2.size() == 0 || laser_set_1.size() == 0)
 		return;
-
-	//cout<<"\n Laser Set 1 Size:"<<laser_set_1.size()<<" Laser Set 2 Size:"<<laser_set_2.size();
+	
+	if(this->debug)
+		cout<<"\n Laser Set 1 Size:"<<laser_set_1.size()<<" Laser Set 2 Size:"<<laser_set_2.size();
+	
 	// Read Pose if position driver exists
 	if(this->use_odom)
 	{
-//		pose_2 = GetOdomReading(); 
 		pose_2 = P; 
 		delta_pose.phi = NORMALIZE(pose_2.phi - pose_1.phi);
 		delta_pose.p.x =  (pose_2.p.x - pose_1.p.x)*cos(pose_1.phi) + (pose_2.p.y - pose_1.p.y)*sin(pose_1.phi) ;
@@ -1390,7 +1348,8 @@ void MrIcpDriver::BuildMap()
 		//laser_set_1 = laser_set_2;
 		return;
 	}
-	//cout<<"\n Delta Pose:2 x:"<<global_pose.p.x<<" y:"<<global_pose.p.x<<" phi:"<<global_pose.phi;
+	if(this->debug)
+		cout<<"\n Delta Pose:2 x:"<<global_pose.p.x<<" y:"<<global_pose.p.x<<" phi:"<<global_pose.phi;
 	global_pose = icp.align(this->local_map,laser_set_2,global_pose, gate2, nit, interpolate);
 	if(global_pose.p.x ==-1 && global_pose.p.y ==-1 && global_pose.phi==-1)
 	{
@@ -1401,7 +1360,8 @@ void MrIcpDriver::BuildMap()
 		//laser_set_1 = laser_set_2;
 		return;
 	}
-	//cout<<"\n Delta Pose:3 x:"<<global_pose.p.x<<" y:"<<global_pose.p.x<<" phi:"<<global_pose.phi;
+	if(this->debug)
+		cout<<"\n Delta Pose:3 x:"<<global_pose.p.x<<" y:"<<global_pose.p.x<<" phi:"<<global_pose.phi;
 
 	// Serve Data to Position Interface
 	this->global_pose_prev.p.x = this->px = global_pose.p.x;
@@ -1412,10 +1372,11 @@ void MrIcpDriver::BuildMap()
 
 	// Perform the ICP on Next Laser Scan
 	laser_set_1 = laser_set_2;
-	if(this->position_device)	pose_1 = pose_2;
+	if(this->position_device)	
+		pose_1 = pose_2;
 };
 
-void MrIcpDriver::ConnectPatches()
+void MrIcp::ConnectPatches()
 {
 	int patch_number=0;
 	gchar * patch;
