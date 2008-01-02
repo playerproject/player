@@ -404,6 +404,7 @@ Wavefront::Setup()
   this->new_goal = false;
 
   this->waypoint_count = 0;
+  this->waypoints = NULL;
   this->waypoints_allocated = 0;
 
   if(SetupPosition() < 0)
@@ -439,6 +440,8 @@ Wavefront::Shutdown()
 
   if(this->plan)
     plan_free(this->plan);
+  free(this->waypoints);
+  this->waypoints = NULL;
 
   ShutdownPosition();
   ShutdownLocalize();
