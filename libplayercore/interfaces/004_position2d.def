@@ -7,6 +7,7 @@ description {
 
 // interface data structures
 
+/** position2d data */
 typedef struct player_position2d_data
 {
   /** position [m,m,rad] (x, y, yaw)*/
@@ -17,7 +18,7 @@ typedef struct player_position2d_data
   uint8_t stall;
 } player_position2d_data_t;
 
-
+/** position 2d velocity command */
 typedef struct player_position2d_cmd_vel
 {
   /** translational velocities [m/s,m/s,rad/s] (x, y, yaw)*/
@@ -26,7 +27,7 @@ typedef struct player_position2d_cmd_vel
   uint8_t state;
 } player_position2d_cmd_vel_t;
 
-
+/** position2d position command */
 typedef struct player_position2d_cmd_pos
 {
   /** position [m,m,rad] (x, y, yaw)*/
@@ -37,7 +38,7 @@ typedef struct player_position2d_cmd_pos
   uint8_t state;
 } player_position2d_cmd_pos_t;
 
-
+/** position2d command setting velocity and steering angle */
 typedef struct player_position2d_cmd_car
 {
   /** forward velocity (m/s) */
@@ -46,6 +47,7 @@ typedef struct player_position2d_cmd_car
   double angle;
 } player_position2d_cmd_car_t;
 
+/** position2d command setting velocity and heading */
 typedef struct player_position2d_cmd_vel_head
 {
   /** forward velocity (m/s) */
@@ -54,6 +56,7 @@ typedef struct player_position2d_cmd_vel_head
   double angle;
 } player_position2d_cmd_vel_head_t;
 
+/** position2d geom */
 typedef struct player_position2d_geom
 {
   /** Pose of the robot base, in the robot cs (m, rad). */
@@ -62,14 +65,14 @@ typedef struct player_position2d_geom
   player_bbox3d_t size;
 } player_position2d_geom_t;
 
-
+/** position2d power config */
 typedef struct player_position2d_power_config
 {
   /** FALSE for off, TRUE for on */
   uint8_t state;
 } player_position2d_power_config_t;
 
-
+/** position2d velocity mode config */
 typedef struct player_position2d_velocity_mode_config
 {
   /** driver-specific */
@@ -77,21 +80,21 @@ typedef struct player_position2d_velocity_mode_config
 } player_position2d_velocity_mode_config_t;
 
 
-
+/** position2d position mode request */
 typedef struct player_position2d_position_mode_req
 {
   /** 0 for velocity mode, 1 for position mode */
   uint32_t state;
 } player_position2d_position_mode_req_t;
 
-
+/** set odometry */
 typedef struct player_position2d_set_odom_req
 {
   /** (x, y, yaw) [m, m, rad] */
   player_pose2d_t pose;
 } player_position2d_set_odom_req_t;
 
-
+/** position2d speed PID req */
 typedef struct player_position2d_speed_pid_req
 {
   /** PID parameters */
@@ -102,7 +105,7 @@ typedef struct player_position2d_speed_pid_req
   float kd;
 } player_position2d_speed_pid_req_t;
 
-
+/** position2d position pid req */
 typedef struct player_position2d_position_pid_req
 {
   /** PID parameters */
@@ -113,7 +116,7 @@ typedef struct player_position2d_position_pid_req
   float kd;
 } player_position2d_position_pid_req_t;
 
-
+/** speed prof req */
 typedef struct player_position2d_speed_prof_req
 {
   /** max speed [m/s] */
@@ -241,10 +244,10 @@ The @ref driver_p2os driver offers two modes of velocity control:
 
   The @p position interface accepts carlike translational velocity + constant turn commands (speed and turning angle)
   for the robot's motors (only supported by some drivers). */
-  message { CMD, CAR, 2, player_position2d_cmd_car_t };
+  message { CMD, CAR, 3, player_position2d_cmd_car_t };
 
 
   /** @brief Command: vel/head (@ref PLAYER_POSITION2D_CMD_VEL_HEAD)
 
   The @p position interface accepts translational velocity + absolute heading commands (speed and angular position) for the robot's motors (only supported by some drivers). */
-  message { CMD, VEL_HEAD , 3, player_position2d_cmd_vel_head_t };
+  message { CMD, VEL_HEAD , 4, player_position2d_cmd_vel_head_t };
