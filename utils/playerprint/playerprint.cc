@@ -186,6 +186,11 @@ main(int argc, char **argv)
 //      break;
     case PLAYER_ACTARRAY_CODE:
       cp = (ClientProxy*)new ActArrayProxy(&client,g_index);
+      try 
+      {
+        reinterpret_cast<ActArrayProxy*> (cp)->RequestGeometry();
+      }
+      catch (...) {}
       break;
     case PLAYER_AIO_CODE:
       cp = (ClientProxy*)new AioProxy(&client,g_index);
@@ -219,7 +224,7 @@ main(int argc, char **argv)
       break;
     case PLAYER_LIMB_CODE:
       cp = (ClientProxy*)new LimbProxy(&client,g_index);
-	  reinterpret_cast<LimbProxy*> (cp)->RequestGeometry();
+      reinterpret_cast<LimbProxy*> (cp)->RequestGeometry();
       break;
     case PLAYER_LOCALIZE_CODE:
       cp = (ClientProxy*)new LocalizeProxy(&client,g_index);
