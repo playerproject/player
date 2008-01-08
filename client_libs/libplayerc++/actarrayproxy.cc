@@ -242,7 +242,6 @@ player_actarray_actuator_t ActArrayProxy::GetActuatorData(uint32_t aJoint) const
 {
   if (aJoint > mDevice->actuators_count)
   {
-    scoped_lock_t lock(mPc->mMutex);
     player_actarray_actuator_t empty;
     memset(&empty, 0, sizeof(player_actarray_actuator_t));
     return empty;
@@ -254,9 +253,8 @@ player_actarray_actuator_t ActArrayProxy::GetActuatorData(uint32_t aJoint) const
 // Same again for getting actuator geometry
 player_actarray_actuatorgeom_t ActArrayProxy::GetActuatorGeom(uint32_t aJoint) const
 {
-  if (aJoint > mDevice->actuators_count)
+  if (mDevice->actuators_geom == NULL || aJoint > mDevice->actuators_count)
   {
-    scoped_lock_t lock(mPc->mMutex);
     player_actarray_actuatorgeom_t empty;
     memset(&empty, 0, sizeof(player_actarray_actuatorgeom_t));
     return empty;
