@@ -47,6 +47,8 @@
 #define COLOR_GRID_MAJOR         0xC0C0C0
 #define COLOR_GRID_MINOR         0xE0E0E0
 #define COLOR_AIO                0x000000
+#define COLOR_ACTARRAY_DATA      0x00C000
+#define COLOR_ACTARRAY_CMD       0x0000C0
 #define COLOR_DIO                0x000000
 #define COLOR_LASER              0x0000C0
 #define COLOR_LASER_EMP          0xD0D0FF
@@ -168,6 +170,47 @@ typedef struct
 // Create the appropriate GUI proxy for a given set of device info.
 void create_proxy(device_t *device, opt_t *opt,
                   mainwnd_t *mainwnd, playerc_client_t *client);
+
+
+ /***************************************************************************
+  * ActArray device
+  ***************************************************************************/
+
+ // ActArray device info
+ typedef struct
+ {
+   // Driver name
+   char *drivername;
+
+   // Menu stuff
+   rtk_menu_t *menu;
+   rtk_menuitem_t *subscribe_item;
+   rtk_menuitem_t *command_item;
+
+   // Figures for drawing the actarray
+   rtk_fig_t **actuator_fig;
+   rtk_fig_t **actuator_fig_cmd;
+   double * lastvalue;
+   int fig_count;
+   mainwnd_t *mainwnd;
+
+   // ActArray device proxy
+   playerc_actarray_t *proxy;
+
+   // Timestamp on most recent data
+   double datatime;
+
+ } actarray_t;
+
+ // Create a actarray device
+ actarray_t *actarray_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
+                       int index,  const char *drivername, int subscribe);
+
+ // Destroy a actarray device
+ void actarray_destroy(actarray_t *actarray);
+
+ // Update a actarray device
+ void actarray_update(actarray_t *actarray);
 
 
  /***************************************************************************

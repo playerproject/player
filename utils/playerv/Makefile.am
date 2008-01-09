@@ -15,6 +15,7 @@ playerv_SOURCES = playerv.c \
                   error.h \
                   opt.c \
                   opt.h \
+                  pv_dev_actarray.c \
                   pv_dev_aio.c \
                   pv_dev_blobfinder.c \
                   pv_dev_camera.c \

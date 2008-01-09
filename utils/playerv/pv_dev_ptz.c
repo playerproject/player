@@ -98,6 +98,7 @@ void ptz_destroy(ptz_t *ptz)
   rtk_fig_destroy(ptz->data_fig_tilt);
 
   // Destroy menu items
+  rtk_menuitem_destroy(ptz->command_item);
   rtk_menuitem_destroy(ptz->subscribe_item);
   rtk_menu_destroy(ptz->menu);
 

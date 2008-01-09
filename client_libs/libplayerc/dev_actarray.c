@@ -112,9 +112,9 @@ int playerc_actarray_get_geom(playerc_actarray_t *device)
   if((result = playerc_client_request(device->info.client, &device->info,
       PLAYER_ACTARRAY_REQ_GET_GEOM, NULL, (void*)&geom)) < 0)
     return result;
-
-  device->actuators_geom = realloc(device->actuators_geom,device->actuators_count*sizeof(device->actuators_geom[0]));
-  for (ii = 0; ii < device->actuators_count; ii++)
+  device->actuators_geom_count = geom->actuators_count;
+  device->actuators_geom = realloc(device->actuators_geom,device->actuators_geom_count*sizeof(device->actuators_geom[0]));
+  for (ii = 0; ii < device->actuators_geom_count; ii++)
   {
     device->actuators_geom[ii] = geom->actuators[ii];
   }
