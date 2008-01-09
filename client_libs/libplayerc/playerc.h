@@ -948,6 +948,8 @@ typedef struct
   uint32_t actuators_count;
   /** The actuator data, geometry and motor state. */
   player_actarray_actuator_t *actuators_data;
+  /** The number of actuators we have geometry for. */
+  uint32_t actuators_geom_count;
   player_actarray_actuatorgeom_t *actuators_geom;
   /** Reports if the actuators are off (0) or on (1) */
   uint8_t motor_state;

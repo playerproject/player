@@ -76,6 +76,7 @@ when building librtk).
 @par Features
 
 playerv can visualize data from the following kinds of devices:
+- @ref interface_actarray
 - @ref interface_blobfinder
 - @ref interface_bumper
 - @ref interface_fiducial
