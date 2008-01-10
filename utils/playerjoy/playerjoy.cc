@@ -38,6 +38,7 @@ Where options can be:
 - -n   : dont send commands or enable motors (debugging)
 - -k   : use keyboard control
 - -p   : print out speeds on the console
+- -a   : send car like commands (velocity and steering angle)
 - -udp : use UDP instead of TCP (deprecated, currently disabled)
 - -speed     : maximum linear speed (m/sec)
 - -turnspeed : maximum angular speed (deg/sec)
@@ -160,6 +161,9 @@ bool print_speeds = false;
 
 // use the keyboard instead of the joystick?
 bool use_keyboard = false;
+
+// send carlike commands
+bool use_car = false;
 
 // create a gripper proxy and keys to control it?
 bool use_gripper = false;
@@ -540,10 +544,12 @@ void Client::Update( struct controller* cont )
         printf("%5.3f %5.3f\n", cont->speed, RTOD(cont->turnrate));
 
       // send the speed commands
-      if(!threed)
-        pp->SetSpeed(cont->speed, cont->turnrate);
-      else
+      if(threed)
         pp3->SetSpeed(cont->speed, cont->turnrate);
+      if(use_car)
+        pp->SetCarlike(cont->speed, cont->turnrate);
+      else
+        pp->SetSpeed(cont->speed, cont->turnrate);
     }
     else
       printf("%5.3f %5.3f\n", cont->speed, RTOD(cont->turnrate));
@@ -561,10 +567,12 @@ void Client::Update( struct controller* cont )
       {
         if(print_speeds)
           printf("%5.3f %5.3f\n", cont->speed, RTOD(cont->turnrate));
-        if(!threed)
-          pp->SetSpeed(0,0);
+        if(threed)
+          pp3->SetSpeed(cont->speed, cont->turnrate);
+        if(use_car)
+          pp->SetCarlike(cont->speed, cont->turnrate);
         else
-          pp3->SetSpeed(0,0);
+          pp->SetSpeed(cont->speed, cont->turnrate);
       }
       else
         printf("%5.3f %5.3f\n", cont->speed, cont->turnrate);
@@ -615,6 +623,8 @@ int main(int argc, char** argv)
       use_keyboard = true;
     else if( strcmp( argv[i], "-g" ) == 0 )
       use_gripper = true;
+    else if( strcmp( argv[i], "-a" ) == 0 )
+      use_car = true;
     else if( strcmp( argv[i], "-speed" ) == 0 )
       {
   if(i++ < argc)
