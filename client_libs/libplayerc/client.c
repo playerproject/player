@@ -1031,8 +1031,7 @@ int playerc_client_readpacket(playerc_client_t *client,
   }
   if (header->size > PLAYERXDR_MAX_MESSAGE_SIZE - PLAYERXDR_MSGHDR_SIZE)
   {
-    PLAYERC_ERR1("packet is too large, %d bytes", header->size);
-    return -1;
+    PLAYERC_WARN1("packet is too large, %d bytes", header->size);
   }
 
   // Slide over the header
@@ -1069,12 +1068,19 @@ int playerc_client_readpacket(playerc_client_t *client,
 
   // Locate the appropriate unpacking function for the message body
   if(!(packfunc = playerxdr_get_packfunc(header->addr.interf, header->type,
-                                     header->subtype)))
+                                         header->subtype)))
   {
     // TODO: Allow the user to register a callback to handle unsupported
     // messages
     PLAYERC_ERR4("skipping message from %s:%u with unsupported type %s:%u",
                  interf_to_str(header->addr.interf), header->addr.index, msgtype_to_str(header->type), header->subtype);
+
+    // Slide over the body
+    memmove(client->read_xdrdata,
+            client->read_xdrdata + header->size,
+            client->read_xdrdata_len - header->size);
+    client->read_xdrdata_len -= header->size;
+
     return(-1);
   }
 
