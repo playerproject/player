@@ -5,3 +5,7 @@ Makefile.in
 .deps
 .libs
 example_client
+example_functiontable.c
+example_interface.h
+example_xdr.c
+example_xdr.h
