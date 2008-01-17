@@ -407,3 +407,11 @@
 // e.g., client.connect(...)
 // This file is created by running ../parse_header.py
 %include "playerc_oo.i"
+
+%extend playerc_laser
+{
+double get_range (int index)
+{
+	return $self->ranges[index];
+};
+}

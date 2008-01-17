@@ -208,7 +208,7 @@ playerc_laser_set_config(playerc_laser_t *device,
                          unsigned char intensity,
                          double scanning_frequency)
 {
-  player_laser_config_t config, *resp;
+  player_laser_config_t config;
 
   config.min_angle = min_angle;
   config.max_angle = max_angle;

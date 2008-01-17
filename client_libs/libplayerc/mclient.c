@@ -155,7 +155,7 @@ int playerc_mclient_read(playerc_mclient_t *mclient, int timeout)
     if(mclient->client[i]->qlen ||
        (mclient->pollfd[i].revents & POLLIN) > 0)
     {
-      if(playerc_client_read_nonblock(mclient->client[i]))
+      if(playerc_client_read_nonblock(mclient->client[i])>0)
       {
         // cache the latest timestamp
         if(mclient->client[i]->datatime > mclient->time)
