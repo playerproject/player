@@ -726,7 +726,11 @@ never return the ID of a proxy other than the client.
 void *playerc_client_read(playerc_client_t *client);
 
 // Read and process a packet (nonblocking)
-void *playerc_client_read_nonblock(playerc_client_t *client);
+// returns 0 if no data recieved, 1 if data recieved and -1 on error
+int playerc_client_read_nonblock(playerc_client_t *client);
+// Read and process a packet (nonblocking), fills in pointer to proxy that got data
+// returns 0 if no data recieved, 1 if data recieved and -1 on error
+int playerc_client_read_nonblock_withproxy(playerc_client_t *client, void ** proxy);
 
 /** @brief Set the timeout for client requests.
 

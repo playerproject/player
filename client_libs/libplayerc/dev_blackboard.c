@@ -95,7 +95,7 @@ int playerc_blackboard_subscribe_to_key(playerc_blackboard_t* device, const char
 	req.key_count = strlen(key) + 1;
 
 	if (playerc_client_request(device->info.client, &device->info, 
-	PLAYER_BLACKBOARD_REQ_SUBSCRIBE_TO_KEY, &req, entry_out) < 0)
+	PLAYER_BLACKBOARD_REQ_SUBSCRIBE_TO_KEY, &req, (void**)entry_out) < 0)
 	{
 		free(req.key);
 		PLAYERC_ERR("failed to subscribe to blackboard key");

@@ -182,6 +182,10 @@ class PlayerClient
     bool Peek(uint32_t timeout=0);
     //bool Peek2(uint32_t timeout=0);
 
+    /// @brief Set the timeout for client requests
+    void SetRequestTimeout(uint32_t seconds) { playerc_client_set_request_timeout(this->mClient,seconds); }
+
+    
     /// @brief Set connection retry limit, which is the number of times
     /// that we'll try to reconnect to the server after a socket error.
     /// Set to -1 for inifinite retry.

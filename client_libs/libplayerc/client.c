@@ -576,7 +576,8 @@ int playerc_client_internal_peek(playerc_client_t *client, int timeout)
 // Read and process a packet (blocking)
 void *playerc_client_read(playerc_client_t *client)
 {
-  void* ret;  
+  void* ret_proxy;
+  int ret;
   // 10ms delay
   struct timespec sleeptime = {0,10000000};
 
@@ -585,18 +586,29 @@ void *playerc_client_read(playerc_client_t *client)
     // In case we're in PULL mode, first request a round of data.
     if(playerc_client_requestdata(client) < 0)
       return NULL;
-    ret = playerc_client_read_nonblock(client);
-    if((ret != NULL) || (client->sock < 0))
-      break;
+    ret = playerc_client_read_nonblock_withproxy(client, &ret_proxy);
+    if((ret > 0) || (client->sock < 0))
+      return ret_proxy;
+    if (ret < 0)
+      return NULL;
     nanosleep(&sleeptime,NULL);
   }  
-  return(ret);
 }
 
+
 // Read and process a packet (nonblocking)
-void *playerc_client_read_nonblock(playerc_client_t *client)
+// returns 0 if no data recieved, 1 if data recieved and -1 on error
+int playerc_client_read_nonblock(playerc_client_t *client)
+{
+	return playerc_client_read_nonblock_withproxy(client, NULL);
+}
+
+// Read and process a packet (nonblocking), fills in pointer to proxy that got data
+// returns 0 if no data recieved, 1 if data recieved and -1 on error
+int playerc_client_read_nonblock_withproxy(playerc_client_t *client, void ** proxy)
 {
   player_msghdr_t header;
+  int ret;
 
   while (true)
   {
@@ -604,11 +616,11 @@ void *playerc_client_read_nonblock(playerc_client_t *client)
     if (playerc_client_pop (client, &header, client->data) < 0)
     {
       // If there is no queued data, peek at the socket
-      if(playerc_client_internal_peek(client,0) <= 0)
-        return NULL;
+      if((ret = playerc_client_internal_peek(client,0)) <= 0)
+        return ret;
       // There's data on the socket, so read a packet (blocking).
-      if(playerc_client_readpacket (client, &header, client->data) < 0)
-        return NULL;
+      if((ret = playerc_client_readpacket (client, &header, client->data)) < 0)
+        return ret;
     }
 	  
     // One way or another, we got a new packet into (header,client->data), 
@@ -623,11 +635,13 @@ void *playerc_client_read_nonblock(playerc_client_t *client)
         if(!client->data_received)
         {
           PLAYERC_WARN ("No data recieved with SYNC");
-          return NULL;
+          return -1;
         }
         else
         {
-          return client->id;
+          if (proxy)
+            *proxy = client->id;
+          return 1;
         }
       case PLAYER_MSGTYPE_DATA:
         client->lasttime = client->datatime;
@@ -638,7 +652,9 @@ void *playerc_client_read_nonblock(playerc_client_t *client)
           void *result = playerc_client_dispatch (client, &header, client->data);
           // Need to ensure that any dynamic data made during unpacking is cleaned up
           playerxdr_cleanup_message(client->data, header.addr.interf, header.type, header.subtype);
-          return result;
+          if (proxy)
+            *proxy = result;
+          return 1;
         }
         else  // PULL mode, so keep on going
         {
@@ -648,7 +664,7 @@ void *playerc_client_read_nonblock(playerc_client_t *client)
           if (result == NULL)
           {
           	PLAYERC_WARN ("Failed to dispatch data message");
-            return NULL;        	  
+            return -1;
           }
           break;
         }
@@ -660,7 +676,7 @@ void *playerc_client_read_nonblock(playerc_client_t *client)
                interf_to_str(header.addr.interf),
                header.addr.index,
                header.size);
-        return NULL;
+        return -1;
     }
   }
 }
