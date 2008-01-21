@@ -102,7 +102,6 @@ player_blackboard_entry_t *BlackBoardProxy::SubscribeToKey(const char *key)
   // We don't want a mix of malloc and new, so make a copy using only new
   player_blackboard_entry_t *result = new player_blackboard_entry_t;
   memset(result, 0, sizeof(player_blackboard_entry_t));
-  result->interf = pointer->interf;
   result->type = pointer->type;
   result->subtype = pointer->subtype;
 

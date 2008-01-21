@@ -55,8 +55,6 @@
 }
 
 
-// Special rules for functions that return multiple results via pointers
-
 // For playerc_simulation_get_pose2d()
 %apply double *OUTPUT { double *x, double *y, double *a };
 
@@ -414,4 +412,119 @@ double get_range (int index)
 {
 	return $self->ranges[index];
 };
+}
+
+%extend playerc_blackboard
+{
+  PyObject * subscribe_to_key(const char *key)
+  {
+  	char *str = NULL;
+  	int i = 0;
+  	double d = 0.0;
+	PyObject *data;
+    PyObject *dict = PyDict_New();
+    player_blackboard_entry_t **out;
+    player_blackboard_entry_t *entry;
+    entry = NULL;
+    int result = playerc_blackboard_subscribe_to_key(self, key, out);
+    if (result != 0)
+    {
+    	return NULL;
+    }
+    assert(out);
+    entry = *out;
+    assert(entry);
+    assert(entry->key);
+    /*printf("key=%s\n",entry->key);
+    printf("type=%d\n",entry->type);
+    printf("subtype=%d\n",entry->subtype);
+    printf("timestamp_sec=%d\n",entry->timestamp_sec);
+    printf("timestamp_usec=%d\n",entry->timestamp_usec);*/
+	PyDict_SetItem(dict, PyString_FromString("key"), PyString_FromString(entry->key));
+	PyDict_SetItem(dict, PyString_FromString("type"), PyLong_FromLong(entry->type));
+	PyDict_SetItem(dict, PyString_FromString("subtype"), PyLong_FromLong(entry->subtype));
+	PyDict_SetItem(dict, PyString_FromString("timestamp_sec"), PyLong_FromLong(entry->timestamp_sec));
+	PyDict_SetItem(dict, PyString_FromString("timestamp_usec"), PyLong_FromLong(entry->timestamp_usec));
+    
+    switch(entry->subtype)
+    {
+    	case PLAYERC_BLACKBOARD_DATA_SUBTYPE_NONE:
+    		data = Py_None;
+    		printf("data = Py_None\n");
+    	break;
+    	case PLAYERC_BLACKBOARD_DATA_SUBTYPE_STRING:
+    		assert(entry->type == PLAYERC_BLACKBOARD_DATA_TYPE_COMPLEX);
+  			assert(entry->subtype == PLAYERC_BLACKBOARD_DATA_SUBTYPE_STRING);
+		  	str = malloc(entry->data_count);
+  			assert(str);
+  			memcpy(str, entry->data, entry->data_count);
+  			/*printf("data = %s\n", str);*/
+    		data = PyString_FromString(str);
+    		free(str);
+    	break;
+    	case PLAYERC_BLACKBOARD_DATA_SUBTYPE_INT:
+    		assert(entry->type == PLAYERC_BLACKBOARD_DATA_TYPE_SIMPLE);
+  			assert(entry->subtype == PLAYERC_BLACKBOARD_DATA_SUBTYPE_INT);
+		 	i = 0;
+  			memcpy(&i, entry->data, entry->data_count);
+  			/*printf("data = %d\n", i);*/
+    		data = PyLong_FromLong(i);
+    	break;
+    	case PLAYERC_BLACKBOARD_DATA_SUBTYPE_DOUBLE:
+    		assert(entry->type == PLAYERC_BLACKBOARD_DATA_TYPE_SIMPLE);
+  			assert(entry->subtype == PLAYERC_BLACKBOARD_DATA_SUBTYPE_DOUBLE);
+  			d = 0.0;
+  			memcpy(&d, entry->data, entry->data_count);
+  			/*printf("data = %f\n",d);*/
+    		data = PyFloat_FromDouble(d);
+    	break;
+    	default:
+    		/*printf("data = defaulted to Py_None\n");*/
+    		data = Py_None;
+    	break;
+    	
+    }
+    
+    PyDict_SetItem(dict, PyString_FromString("data"), data);    
+    
+    return dict;
+  }
+  
+  PyObject *set_entry(const char* str_key, PyObject *dict)
+  {
+	PyObject *key;
+	PyObject *type;
+	PyObject *subtype;
+	PyObject *timestamp_sec;
+	PyObject *timestamp_usec;
+
+    player_blackboard_entry_t entry;
+    memset(&entry, 0, sizeof(player_blackboard_entry_t));
+    
+    key = PyDict_GetItem(dict, PyString_FromString("key"));
+	type = PyDict_GetItem(dict, PyString_FromString("type"));
+	subtype = PyDict_GetItem(dict, PyString_FromString("subtype"));
+	timestamp_sec = PyDict_GetItem(dict, PyString_FromString("timestamp_sec"));
+	timestamp_usec = PyDict_GetItem(dict, PyString_FromString("timestamp_usec"));
+	
+	entry.type = PyInt_AsLong(type);
+	entry.subtype = PyInt_AsLong(subtype);
+	entry.timestamp_sec = PyInt_AsLong(timestamp_sec);
+	entry.timestamp_usec = PyInt_AsLong(timestamp_usec);
+    
+    /*printf("key=%s\n",entry.key);
+    printf("type=%d\n",entry.type);
+    printf("subtype=%d\n",entry.subtype);
+    printf("timestamp_sec=%d\n",entry.timestamp_sec);
+    printf("timestamp_usec=%d\n",entry.timestamp_usec);*/
+
+    int result = playerc_blackboard_set_entry(self, &entry);
+    if (result != 0)
+    {
+    	return PyLong_FromLong(-1);
+    }       
+    
+    return PyLong_FromLong(0);
+  }
+
 }

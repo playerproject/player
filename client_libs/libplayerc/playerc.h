@@ -1119,6 +1119,15 @@ At this time it is up to the user to pack and unpack the entry data. The xdr fun
 this.
 @{ */
 
+#define PLAYERC_BLACKBOARD_DATA_TYPE_NONE       0
+#define PLAYERC_BLACKBOARD_DATA_TYPE_SIMPLE     1
+#define PLAYERC_BLACKBOARD_DATA_TYPE_COMPLEX    2
+
+#define PLAYERC_BLACKBOARD_DATA_SUBTYPE_NONE    0
+#define PLAYERC_BLACKBOARD_DATA_SUBTYPE_STRING  1
+#define PLAYERC_BLACKBOARD_DATA_SUBTYPE_INT     2
+#define PLAYERC_BLACKBOARD_DATA_SUBTYPE_DOUBLE  3
+
 /** @brief BlackBoard proxy. */
 typedef struct
 {
@@ -1150,7 +1159,11 @@ int playerc_blackboard_unsubscribe_from_key(playerc_blackboard_t *device, const 
 /** @brief Set an entry value. */
 int playerc_blackboard_set_entry(playerc_blackboard_t *device, player_blackboard_entry_t* entry);
 
-//player_blackboard_entry_t playerc_blackboard_subscribe_to_key2(playerc_blackboard_t *device, const char* key);
+int playerc_blackboard_set_string(playerc_blackboard_t *device, const char* key, const char* value);
+
+int playerc_blackboard_set_int(playerc_blackboard_t *device, const char* key, const int value);
+
+int playerc_blackboard_set_double(playerc_blackboard_t *device, const char* key, const double value);
 
 /** @} */
 

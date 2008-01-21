@@ -75,30 +75,31 @@
 #include <strings.h>
 #include <iostream>
 
-/**@brief Custom blackboard-entry data representation used internally by the driver. */
+/**@struct EntryData
+ * @brief Custom blackboard-entry data representation used internally by the driver. */
 typedef struct EntryData
 {
 	/** Constructor. Sets all members to 0 or NULL. */
-  EntryData() { interf = 0; type = 0; subtype = 0; data_count = 0; data = NULL; timestamp_sec = 0; timestamp_usec = 0; }
+  EntryData() { type = 0; subtype = 0; data_count = 0; data = NULL; timestamp_sec = 0; timestamp_usec = 0; }
   //~EntryData() { if (data != NULL) delete [] data; } Why doesn't it like this?
-  
-  /** Player interface */
-  uint16_t interf;
+
   /** Message type */
-  uint8_t type;
+  uint16_t type;
   /** Message sub-type */
-  uint8_t subtype;
+  uint16_t subtype;
 
   /** Data size */
   uint32_t data_count;
   /** Data */
   uint8_t* data;
-  /** Time entry created */
+  /** Time entry created. Seconds since epoch. */
   uint32_t timestamp_sec;
+  /** Time entry created. Microseconds field. */
   uint32_t timestamp_usec;
 } EntryData;
 
-/**@brief Custom blackboard entry representation used internally by the driver.*/
+/**@struct BlackBoardEntry
+ * @brief Custom blackboard entry representation used internally by the driver.*/
 typedef struct BlackBoardEntry
 {
 	/** Constructor. Sets key to an empty string. Data should be automatically set to empty values. */
@@ -112,18 +113,16 @@ typedef struct BlackBoardEntry
 
 
 // Function prototypes
-/** Convienience function to convert from the internal blackboard entry representation to the player format. The user must clean-up the player blackboard entry. */
+/** @brief Convienience function to convert from the internal blackboard entry representation to the player format. The user must clean-up the player blackboard entry. Delete the key and data. */
 player_blackboard_entry_t ToPlayerBlackBoardEntry(const BlackBoardEntry &entry);
 
-/** Convienience function to convert from the player blackboard entry to the internal representation. */
+/** @brief Convienience function to convert from the player blackboard entry to the internal representation. This entry will be cleaned-up automatically by the destructor.*/
 BlackBoardEntry FromPlayerBlackBoardEntry(const player_blackboard_entry_t &entry);
 
-// Remember to clean-up the entry afterwards. Delete the key and data.
 player_blackboard_entry_t ToPlayerBlackBoardEntry(const BlackBoardEntry &entry)
 {
   player_blackboard_entry_t result;
   memset(&result, 0, sizeof(player_blackboard_entry_t));
-  result.interf = entry.data.interf;
   result.type = entry.data.type;
   result.subtype = entry.data.subtype;
   result.key_count = strlen(entry.key.c_str()) + 1;
@@ -136,12 +135,10 @@ player_blackboard_entry_t ToPlayerBlackBoardEntry(const BlackBoardEntry &entry)
   result.timestamp_usec = entry.data.timestamp_usec;
   return result;
 }
-
-// This entry will be cleaned-up automatically by the destructor.
+ 
 BlackBoardEntry FromPlayerBlackBoardEntry(const player_blackboard_entry_t &entry)
 {
   BlackBoardEntry result;
-  result.data.interf = entry.interf;
   result.data.type = entry.type;
   result.data.subtype = entry.subtype;
   assert(entry.key != NULL);
@@ -155,41 +152,84 @@ BlackBoardEntry FromPlayerBlackBoardEntry(const player_blackboard_entry_t &entry
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/** Local memory blackboard driver. Stores entries in a hash-map in local memory. */
+/**@class LocalBB
+ * @brief Local memory blackboard driver. Stores entries in a hash-map in local memory. */
 class LocalBB : public Driver
 {
 	public:
-		/** Default constructor. */
+		/**
+		 * @brief Default constructor. 
+		 * @param cf ConfigFile, the player configuration file information
+		 * @param section The section of the configuration file
+		 */
 		LocalBB(ConfigFile* cf, int section);
-		/** Default destructor. */
+		/** @brief Default destructor. */
 		~LocalBB();
-		/** Driver initialisation. */
+		/** @brief Driver initialisation. */
 		int Setup();
-		/** Driver de-initialisation. */
+		/** @brief Driver de-initialisation. */
 		int Shutdown();
 
 		// MessageHandler
-		/** Process incoming messages. */
+		/** @brief Process incoming messages.
+		 * Check the incoming message types. If the message type is PLAYER_BLACKBOARD_REQ_SUBSCRIBE_TO_KEY, PLAYER_BLACKBOARD_REQ_UNSUBSCRIBE_FROM_KEY or PLAYER_BLACKBOARD_REQ_SET_ENTRY, call
+		 * the appropriate private method to process it. Otherwise it is an unknown message.
+		 * @param resp_queue Player response queue.
+		 * @param hdr Message header.
+		 * @param data Message data.
+		 * @return 0 for success, -1 on error.
+		 */
 		int ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, void * data);
 	private:
 		// Message subhandlers
-		/** Process a subscribe to key message. */
+		/** @brief Process a subscribe to key message.
+		 * Adds the response queue to the list of devices listening to that key in the map.
+		 * Retrieves the entry for the given key.
+		 * Publishes the entry. 
+		 * @param resp_queue Player response queue.
+		 * @param hdr Message header.
+		 * @param data Message data.
+		 * @return 0 for success, -1 on error.
+		 */
 		int ProcessSubscribeKeyMessage(QueuePointer &resp_queue, player_msghdr * hdr, void * data);
-		/** Process an unsubscribe from key message. */
+		/** @brief Process an unsubscribe from key message.
+		 * Removes the response queue from the list of devices listening to that key in the map.
+		 * @param resp_queue Player response queue.
+		 * @param hdr Message header.
+		 * @param data Message data.
+		 * @return 0 for success, -1 on error.
+		 * */
 		int ProcessUnsubscribeKeyMessage(QueuePointer &resp_queue, player_msghdr * hdr, void * data);
-		/** Process a set entry message. */
+		/** @brief Process a set entry message.
+		 * Set the entry message in the local hashmap.
+		 * Send out update events to other listening devices.
+		 * Send back an empty ack.
+		 * @param resp_queue Player response queue.
+		 * @param hdr Message header.
+		 * @return 0 for success, -1 on error.
+		 */
 		int ProcessSetEntryMessage(QueuePointer &resp_queue, player_msghdr * hdr, void * data);
 
 		// Blackboard handler functions
-		/** Add the key and queue combination to the listeners hash-map and return the entry for the key. */
+		/** @brief Add the key and queue combination to the listeners hash-map and return the entry for the key.
+		 * @param key Entry key.
+		 * @param resp_queue Player response queue of the subscriber. 
+		 */
 		BlackBoardEntry SubscribeKey(const string &key, const QueuePointer &resp_queue);
-		/** Remove the key and queue combination from the listeners hash-map. */
+		/** @brief Remove the key and queue combination from the listeners hash-map.
+		 * @param key Entry key.
+		 * @param qp Player response queue of the subscriber. 
+		 */
 		void UnsubscribeKey(const string &key, const QueuePointer &qp);
-		/** Set the entry in the entries hashmap. */
+		/** @brief Set the entry in the entries hashmap. *
+		 * @param entry BlackBoardEntry that must be put in the hashmap.
+		 */
 		void SetEntry(const BlackBoardEntry &entry);
 		
 		// Helper functions
-		/** Check that the message has a valid size. */
+		/** @brief Check that the message has a valid size.
+		 * @param hdr Header of the message to check. 
+		 */
 		bool CheckHeader(player_msghdr * hdr);
 
 		// Internal blackboard data
