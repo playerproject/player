@@ -269,12 +269,10 @@ typedef struct player_blackboard_entry
   uint32_t key_count;
   /** Identifier for the entry. */
   char* key;
-  /** Entry interface type. */
-  uint16_t interf;
   /** Entry data type. */
-  uint8_t type;
+  uint16_t type;
   /** Entry data subtype. */
-  uint8_t subtype;
+  uint16_t subtype;
   /** Entry data length. */
   uint32_t data_count;
   /** Entry data. */
