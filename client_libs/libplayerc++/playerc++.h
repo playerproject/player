@@ -348,7 +348,7 @@ class BlackBoardProxy : public ClientProxy
   	/** Set a key value */
   	void SetEntry(const player_blackboard_entry_t &entry);
   	/** Set the function pointer which will be called when an entry is updated. */
-  	void SetEventHandler(void (*on_blackboard_event)(player_blackboard_entry_t));
+  	void SetEventHandler(void (*on_blackboard_event)(playerc_blackboard_t *, player_blackboard_entry_t));
 };
 
 // /**

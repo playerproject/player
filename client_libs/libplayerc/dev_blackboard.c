@@ -325,6 +325,6 @@ void playerc_blackboard_putmsg(playerc_blackboard_t *device, player_msghdr_t *he
 {
   if (device->on_blackboard_event != NULL)
   {
-    device->on_blackboard_event(*data);
+    device->on_blackboard_event(device, *data);
   }
 }
