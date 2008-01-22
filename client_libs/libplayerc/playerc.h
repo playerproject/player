@@ -1129,12 +1129,14 @@ this.
 #define PLAYERC_BLACKBOARD_DATA_SUBTYPE_DOUBLE  3
 
 /** @brief BlackBoard proxy. */
-typedef struct
+typedef struct playerc_blackboard
 {
   /** Device info; must be at the start of all device structures. */
   playerc_device_t info;
   /** Function to be called when a key is updated. */
-  void (*on_blackboard_event)(player_blackboard_entry_t);
+  void (*on_blackboard_event)(struct playerc_blackboard*, player_blackboard_entry_t);
+  /** Kludge to get around python callback issues. */
+  void *py_private;
 } playerc_blackboard_t;
 
 /** @brief Create a blackboard proxy. */

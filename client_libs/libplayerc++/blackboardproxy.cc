@@ -145,7 +145,7 @@ void BlackBoardProxy::SetEntry(const player_blackboard_entry_t &entry)
 	delete copy;
 }
 
-void BlackBoardProxy::SetEventHandler(void (*on_blackboard_event)(player_blackboard_entry_t))
+void BlackBoardProxy::SetEventHandler(void (*on_blackboard_event)(playerc_blackboard_t*, player_blackboard_entry_t))
 {
 	mDevice->on_blackboard_event = on_blackboard_event;
 }

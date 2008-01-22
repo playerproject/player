@@ -7,7 +7,6 @@
 
 %include "typemaps.i"
 
-
 // Provide array access to the RFID tags
 // We will return a list of tuples. Each tuple contains the RFID type, and the RFID ID.
 //  The RFID ID is a Python string containing the unprocessed bytes of the RFID tag.
@@ -416,30 +415,102 @@ double get_range (int index)
 
 %extend playerc_blackboard
 {
+static void python_on_blackboard_event(playerc_blackboard_t *device, player_blackboard_entry_t entry)
+{
+	PyObject *data;
+	PyObject *dict;
+	char * str;
+	int i;
+	double d;
+
+	if (device->py_private == NULL)
+	{
+		device->py_private = PyList_New(0);
+	}
+	
+	dict = PyDict_New();
+	PyDict_SetItem(dict, PyString_FromString("key"), PyString_FromString(entry.key));
+	PyDict_SetItem(dict, PyString_FromString("type"), PyLong_FromLong(entry.type));
+	PyDict_SetItem(dict, PyString_FromString("subtype"), PyLong_FromLong(entry.subtype));
+	PyDict_SetItem(dict, PyString_FromString("timestamp_sec"), PyLong_FromLong(entry.timestamp_sec));
+	PyDict_SetItem(dict, PyString_FromString("timestamp_usec"), PyLong_FromLong(entry.timestamp_usec));
+
+    switch(entry.subtype)
+    {
+    	case PLAYERC_BLACKBOARD_DATA_SUBTYPE_NONE:
+    		data = Py_None;
+    	break;
+    	case PLAYERC_BLACKBOARD_DATA_SUBTYPE_STRING:
+    		assert(entry.type == PLAYERC_BLACKBOARD_DATA_TYPE_COMPLEX);
+		  	str = malloc(entry.data_count);
+  			assert(str);
+  			memcpy(str, entry.data, entry.data_count);
+    		data = PyString_FromString(str);
+    	break;
+    	case PLAYERC_BLACKBOARD_DATA_SUBTYPE_INT:
+    		assert(entry.type == PLAYERC_BLACKBOARD_DATA_TYPE_SIMPLE);
+		 	i = 0;
+  			memcpy(&i, entry.data, entry.data_count);
+    		data = PyLong_FromLong(i);
+    	break;
+    	case PLAYERC_BLACKBOARD_DATA_SUBTYPE_DOUBLE:
+    		assert(entry.type == PLAYERC_BLACKBOARD_DATA_TYPE_SIMPLE);
+  			d = 0.0;
+  			memcpy(&d, entry.data, entry.data_count);
+    		data = PyFloat_FromDouble(d);
+    	break;
+    	default:
+    		data = Py_None;
+    	break;
+    	
+    }
+    
+    PyDict_SetItem(dict, PyString_FromString("data"), data);
+    PyList_Append(device->py_private, dict);
+}
+
+	// Will always return a list object. Returns a list of dictionary objects containing the event data.
+    PyObject *get_events()
+    {
+    	PyObject *list, *copy;
+    	int i;
+    	if (self->py_private == NULL)
+    	{
+    		self->py_private = PyList_New(0);
+    		return (PyObject*)self->py_private;
+    	}
+
+    	list = (PyObject*)self->py_private;
+    	copy = PyList_New(0);
+    	for (i = 0; i < PyList_Size(list); i++)
+    	{
+    		PyList_Append(copy, PyList_GetItem(list, i));
+    	}
+    	
+    	Py_DECREF(list);
+    	list = NULL;
+    	return copy;
+    }
+
   PyObject * subscribe_to_key(const char *key)
   {
-  	char *str = NULL;
-  	int i = 0;
-  	double d = 0.0;
-	PyObject *data;
-    PyObject *dict = PyDict_New();
-    player_blackboard_entry_t **out;
+  	char *str;
+  	int i;
+  	double d;
+	PyObject *data, *dict;
     player_blackboard_entry_t *entry;
-    entry = NULL;
-    int result = playerc_blackboard_subscribe_to_key(self, key, out);
+
+	assert(self);
+    int result = playerc_blackboard_subscribe_to_key(self, key, &entry);
     if (result != 0)
     {
     	return NULL;
     }
-    assert(out);
-    entry = *out;
+
     assert(entry);
     assert(entry->key);
-    /*printf("key=%s\n",entry->key);
-    printf("type=%d\n",entry->type);
-    printf("subtype=%d\n",entry->subtype);
-    printf("timestamp_sec=%d\n",entry->timestamp_sec);
-    printf("timestamp_usec=%d\n",entry->timestamp_usec);*/
+
+	dict = PyDict_New();
 	PyDict_SetItem(dict, PyString_FromString("key"), PyString_FromString(entry->key));
 	PyDict_SetItem(dict, PyString_FromString("type"), PyLong_FromLong(entry->type));
 	PyDict_SetItem(dict, PyString_FromString("subtype"), PyLong_FromLong(entry->subtype));
@@ -450,81 +521,169 @@ double get_range (int index)
     {
     	case PLAYERC_BLACKBOARD_DATA_SUBTYPE_NONE:
     		data = Py_None;
-    		printf("data = Py_None\n");
     	break;
     	case PLAYERC_BLACKBOARD_DATA_SUBTYPE_STRING:
     		assert(entry->type == PLAYERC_BLACKBOARD_DATA_TYPE_COMPLEX);
-  			assert(entry->subtype == PLAYERC_BLACKBOARD_DATA_SUBTYPE_STRING);
 		  	str = malloc(entry->data_count);
   			assert(str);
   			memcpy(str, entry->data, entry->data_count);
-  			/*printf("data = %s\n", str);*/
     		data = PyString_FromString(str);
-    		free(str);
     	break;
     	case PLAYERC_BLACKBOARD_DATA_SUBTYPE_INT:
     		assert(entry->type == PLAYERC_BLACKBOARD_DATA_TYPE_SIMPLE);
-  			assert(entry->subtype == PLAYERC_BLACKBOARD_DATA_SUBTYPE_INT);
 		 	i = 0;
   			memcpy(&i, entry->data, entry->data_count);
-  			/*printf("data = %d\n", i);*/
     		data = PyLong_FromLong(i);
     	break;
     	case PLAYERC_BLACKBOARD_DATA_SUBTYPE_DOUBLE:
     		assert(entry->type == PLAYERC_BLACKBOARD_DATA_TYPE_SIMPLE);
-  			assert(entry->subtype == PLAYERC_BLACKBOARD_DATA_SUBTYPE_DOUBLE);
   			d = 0.0;
   			memcpy(&d, entry->data, entry->data_count);
-  			/*printf("data = %f\n",d);*/
     		data = PyFloat_FromDouble(d);
     	break;
     	default:
-    		/*printf("data = defaulted to Py_None\n");*/
     		data = Py_None;
     	break;
     	
     }
     
     PyDict_SetItem(dict, PyString_FromString("data"), data);    
-    
+    free(entry->key);
+    free(entry->data);
+    free(entry);
     return dict;
   }
   
-  PyObject *set_entry(const char* str_key, PyObject *dict)
+  PyObject *set_entry(PyObject *dict)
   {
 	PyObject *key;
 	PyObject *type;
 	PyObject *subtype;
 	PyObject *timestamp_sec;
 	PyObject *timestamp_usec;
+	PyObject *data;
+	char *str;
+	int i, result;
+	double d;
+	int length;
+	
+	if (!PyDict_Check(dict))
+	{
+		printf("Expected a dictionary object.\n");
+		return PyLong_FromLong(-1);
+	}
 
     player_blackboard_entry_t entry;
-    memset(&entry, 0, sizeof(player_blackboard_entry_t));
+    memset(&entry, 0, sizeof(entry));
     
     key = PyDict_GetItem(dict, PyString_FromString("key"));
 	type = PyDict_GetItem(dict, PyString_FromString("type"));
 	subtype = PyDict_GetItem(dict, PyString_FromString("subtype"));
 	timestamp_sec = PyDict_GetItem(dict, PyString_FromString("timestamp_sec"));
 	timestamp_usec = PyDict_GetItem(dict, PyString_FromString("timestamp_usec"));
+	data = PyDict_GetItem(dict, PyString_FromString("data"));
 	
+	if (key == NULL || type == NULL || subtype == NULL || timestamp_sec == NULL || timestamp_usec == NULL || data == NULL)
+	{
+		printf("Dictionary object missing keys.\n");
+		return PyLong_FromLong(-1);
+	}
+	
+	entry.key = PyString_AsString(key);
+	entry.key_count = strlen(entry.key) + 1;
 	entry.type = PyInt_AsLong(type);
 	entry.subtype = PyInt_AsLong(subtype);
 	entry.timestamp_sec = PyInt_AsLong(timestamp_sec);
 	entry.timestamp_usec = PyInt_AsLong(timestamp_usec);
     
-    /*printf("key=%s\n",entry.key);
-    printf("type=%d\n",entry.type);
-    printf("subtype=%d\n",entry.subtype);
-    printf("timestamp_sec=%d\n",entry.timestamp_sec);
-    printf("timestamp_usec=%d\n",entry.timestamp_usec);*/
+    switch (entry.subtype)
+    {
+    	case PLAYERC_BLACKBOARD_DATA_SUBTYPE_NONE:
+    		entry.data = NULL;
+    		entry.data_count = 0;
+    	break;
+    	case PLAYERC_BLACKBOARD_DATA_SUBTYPE_STRING:
+    		str = NULL;
+    		str = PyString_AsString(data);
+    		printf("str=%s\n", str);
+    		length = strlen(str) + 1;
+    		entry.data = malloc(length);
+    		assert(entry.data);
+    		memcpy(entry.data, str, length);
+    		entry.data_count = length;
+    	break;
+    	case PLAYERC_BLACKBOARD_DATA_SUBTYPE_INT:
+    		i = 0;
+    		i = PyInt_AsLong(data);
+    		length = sizeof(i);
+    		entry.data = malloc(length);
+    		assert(entry.data);
+    		memcpy(&entry.data, &i, length);
+    		entry.data_count = length;
+    	break;
+    	case PLAYERC_BLACKBOARD_DATA_SUBTYPE_DOUBLE:
+    		d = 0.0;
+    		d = PyLong_AsDouble(data);
+    		length = sizeof(d);
+    		entry.data = malloc(length);
+    		assert(entry.data);
+    		memcpy(&entry.data, &d, length);
+    		entry.data_count = length;
+    	break;
+    	default:
+    		entry.data = NULL;
+    		entry.data_count = 0;
+    	break;
+    }
 
-    int result = playerc_blackboard_set_entry(self, &entry);
+	printf("entry:\n");
+	printf("key:%s\n", entry.key);
+	printf("key_count:%d\n", entry.key_count);
+	printf("data:%s\n", (char*)entry.data);
+	printf("data_count:%d\n", entry.data_count);
+	printf("timestamp_sec:%d\n", entry.timestamp_sec);
+	printf("timestamp_usec:%d\n", entry.timestamp_usec);
+	printf("type:%d\n", entry.type);
+	printf("subtype:%d\n", entry.subtype);
+    result = playerc_blackboard_set_entry(self, &entry);
     if (result != 0)
     {
     	return PyLong_FromLong(-1);
-    }       
+    }
+    free(entry.data);
     
     return PyLong_FromLong(0);
   }
-
 }
+
+%{
+// This code overrides the default swig wrapper. We use a different callback function for the python interface.
+// It performs the same functionality, but points the callback function to the new python one. 
+playerc_blackboard_t *python_playerc_blackboard_create(playerc_client_t *client, int index)
+{
+      playerc_blackboard_t *device= playerc_blackboard_create(client, index);
+      if (device == NULL)
+      {
+        return NULL;
+      }
+
+      device->on_blackboard_event = playerc_blackboard_python_on_blackboard_event;
+      return device;
+       
+}
+#undef new_playerc_blackboard
+#define new_playerc_blackboard python_playerc_blackboard_create
+
+// We have to clear up the list we created in the callback function.
+void python_playerc_blackboard_destroy(playerc_blackboard_t* device)
+{
+  playerc_device_term(&device->info);
+  if (device->py_private != NULL)
+  {
+  	Py_DECREF((PyObject*)device->py_private);
+  }
+  free(device);     
+}
+#undef del_playerc_blackboard
+#define del_playerc_blackboard python_playerc_blackboard_destroy
+%}
