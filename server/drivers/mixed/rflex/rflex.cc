@@ -749,6 +749,8 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
   rflex_configs.ir_a=new double[pose_count];
   rflex_configs.ir_b=new double[pose_count];
   rflex_configs.ir_poses.poses_count=pose_count;
+  rflex_configs.ir_poses.poses=(player_pose3d_t *)
+  malloc(rflex_configs.ir_poses.poses_count*sizeof(player_pose3d_t));
   unsigned int RunningTotal = 0;
   for(int i=0; i < rflex_configs.ir_bank_count; ++i)
     RunningTotal += (rflex_configs.ir_count[i]=(int) cf->ReadTupleFloat(section, "rflex_banks",i,0));
