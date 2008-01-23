@@ -359,12 +359,10 @@ int RFLEX::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr,
                            void * data)
 {
   assert(hdr);
-  assert(data);
 
   if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_REQ_POWER,
                         sonar_id))
   {
-    assert(hdr->size == sizeof(player_sonar_power_config));
     Lock();
     if(reinterpret_cast<player_sonar_power_config_t *> (data)->state==0)
       rflex_sonars_off(rflex_fd);
@@ -377,7 +375,6 @@ int RFLEX::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr,
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_REQ_POWER,
                         sonar_id_2))
   {
-    assert(hdr->size == sizeof(player_sonar_power_config));
     Lock();
     if(reinterpret_cast<player_sonar_power_config_t *> (data)->state==0)
       rflex_sonars_off(rflex_fd);
@@ -390,8 +387,6 @@ int RFLEX::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr,
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_REQ_GET_GEOM,
                         sonar_id))
   {
-    assert(hdr->size == 0);
-
     player_sonar_geom_t geom;
     Lock();
     geom.poses_count = rflex_configs.sonar_1st_bank_end;
@@ -408,8 +403,6 @@ int RFLEX::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr,
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_REQ_GET_GEOM,
                         sonar_id_2))
   {
-    assert(hdr->size == 0);
-
     player_sonar_geom_t geom;
     Lock();
     geom.poses_count = (rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start);
@@ -426,8 +419,6 @@ int RFLEX::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr,
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_BUMPER_REQ_GET_GEOM,
                         bumper_id))
   {
-    assert(hdr->size == 0);
-
     player_bumper_geom_t geom;
     Lock();
     geom.bumper_def_count = rflex_configs.bumper_count;
@@ -450,7 +441,6 @@ int RFLEX::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr,
   }
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_IR_REQ_POWER, ir_id))
   {
-    assert(hdr->size == sizeof(player_ir_power_req_t));
     player_ir_power_req_t * req = reinterpret_cast<player_ir_power_req_t*> (data);
     Lock();
     if (req->state == 0)
@@ -463,8 +453,6 @@ int RFLEX::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr,
   }
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_SET_ODOM, position_id))
   {
-    assert(hdr->size == sizeof(player_position2d_set_odom_req));
-
     player_position2d_set_odom_req * set_odom_req = reinterpret_cast<player_position2d_set_odom_req*> (data);
     Lock();
     set_odometry(set_odom_req->pose.px,set_odom_req->pose.py,set_odom_req->pose.pa);
@@ -474,8 +462,6 @@ int RFLEX::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr,
   }
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_MOTOR_POWER, position_id))
   {
-    assert(hdr->size == sizeof(player_position2d_power_config_t));
-
     Lock();
     if(((player_position2d_power_config_t*)data)->state==0)
       rflex_brake_on(rflex_fd);
@@ -487,7 +473,6 @@ int RFLEX::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr,
   }
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_VELOCITY_MODE, position_id))
   {
-    assert(hdr->size == sizeof(player_position2d_velocity_mode_config_t));
     // Does nothing, needs to be implemented
     Publish(position_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype);
     return 0;
@@ -502,8 +487,6 @@ int RFLEX::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr,
   }
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_GET_GEOM, position_id))
   {
-    assert(hdr->size == 0);
-
     player_position2d_geom_t geom={{0}};
     Lock();
     geom.size.sl = rflex_configs.m_length;
@@ -514,7 +497,6 @@ int RFLEX::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr,
   }
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_VEL, position_id))
   {
-    assert(hdr->size == sizeof(player_position2d_cmd_vel_t));
     Lock();
     command = *reinterpret_cast<player_position2d_cmd_vel_t *> (data);
     Unlock();
