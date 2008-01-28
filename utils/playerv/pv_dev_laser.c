@@ -32,7 +32,7 @@
 
 
 // Update the laser configuration
-//void laser_update_config(laser_t *laser);
+void laser_update_config(laser_t *laser);
 
 // Draw the laser scan
 void laser_draw(laser_t *laser);
@@ -59,15 +59,15 @@ laser_t *laser_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
   laser->menu = rtk_menu_create_sub(mainwnd->device_menu, label);
   laser->subscribe_item = rtk_menuitem_create(laser->menu, "Subscribe", 1);
   laser->style_item = rtk_menuitem_create(laser->menu, "Filled", 1);
+
 #if 0
   laser->res025_item = rtk_menuitem_create(laser->menu, "0.25 deg resolution", 1);
   laser->res050_item = rtk_menuitem_create(laser->menu, "0.50 deg resolution", 1);
   laser->res100_item = rtk_menuitem_create(laser->menu, "1.00 deg resolution", 1);
-
+#endif
   laser->range_mm_item = rtk_menuitem_create(laser->menu, "mm Range Resolution",1);
   laser->range_cm_item = rtk_menuitem_create(laser->menu, "cm Range Resolution",1);
   laser->range_dm_item = rtk_menuitem_create(laser->menu, "dm Range Resolution",1);
-#endif
 
   // Set the initial menu state
   rtk_menuitem_check(laser->subscribe_item, subscribe);
@@ -93,10 +93,10 @@ void laser_destroy(laser_t *laser)
   rtk_menuitem_destroy(laser->res025_item);
   rtk_menuitem_destroy(laser->res050_item);
   rtk_menuitem_destroy(laser->res100_item);
+#endif
   rtk_menuitem_destroy(laser->range_mm_item);
   rtk_menuitem_destroy(laser->range_cm_item);
   rtk_menuitem_destroy(laser->range_dm_item);
-#endif
   rtk_menuitem_destroy(laser->subscribe_item);
   rtk_menuitem_destroy(laser->style_item);
   rtk_menu_destroy(laser->menu);
@@ -126,6 +126,7 @@ void laser_update(laser_t *laser)
                      laser->proxy->pose[0],
                      laser->proxy->pose[1],
                      laser->proxy->pose[2]);
+
     }
   }
   else
@@ -137,11 +138,9 @@ void laser_update(laser_t *laser)
   rtk_menuitem_check(laser->subscribe_item, laser->proxy->info.subscribed);
 
   // Making config changes here causes X to go nuts.  Don't know why - BPG
-#if 0
   // Update the configuration stuff
   if (laser->proxy->info.subscribed)
     laser_update_config(laser);
-#endif
   
   if (laser->proxy->info.subscribed)
   {
@@ -160,15 +159,22 @@ void laser_update(laser_t *laser)
 }
 
 
-#if 0
 // Update the laser configuration
 void laser_update_config(laser_t *laser)
 {
   int update;
-  double min, max;
-  int res, intensity, range_res;
+  double min, max, range_res, res, scanning_frequency;
+  unsigned char  intensity;
   
+  min = laser->proxy->scan_start;
+  max = laser->proxy->scan_start + laser->proxy->scan_count*laser->proxy->scan_res;
+  range_res = laser->proxy->range_res;
+  res = laser->proxy->scan_res;
+  scanning_frequency = laser->proxy->scanning_frequency;
+  intensity = laser->proxy->intensity_on;
+
   update = 0;
+#if 0
   if (rtk_menuitem_isactivated(laser->res025_item))
   {
     res = 25; min = -50*M_PI/180; max = +50*M_PI/180; update = 1;
@@ -181,39 +187,44 @@ void laser_update_config(laser_t *laser)
   {
     res = 100; min = -M_PI/2; max = +M_PI/2; update = 1;
   }
+#endif
 
   if (rtk_menuitem_isactivated(laser->range_mm_item)) {
-    range_res = 1;
+    range_res = .001;
     update = 1;
   }
   if (rtk_menuitem_isactivated(laser->range_cm_item)) {
-    range_res = 10;
+    range_res = .010;
     update = 1;
   }
   if (rtk_menuitem_isactivated(laser->range_dm_item)) {
-    range_res = 100;
+    range_res = .100;
     update = 1;
   }
 
   // Set the laser configuration.
   if (update)
+  {
     if (playerc_laser_set_config(laser->proxy, min, max, res, range_res,
-				 intensity) != 0)
+				 intensity, scanning_frequency) != 0)
       PRINT_ERR1("libplayerc error: %s", playerc_error_str());
+  }
 
+#if 0
   res = (int) (laser->proxy->scan_res * 180 / M_PI * 100);
   rtk_menuitem_check(laser->res025_item, (res == 25));
   rtk_menuitem_check(laser->res050_item, (res == 50));
   rtk_menuitem_check(laser->res100_item, (res == 100));
+#endif
 
   range_res = laser->proxy->range_res;
-  rtk_menuitem_check(laser->range_mm_item, (range_res == 1));
-  rtk_menuitem_check(laser->range_cm_item, (range_res == 10));
-  rtk_menuitem_check(laser->range_dm_item, (range_res == 100));
+  rtk_menuitem_check(laser->range_mm_item, (range_res < .0011));
+  rtk_menuitem_check(laser->range_cm_item, (.009 < range_res && range_res < .011));
+  rtk_menuitem_check(laser->range_dm_item, (range_res > .090));
+
 
   return;
 }  
-#endif
 
 
 // Draw the laser scan
