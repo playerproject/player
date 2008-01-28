@@ -337,8 +337,8 @@ CMVisionBF::ProcessImageData()
       {
         if (mData.blobs_count >= allocated_blobs)
         {
-          mData.blobs = (player_blobfinder_blob_t*)realloc(mData.blobs,sizeof(mData.blobs[0])*mData.blobs_count+1);
           allocated_blobs = mData.blobs_count+1;
+          mData.blobs = (player_blobfinder_blob_t*)realloc(mData.blobs,sizeof(mData.blobs[0])*allocated_blobs);
         }
 
         player_blobfinder_blob_t *blob;
@@ -369,14 +369,9 @@ CMVisionBF::ProcessImageData()
     if (0 != mDebugLevel)
       TestPattern();
 
-    /* got the data. now publish it */
-    uint32_t size = sizeof(mData) - sizeof(mData.blobs) +
-                mData.blobs_count * sizeof(mData.blobs[0]);
-
-
     Publish(device_addr, 
           PLAYER_MSGTYPE_DATA, PLAYER_BLOBFINDER_DATA_BLOBS,
-          reinterpret_cast<void*>(&mData), size, NULL);
+          reinterpret_cast<void*>(&mData));
 }
 
 void
