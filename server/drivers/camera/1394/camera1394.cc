@@ -140,6 +140,10 @@ cameras.
 - dma_buffers
   - Default: 4
   - the number of DMA buffers to use
+
+- iso_speed (unsigned int)
+  - Default: 400
+  - Sets the data rate of the 1394 bus. Valid rates are 100, 200, 400, 800, 1600, 3200.
 @par Example 
 
 @verbatim
@@ -164,9 +168,14 @@ driver
 #include <stdlib.h>       // for atoi(3)
 #include <stddef.h>       // for NULL
 #include <unistd.h>
-#include <libraw1394/raw1394.h>
+
+#ifdef HAVE_LIBRAW1394
+    #include <libraw1394/raw1394.h>
+#endif
+
 #if DC1394_DMA_SETUP_CAPTURE_ARGS == 20
 #include <dc1394/control.h>
+#define LIBDC1394_VERSION  0200
 #else
 #include <libdc1394/dc1394_control.h>
 #endif
@@ -179,8 +188,9 @@ driver
 #define NUM_DMA_BUFFERS 4
 
 
-// lots of defines are renames in v2 API, mask this so we dont ahve to modify all our code
-#if LIBDC1394_VERSION == 0200
+// lots of defines are renames in v2 API, mask this so we dont have to
+// modify all our code
+#if DC1394_DMA_SETUP_CAPTURE_ARGS == 20
 // Frame rate enum
 #define FRAMERATE_1_875 DC1394_FRAMERATE_1_875
 #define FRAMERATE_3_75 DC1394_FRAMERATE_3_75
@@ -256,13 +266,15 @@ driver
 #define	  FEATURE_CAPTURE_SIZE	  DC1394_FEATURE_CAPTURE_SIZE
 #define	  FEATURE_CAPTURE_QUALITY	  DC1394_FEATURE_CAPTURE_QUALITY
 
+#else
+
 // speed enumerations
-#define DC1394_SPEED_100 DC1394_ISO_SPEED_100
-#define DC1394_SPEED_200 DC1394_ISO_SPEED_200,
-#define DC1394_SPEED_400 DC1394_ISO_SPEED_400,
-#define DC1394_SPEED_800 DC1394_ISO_SPEED_800,
-#define DC1394_SPEED_1600 DC1394_ISO_SPEED_1600,
-#define DC1394_SPEED_3200 DC1394_ISO_SPEED_3200
+#define DC1394_ISO_SPEED_100 SPEED_100
+#define DC1394_ISO_SPEED_200 SPEED_200
+#define DC1394_ISO_SPEED_400 SPEED_400
+#define DC1394_ISO_SPEED_800 SPEED_800
+#define DC1394_ISO_SPEED_1600 SPEED_1600
+#define DC1394_ISO_SPEED_3200 SPEED_3200
 
 #endif
 
@@ -288,7 +300,7 @@ class Camera1394 : public Driver
   // Save a frame to memory
   private: int GrabFrame();
 
-  private: unsigned char * resized;//[1280 * 960 * 3];
+  private: uint8_t * resized;//[1280 * 960 * 3];
 
   // Save a frame to disk
   private: int SaveFrame( const char *filename );
@@ -299,7 +311,11 @@ class Camera1394 : public Driver
   // Video device
   private: unsigned int port;
   private: unsigned int node;
+
+#ifdef HAVE_LIBRAW1394
   private: raw1394handle_t handle;
+#endif
+
 #if LIBDC1394_VERSION == 0200
   private: dc1394camera_t * camera;
   // Camera features
@@ -321,10 +337,12 @@ class Camera1394 : public Driver
   private: dc1394framerate_t frameRate;
   private: unsigned int format;
   private: dc1394video_mode_t mode;
+  private: dc1394speed_t iso_speed;
 #else
   private: unsigned int frameRate;
   private: unsigned int format;
   private: unsigned int mode;
+  private: unsigned int iso_speed;
 #endif
 
   // number of DMA buffers to use
@@ -382,7 +400,9 @@ Camera1394::Camera1394(ConfigFile* cf, int section)
 
   resized=NULL;
 
+#ifdef HAVE_LIBRAW1394
   this->handle = NULL;
+#endif
   this->method = methodNone;
 
   // The port the camera is attached to
@@ -645,6 +665,27 @@ Camera1394::Camera1394(ConfigFile* cf, int section)
   // Number of DMA buffers?
   this->num_dma_buffers = cf->ReadInt(section, "dma_buffers", NUM_DMA_BUFFERS);
 
+  // ISO Speed?
+  switch(cf->ReadInt(section, "iso_speed", 400)) {
+    case 100:
+      this->iso_speed = DC1394_ISO_SPEED_100;
+      break;
+    case 200:
+      this->iso_speed = DC1394_ISO_SPEED_200;
+      break;
+    case 400:
+      this->iso_speed = DC1394_ISO_SPEED_400;
+      break;
+    case 800:
+      this->iso_speed = DC1394_ISO_SPEED_800;
+      break;
+    case 1600:
+      this->iso_speed = DC1394_ISO_SPEED_1600;
+      break;
+    case 3200:
+      this->iso_speed = DC1394_ISO_SPEED_3200;
+      break;
+  }
   this->data.compression = PLAYER_CAMERA_COMPRESS_RAW;
   
   return;
@@ -660,7 +701,11 @@ void Camera1394::SafeCleanup()
 #if LIBDC1394_VERSION == 0200
   if (this->camera)
   {
-    dc1394_cleanup_iso_channels_and_bandwidth(camera);
+    //dc1394_cleanup_iso_channels_and_bandwidth(camera);
+    /* The above function has been removed from libdc1394 without a clear
+       replacement...
+      http://sourceforge.net/mailarchive/message.php?msg_id=1196638611.10412.31.camel%40pisces.mit.edu
+    */
     switch (this->method)
     {
     case methodRaw:
@@ -671,7 +716,7 @@ void Camera1394::SafeCleanup()
       //dc1394_dma_release_camera(this->camera);
       break;
     }
-    dc1394_free_camera(this->camera);
+    dc1394_camera_free(this->camera);
   }
   this->camera = NULL;
 #else
@@ -697,6 +742,8 @@ void Camera1394::SafeCleanup()
 // Set up the device (called by server thread).
 int Camera1394::Setup()
 {
+  memset(&(this->data), 0, sizeof(this->data));
+
 #if LIBDC1394_VERSION == 0200
   dc1394speed_t speed;
 #else
@@ -708,31 +755,38 @@ int Camera1394::Setup()
 #if LIBDC1394_VERSION == 0200
   // First we try to find a camera
   int err;
-  dc1394camera_t **dccameras=NULL;
-  unsigned int camnum=0;	
-  if ((err=dc1394_find_cameras(&dccameras,&camnum)) != DC1394_SUCCESS)
+  dc1394_t *d;
+  dc1394camera_list_t *list;
+
+  d = dc1394_new ();
+  err = dc1394_camera_enumerate (d, &list);
+  if (err != DC1394_SUCCESS)
   {
     PLAYER_ERROR1("Could not get Camera List: %d\n", err);	
     return -1;
   }
-  if (camnum <=0)
+
+  if (list->num == 0)
+  {
+    PLAYER_ERROR("No cameras found");
     return -1;
+  }
 
   // we just use the first one returned and then free the rest
-  camera = dccameras[0];
-
-  for (unsigned int i=1;i<camnum;i++)
-    free(dccameras[i]);
-  if (camnum>0)
-	  free(dccameras);	
-  dc1394_cleanup_iso_channels_and_bandwidth(camera);
-
-  if (this->camera == NULL)
+  camera = dc1394_camera_new (d, list->ids[0].guid);
+  
+  if (!camera)
   {
-    PLAYER_ERROR("Unable to acquire a dc1394 camera");
+    PLAYER_ERROR1("Failed to initialize camera with guid %llx",
+                  list->ids[0].guid);
     this->SafeCleanup();
     return -1;
   }
+
+  dc1394_camera_free_list (list);
+
+  //dc1394_cleanup_iso_channels_and_bandwidth(camera);
+  /* Above has been removed from API. */
 
 #else
   this->handle = dc1394_create_handle(this->port);
@@ -869,9 +923,10 @@ int Camera1394::Setup()
   // Collects the available features for the camera described by node and
   // stores them in features.
 #if LIBDC1394_VERSION == 0200
-  if (DC1394_SUCCESS != dc1394_get_camera_feature_set(camera, &this->features))
+  if (DC1394_SUCCESS != dc1394_feature_get_all(camera, &this->features))
 #else
-  if (DC1394_SUCCESS != dc1394_get_camera_feature_set(this->handle, this->camera.node, 
+  if (DC1394_SUCCESS != dc1394_get_camera_feature_set(this->handle,
+                                                      this->camera.node, 
                                                       &this->features))
 #endif
   {
@@ -882,7 +937,6 @@ int Camera1394::Setup()
 
   // TODO: need to indicate what formats the camera supports somewhere
   // Remove; leave?
-  dc1394_print_feature_set(&this->features);
 
 #if LIBDC1394_VERSION == 0200
   // if format 7 requested check that it is supported
@@ -924,14 +978,14 @@ int Camera1394::Setup()
   // Set camera to use DMA, improves performance.
   if (!this->forceRaw &&
       dc1394_dma_setup_capture(this->handle, this->camera.node, channel,
-                               this->format, this->mode, speed,
+                               this->format, this->mode, this->iso_speed,
                                this->frameRate, this->num_dma_buffers, 1, NULL,
                                &this->camera) == DC1394_SUCCESS)
 #elif DC1394_DMA_SETUP_CAPTURE_ARGS == 12
   // Set camera to use DMA, improves performance.
   if (!this->forceRaw &&
       dc1394_dma_setup_capture(this->handle, this->camera.node, channel,
-                               this->format, this->mode, speed,
+                               this->format, this->mode, this->iso_speed,
                                this->frameRate, this->num_dma_buffers, 1, 0, NULL,
                                &this->camera) == DC1394_SUCCESS)
 #elif LIBDC1394_VERSION == 0200
@@ -945,7 +999,7 @@ int Camera1394::Setup()
 		PLAYER_WARN("1394 failed to set frameRate");
   		DMA_Success = false;
 	}
-  	if (DC1394_SUCCESS != dc1394_video_set_iso_speed(camera,speed))
+  	if (DC1394_SUCCESS != dc1394_video_set_iso_speed(camera,this->iso_speed))
 	{
 		PLAYER_WARN("1394 failed to set iso speed");
 		DMA_Success = false;
@@ -1144,11 +1198,11 @@ int Camera1394::GrabFrame()
 
   unsigned int frame_width;
   unsigned int frame_height;
-  int * capture_buffer;
+  uint8_t * capture_buffer;
 #if LIBDC1394_VERSION == 0200
   frame_width = frame->size[0];
   frame_height = frame->size[1];
-  capture_buffer = (int *) frame->image;
+  capture_buffer = (uint8_t *) frame->image;
 #else
   frame_width = this->camera.frame_width;
   frame_height = this->camera.frame_height;
@@ -1158,8 +1212,10 @@ int Camera1394::GrabFrame()
   if (frameSize == 0)
     frameSize = frame_width * frame_height;
   
-  delete [] this->data.image;
-  this->data.image = NULL;
+  
+  //delete [] this->data.image;
+  //this->data.image = NULL;
+  int old_image_count = this->data.image_count;
   switch (this->mode)
   {
   case MODE_320x240_YUV422:
@@ -1167,23 +1223,25 @@ int Camera1394::GrabFrame()
     this->data.bpp = 24;
     this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
     this->data.image_count = this->frameSize;
-    this->data.image = new unsigned char [this->data.image_count];
+    if(old_image_count < this->data.image_count)
+        this->data.image = new uint8_t [this->data.image_count];
     this->data.width = frame_width;
     this->data.height = frame_height;
-    uyvy2rgb((unsigned char *)capture_buffer, this->data.image, (frame_width) * (frame_height));
+    uyvy2rgb(capture_buffer, this->data.image, (frame_width) * (frame_height));
     break;
   case MODE_1024x768_YUV422:
   case MODE_1280x960_YUV422:
     if (resized == NULL)
-      resized = new unsigned char[1280 * 960 * 3];
+      resized = new uint8_t [1280 * 960 * 3];
     this->data.bpp = 24;
     this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
     this->data.image_count = this->frameSize;
-    this->data.image = new unsigned char [this->data.image_count];
+    if(old_image_count < this->data.image_count)
+        this->data.image = new uint8_t [this->data.image_count];
     this->data.width = frame_width / 2;
     this->data.height = frame_height / 2;
     assert(this->data.image_count <= sizeof(this->data.image));
-    uyvy2rgb((unsigned char *)capture_buffer, this->resized, (frame_width) * (frame_height));
+    uyvy2rgb(capture_buffer, this->resized, (frame_width) * (frame_height));
     ptr1 = this->resized;
     ptr2 = this->data.image;
     for (f = 0; f < (this->data.height); f++)
@@ -1201,14 +1259,15 @@ int Camera1394::GrabFrame()
     break;
   case MODE_800x600_YUV422:
     if (resized == NULL)
-      resized = new unsigned char[1280 * 960 * 3];
+      resized = new uint8_t [1280 * 960 * 3];
     this->data.bpp = 24;
     this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
     this->data.image_count = this->frameSize;
-    this->data.image = new unsigned char [this->data.image_count];
+    if(old_image_count < this->data.image_count)
+        this->data.image = new uint8_t [this->data.image_count];
     this->data.width = 600;
     this->data.height = 450;
-    uyvy2rgb((unsigned char *)capture_buffer, this->resized, (frame_width) * (frame_height));
+    uyvy2rgb(capture_buffer, this->resized, (frame_width) * (frame_height));
     ptr1 = this->resized;
     ptr2 = this->data.image;
     i = 3; j = 3;
@@ -1232,10 +1291,11 @@ int Camera1394::GrabFrame()
     this->data.bpp = 24;
     this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
     this->data.image_count = this->frameSize;
-    this->data.image = new unsigned char [this->data.image_count];
+    if(old_image_count < this->data.image_count)
+        this->data.image = new uint8_t [this->data.image_count];
     this->data.width = frame_width;
     this->data.height = frame_height;
-    memcpy(this->data.image, (unsigned char *)capture_buffer, this->data.image_count);
+    memcpy(this->data.image, capture_buffer, this->data.image_count);
     break;
   case MODE_640x480_MONO:
   case MODE_800x600_MONO:
@@ -1247,10 +1307,11 @@ int Camera1394::GrabFrame()
       this->data.bpp = 8;
       this->data.format = PLAYER_CAMERA_FORMAT_MONO8;
       this->data.image_count = this->frameSize;
-      this->data.image = new unsigned char [this->data.image_count];
+      if(old_image_count < this->data.image_count)
+          this->data.image = new uint8_t [this->data.image_count];
       this->data.width = frame_width;
       this->data.height = frame_height;
-      memcpy(this->data.image, (unsigned char *)capture_buffer, this->data.image_count);
+      memcpy(this->data.image, capture_buffer, this->data.image_count);
     } 
     else
     {
@@ -1262,22 +1323,26 @@ int Camera1394::GrabFrame()
       case BAYER_DECODING_DOWNSAMPLE:
         // quarter of the image but 3 bytes per pixel
 	this->data.image_count = this->frameSize/4*3;
-	BayerDownsample((unsigned char *)capture_buffer, this->data.image,
+        if(old_image_count < this->data.image_count)
+            this->data.image = new uint8_t [this->data.image_count];
+	BayerDownsample(capture_buffer, this->data.image,
 					frame_width/2, frame_height/2,
 					(bayer_pattern_t)this->BayerPattern);
 	break;
       case BAYER_DECODING_NEAREST:
         this->data.image_count = this->frameSize * 3;
-        BayerNearestNeighbor((unsigned char *)capture_buffer, dst,
+        if(old_image_count < this->data.image_count)
+            this->data.image = new uint8_t [this->data.image_count];
+        BayerNearestNeighbor(capture_buffer, dst,
 					frame_width, frame_height,
 					(bayer_pattern_t)this->BayerPattern);
 	break;
       case BAYER_DECODING_EDGE_SENSE:
         this->data.image_count = this->frameSize * 3;
-        delete [] this->data.image;
-        this->data.image = new unsigned char [this->data.image_count];
+        if(old_image_count < this->data.image_count)
+            this->data.image = new uint8_t [this->data.image_count];
         
-	BayerEdgeSense((unsigned char *)capture_buffer, dst,
+	BayerEdgeSense(capture_buffer, dst,
 					frame_width, frame_height,
 					(bayer_pattern_t)this->BayerPattern);
 	break;

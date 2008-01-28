@@ -163,21 +163,18 @@ PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $ARTOOLKITPLUS_LIBS"
 PLAYER_ADD_DRIVER([bumpersafe],[yes],[],[],[])
 
 dnl Check to see if we have version 1 or 2 API for dc1394
-AC_CHECK_HEADER(dc1394/control.h,[PLAYER_ADD_DRIVER([camera1394],[yes],["libraw1394/raw1394.h dc1394/control.h"],[],["-lraw1394 -ldc1394"])],
-	[PLAYER_ADD_DRIVER([camera1394],[yes],["libraw1394/raw1394.h libdc1394/dc1394_control.h"],[],["-lraw1394 -ldc1394_control"])])
-
-dnl libdc1394 has varying API's, depending on the version.  Do some checks
+dnl libdc1394 v1 has varying API's, depending on the version.  So also do some checks
 dnl to see what the function signatures look like
-if test "x$enable_camera1394" = "xyes"; then
-
-  dc1394_dma_setup_args="0"
-
-  AC_COMPILE_IFELSE(AC_LANG_PROGRAM(
-    [[#include "dc1394/control.h"]],
-    []),
-    dc1394_dma_setup_args="20")
-
-  AC_COMPILE_IFELSE(AC_LANG_PROGRAM(
+dc1394_dma_setup_args="0"
+AC_CHECK_HEADER(dc1394/control.h,
+  [dc1394_dma_setup_args="20"
+    AC_CHECK_HEADER(
+      libraw1394/raw1394.h,
+      [PLAYER_ADD_DRIVER([camera1394],[yes],["libraw1394/raw1394.h dc1394/control.h"],[],["-lraw1394 -ldc1394"])],
+      [PLAYER_ADD_DRIVER([camera1394],[yes],["dc1394/control.h"],[],["-ldc1394"])],
+    )
+  ],
+  [AC_COMPILE_IFELSE(AC_LANG_PROGRAM(
     [[#include "libdc1394/dc1394_control.h"]],
     [[dc1394_dma_setup_capture(NULL, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL)]]),
     dc1394_dma_setup_args="11")
@@ -186,10 +183,14 @@ if test "x$enable_camera1394" = "xyes"; then
     [[#include "libdc1394/dc1394_control.h"]],
     [[dc1394_dma_setup_capture(NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL)]]),
     dc1394_dma_setup_args="12")
+  
+  
+  PLAYER_ADD_DRIVER([camera1394],[yes],["libraw1394/raw1394.h libdc1394/dc1394_control.h"],[],["-lraw1394 -ldc1394_control"])]
+)
 
-  AC_DEFINE_UNQUOTED(DC1394_DMA_SETUP_CAPTURE_ARGS, $dc1394_dma_setup_args,
+AC_DEFINE_UNQUOTED(DC1394_DMA_SETUP_CAPTURE_ARGS, $dc1394_dma_setup_args,
               [arg count for dma capture function])
-fi
+
 
 PLAYER_ADD_DRIVER([cameracompress],[yes],[jpeglib.h],[],[-ljpeg])
 
