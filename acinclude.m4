@@ -166,6 +166,7 @@ dnl Check to see if we have version 1 or 2 API for dc1394
 dnl libdc1394 v1 has varying API's, depending on the version.  So also do some checks
 dnl to see what the function signatures look like
 dc1394_dma_setup_args="0"
+AC_CHECK_LIB(raw1394,main)
 AC_CHECK_HEADER(dc1394/control.h,
   [dc1394_dma_setup_args="20"
     AC_CHECK_HEADER(

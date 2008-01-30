@@ -1206,7 +1206,7 @@ int Camera1394::GrabFrame()
 #else
   frame_width = this->camera.frame_width;
   frame_height = this->camera.frame_height;
-  capture_buffer = this->camera.capture_buffer;
+  capture_buffer = (uint8_t *) this->camera.capture_buffer;
 #endif
 
   if (frameSize == 0)
@@ -1215,7 +1215,7 @@ int Camera1394::GrabFrame()
   
   //delete [] this->data.image;
   //this->data.image = NULL;
-  int old_image_count = this->data.image_count;
+  unsigned int old_image_count = this->data.image_count;
   switch (this->mode)
   {
   case MODE_320x240_YUV422:
