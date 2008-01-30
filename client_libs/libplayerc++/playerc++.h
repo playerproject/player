@@ -342,9 +342,9 @@ class BlackBoardProxy : public ClientProxy
   	/** Destructor */
   	~BlackBoardProxy();
   	/** Subscribe to a key. If the key does not exist the default value is returned. The user must free the entry. */
-  	player_blackboard_entry_t *SubscribeToKey(const char *key);
+  	player_blackboard_entry_t *SubscribeToKey(const char *key, int32_t group_id = 0);
   	/** Stop receiving updates about this key. */
-  	void UnsubscribeFromKey(const char *key);
+  	void UnsubscribeFromKey(const char *key, int32_t group_id = 0);
   	/** Set a key value */
   	void SetEntry(const player_blackboard_entry_t &entry);
   	/** Set the function pointer which will be called when an entry is updated. */

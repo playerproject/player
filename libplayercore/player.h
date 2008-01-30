@@ -269,6 +269,8 @@ typedef struct player_blackboard_entry
   uint32_t key_count;
   /** Identifier for the entry. */
   char* key;
+  /** Second identifier. */
+  uint32_t group_id;
   /** Entry data type. */
   uint16_t type;
   /** Entry data subtype. */
