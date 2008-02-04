@@ -192,8 +192,8 @@ void vectormap_draw_feature(vectormap_t *map, GEOSGeom geom)
       seq = GEOSGeom_getCoordSeq(geom);
       if(GEOSCoordSeq_getSize(seq, &numcoords))
       {
-        GEOSCoordSeq_getX(seq, ii, &x2);
-        GEOSCoordSeq_getY(seq, ii, &y2);
+        GEOSCoordSeq_getX(seq, 0, &x2);
+        GEOSCoordSeq_getY(seq, 0, &y2);
         if (numcoords < 2)
         {
           rtk_fig_point( map->fig, x2, y2 );

@@ -209,7 +209,10 @@ bool PlayerClient::Peek(uint32_t aTimeout)
 {
   ClientProxy::scoped_lock_t lock(mMutex);
   //EVAL(playerc_client_peek(mClient, aTimeout));
-  return playerc_client_peek(mClient, aTimeout);
+  int ret = playerc_client_peek(mClient, aTimeout);
+  if (ret < 0)
+    throw PlayerError("PlayerClient::Peek()", playerc_error_str());
+  return ret;
 }
 
 
