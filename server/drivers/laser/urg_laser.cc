@@ -16,7 +16,7 @@
 int
   urg_laser::ReadUntil_nthOccurence (int file, int n, char c)
 {
-  int retval;
+  int retval = 0;
   unsigned char Buffer[2];
   Buffer[0] = 0;
   Buffer[1] = 0;

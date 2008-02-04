@@ -111,6 +111,7 @@ driver
 
 #include <libplayercore/playercore.h>
 #include <libplayercore/error.h>
+#include <libplayerxdr/playerxdr.h>
 
 #define DEFAULT_MAXSCANS 100
 
@@ -300,7 +301,7 @@ LaserPoseInterp::ProcessMessage(QueuePointer & resp_queue,
       // Tag this scan with the last received pose and push it out
       player_laser_data_scanpose_t scanpose;
       scanpose.pose = this->lastpose.pos;
-      scanpose.scan = *((player_laser_data_t*)data);
+      scanpose.scan =  *((player_laser_data_t*)data);
 
       this->Publish(this->device_addr, 
                     PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCANPOSE,
@@ -318,8 +319,9 @@ LaserPoseInterp::ProcessMessage(QueuePointer & resp_queue,
                      this->maxnumscans);
         return(0);
       }
-      // store the scan and timestamp
-      this->scans[this->numscans] = *((player_laser_data_t*)data);
+      // store the scan and timestamp, make sure we deep copy the data
+      player_laser_data_t_copy(&this->scans[this->numscans],(player_laser_data_t*)data);
+      //this->scans[this->numscans] = *((player_laser_data_t*)data);
       this->scantimes[this->numscans] = hdr->timestamp;
       this->numscans++;
       return(0);

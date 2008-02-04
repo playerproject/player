@@ -550,4 +550,5 @@ create_run_demo(create_comm_t *r, uint8_t num)
     perror("create_run_demo():write():");
     return -1;
   }
+  return 0;
 }

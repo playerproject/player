@@ -509,7 +509,7 @@ int MrIcp::Setup()
 };
 void MrIcp::SetupPositionDriver()
 {
-	Pose initial_pose;
+	Pose initial_pose={{0,0,0}};
 	// Subscribe to the underlyin odometry device
 	if(!(this->position_device = deviceTable->GetDevice(this->position_in_addr)))
 	{
@@ -1086,7 +1086,7 @@ Point MrIcp :: ConvertToPixel(Point p)
 };
 mapgrid_t MrIcp::ComputeRangeProb(double range,bool free)
 {
-	double bad_range;
+	double bad_range=0.;
 	mapgrid_t prob;
 	// 2 , 3 or 5 cm error based on the laser specifications
 	// for the hokouo this should be modified to a constant of 2 cm
