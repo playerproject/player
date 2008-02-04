@@ -99,12 +99,18 @@ int playerc_vectormap_subscribe(playerc_vectormap_t *device, int access)
 #ifdef HAVE_GEOS
   initGEOS(geosprint,geosprint);
 #endif
+  device->geom = NULL;
   return playerc_device_subscribe(&device->info, access);
 }
 
 // Un-subscribe from the vectormap device
 int playerc_vectormap_unsubscribe(playerc_vectormap_t *device)
 {
+  if (device->geom)
+  {
+    GEOSGeom_destroy(device->geom);
+    device->geom = NULL;
+  }
 #ifdef HAVE_GEOS
   finishGEOS();
 #endif
@@ -167,9 +173,10 @@ int playerc_vectormap_get_layer_data(playerc_vectormap_t *device, unsigned layer
       (void**)&data_resp) < 0)
   {
     PLAYERC_ERR("failed to get layer data");
-    free(data_req.name);
+    player_vectormap_layer_data_t_cleanup(&data_req);
     return -1;
   }
+  player_vectormap_layer_data_t_cleanup(&data_req);
   player_vectormap_layer_data_t_free(device->layers_data[layer_index]);
   device->layers_data[layer_index] = data_resp;
 
@@ -184,10 +191,16 @@ GEOSGeom playerc_vectormap_get_feature_data(playerc_vectormap_t *device, unsigne
   for(i = 0; i < device->layers[layer_index]->features[feature_index].wkb_count; i++)
     printf("%02x", device->layers[layer_index]->features[feature_index].wkb[i]);
   printf("\n");*/
-  return GEOSGeomFromWKB_buf(
+  if (device->geom)
+  {
+    GEOSGeom_destroy(device->geom);
+    device->geom = NULL;
+  }
+  device->geom = GEOSGeomFromWKB_buf(
     device->layers_data[layer_index]->features[feature_index].wkb,
     device->layers_data[layer_index]->features[feature_index].wkb_count
   );
+  return device->geom;
 #else
   return NULL;
 #endif

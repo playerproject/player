@@ -2253,6 +2253,8 @@ typedef struct
   player_vectormap_layer_data_t** layers_data;
   /** Layer info. */
   player_vectormap_layer_info_t** layers_info;
+  /** geos geometry returned by get_feature_data */
+  GEOSGeom geom;
 
 } playerc_vectormap_t;
 
@@ -2277,7 +2279,8 @@ int playerc_vectormap_get_layer_data(playerc_vectormap_t *device, unsigned layer
 /** @brief Clean up the dynamically allocated memory for the vectormap. */
 void playerc_vectormap_cleanup(playerc_vectormap_t *device);
 
-/** @brief Get an individual feature as a geos geometry. Must only be used after a successful call to playerc_vectormap_get_layer_data. */
+/** @brief Get an individual feature as a geos geometry. Must only be used after a successful call to playerc_vectormap_get_layer_data.
+ *  The geos geometry is owned by the proxy, duplicate it if it is needed after the next call to get_feature_data. Non-reentrant. */
 GEOSGeom playerc_vectormap_get_feature_data(playerc_vectormap_t *device, unsigned layer_index, unsigned feature_index);
 
 /** @} */

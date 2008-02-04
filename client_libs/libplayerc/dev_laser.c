@@ -147,7 +147,6 @@ void playerc_laser_putmsg(playerc_laser_t *device,
       device->scan[i][1] = b;
       device->point[i].px = r * cos(b);
       device->point[i].py = r * sin(b);
-      device->intensity[i] = scan_data->intensity[i];
       b += db;
 
       if((i <= scan_data->ranges_count/2) && (r < device->min_right))
@@ -155,6 +154,8 @@ void playerc_laser_putmsg(playerc_laser_t *device,
       else if((i > scan_data->ranges_count/2) && (r < device->min_left))
         device->min_left = r;
     }
+    for (i = 0; i < scan_data->intensity_count; i++)
+      device->intensity[i] = scan_data->intensity[i];
 
     device->scan_id = scan_data->id;
   }
@@ -183,9 +184,10 @@ void playerc_laser_putmsg(playerc_laser_t *device,
       device->scan[i][1] = b;
       device->point[i].px = r * cos(b);
       device->point[i].py = r * sin(b);
-      device->intensity[i] = scan_data->scan.intensity[i];
       b += db;
     }
+    for (i = 0; i < scan_data->scan.intensity_count; i++)
+      device->intensity[i] = scan_data->scan.intensity[i];
 
     device->scan_id = scan_data->scan.id;
     device->robot_pose[0] = scan_data->pose.px;

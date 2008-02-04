@@ -121,13 +121,18 @@ vector<string> VectorMapProxy::GetLayerNames() const
 void VectorMapProxy::GetLayerData(unsigned layer_index)
 {
   if (map_info_cached)
+  {
+    scoped_lock_t lock(mPc->mMutex);
     playerc_vectormap_get_layer_data(mDevice, layer_index);
+  }
+  else
+    PLAYER_ERROR("Map info not cached\n");
 }
 
 int VectorMapProxy::GetFeatureCount(unsigned layer_index) const
 {
   int layerCount = GetLayerCount();
-  if (layerCount < 1)
+  if (layerCount <= (int)layer_index)
     return -1;
 
   scoped_lock_t lock(mPc->mMutex);

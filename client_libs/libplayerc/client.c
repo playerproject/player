@@ -184,6 +184,13 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient, const char *
 // Destroy a player client
 void playerc_client_destroy(playerc_client_t *client)
 {
+  player_msghdr_t header;
+  // Pop everything off the queue.
+  while (!playerc_client_pop(client, &header, client->data))
+  {
+	  playerxdr_cleanup_message(client->data,header.addr.interf, header.type, header.subtype);
+  }
+  
   free(client->data);
   free(client->write_xdrdata);
   free(client->read_xdrdata);
@@ -629,6 +636,7 @@ int playerc_client_read_nonblock_withproxy(playerc_client_t *client, void ** pro
     {
       case PLAYER_MSGTYPE_RESP_ACK:
         PLAYERC_WARN ("Discarding unclaimed ACK");
+        playerxdr_cleanup_message(client->data, header.addr.interf, header.type, header.subtype);
         break;
       case PLAYER_MSGTYPE_SYNCH:
         client->data_requested = 0;
@@ -669,6 +677,7 @@ int playerc_client_read_nonblock_withproxy(playerc_client_t *client, void ** pro
           break;
         }
       default:
+        playerxdr_cleanup_message(client->data, header.addr.interf, header.type, header.subtype);
         PLAYERC_WARN1 ("unexpected message type [%s]", msgtype_to_str(header.type));
         printf("address: %u:%u:%s:%u\nsize: %u",
                header.addr.host,
