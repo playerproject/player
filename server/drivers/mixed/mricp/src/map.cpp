@@ -104,7 +104,7 @@ MAP::~ MAP()
 };
 MapInfo MAP::GetMapInfo()
 {
-	MapInfo mapinfo;
+	MapInfo mapinfo={0};
 	if(this->occ_grid == NULL)
 		{
 		mapinfo.pixel_size=-1;

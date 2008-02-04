@@ -169,7 +169,7 @@ class SickNAV200 : public Driver
     PositionXY reflectors[32];
     int numReflectors;
     uint8_t* wkbData;
-    int wkbSize;
+    uint32_t wkbSize;
     
     DoubleProperty wheelBase;
     

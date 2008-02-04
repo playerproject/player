@@ -975,8 +975,8 @@ void
     float 
         ER::BytesToFloat(unsigned char *ptr)
     {
-      int rawi = BytesToInt32 (ptr);
-      return *(float *)&rawi;
+      uint32_t rawi = BytesToInt32 (ptr);
+      return *reinterpret_cast<float *>(&rawi);
     }
 
     int 

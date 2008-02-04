@@ -114,7 +114,6 @@ MapTransform::GetMap()
 
   // now, get the map data
   player_map_data_t* data_req;
-  size_t reqlen;
   unsigned int i,j;
   unsigned int oi,oj;
   unsigned int sx,sy;
@@ -140,7 +139,7 @@ MapTransform::GetMap()
     if(!(msg = mapdev->Request(this->InQueue,
                                PLAYER_MSGTYPE_REQ,
                                PLAYER_MAP_REQ_GET_DATA,
-                               (void*)data_req,reqlen,NULL,false)))
+                               (void*)data_req,0,NULL,false)))
     {
       PLAYER_ERROR("failed to get map info");
       free(data_req);
