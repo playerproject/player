@@ -430,7 +430,7 @@ static void python_on_blackboard_event(playerc_blackboard_t *device, player_blac
 
 	dict = PyDict_New();
 	PyDict_SetItem(dict, PyString_FromString("key"), PyString_FromString(entry.key));
-	PyDict_SetItem(dict, PyString_FromString("group_id"), PyLong_FromLong(entry.group_id));
+	PyDict_SetItem(dict, PyString_FromString("group"), PyString_FromString(entry.group));
 	PyDict_SetItem(dict, PyString_FromString("type"), PyLong_FromLong(entry.type));
 	PyDict_SetItem(dict, PyString_FromString("subtype"), PyLong_FromLong(entry.subtype));
 	PyDict_SetItem(dict, PyString_FromString("timestamp_sec"), PyLong_FromLong(entry.timestamp_sec));
@@ -494,7 +494,7 @@ static void python_on_blackboard_event(playerc_blackboard_t *device, player_blac
     	return copy;
     }
 
-  PyObject * subscribe_to_key(const char *key, int group_id)
+  PyObject * subscribe_to_key(const char *key, const char *group)
   {
 	char *str;
 	int i;
@@ -503,7 +503,7 @@ static void python_on_blackboard_event(playerc_blackboard_t *device, player_blac
 	player_blackboard_entry_t *entry;
 
 	assert(self);
-	int result = playerc_blackboard_subscribe_to_key(self, key, group_id, &entry);
+	int result = playerc_blackboard_subscribe_to_key(self, key, group, &entry);
 	if (result != 0)
 	{
 		return NULL;
@@ -515,7 +515,7 @@ static void python_on_blackboard_event(playerc_blackboard_t *device, player_blac
 
 	dict = PyDict_New();
 	PyDict_SetItem(dict, PyString_FromString("key"), PyString_FromString(entry->key));
-	PyDict_SetItem(dict, PyString_FromString("group_id"), PyLong_FromLong(entry->group_id));
+	PyDict_SetItem(dict, PyString_FromString("group"), PyString_FromString(entry->group));
 	PyDict_SetItem(dict, PyString_FromString("type"), PyLong_FromLong(entry->type));
 	PyDict_SetItem(dict, PyString_FromString("subtype"), PyLong_FromLong(entry->subtype));
 	PyDict_SetItem(dict, PyString_FromString("timestamp_sec"), PyLong_FromLong(entry->timestamp_sec));
@@ -553,6 +553,7 @@ static void python_on_blackboard_event(playerc_blackboard_t *device, player_blac
     
     PyDict_SetItem(dict, PyString_FromString("data"), data);    
     free(entry->key);
+    free(entry->group);
     free(entry->data);
     free(entry);
     return dict;
@@ -561,7 +562,7 @@ static void python_on_blackboard_event(playerc_blackboard_t *device, player_blac
   PyObject *set_entry(PyObject *dict)
   {
 	PyObject *key;
-	PyObject *group_id;
+	PyObject *group;
 	PyObject *type;
 	PyObject *subtype;
 	PyObject *timestamp_sec;
@@ -582,22 +583,59 @@ static void python_on_blackboard_event(playerc_blackboard_t *device, player_blac
     memset(&entry, 0, sizeof(entry));
     
     key = PyDict_GetItem(dict, PyString_FromString("key"));
-    group_id = PyDict_GetItem(dict, PyString_FromString("group_id"));
+    group = PyDict_GetItem(dict, PyString_FromString("group"));
 	type = PyDict_GetItem(dict, PyString_FromString("type"));
 	subtype = PyDict_GetItem(dict, PyString_FromString("subtype"));
 	timestamp_sec = PyDict_GetItem(dict, PyString_FromString("timestamp_sec"));
 	timestamp_usec = PyDict_GetItem(dict, PyString_FromString("timestamp_usec"));
 	data = PyDict_GetItem(dict, PyString_FromString("data"));
 	
-	if (key == NULL || group_id == NULL || type == NULL || subtype == NULL || timestamp_sec == NULL || timestamp_usec == NULL || data == NULL)
+	if (key == NULL || group == NULL || type == NULL || subtype == NULL || timestamp_sec == NULL || timestamp_usec == NULL || data == NULL)
 	{
 		printf("Dictionary object missing keys.\n");
 		return PyLong_FromLong(-1);
 	}
 	
+	if (!PyString_Check(key))
+	{
+		printf("key should be a string type.\n");
+		return PyLong_FromLong(-1);
+	}
+	
+	if (!PyString_Check(group))
+	{
+		printf("group should be a string type.\n");
+		return PyLong_FromLong(-1);
+	}
+	
+	if (!PyLong_Check(type))
+	{
+		printf("type should be a long type.\n");
+		return PyLong_FromLong(-1);
+	}
+	
+	if (!PyLong_Check(subtype))
+	{
+		printf("subtype should be a long type.\n");
+		return PyLong_FromLong(-1);
+	}
+	
+	if (!PyLong_Check(timestamp_sec))
+	{
+		printf("timestamp_sec should be a long type.\n");
+		return PyLong_FromLong(-1);
+	}
+	
+	if (!PyLong_Check(timestamp_usec))
+	{
+		printf("timestamp_usec should be a long type.\n");
+		return PyLong_FromLong(-1);
+	}
+	
 	entry.key = PyString_AsString(key);
 	entry.key_count = strlen(entry.key) + 1;
-	entry.group_id = PyInt_AsLong(group_id);
+	entry.group = PyString_AsString(key);
+	entry.group_count = strlen(entry.group) + 1;
 	entry.type = PyInt_AsLong(type);
 	entry.subtype = PyInt_AsLong(subtype);
 	entry.timestamp_sec = PyInt_AsLong(timestamp_sec);
@@ -610,6 +648,11 @@ static void python_on_blackboard_event(playerc_blackboard_t *device, player_blac
     		entry.data_count = 0;
     	break;
     	case PLAYERC_BLACKBOARD_DATA_SUBTYPE_STRING:
+    		if (!PyString_Check(data))
+    		{
+    			printf("data should be a string type.\n");
+    			return PyLong_FromLong(-1);
+    		}
     		str = NULL;
     		str = PyString_AsString(data);
     		printf("str=%s\n", str);
@@ -620,6 +663,11 @@ static void python_on_blackboard_event(playerc_blackboard_t *device, player_blac
     		entry.data_count = length;
     	break;
     	case PLAYERC_BLACKBOARD_DATA_SUBTYPE_INT:
+    		if (!PyLong_Check(data))
+    		{
+    			printf("data should be a long type.\n");
+    			return PyLong_FromLong(-1);
+    		}
     		i = 0;
     		i = PyInt_AsLong(data);
     		length = sizeof(i);
@@ -629,6 +677,11 @@ static void python_on_blackboard_event(playerc_blackboard_t *device, player_blac
     		entry.data_count = length;
     	break;
     	case PLAYERC_BLACKBOARD_DATA_SUBTYPE_DOUBLE:
+    		if (!PyLong_Check(data))
+    		{
+    			printf("data should be a long type.\n");
+    			return PyLong_FromLong(-1);
+    		}
     		d = 0.0;
     		d = PyLong_AsDouble(data);
     		length = sizeof(d);
@@ -646,7 +699,7 @@ static void python_on_blackboard_event(playerc_blackboard_t *device, player_blac
 	printf("entry:\n");
 	printf("key:%s\n", entry.key);
 	printf("key_count:%d\n", entry.key_count);
-	printf("group_id:%d\n", entry.group_id);
+	printf("group:%s\n", entry.group);
 	printf("data:%s\n", (char*)entry.data);
 	printf("data_count:%d\n", entry.data_count);
 	printf("timestamp_sec:%d\n", entry.timestamp_sec);

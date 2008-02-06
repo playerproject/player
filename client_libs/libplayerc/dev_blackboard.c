@@ -53,9 +53,9 @@
 #include <libplayerxdr/playerxdr.h>
 #include <sys/time.h>
 
-player_blackboard_entry_t *playerc_pack_blackboard_entry_string(const char* key, uint32_t group_id, const char *str);
-player_blackboard_entry_t *playerc_pack_blackboard_entry_int(const char* key, uint32_t group_id, const int i);
-player_blackboard_entry_t *playerc_pack_blackboard_entry_double(const char* key, uint32_t group_id, const double d);
+player_blackboard_entry_t *playerc_pack_blackboard_entry_string(const char* key, const char* group, const char *str);
+player_blackboard_entry_t *playerc_pack_blackboard_entry_int(const char* key, const char* group, const int i);
+player_blackboard_entry_t *playerc_pack_blackboard_entry_double(const char* key, const char* group, const double d);
 
 char *playerc_unpack_blackboard_entry_string(const player_blackboard_entry_t *entry);
 int playerc_unpack_blackboard_entry_int(const player_blackboard_entry_t *entry);
@@ -65,7 +65,7 @@ int playerc_check_blackboard_entry_is_string(const player_blackboard_entry_t *en
 int playerc_check_blackboard_entry_is_int(const player_blackboard_entry_t *entry);
 int playerc_check_blackboard_entry_is_double(const player_blackboard_entry_t *entry);
 
-player_blackboard_entry_t *playerc_pack_blackboard_entry_string(const char* key, uint32_t group_id, const char *str)
+player_blackboard_entry_t *playerc_pack_blackboard_entry_string(const char* key, const char* group, const char *str)
 {
   struct timeval tv;
   player_blackboard_entry_t *entry = malloc(sizeof(player_blackboard_entry_t));
@@ -74,11 +74,14 @@ player_blackboard_entry_t *playerc_pack_blackboard_entry_string(const char* key,
 
   entry->type = PLAYERC_BLACKBOARD_DATA_TYPE_COMPLEX;
   entry->subtype = PLAYERC_BLACKBOARD_DATA_SUBTYPE_STRING;
-  entry->group_id = group_id;
 
   entry->key_count = strlen(key) + 1;
   entry->key = malloc(entry->key_count);
   memcpy(entry->key, key, entry->key_count);
+  
+  entry->group_count = strlen(group) + 1;
+  entry->group = malloc(entry->group_count);
+  memcpy(entry->group, group, entry->group_count);
 
   entry->data_count = strlen(str) + 1;
   entry->data = malloc(sizeof(int)*entry->data_count);
@@ -91,7 +94,7 @@ player_blackboard_entry_t *playerc_pack_blackboard_entry_string(const char* key,
   return entry;
 }
 
-player_blackboard_entry_t *playerc_pack_blackboard_entry_int(const char* key, uint32_t group_id, const int i)
+player_blackboard_entry_t *playerc_pack_blackboard_entry_int(const char* key, const char* group, const int i)
 {
   struct timeval tv;
   player_blackboard_entry_t *entry = malloc(sizeof(player_blackboard_entry_t));
@@ -100,11 +103,14 @@ player_blackboard_entry_t *playerc_pack_blackboard_entry_int(const char* key, ui
 
   entry->type = PLAYERC_BLACKBOARD_DATA_TYPE_SIMPLE;
   entry->subtype = PLAYERC_BLACKBOARD_DATA_SUBTYPE_INT;
-  entry->group_id = group_id;
 
   entry->key_count = strlen(key) + 1;
   entry->key = malloc(entry->key_count);
   memcpy(entry->key, key, entry->key_count);
+  
+  entry->group_count = strlen(group) + 1;
+  entry->group = malloc(entry->group_count);
+  memcpy(entry->group, group, entry->group_count);
 
   entry->data_count = sizeof(int);
   entry->data = malloc(sizeof(int)*entry->data_count);
@@ -117,7 +123,7 @@ player_blackboard_entry_t *playerc_pack_blackboard_entry_int(const char* key, ui
   return entry;
 }
 
-player_blackboard_entry_t *playerc_pack_blackboard_entry_double(const char* key, uint32_t group_id, const double d)
+player_blackboard_entry_t *playerc_pack_blackboard_entry_double(const char* key, const char* group, const double d)
 {
   struct timeval tv;
   player_blackboard_entry_t *entry = malloc(sizeof(player_blackboard_entry_t));
@@ -126,11 +132,14 @@ player_blackboard_entry_t *playerc_pack_blackboard_entry_double(const char* key,
 
   entry->type = PLAYERC_BLACKBOARD_DATA_TYPE_SIMPLE;
   entry->subtype = PLAYERC_BLACKBOARD_DATA_SUBTYPE_DOUBLE;
-  entry->group_id = group_id;
 
   entry->key_count = strlen(key) + 1;
   entry->key = malloc(entry->key_count);
   memcpy(entry->key, key, entry->key_count);
+  
+  entry->group_count = strlen(group) + 1;
+  entry->group = malloc(entry->group_count);
+  memcpy(entry->group, group, entry->group_count);
 
   entry->data_count = sizeof(double);
   entry->data = malloc(sizeof(int)*entry->data_count);
@@ -246,44 +255,76 @@ int playerc_blackboard_unsubscribe(playerc_blackboard_t *device)
 }
 
 // Subscribe to a blackboard key
-int playerc_blackboard_subscribe_to_key(playerc_blackboard_t* device, const char* key, int32_t group_id, player_blackboard_entry_t** entry_out)
+int playerc_blackboard_subscribe_to_key(playerc_blackboard_t* device, const char* key, const char* group, player_blackboard_entry_t** entry_out)
 {
   player_blackboard_entry_t req;
   memset(&req, 0, sizeof(req));
   req.key = strdup(key);
   req.key_count = strlen(key) + 1;
-  req.group_id = group_id;
+  
+  req.group = strdup(group);
+  req.group_count = strlen(group) + 1;
 
   if (playerc_client_request(device->info.client, &device->info, 
   PLAYER_BLACKBOARD_REQ_SUBSCRIBE_TO_KEY, &req, (void**)entry_out) < 0)
   {
-    free(req.key);
+  	if (req.key != NULL)
+  	{
+  		free(req.key);
+  	}
+  	if (req.group != NULL)
+  	{
+  		free(req.group);
+  	}
     PLAYERC_ERR("failed to subscribe to blackboard key");
     return -1;
   }
 
-  free(req.key);
+  if (req.key != NULL)
+	{
+		free(req.key);
+	}
+	if (req.group != NULL)
+	{
+		free(req.group);
+	}
   return 0;
 }
 
 // Unsubscribe from a blackboard key
-int playerc_blackboard_unsubscribe_from_key(playerc_blackboard_t* device, const char* key, int32_t group_id)
+int playerc_blackboard_unsubscribe_from_key(playerc_blackboard_t* device, const char* key, const char* group)
 {
   player_blackboard_entry_t req;
   memset(&req, 0, sizeof(req));
   req.key = strdup(key);
   req.key_count = strlen(key) + 1;
-  req.group_id = group_id;
+  
+  req.group = strdup(group);
+  req.group_count = strlen(group) + 1;
 
   if (playerc_client_request(device->info.client, &device->info, 
   PLAYER_BLACKBOARD_REQ_UNSUBSCRIBE_FROM_KEY, &req, NULL) < 0)
   {
-    free(req.key);
+  	if (req.key)
+  	{
+  		free(req.key);
+  	}
+  	if (req.group)
+  	{
+  		free(req.group);
+  	}
     PLAYERC_ERR("failed to unsubscribe to blackboard key");
     return -1;
   }
 
-  free(req.key);
+  if (req.key)
+	{
+		free(req.key);
+	}
+	if (req.group)
+	{
+		free(req.group);
+	}
   return 0;
 
 }
@@ -301,26 +342,62 @@ int playerc_blackboard_set_entry(playerc_blackboard_t *device, player_blackboard
   return 0;
 }
 
-int playerc_blackboard_set_string(playerc_blackboard_t *device, const char* key, uint32_t group_id, const char* value)
+int playerc_blackboard_set_string(playerc_blackboard_t *device, const char* key, const char* group, const char* value)
 {
-  player_blackboard_entry_t *entry = playerc_pack_blackboard_entry_string(key, group_id, value);
+  player_blackboard_entry_t *entry = playerc_pack_blackboard_entry_string(key, group, value);
   int result = playerc_blackboard_set_entry(device, entry);
+  if (entry->key != NULL)
+  {
+  	free(entry->key);
+  }
+  if (entry->group != NULL)
+  {
+  		free(entry->group);
+  }
+  if (entry->data != NULL)
+  {
+  	free(entry->data);
+  }
   free(entry);
   return result;
 }
 
-int playerc_blackboard_set_int(playerc_blackboard_t *device, const char* key, uint32_t group_id, const int value)
+int playerc_blackboard_set_int(playerc_blackboard_t *device, const char* key, const char* group, const int value)
 {
-  player_blackboard_entry_t *entry = playerc_pack_blackboard_entry_int(key, group_id, value);
+  player_blackboard_entry_t *entry = playerc_pack_blackboard_entry_int(key, group, value);
   int result = playerc_blackboard_set_entry(device, entry);
+  if (entry->key != NULL)
+  {
+  	free(entry->key);
+  }
+  if (entry->group != NULL)
+  {
+  		free(entry->group);
+  }
+  if (entry->data != NULL)
+  {
+  	free(entry->data);
+  }
   free(entry);
   return result;
 }
 
-int playerc_blackboard_set_double(playerc_blackboard_t *device, const char* key, uint32_t group_id, const double value)
+int playerc_blackboard_set_double(playerc_blackboard_t *device, const char* key, const char* group, const double value)
 {
-  player_blackboard_entry_t *entry = playerc_pack_blackboard_entry_double(key, group_id, value);
+  player_blackboard_entry_t *entry = playerc_pack_blackboard_entry_double(key, group, value);
   int result = playerc_blackboard_set_entry(device, entry);
+  if (entry->key != NULL)
+  {
+  	free(entry->key);
+  }
+  if (entry->group != NULL)
+  {
+  		free(entry->group);
+  }
+  if (entry->data != NULL)
+  {
+  	free(entry->data);
+  }
   free(entry);
   return result;
 }
