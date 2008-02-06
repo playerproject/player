@@ -4,6 +4,7 @@
  Date: 7 Feb 2007
  CVS: $Id$
 */
+#include <sys/socket.h>
 #include <netdb.h> 
 #include <libplayercore/playercore.h>
 
