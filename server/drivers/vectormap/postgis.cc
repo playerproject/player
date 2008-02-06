@@ -66,6 +66,8 @@
 @verbatim
 driver
 (
+  name "postgis"
+  provides ["vectormap:0"]
   dbname "gis"
   host "192.168.0.2"
   port "5433"
@@ -80,20 +82,22 @@ The PostGIS extension and Postgres database come in a single package in Ubuntu c
 have been added to the system.
 
 After the database has been installed, you will need to install the PL/pgSQL language extension and load the PostGIS definitions.
-- To do this do a 'sudo su' to the postgres user.
-- Change to the directory holding lwpostgis.sql (Should be '/usr/share/postgres-8.1-postgis/lwpostgis.sql')
-- Add the PL/pgSQL language extension: createlang plpgsql template1
-- Load the PostGIS definitions: psql -d template1 -f lwpostgis.sql
+- To do this switch to a postgres user (for example do a 'su - postgres').
 - Create a database: createdb gis
-- Add a user account:
-    - psql gis
+- Add the PL/pgSQL language extension: createlang plpgsql gis
+- Change to the directory holding lwpostgis.sql (For example '/usr/share/postgres-8.1-postgis/lwpostgis.sql')
+- Load the PostGIS definitions: psql -d gis -f lwpostgis.sql
+- Run psql command interpreter: psgl gis
+- (Optionally) Add a user account:
     - CREATE ROLE username WITH LOGIN CREATEDB CREATEROLE;
 - Create a table for your geometry data
-    - CREATE TABLE obstacles_geom(ID int4, NAME varchar(25))
+    - CREATE TABLE obstacles_geom(id int4 PRIMARY KEY, name varchar(25));
 - Let the PostGIS extension know about your data
-    - SELECT AddGeometryColumn('public', 'obstacles_geom', 'geom', 423, 'LINESTRING', 2)
+    - SELECT AddGeometryColumn('public', 'obstacles_geom', 'geom', 423, 'LINESTRING', 2);
+- Add column for attributes:
+    - ALTER TABLE obstacles_geom ADD COLUMN attrib varchar(25);
 
-Each geometry column refers to one layer in the configuration file.
+Create one database table per one layer in the configuration file.
 
 For more information see http://postgis.refractions.net/
 
@@ -302,7 +306,7 @@ int PostGIS::ProcessMessage(QueuePointer &resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_VECTORMAP_REQ_GET_MAP_INFO,
                   (void*)response,
-                  sizeof(player_vectormap_info_t),
+                  0,
                   NULL);
     return(0);
   }
@@ -319,7 +323,7 @@ int PostGIS::ProcessMessage(QueuePointer &resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_VECTORMAP_REQ_GET_LAYER_DATA,
                   (void*)response,
-                  sizeof(player_vectormap_layer_data_t),
+                  0,
                   NULL);
 
     return(0);
@@ -337,7 +341,7 @@ int PostGIS::ProcessMessage(QueuePointer &resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_VECTORMAP_REQ_WRITE_LAYER,
                   (void*)request,
-                   sizeof(player_vectormap_layer_data_t),
+                  0,
                   NULL);
     return(0);
   }
