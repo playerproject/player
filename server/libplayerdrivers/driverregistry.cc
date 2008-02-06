@@ -106,6 +106,10 @@ void wbr914_Register(DriverTable* table);
 void Roomba_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_CREATE
+void Create_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_GARCIA
 void GarciaDriver_Register(DriverTable* table);
 #endif
@@ -448,6 +452,10 @@ player_register_drivers()
 
 #ifdef INCLUDE_ROOMBA
   Roomba_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_CREATE
+  Create_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_SICKPLS
