@@ -90,41 +90,57 @@ void BlackBoardProxy::Unsubscribe()
   mDevice = NULL;
 }
 
-player_blackboard_entry_t *BlackBoardProxy::SubscribeToKey(const char *key, int32_t group_id)
+player_blackboard_entry_t *BlackBoardProxy::SubscribeToKey(const char *key, const char* group)
 {
   scoped_lock_t lock(mPc->mMutex);
   player_blackboard_entry_t *pointer;
-  if (0 != playerc_blackboard_subscribe_to_key(mDevice, key, group_id, &pointer))
+
+  if (0 != playerc_blackboard_subscribe_to_key(mDevice, key, group, &pointer))
   {
   	throw PlayerError("BlackBoardProxy::SubscribeToKey(const string& key)", "could not subscribe to key");
   }
-
+  assert(pointer);
+  
   // We don't want a mix of malloc and new, so make a copy using only new
   player_blackboard_entry_t *result = new player_blackboard_entry_t;
   memset(result, 0, sizeof(player_blackboard_entry_t));
   result->type = pointer->type;
   result->subtype = pointer->subtype;
-
+  
   result->key_count = pointer->key_count;
   result->key = new char[result->key_count];
   memcpy(result->key, pointer->key, result->key_count);
+  
+  result->group_count = pointer->group_count;
+  result->group = new char[result->group_count];
+  memcpy(result->group, pointer->group, result->group_count);
   
   result->data_count = pointer->data_count;
   result->data = new uint8_t[result->data_count];
   memcpy(result->data, pointer->data, result->data_count);
 
   // Get rid of the original
-  free(pointer->key);
-  free(pointer->data);
+  if (pointer->key != NULL)
+  {
+  	free(pointer->key);
+  }
+  if (pointer->group != NULL)
+  {
+  	free(pointer->group);
+  }
+  if (pointer->data != NULL)
+  {
+  	free(pointer->data);
+  }
   free(pointer);
   
   return result;
 }
 
-void BlackBoardProxy::UnsubscribeFromKey(const char *key, int32_t group_id)
+void BlackBoardProxy::UnsubscribeFromKey(const char *key, const char* group)
 {
 	scoped_lock_t lock(mPc->mMutex);
-	if (0 != playerc_blackboard_unsubscribe_from_key(mDevice, key, group_id))
+	if (0 != playerc_blackboard_unsubscribe_from_key(mDevice, key, group))
 	{
 		throw PlayerError("BlackBoardProxy::UnsubscribeFromKey(const string& key)", "could not unsubscribe from key");
 	}
@@ -142,6 +158,7 @@ void BlackBoardProxy::SetEntry(const player_blackboard_entry_t &entry)
 		throw PlayerError("BlackBoardProxy::SetEntry(const player_blackboard_entry_t &entry)", "could not set entry");
 	}
 
+	// delete shallow copy
 	delete copy;
 }
 

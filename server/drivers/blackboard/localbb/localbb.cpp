@@ -102,13 +102,13 @@ typedef struct EntryData
  * @brief Custom blackboard entry representation used internally by the driver.*/
 typedef struct BlackBoardEntry
 {
-	/** Constructor. Sets key to an empty string and group_id to 0. Data should be automatically set to empty values. */
-  BlackBoardEntry() { key = ""; group_id = 0; }
+	/** Constructor. Sets key and group to empty strings. Data should be automatically set to empty values. */
+  BlackBoardEntry() { key = ""; group = ""; }
 
   /** Entry label */
   string key;
   /** Secondary identifier. */
-  uint32_t group_id;
+  string group;
   /** Entry data */
   EntryData data;
 } BlackBoardEntry;
@@ -125,13 +125,20 @@ player_blackboard_entry_t ToPlayerBlackBoardEntry(const BlackBoardEntry &entry)
 {
   player_blackboard_entry_t result;
   memset(&result, 0, sizeof(player_blackboard_entry_t));
+  
   result.type = entry.data.type;
   result.subtype = entry.data.subtype;
+
   result.key_count = strlen(entry.key.c_str()) + 1;
   result.key = new char[result.key_count]; //strdup(entry.key.c_str());
   memcpy(result.key, entry.key.c_str(), result.key_count);
-  assert(strlen(result.key) > 0);
-  result.group_id = entry.group_id;
+  assert(result.key_count > 0);
+
+  result.group_count = strlen(entry.group.c_str()) + 1;
+  result.group = new char[result.group_count];
+  memcpy(result.group, entry.group.c_str(), result.group_count);
+  assert(result.group_count > 0);
+  
   result.data_count = entry.data.data_count;
   result.data = new uint8_t[result.data_count];
   memcpy(result.data, entry.data.data, result.data_count);
@@ -145,9 +152,8 @@ BlackBoardEntry FromPlayerBlackBoardEntry(const player_blackboard_entry_t &entry
   BlackBoardEntry result;
   result.data.type = entry.type;
   result.data.subtype = entry.subtype;
-  assert(entry.key != NULL);
   result.key = string(entry.key);
-  result.group_id = entry.group_id;
+  result.group = string(entry.group);
   result.data.data_count = entry.data_count;
   result.data.data = new uint8_t[result.data.data_count];
   memcpy(result.data.data, entry.data, result.data.data_count);
@@ -218,16 +224,16 @@ class LocalBB : public Driver
 		// Blackboard handler functions
 		/** @brief Add the key and queue combination to the listeners hash-map and return the entry for the key.
 		 * @param key Entry key.
-		 * @param group_id Second identifier.
+		 * @param group Second identifier.
 		 * @param resp_queue Player response queue of the subscriber. 
 		 */
-		BlackBoardEntry SubscribeKey(const string &key, uint32_t group_id, const QueuePointer &resp_queue);
+		BlackBoardEntry SubscribeKey(const string &key, const string &group, const QueuePointer &resp_queue);
 		/** @brief Remove the key and queue combination from the listeners hash-map.
 		 * @param key Entry key.
-		 * @param group_id Second identifier.
+		 * @param group Second identifier.
 		 * @param qp Player response queue of the subscriber. 
 		 */
-		void UnsubscribeKey(const string &key, uint32_t group_id, const QueuePointer &qp);
+		void UnsubscribeKey(const string &key, const string &group, const QueuePointer &qp);
 		/** @brief Set the entry in the entries hashmap. *
 		 * @param entry BlackBoardEntry that must be put in the hashmap.
 		 */
@@ -241,9 +247,11 @@ class LocalBB : public Driver
 
 		// Internal blackboard data
 		/** Map of labels to entry data. */
-		map<uint32_t, map<string, BlackBoardEntry> > entries;
+		//map<group, map<key, entry> >
+		map<string, map<string, BlackBoardEntry> > entries;
 		/** Map of labels to listening queues. */
-		map<uint32_t, map<string, vector<QueuePointer> > > listeners;
+		//map<group, map<key, vector<device queue> > >
+		map<string, map<string, vector<QueuePointer> > > listeners;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -323,11 +331,11 @@ int LocalBB::ProcessSubscribeKeyMessage(QueuePointer &resp_queue, player_msghdr 
 
 	// Add the device to the listeners map
 	player_blackboard_entry_t *request = reinterpret_cast<player_blackboard_entry_t*>(data);
-	BlackBoardEntry current_value = SubscribeKey(request->key, request->group_id, resp_queue);
+	BlackBoardEntry current_value = SubscribeKey(request->key, request->group, resp_queue);
 
 	// Get the entry for the given key
 	player_blackboard_entry_t response = ToPlayerBlackBoardEntry(current_value);
-	size_t response_size = sizeof(player_blackboard_entry_t) + response.key_count + response.data_count;
+	size_t response_size = sizeof(player_blackboard_entry_t) + response.key_count + response.group_count + response.data_count;
 
 	// Publish the blackboard entry
 	this->Publish(
@@ -342,6 +350,10 @@ int LocalBB::ProcessSubscribeKeyMessage(QueuePointer &resp_queue, player_msghdr 
 	if (response.key)
 	{
 		delete [] response.key;
+	}
+	if (response.group)
+	{
+		delete [] response.group;
 	}
 	if (response.data)
 	{
@@ -360,7 +372,7 @@ int LocalBB::ProcessUnsubscribeKeyMessage(QueuePointer &resp_queue, player_msghd
 
 	// Remove the device from the listeners map
 	player_blackboard_entry_t *request = reinterpret_cast<player_blackboard_entry_t*>(data);
-	UnsubscribeKey(request->key, request->group_id, resp_queue);
+	UnsubscribeKey(request->key, request->group, resp_queue);
 
 	// Send back an empty ack
 	this->Publish(
@@ -388,7 +400,7 @@ int LocalBB::ProcessSetEntryMessage(QueuePointer &resp_queue, player_msghdr * hd
 	SetEntry(entry);
 	
 	// Send out update events to other listening devices
-	vector<QueuePointer> &devices = listeners[entry.group_id][entry.key];
+	vector<QueuePointer> &devices = listeners[entry.group][entry.key];
 
 	for (vector<QueuePointer>::iterator itr=devices.begin(); itr != devices.end(); itr++)
 	{
@@ -416,23 +428,23 @@ int LocalBB::ProcessSetEntryMessage(QueuePointer &resp_queue, player_msghdr * hd
 
 ////////////////////////////////////////////////////////////////////////////////
 // Add a device to the listener list for a key. Return the current value of the entry.
-BlackBoardEntry LocalBB::SubscribeKey(const string &key, uint32_t group_id, const QueuePointer &resp_queue)
+BlackBoardEntry LocalBB::SubscribeKey(const string &key, const string &group, const QueuePointer &resp_queue)
 {
-	listeners[group_id][key].push_back(resp_queue);
-	BlackBoardEntry entry = entries[group_id][key];
+	listeners[group][key].push_back(resp_queue);
+	BlackBoardEntry entry = entries[group][key];
 	if (entry.key == "")
 	{
 		entry.key = key;
 	}
-	entry.group_id = group_id;
+	entry.group = group;
 	return entry;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Remove a device from the listener list for a key.
-void LocalBB::UnsubscribeKey(const string &key, uint32_t group_id, const QueuePointer &qp)
+void LocalBB::UnsubscribeKey(const string &key, const string &group, const QueuePointer &qp)
 {
-	vector<QueuePointer> &devices = listeners[group_id][key];
+	vector<QueuePointer> &devices = listeners[group][key];
 
 	for (vector<QueuePointer>::iterator itr = devices.begin(); itr != devices.end(); itr++)
 	{
@@ -448,7 +460,7 @@ void LocalBB::UnsubscribeKey(const string &key, uint32_t group_id, const QueuePo
 // Set entry value in the entries map.
 void LocalBB::SetEntry(const BlackBoardEntry &entry)
 {
-	entries[entry.group_id][entry.key] = entry;
+	entries[entry.group][entry.key] = entry;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
