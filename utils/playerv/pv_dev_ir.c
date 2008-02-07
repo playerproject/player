@@ -165,7 +165,7 @@ void ir_draw(ir_t *ir)
   double dr, da;
   double points[3][2];
 
-  for (i = 0; i < ir->proxy->ranges.ranges_count; i++)
+  for (i = 0; i < ir->proxy->data.ranges_count; i++)
   {
     rtk_fig_show(ir->scan_fig[i], 1);      
     rtk_fig_clear(ir->scan_fig[i]);
@@ -176,7 +176,7 @@ void ir_draw(ir_t *ir)
 
     // Draw in the range scan
     rtk_fig_color_rgb32(ir->scan_fig[i], COLOR_IR_SCAN);
-    dr = ((double)ir->proxy->ranges.ranges[i]);
+    dr = ((double)ir->proxy->data.ranges[i]);
     da = 20 * M_PI / 180 / 2;
   
     points[0][0] = 0;
@@ -195,7 +195,7 @@ void ir_nodraw(ir_t *ir)
 {
   int i;
 
-  for (i = 0; i < ir->proxy->ranges.ranges_count; i++)
+  for (i = 0; i < ir->proxy->data.ranges_count; i++)
     rtk_fig_show(ir->scan_fig[i], 0);
 }
 
