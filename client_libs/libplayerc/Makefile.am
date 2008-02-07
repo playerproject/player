@@ -27,7 +27,7 @@ libplayerc_la_SOURCES = playerc.h \
                         dev_aio.c \
                         dev_audio.c \
                         dev_blackboard.c \
-			dev_blinkenlight.c \
+                        dev_blinkenlight.c \
                         dev_bumper.c \
                         dev_blobfinder.c \
                         dev_camera.c \
