@@ -59,6 +59,10 @@ void ARToolkitPlusDriver_Register(DriverTable *table);
 void BumperSafe_Register(DriverTable *table);
 #endif
 
+#ifdef INCLUDE_CHATTERBOX
+void Chatterbox_Register(DriverTable *table);
+#endif
+
 #ifdef INCLUDE_MRICP
 void MrIcp_Register(DriverTable *table);
 #endif
@@ -651,6 +655,10 @@ player_register_drivers()
 
 #ifdef INCLUDE_STATGRAB
   StatGrabDriver_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_CHATTERBOX
+  Chatterbox_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_CMUCAM2

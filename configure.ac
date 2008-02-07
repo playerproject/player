@@ -577,6 +577,7 @@ AC_OUTPUT(Makefile
           server/drivers/wifi/Makefile
           server/drivers/speech/Makefile
           server/drivers/speech/recognition/Makefile
+          server/drivers/mixed/chatterbox/Makefile
           server/drivers/mixed/cmucam2/Makefile
           server/drivers/mixed/mricp/Makefile
           server/drivers/mixed/p2os/Makefile

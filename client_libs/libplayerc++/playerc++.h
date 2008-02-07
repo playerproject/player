@@ -971,13 +971,13 @@ class IrProxy : public ClientProxy
     ~IrProxy();
 
     /// get the number of IR rangers
-    uint32_t GetCount() const { return GetVar(mDevice->ranges.ranges_count); };
+    uint32_t GetCount() const { return GetVar(mDevice->data.ranges_count); };
     /// get the current range
     double GetRange(uint32_t aIndex) const
-      { return GetVar(mDevice->ranges.ranges[aIndex]); };
+      { return GetVar(mDevice->data.ranges[aIndex]); };
     /// get the current voltage
     double GetVoltage(uint32_t aIndex) const
-      { return GetVar(mDevice->ranges.voltages[aIndex]); };
+      { return GetVar(mDevice->data.voltages[aIndex]); };
     /// get the number of poses
     uint32_t GetPoseCount() const { return GetVar(mDevice->poses.poses_count); };
     /// get a particular pose

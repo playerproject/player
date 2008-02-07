@@ -224,8 +224,8 @@ int
   Laser.GetSensorConfig (&Conf);
   
   // Solve the min/max angle problem
-  min_i = static_cast<int> (round (384 + Conf.min_angle/Conf.resolution));
-  max_i = static_cast<int> (round (384 + Conf.max_angle/Conf.resolution));
+  min_i = static_cast<int> (round (384.0 + Conf.min_angle/Conf.resolution));
+  max_i = static_cast<int> (round (384.0 + Conf.max_angle/Conf.resolution));
   
   // For ancient firmware versions, set some hard limits on the min/max angle capabilities
   if (min_i < URG04_MIN_STEP)
@@ -233,8 +233,8 @@ int
   if (max_i > URG04_MAX_STEP)
     max_i = URG04_MAX_STEP;
 
-  int user_min_i = static_cast<int> (round (384 + user_min_angle/Conf.resolution));
-  int user_max_i = static_cast<int> (round (384 + user_max_angle/Conf.resolution));
+  int user_min_i = static_cast<int> (round (384.0 + user_min_angle/Conf.resolution));
+  int user_max_i = static_cast<int> (round (384.0 + user_max_angle/Conf.resolution));
   
   if (user_min_i > user_max_i)
     user_min_i = user_max_i;

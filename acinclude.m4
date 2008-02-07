@@ -201,6 +201,8 @@ PLAYER_ADD_DRIVER([camerav4l],[yes],[linux/videodev.h],[],[])
 
 PLAYER_ADD_DRIVER([canonvcc4],[yes],[],[],[])
 
+PLAYER_ADD_DRIVER([chatterbox],[no],[],[],["-L/home/gumstix/vR1078experimental/robostix/gumstix/roomba -lroboi2c"])
+
 PLAYER_ADD_DRIVER([clodbuster],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([cmucam2],[yes],[],[],[])

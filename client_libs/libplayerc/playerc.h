@@ -1169,6 +1169,59 @@ int playerc_blackboard_set_double(playerc_blackboard_t *device, const char* key,
 
 /** @} */
 
+/**************************************************************************/
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_blinkenlight blinkenlight
+
+The blinkenlight proxy provides an interface to a (possibly colored
+and/or blinking) indicator light.
+
+@{
+*/
+
+/** Blinklight proxy data. */
+typedef struct
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+  
+  uint32_t enabled;
+  double duty_cycle;
+  double period;
+  uint8_t red, green, blue;
+} playerc_blinkenlight_t;
+
+
+/** Create a blinkenlight proxy. */
+playerc_blinkenlight_t *playerc_blinkenlight_create(playerc_client_t *client, int index);
+
+/** Destroy a blinkenlight proxy. */
+void playerc_blinkenlight_destroy(playerc_blinkenlight_t *device);
+
+/** Subscribe to the blinkenlight device. */
+int playerc_blinkenlight_subscribe(playerc_blinkenlight_t *device, int access);
+
+/** Un-subscribe from the blinkenlight device. */
+int playerc_blinkenlight_unsubscribe(playerc_blinkenlight_t *device);
+
+/** Enable/disable power to the blinkenlight device. */
+int playerc_blinkenlight_enable( playerc_blinkenlight_t *device, 
+				 uint32_t enable );
+
+/** Set the output color for the blinkenlight device. */
+int playerc_blinkenlight_color( playerc_blinkenlight_t *device, 
+				uint32_t id,
+				uint8_t red,
+				uint8_t green,
+				uint8_t blue );
+/** Make the light blink, setting the period in seconds and the
+    mark/space ratiom (0.0 to 1.0). */
+int playerc_blinkenlight_blink( playerc_blinkenlight_t *device, 
+				uint32_t id,
+				float period,
+				float duty_cycle );
+/** @} */
+
 /***************************************************************************/
 /** @ingroup playerc_proxies
  * @defgroup playerc_proxy_blobfinder blobfinder
@@ -1752,7 +1805,7 @@ typedef struct
   playerc_device_t info;
 
   // data
-  player_ir_data_t ranges;
+  player_ir_data_t data;
 
   // config
   player_ir_pose_t poses;
