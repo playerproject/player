@@ -1,6 +1,6 @@
 /***************************************************************************
  * Desc: Test program for the Player C client
- * Author: Andrew Howard
+ * Author: Andrew Howard, Richard Vaughan
  * Date: 13 May 2002
  # CVS: $Id$
  **************************************************************************/
@@ -212,8 +212,8 @@ int main(int argc, const char *argv[])
 
       if(strcmp(device, "blinkenlight") == 0 || strcmp(device, "all") == 0)
         test_blinkenlight(&client, index);
-      */
 
+      */
       if(strcmp(device, "camera") == 0 || strcmp(device, "all") == 0)
         test_camera(&client, index);
 

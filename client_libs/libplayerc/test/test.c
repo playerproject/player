@@ -178,6 +178,10 @@ int main(int argc, const char *argv[])
         test_blobfinder(client, client->devinfos[i].addr.index);
         break;
 
+      // Blobfinder device
+      case PLAYER_BLINKENLIGHT_CODE:
+        test_blinkenlight(client, client->devinfos[i].addr.index);
+        break;
 
       // Camera device
       case PLAYER_CAMERA_CODE:

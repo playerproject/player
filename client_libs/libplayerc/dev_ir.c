@@ -38,7 +38,7 @@
  */
 /***************************************************************************
  * Desc: ir proxy
- * Author: Toby Collett (based on ir proxy by Andrew Howard)
+ * Author: Toby Collett (based on ir proxy by Andrew Howard), Richard Vaughan
  * Date: 13 Feb 2004
  * CVS: $Id$
  **************************************************************************/
@@ -66,6 +66,7 @@ playerc_ir_t *playerc_ir_create(playerc_client_t *client, int index)
 
   device = malloc(sizeof(playerc_ir_t));
   memset(device, 0, sizeof(playerc_ir_t));
+
   playerc_device_init(&device->info, client, PLAYER_IR_CODE, index,
                       (playerc_putmsg_fn_t) playerc_ir_putmsg);
     
@@ -100,12 +101,11 @@ void playerc_ir_putmsg(playerc_ir_t *device,
                           player_msghdr_t *header,
                           void *data)
 {
-  //int i;
   if((header->type == PLAYER_MSGTYPE_DATA) &&
      (header->subtype == PLAYER_IR_DATA_RANGES))
-  {
-    device->ranges = *(player_ir_data_t *) data;
-  }
+    {
+      player_ir_data_t_copy( &device->data,(player_ir_data_t *)data ); 
+    }
 }
 
 
@@ -123,5 +123,3 @@ int playerc_ir_get_geom(playerc_ir_t *device)
   return 0;
   
 }
-
-

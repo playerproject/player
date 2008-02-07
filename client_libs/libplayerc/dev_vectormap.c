@@ -108,7 +108,9 @@ int playerc_vectormap_unsubscribe(playerc_vectormap_t *device)
 {
   if (device->geom)
   {
+#ifdef HAVE_GEOS
     GEOSGeom_destroy(device->geom);
+#endif
     device->geom = NULL;
   }
 #ifdef HAVE_GEOS
