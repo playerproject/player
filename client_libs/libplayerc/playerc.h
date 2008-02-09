@@ -458,6 +458,10 @@ typedef struct _playerc_client_t
    * Use @ref playerc_client_set_retry_time() to set this value. */
   double retry_time;
 
+  /** How many messages were lost on the server due to overflows, incremented by player, cleared by user. */
+  uint32_t overflow_count;
+  
+  
   /** @internal Socket descriptor */
   int sock;
 

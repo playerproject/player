@@ -278,6 +278,9 @@ class PlayerClient
 
     /// Get the name for a given interface code
     std::string LookupName(int aCode) const;
+    
+    /// Get count of the number of discarded messages on the server since the last call to this method
+    uint32_t GetOverflowCount();
 };
 
 
