@@ -640,17 +640,23 @@ int playerc_client_read_nonblock_withproxy(playerc_client_t *client, void ** pro
         break;
       case PLAYER_MSGTYPE_SYNCH:
         client->data_requested = 0;
+        if (header.subtype == PLAYER_PLAYER_SYNCH_OVERFLOW)
+        {
+          client->overflow_count += *((uint32_t*)client->data);
+        }
         if(!client->data_received)
         {
           PLAYERC_WARN ("No data recieved with SYNC");
-          return -1;
+          ret = -1;
         }
         else
         {
           if (proxy)
             *proxy = client->id;
-          return 1;
+          ret = 1;
         }
+        playerxdr_cleanup_message(client->data, header.addr.interf, header.type, header.subtype);
+        return ret;
       case PLAYER_MSGTYPE_DATA:
         client->lasttime = client->datatime;
         client->datatime = header.timestamp;

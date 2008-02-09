@@ -192,6 +192,7 @@ MessageQueue::MessageQueue(bool _Replace, size_t _Maxlen)
   this->pull = false;
   this->data_requested = false;
   this->data_delivered = false;
+  this->drop_count = 0;
 }
 
 MessageQueue::~MessageQueue()
@@ -288,11 +289,7 @@ MessageQueue::CheckReplace(player_msghdr_t* hdr)
   else if((hdr->type == PLAYER_MSGTYPE_DATA) ||
           (hdr->type == PLAYER_MSGTYPE_CMD))
   {
-    // If we're over the queue length limit, ignore the new data/cmd message
-    if(this->Length >= this->Maxlen)
-      return(PLAYER_PLAYER_MSG_REPLACE_RULE_IGNORE);
-    else
-      return(this->Replace ? PLAYER_PLAYER_MSG_REPLACE_RULE_REPLACE : PLAYER_PLAYER_MSG_REPLACE_RULE_ACCEPT);
+    return(this->Replace ? PLAYER_PLAYER_MSG_REPLACE_RULE_REPLACE : PLAYER_PLAYER_MSG_REPLACE_RULE_ACCEPT);
   }
   else
   {
@@ -470,8 +467,19 @@ MessageQueue::Push(Message & msg)
   hdr = msg.GetHeader();
   // Should we try to replace an older message of the same signature?
   int replaceOp = this->CheckReplace(hdr);
-  if (replaceOp == PLAYER_PLAYER_MSG_REPLACE_RULE_IGNORE)
+  // if our queue is over size discard any data or command packets
+  // if we discard requests or replies this will potentially lock up the client so we will let those through
+  if (PLAYER_PLAYER_MSG_REPLACE_RULE_IGNORE == replaceOp)
   {
+    // drop silently
+    this->Unlock();
+    return(true);
+  }
+  if (PLAYER_PLAYER_MSG_REPLACE_RULE_ACCEPT == replaceOp && (hdr->type == PLAYER_MSGTYPE_DATA ||
+          hdr->type == PLAYER_MSGTYPE_CMD) && this->Length >= this->Maxlen)
+  {
+    // record the fact that we are dropping a message
+    this->drop_count++;
     this->Unlock();
     return(true);
   }
@@ -561,8 +569,19 @@ MessageQueue::Pop()
     syncHeader.addr.interf = PLAYER_PLAYER_CODE;
     syncHeader.addr.index = 0;
     syncHeader.type = PLAYER_MSGTYPE_SYNCH;
-    syncHeader.subtype = 0;
-    Message* syncMessage = new Message(syncHeader, 0, 0);
+    // flag the synch with overflow subtype and count if an overflow occured
+    Message* syncMessage = NULL;
+    if (this->drop_count == 0)
+    {
+      syncHeader.subtype = PLAYER_PLAYER_SYNCH_OK;
+      syncMessage = new Message(syncHeader, 0, 0);
+    }
+    else
+    {
+      syncHeader.subtype = PLAYER_PLAYER_SYNCH_OVERFLOW;
+      syncMessage = new Message(syncHeader, &this->drop_count, true);
+      this->drop_count = 0;
+    }
     this->SetDataRequested(false,true);
     Unlock();
     return(syncMessage);

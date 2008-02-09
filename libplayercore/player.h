@@ -337,6 +337,13 @@ typedef struct player_bool
   uint8_t state;
 } player_bool_t;
 
+/** @brief Structure for messages returning a single integer */
+typedef struct player_uint32
+{
+  uint32_t value;
+} player_uint32_t;
+
+
 /** @} */
 
 /**

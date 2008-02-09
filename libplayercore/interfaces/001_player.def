@@ -28,6 +28,9 @@ message { REQ, AUTH, 7, player_device_auth_req_t };
 message { REQ, NAMESERVICE, 8, player_device_nameservice_req_t };
 message { REQ, ADD_REPLACE_RULE, 10, player_add_replace_rule_req_t };
 
+message { SYNCH, OK, 1, player_null_t };
+message { SYNCH, OVERFLOW, 2, player_uint32_t };
+
 
 /** Device access mode: open */
 #define PLAYER_OPEN_MODE   1

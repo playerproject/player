@@ -233,6 +233,10 @@ void PlayerClient::Read()
     {
       throw PlayerError("PlayerClient::Read()", playerc_error_str());
     }
+    if (mClient->overflow_count > 0)
+    {
+        throw PlayerError("PlayerClient::Read()", "Overflow on server");
+    }
   }
 
   std::for_each(mProxyList.begin(),
@@ -302,6 +306,15 @@ std::string PlayerClient::LookupName(int aCode) const
 {
   return std::string(interf_to_str(aCode));
 }
+
+uint32_t PlayerClient::GetOverflowCount() 
+{
+  ClientProxy::scoped_lock_t lock(mMutex); 
+  uint32_t count = mClient->overflow_count; 
+  mClient->overflow_count = 0; 
+  return count; 
+}
+
 
 std::ostream&
 std::operator << (std::ostream& os, const PlayerCc::PlayerClient& c)

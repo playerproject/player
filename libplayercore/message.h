@@ -425,6 +425,8 @@ class MessageQueue
     bool data_requested;
     /// @brief Flag that data was sent (in PULL mode)
     bool data_delivered;
+    /// @brief Count of the number of messages discarded due to queue overflow.
+    bool drop_count;
 };
 
 
