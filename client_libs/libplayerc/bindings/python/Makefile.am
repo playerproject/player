@@ -9,8 +9,10 @@ BUILT_SOURCES = playerc_oo.i srcbuilddirs.py
 
 endif
 
+dist_bin_SCRIPTS = playerc_swig_parse.py
+
 # files that go in distribution
-EXTRA_DIST = playerc.i setup.py parse.py libplayerc_py.html playercpy_example.py
+EXTRA_DIST = playerc.i setup.py libplayerc_py.html playercpy_example.py
 
 # Generate a OO interface file for libplayerc.  This is tweaked to
 # enable VPAPTH (distcheck) builds; the header files needed by swig
@@ -19,7 +21,7 @@ playerc_oo.i: ../../playerc.h $(top_srcdir)/libplayercore/player.h
 	if test ! -s ../../playerc.h; then cp $(srcdir)/../../playerc.h ../../; fi
 	if test ! -s $(top_builddir)/libplayercore/player.h; then cp $(top_srcdir)/libplayercore/player.h $(top_builddir)/libplayercore/; fi
 	if test ! -s playerc.i; then cp $(srcdir)/playerc.i .; fi
-	python $(srcdir)/parse.py ../../playerc.h playerc_oo.i
+	python $(srcdir)/playerc_swig_parse.py ../../playerc.h playerc_oo.i
 
 # Dump src and build paths into a Python file so that we can get them in
 # setup.py (distutils doesn't seem to allow extra command-line options to
