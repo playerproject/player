@@ -82,9 +82,12 @@ class SIP
 
   // Need this value to calculate approx position of lift when in between up and down
   double lastLiftPos;
+  
+  //Timestamping SIP packets
+  //double timeStandardSIP, timeGyro, timeSERAUX, timeArm;
 
   /* returns 0 if Parsed correctly otherwise 1 */
-  void Parse( unsigned char *buffer );
+  void ParseStandard( unsigned char *buffer );
   void ParseSERAUX( unsigned char *buffer );
   void ParseGyro(unsigned char* buffer);
   void ParseArm (unsigned char *buffer);
@@ -93,7 +96,10 @@ class SIP
   void PrintSonars();
   void PrintArm ();
   void PrintArmInfo ();
-  void Fill(player_p2os_data_t* data);
+  void FillStandard(player_p2os_data_t* data);
+  void FillSERAUX(player_p2os_data_t* data);
+  void FillGyro(player_p2os_data_t* data);
+  void FillArm(player_p2os_data_t* data);
 
   SIP(int idx)
   {

@@ -145,19 +145,26 @@
 
 typedef struct player_p2os_data
 {
+  //Standard SIP
   player_position2d_data_t position;
   player_sonar_data_t sonar;
   player_gripper_data_t gripper;
-  player_gripper_data_t armGripper;
+  player_actarray_data_t lift;
   player_power_data_t power;
   player_bumper_data_t bumper;
+  player_position2d_data_t compass;
   player_dio_data_t dio;
   player_aio_data_t aio;
+  
+  //Blobfinder
   player_blobfinder_data_t blobfinder;
-  player_position2d_data_t compass;
+
+  //Gyro
   player_position2d_data_t gyro;
-  player_actarray_data_t lift;
+  
+  //ARMPAC
   player_actarray_data_t actArray;
+  player_gripper_data_t armGripper;
 } __attribute__ ((packed)) player_p2os_data_t;
 
 // this is here because we need the above typedef's before including it.
@@ -225,7 +232,10 @@ class P2OS : public Driver
                      player_msghdr * hdr,
                      void* data);
     int HandleCommand(player_msghdr * hdr, void * data);
-    void PutData(void);
+    void StandardSIPPutData(double timestampStandardSIP);
+    void GyroPutData(double timestampGyro);
+    void BlobfinderPutData(double timestampSERAUX);
+    void ActarrayPutData(double timestampArm);
     void HandlePositionCommand(player_position2d_cmd_vel_t position_cmd);
     int HandleGripperCommand (player_msghdr *hdr, void *data);
     int HandleLiftCommand (player_msghdr *hdr, void *data);
