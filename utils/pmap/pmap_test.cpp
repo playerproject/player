@@ -232,6 +232,49 @@ static void save_coarse();
 static int process_fine();
 static void save_fine();
 
+// Shows help
+void show_help ()
+{
+  fprintf (stdout,
+	   "The pmap_test utility demonstrates the basic functionality of\n"
+	   "the pmap library and serves a handy mapping utility in its own\n"
+	   "right.  Given a Player logfile containing odometry and laser\n"
+	   "data, pmap_test will produce an occupancy grid map of the\n"
+	   "environment.\n\n"
+	   "Basic usage is as follows:\n"
+	   "\t$ pmap_test [options] <logfilename>\n\n"
+	   "where the supported options are:\n"
+"   -g                                 disable the GUI (run in console mode\n"
+"                                      only).\n"
+"   --range_max                        maximum effective range for the laser\n"
+"                                      (m).\n"
+"   --position_index                   index of odometry device in logfile.\n"
+"   --laser_index                      index of laser device in logfile.\n"
+"   --num_samples                      number of samples in particle filter.\n"
+"   --resample_interval                number of scans between resampling\n"
+"                                      steps.\n"
+"   --resample_sigma                   width of resampling gaussian.\n"
+"   --num_cycles                       number of optimization cycles in the\n"
+"                                      fine phase.\n"
+"   --robot_x, --robot_y, --robot_rot  initial robot pose.\n"
+"   --grid_width, --grid_height        grid dimensions (m).\n"
+"   --grid_scale                       grid scale (m/cell).\n"
+"   --laser_x, --laser_rot             laser position offset.\n"
+"   --robot_hostname                   the name of the robot to verify in\n"
+"                                      the log.\n"
+"   --skip                             amount of time to skip between log\n"
+"                                      entries.\n"
+"   --range_res                        Resolution of the laser (only used in\n"
+"                                      lodo, not lodo2 which is currently\n"
+"                                      used.\n"
+"   --action_model_xx,\n"
+"   --action_model_rx,\n"
+"   --action_model_rr                  believe factors in the change of the\n"
+"                                      robot's pose.\n"
+);
+  
+  exit (EXIT_SUCCESS);
+}
 
 // Key callback
 void win_key(unsigned char key, int x, int y)
@@ -752,7 +795,7 @@ int main(int argc, char **argv)
 {
   struct timeval tv_a, tv_b;
   int opt;
-  const char *opts = "g";      
+  const char *opts = "gh";
   const struct option lopts[] =
     {
       {"nogui", 0, 0, 'g'},
@@ -774,6 +817,7 @@ int main(int argc, char **argv)
       {"resample_interval", 1, 0, 120},
       {"resample_sigma", 1, 0, 121},
       {"num_cycles", 1, 0, 122},
+      {"help", 0, 0, 'h'},
       {0, 0, 0, 0}
     };
   
@@ -782,6 +826,8 @@ int main(int argc, char **argv)
   {
     if (opt == 'g')
       opt_gui = 0;
+    else if (opt == 'h')
+      show_help();
     else if (opt == 1)
       opt_max_scans = atoi(optarg);
     else if (opt == 2)
@@ -823,7 +869,8 @@ int main(int argc, char **argv)
   // Get filename to process
   if (optind < 0 || optind >= argc)
   {
-    fprintf(stderr, "usage: pmap_test [options] <logfile>\n");
+    //fprintf(stderr, "usage: pmap_test [options] <logfile>\n");
+    show_help ();
     exit(-1);
   }
   opt_filename = argv[optind];
