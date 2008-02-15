@@ -355,10 +355,10 @@ class Camera1394 : public Driver
   private: size_t frameSize;
 
   // Capture timestamp
-  private: struct timeval frameTime;
+  private: double frameTime;
   
   // Data to send to server
-  private: player_camera_data_t data;
+  private: player_camera_data_t *data;
 
   // Bayer Colour Conversion
   private: bool DoBayerConversion;
@@ -686,7 +686,6 @@ Camera1394::Camera1394(ConfigFile* cf, int section)
       this->iso_speed = DC1394_ISO_SPEED_3200;
       break;
   }
-  this->data.compression = PLAYER_CAMERA_COMPRESS_RAW;
   
   return;
 }
@@ -742,7 +741,7 @@ void Camera1394::SafeCleanup()
 // Set up the device (called by server thread).
 int Camera1394::Setup()
 {
-  memset(&(this->data), 0, sizeof(this->data));
+  this->data = 0;
 
 #if LIBDC1394_VERSION == 0200
   dc1394speed_t speed;
@@ -1111,9 +1110,6 @@ void Camera1394::Main()
     // Grab the next frame (blocking)
     this->GrabFrame();
 
-    // Write data to server
-    this->RefreshData();
-
     // this should go or be replaced
     // Save frames; must be done after writedata (which will byteswap)
     if (this->save)
@@ -1122,6 +1118,10 @@ void Camera1394::Main()
       snprintf(filename, sizeof(filename), "click-%04d.ppm", frameno++);
       this->SaveFrame(filename);
     }
+
+    // Write data to server
+    this->RefreshData();
+
     /*
       gettimeofday(&now,NULL);
       printf("dt = %lf\n",now.tv_sec-old.tv_sec+(now.tv_usec-old.tv_usec)*1.0e-6);
@@ -1196,10 +1196,12 @@ int Camera1394::GrabFrame()
     return -1;
   }
 
+  this->data = (player_camera_data_t *)malloc(sizeof(*this->data));
   unsigned int frame_width;
   unsigned int frame_height;
   uint8_t * capture_buffer;
 #if LIBDC1394_VERSION == 0200
+  frameTime = frame->timestamp/1.e-6;
   frame_width = frame->size[0];
   frame_height = frame->size[1];
   capture_buffer = (uint8_t *) frame->image;
@@ -1212,41 +1214,35 @@ int Camera1394::GrabFrame()
   if (frameSize == 0)
     frameSize = frame_width * frame_height;
   
-  
-  //delete [] this->data.image;
-  //this->data.image = NULL;
-  unsigned int old_image_count = this->data.image_count;
   switch (this->mode)
   {
   case MODE_320x240_YUV422:
   case MODE_640x480_YUV422:
-    this->data.bpp = 24;
-    this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
-    this->data.image_count = this->frameSize;
-    if(old_image_count < this->data.image_count)
-        this->data.image = new uint8_t [this->data.image_count];
-    this->data.width = frame_width;
-    this->data.height = frame_height;
-    uyvy2rgb(capture_buffer, this->data.image, (frame_width) * (frame_height));
+    this->data->bpp = 24;
+    this->data->format = PLAYER_CAMERA_FORMAT_RGB888;
+    this->data->image_count = this->frameSize;
+    this->data->image = (uint8_t*) malloc(this->data->image_count);
+    this->data->width = frame_width;
+    this->data->height = frame_height;
+    uyvy2rgb(capture_buffer, this->data->image, (frame_width) * (frame_height));
     break;
   case MODE_1024x768_YUV422:
   case MODE_1280x960_YUV422:
     if (resized == NULL)
       resized = new uint8_t [1280 * 960 * 3];
-    this->data.bpp = 24;
-    this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
-    this->data.image_count = this->frameSize;
-    if(old_image_count < this->data.image_count)
-        this->data.image = new uint8_t [this->data.image_count];
-    this->data.width = frame_width / 2;
-    this->data.height = frame_height / 2;
-    assert(this->data.image_count <= sizeof(this->data.image));
+    this->data->bpp = 24;
+    this->data->format = PLAYER_CAMERA_FORMAT_RGB888;
+    this->data->image_count = this->frameSize;
+    this->data->image = (uint8_t *) malloc(this->data->image_count);
+    this->data->width = frame_width / 2;
+    this->data->height = frame_height / 2;
+    assert(this->data->image_count <= sizeof(this->data->image));
     uyvy2rgb(capture_buffer, this->resized, (frame_width) * (frame_height));
     ptr1 = this->resized;
-    ptr2 = this->data.image;
-    for (f = 0; f < (this->data.height); f++)
+    ptr2 = this->data->image;
+    for (f = 0; f < (this->data->height); f++)
     {
-      for (c = 0; c < (this->data.width); c++)
+      for (c = 0; c < (this->data->width); c++)
       {
 	ptr2[0] = ptr1[0];
 	ptr2[1] = ptr1[1];
@@ -1260,20 +1256,19 @@ int Camera1394::GrabFrame()
   case MODE_800x600_YUV422:
     if (resized == NULL)
       resized = new uint8_t [1280 * 960 * 3];
-    this->data.bpp = 24;
-    this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
-    this->data.image_count = this->frameSize;
-    if(old_image_count < this->data.image_count)
-        this->data.image = new uint8_t [this->data.image_count];
-    this->data.width = 600;
-    this->data.height = 450;
+    this->data->bpp = 24;
+    this->data->format = PLAYER_CAMERA_FORMAT_RGB888;
+    this->data->image_count = this->frameSize;
+    this->data->image = (uint8_t *) malloc(this->data->image_count);
+    this->data->width = 600;
+    this->data->height = 450;
     uyvy2rgb(capture_buffer, this->resized, (frame_width) * (frame_height));
     ptr1 = this->resized;
-    ptr2 = this->data.image;
+    ptr2 = this->data->image;
     i = 3; j = 3;
-    for (f = 0; f < (this->data.height); f++)
+    for (f = 0; f < (this->data->height); f++)
     {
-      for (c = 0; c < (this->data.width); c++)
+      for (c = 0; c < (this->data->width); c++)
       {
 	ptr2[0] = ptr1[0];
 	ptr2[1] = ptr1[1];
@@ -1288,14 +1283,13 @@ int Camera1394::GrabFrame()
     }
     break;  
   case MODE_640x480_RGB:
-    this->data.bpp = 24;
-    this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
-    this->data.image_count = this->frameSize;
-    if(old_image_count < this->data.image_count)
-        this->data.image = new uint8_t [this->data.image_count];
-    this->data.width = frame_width;
-    this->data.height = frame_height;
-    memcpy(this->data.image, capture_buffer, this->data.image_count);
+    this->data->bpp = 24;
+    this->data->format = PLAYER_CAMERA_FORMAT_RGB888;
+    this->data->image_count = this->frameSize;
+    this->data->image = (uint8_t *)malloc(this->data->image_count);
+    this->data->width = frame_width;
+    this->data->height = frame_height;
+    memcpy(this->data->image, capture_buffer, this->data->image_count);
     break;
   case MODE_640x480_MONO:
   case MODE_800x600_MONO:
@@ -1304,43 +1298,39 @@ int Camera1394::GrabFrame()
   case MODE_FORMAT7_0:
     if (!DoBayerConversion)
     {
-      this->data.bpp = 8;
-      this->data.format = PLAYER_CAMERA_FORMAT_MONO8;
-      this->data.image_count = this->frameSize;
-      if(old_image_count < this->data.image_count)
-          this->data.image = new uint8_t [this->data.image_count];
-      this->data.width = frame_width;
-      this->data.height = frame_height;
-      memcpy(this->data.image, capture_buffer, this->data.image_count);
+      this->data->bpp = 8;
+      this->data->format = PLAYER_CAMERA_FORMAT_MONO8;
+      this->data->image_count = this->frameSize;
+      this->data->image = (uint8_t*) malloc(this->data->image_count);
+      this->data->width = frame_width;
+      this->data->height = frame_height;
+      memcpy(this->data->image, capture_buffer, this->data->image_count);
     } 
     else
     {
-      this->data.bpp = 24;
-      this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
-      dst = this->data.image;
+      this->data->bpp = 24;
+      this->data->format = PLAYER_CAMERA_FORMAT_RGB888;
+      dst = this->data->image;
       switch (this->BayerMethod)
       {
       case BAYER_DECODING_DOWNSAMPLE:
         // quarter of the image but 3 bytes per pixel
-	this->data.image_count = this->frameSize/4*3;
-        if(old_image_count < this->data.image_count)
-            this->data.image = new uint8_t [this->data.image_count];
-	BayerDownsample(capture_buffer, this->data.image,
+	this->data->image_count = this->frameSize/4*3;
+    this->data->image = (uint8_t *) malloc(this->data->image_count);
+	BayerDownsample(capture_buffer, this->data->image,
 					frame_width/2, frame_height/2,
 					(bayer_pattern_t)this->BayerPattern);
 	break;
       case BAYER_DECODING_NEAREST:
-        this->data.image_count = this->frameSize * 3;
-        if(old_image_count < this->data.image_count)
-            this->data.image = new uint8_t [this->data.image_count];
+        this->data->image_count = this->frameSize * 3;
+        this->data->image = (uint8_t *) malloc(this->data->image_count);
         BayerNearestNeighbor(capture_buffer, dst,
 					frame_width, frame_height,
 					(bayer_pattern_t)this->BayerPattern);
 	break;
       case BAYER_DECODING_EDGE_SENSE:
-        this->data.image_count = this->frameSize * 3;
-        if(old_image_count < this->data.image_count)
-            this->data.image = new uint8_t [this->data.image_count];
+        this->data->image_count = this->frameSize * 3;
+        this->data->image = (uint8_t *) malloc(this->data->image_count);
         
 	BayerEdgeSense(capture_buffer, dst,
 					frame_width, frame_height,
@@ -1352,13 +1342,13 @@ int Camera1394::GrabFrame()
       }
       if (this->BayerMethod != BAYER_DECODING_DOWNSAMPLE)
       {
-        this->data.width = frame_width;
-        this->data.height = frame_height;
+        this->data->width = frame_width;
+        this->data->height = frame_height;
       } 
       else
       {    //image is half the size of grabbed frame
-        this->data.width = frame_width/2;
-        this->data.height = frame_height/2;
+        this->data->width = frame_width/2;
+        this->data->height = frame_height/2;
       }
     }
     break;
@@ -1372,6 +1362,7 @@ int Camera1394::GrabFrame()
   if (this->method == methodVideo) dc1394_dma_done_with_buffer(&this->camera);
 #endif
 
+  this->data->compression = PLAYER_CAMERA_COMPRESS_RAW;
   return 0;
 }
 
@@ -1381,8 +1372,12 @@ void Camera1394::RefreshData()
 {
   Publish(this->device_addr, 
           PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
-          reinterpret_cast<void*>(&this->data));  
-  
+          reinterpret_cast<void*>(this->data),
+#if LIBDC1394_VERSION == 0200
+          0, &this->frameTime, false);  
+#else
+          0, 0, false);
+#endif  
   return;
 }
 
@@ -1399,15 +1394,15 @@ int Camera1394::SaveFrame(const char *filename)
     return -1;
   }
 
-  switch (this->data.format)
+  switch (this->data->format)
   {
     case PLAYER_CAMERA_FORMAT_MONO8:
-      fprintf(fp,"P5\n%u %u\n255\n", this->data.width, this->data.height);
-      fwrite((unsigned char*)this->data.image, 1, this->data.image_count, fp);
+      fprintf(fp,"P5\n%u %u\n255\n", this->data->width, this->data->height);
+      fwrite((unsigned char*)this->data->image, 1, this->data->image_count, fp);
       break;
     case PLAYER_CAMERA_FORMAT_RGB888:
-      fprintf(fp,"P6\n%u %u\n255\n", this->data.width, this->data.height);
-      fwrite((unsigned char*)this->data.image, 1, this->data.image_count, fp);
+      fprintf(fp,"P6\n%u %u\n255\n", this->data->width, this->data->height);
+      fwrite((unsigned char*)this->data->image, 1, this->data->image_count, fp);
       break;
     default:
       break;

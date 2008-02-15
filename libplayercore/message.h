@@ -50,10 +50,6 @@
 
 #include <libplayercore/player.h>
 
-// TODO:
-//   - Add support for stealing the data pointer when creating a message.
-//     That would save one allocation & copy in some situations.
-
 class MessageQueue;
 
 /** @brief An autopointer for the message queue
