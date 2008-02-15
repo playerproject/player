@@ -124,15 +124,10 @@ class SR3000:public Driver
 
     // SR3000 specific values
     unsigned int rows, cols, bpp, inr;
-    unsigned char integration_time;
     //ModulationFrq modulation_freq;
     size_t buffer_size, buffer_points_size;
     void *buffer;
     float *buffer_points, *xp, *yp, *zp;
-
-    // Properties
-    IntProperty auto_illumination, integration_time, modulation_freq, sat_threshold, amp_threshold;
-    DoubleProperty static_delay, dynamic_delay;
 
     // device bookkeeping
     player_devaddr_t pcloud_addr;
@@ -140,6 +135,12 @@ class SR3000:public Driver
     player_pointcloud3d_data_t pcloud_data;
     player_camera_data_t       d_cam_data, i_cam_data;
     bool providePCloud, provideDCam, provideICam;
+
+  protected:
+    // Properties
+    IntProperty auto_illumination, integration_time, modulation_freq, sat_threshold, amp_threshold;
+    DoubleProperty static_delay, dynamic_delay;
+
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -165,8 +166,13 @@ void
 // pre-Setup() setup.
 SR3000::SR3000 (ConfigFile* cf, int section)
 	: Driver (cf, section),
-	auto_illumination (0), integration_time (0), modulation_freq (0),
-	sat_threshold (0), amp_threshold (0), static_delay (0), dynamic_delay (0)
+	auto_illumination ("auto_illumination", 0, 0), 
+	integration_time ("integration_time", 0, 0), 
+	modulation_freq ("modulation_freq", 0, 0),
+	sat_threshold ("sat_threshold", 0, 0), 
+	amp_threshold ("amp_threshold", 0, 0), 
+	static_delay ("static_delay", 0, 0), 
+	dynamic_delay ("dynamic_delay", 0, 0)
 {
   memset (&this->pcloud_addr, 0, sizeof (player_devaddr_t));
   memset (&this->d_cam_addr,  0, sizeof (player_devaddr_t));
