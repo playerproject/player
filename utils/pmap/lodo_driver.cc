@@ -310,7 +310,7 @@ LodoDriver::LodoDriver(ConfigFile* cf, int section)
 
   // Laser offset from robot origin
   this->laser_pose.pos.x = cf->ReadTupleLength(section, "laser_pose", 0, 0.0);
-  this->laser_pose.pos.x = cf->ReadTupleLength(section, "laser_pose", 1, 0.0);
+  this->laser_pose.pos.y = cf->ReadTupleLength(section, "laser_pose", 1, 0.0);
   this->laser_pose.rot = cf->ReadTupleAngle(section, "laser_pose", 2, 0.0);
 
   // Max valid range
