@@ -2333,6 +2333,9 @@ int playerc_vectormap_get_map_info(playerc_vectormap_t* device);
 /** @brief Get the layer data by index. Must only be used after a successfull call to playerc_vectormap_get_map_info. */
 int playerc_vectormap_get_layer_data(playerc_vectormap_t *device, unsigned layer_index);
 
+/** @brief Write layer data. */
+int playerc_vectormap_write_layer(playerc_vectormap_t *device, const player_vectormap_layer_data_t * data);
+
 /** @brief Clean up the dynamically allocated memory for the vectormap. */
 void playerc_vectormap_cleanup(playerc_vectormap_t *device);
 
