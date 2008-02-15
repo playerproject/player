@@ -42,7 +42,7 @@ static player_actarray_actuator_t liftActuator;
 // Same thing for blobs
 static player_blobfinder_blob_t cmucamBlob;
 
-void SIP::Fill(player_p2os_data_t* data)
+void SIP::FillStandard(player_p2os_data_t* data)
 {
   ///////////////////////////////////////////////////////////////
   // odometry
@@ -77,11 +77,6 @@ void SIP::Fill(player_p2os_data_t* data)
   // compass
   memset(&(data->compass),0,sizeof(data->compass));
   data->compass.pos.pa = DTOR(this->compass);
-
-  ///////////////////////////////////////////////////////////////
-  // gyro
-  memset(&(data->gyro),0,sizeof(data->gyro));
-  data->gyro.pos.pa = DTOR(this->gyro_rate);
 
   ///////////////////////////////////////////////////////////////
   // sonar
@@ -173,7 +168,18 @@ void SIP::Fill(player_p2os_data_t* data)
   if (!data->aio.voltages)
     data->aio.voltages = new float[1];
   data->aio.voltages[0] = (this->analog / 255.0) * 5.0;
+}
 
+void SIP::FillGyro(player_p2os_data_t* data)
+{
+  ///////////////////////////////////////////////////////////////
+  // gyro
+  memset(&(data->gyro),0,sizeof(data->gyro));
+  data->gyro.pos.pa = DTOR(this->gyro_rate);
+}
+
+void SIP::FillSERAUX(player_p2os_data_t* data)
+{
   /* CMUcam blob tracking interface.  The CMUcam only supports one blob
   ** (and therefore one channel too), so everything else is zero.  All
   ** data is storde in the blobfinder packet in Network byte order.
@@ -204,7 +210,10 @@ void SIP::Fill(player_p2os_data_t* data)
   }
   else
     data->blobfinder.blobs_count = 0;
+}
 
+void SIP::FillArm(player_p2os_data_t* data)
+{
   ///////////////////////////////////////////////////////////////
   // Fill in arm data
   data->actArray.actuators_count = armNumJoints;
@@ -328,7 +337,7 @@ void SIP::PrintArmInfo ()
 		printf ("%d |\t%d\t%d\t%d\t%d\t%d\t%d\n", ii, armJoints[ii].speed, armJoints[ii].home, armJoints[ii].min, armJoints[ii].centre, armJoints[ii].max, armJoints[ii].ticksPer90);
 }
 
-void SIP::Parse( unsigned char *buffer )
+void SIP::ParseStandard( unsigned char *buffer )
 {
   int cnt = 0, change;
   unsigned short newxpos, newypos;

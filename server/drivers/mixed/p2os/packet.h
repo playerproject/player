@@ -32,6 +32,9 @@
 
 #include <string.h>
 
+#include <libplayercore/globals.h>
+#include <libplayercore/wallclocktime.h>
+
 #define PACKET_LEN 256
 
 class P2OSPacket 
@@ -39,6 +42,7 @@ class P2OSPacket
  public:
   unsigned char packet[PACKET_LEN];
   unsigned char size;
+  double timestamp;
 
   int CalcChkSum();
 

@@ -1381,17 +1381,15 @@ P2OS::Unsubscribe(player_devaddr_t id)
 }
 
 void
-P2OS::PutData(void)
+P2OS::StandardSIPPutData(double timestampStandardSIP)
 {
-  // TODO: something smarter about timestamping.
-
   // put odometry data
   this->Publish(this->position_id,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_POSITION2D_DATA_STATE,
                 (void*)&(this->p2os_data.position),
                 sizeof(player_position2d_data_t),
-                NULL);
+                &timestampStandardSIP);
 
   // put sonar data
   this->Publish(this->sonar_id,
@@ -1399,7 +1397,7 @@ P2OS::PutData(void)
                 PLAYER_SONAR_DATA_RANGES,
                 (void*)&(this->p2os_data.sonar),
                 sizeof(player_sonar_data_t),
-                NULL);
+                &timestampStandardSIP);
   delete this->p2os_data.sonar.ranges;
 
   // put aio data
@@ -1408,7 +1406,7 @@ P2OS::PutData(void)
                 PLAYER_AIO_DATA_STATE,
                 (void*)&(this->p2os_data.aio),
                 sizeof(player_aio_data_t),
-                NULL);
+                &timestampStandardSIP);
 
   // put dio data
   this->Publish(this->dio_id,
@@ -1416,7 +1414,7 @@ P2OS::PutData(void)
                 PLAYER_DIO_DATA_VALUES,
                 (void*)&(this->p2os_data.dio),
                 sizeof(player_dio_data_t),
-                NULL);
+                &timestampStandardSIP);
 
   // put gripper data
   this->Publish(this->gripper_id,
@@ -1424,7 +1422,7 @@ P2OS::PutData(void)
                 PLAYER_GRIPPER_DATA_STATE,
                 (void*)&(this->p2os_data.gripper),
                 sizeof(player_gripper_data_t),
-                NULL);
+                &timestampStandardSIP);
 
   // put lift data
   this->Publish(this->lift_id,
@@ -1432,7 +1430,7 @@ P2OS::PutData(void)
                 PLAYER_ACTARRAY_DATA_STATE,
                 (void*)&(this->p2os_data.lift),
                 sizeof(player_actarray_data_t),
-                NULL);
+                &timestampStandardSIP);
 
   // put bumper data
   this->Publish(this->bumper_id,
@@ -1440,7 +1438,7 @@ P2OS::PutData(void)
                 PLAYER_BUMPER_DATA_STATE,
                 (void*)&(this->p2os_data.bumper),
                 sizeof(player_bumper_data_t),
-                NULL);
+                &timestampStandardSIP);
 
   // put power data
   this->Publish(this->power_id,
@@ -1448,7 +1446,7 @@ P2OS::PutData(void)
                 PLAYER_POWER_DATA_STATE,
                 (void*)&(this->p2os_data.power),
                 sizeof(player_power_data_t),
-                NULL);
+                &timestampStandardSIP);
 
   // put compass data
   this->Publish(this->compass_id,
@@ -1456,31 +1454,43 @@ P2OS::PutData(void)
                 PLAYER_POSITION2D_DATA_STATE,
                 (void*)&(this->p2os_data.compass),
                 sizeof(player_position2d_data_t),
-                NULL);
+                &timestampStandardSIP);
+}
 
+void
+P2OS::GyroPutData(double timestampGyro)
+{
   // put gyro data
   this->Publish(this->gyro_id,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_POSITION2D_DATA_STATE,
                 (void*)&(this->p2os_data.gyro),
                 sizeof(player_position2d_data_t),
-                NULL);
+                &timestampGyro);
+}
 
+void
+P2OS::BlobfinderPutData(double timestampSERAUX)
+{
   // put blobfinder data
   this->Publish(this->blobfinder_id,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_BLOBFINDER_DATA_BLOBS,
                 (void*)&(this->p2os_data.blobfinder),
                 sizeof(player_blobfinder_data_t),
-                NULL);
+                &timestampSERAUX);
+}
 
+void
+P2OS::ActarrayPutData(double timestampArm)
+{
   // put actarray data
   this->Publish(this->actarray_id,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_ACTARRAY_DATA_STATE,
                 (void*)&(this->p2os_data.actArray),
                 sizeof(player_actarray_data_t),
-                NULL);
+                &timestampArm);
   delete[] this->p2os_data.actArray.actuators;
 
   // put limb data
@@ -1489,7 +1499,7 @@ P2OS::PutData(void)
                 PLAYER_LIMB_DATA_STATE,
                 (void*)&(this->limb_data),
                 sizeof(player_limb_data_t),
-                NULL);
+                &timestampArm);
 
   // put arm gripper data
   this->Publish(this->armgripper_id,
@@ -1497,7 +1507,7 @@ P2OS::PutData(void)
                 PLAYER_GRIPPER_DATA_STATE,
                 (void*)&(this->p2os_data.armGripper),
                 sizeof(player_gripper_data_t),
-                NULL);
+                &timestampArm);
 }
 
 void
@@ -1604,9 +1614,10 @@ int
 P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
 {
   P2OSPacket packet;
+  double msgTime;
 
   // zero the combined data buffer.  it will be filled with the latest data
-  // by SIP::Fill()
+  // by corresponding SIP::Fill*()
   memset(&(this->p2os_data),0,sizeof(player_p2os_data_t));
   if((this->psos_fd >= 0) && this->sippacket)
   {
@@ -1628,11 +1639,11 @@ P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
     {
 
       /* It is a server packet, so process it */
-      this->sippacket->Parse( &packet.packet[3] );
-      this->sippacket->Fill(&(this->p2os_data));
+      this->sippacket->ParseStandard( &packet.packet[3] );
+      this->sippacket->FillStandard(&(this->p2os_data));
 
       if(publish_data)
-        this->PutData();
+        this->StandardSIPPutData(packet.timestamp);
     }
     else if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB &&
             packet.packet[3] == SERAUX)
@@ -1643,15 +1654,16 @@ P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
             packet.packet[3] == SERAUX2)
     {
       // This is an AUX2 serial packet
+      
       if(blobfinder_id.interf)
       {
         /* It is an extended SIP (blobfinder) packet, so process it */
         /* Be sure to pass data size too (packet[2])! */
         this->sippacket->ParseSERAUX( &packet.packet[2] );
-        this->sippacket->Fill(&(this->p2os_data));
-
+        this->sippacket->FillSERAUX(&(this->p2os_data));
+        
         if(publish_data)
-          this->PutData();
+          this->BlobfinderPutData(packet.timestamp);
 
         P2OSPacket cam_packet;
         unsigned char cam_command[4];
@@ -1699,9 +1711,10 @@ P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
       {
         /* It's a set of gyro measurements */
         this->sippacket->ParseGyro(&packet.packet[2]);
-        this->sippacket->Fill(&(this->p2os_data));
+        this->sippacket->FillGyro(&(this->p2os_data));
+
         if(publish_data)
-          this->PutData();
+          this->GyroPutData(packet.timestamp);
 
         /* Now, the manual says that we get one gyro packet each cycle,
          * right before the standard SIP.  So, we'll call SendReceive()
@@ -1729,7 +1742,7 @@ P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
           sippacket->armJointPosRads[ii] = TicksToRadians (ii, sippacket->armJointPos[ii]);
           joints[ii] = sippacket->armJointPosRads[ii];
         }
-        sippacket->Fill(&p2os_data);
+        sippacket->FillArm(&p2os_data);
         if(kineCalc)
         {
           kineCalc->CalculateFK (joints);
@@ -1753,9 +1766,10 @@ P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
               limb_data.state = PLAYER_LIMB_STATE_IDLE;
           }
         }
+        if(publish_data)
+        this->ActarrayPutData(packet.timestamp);
       }
-      if(publish_data)
-        this->PutData();
+      
       // Go for another SIP - there had better be one or things will probably go boom
       SendReceive(NULL,publish_data);
     }
@@ -1772,6 +1786,7 @@ P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
             kineCalc->SetJointRange (ii, TicksToRadians (ii, sippacket->armJoints[ii].min), TicksToRadians (ii, sippacket->armJoints[ii].max));
           // Go for another SIP - there had better be one or things will probably go boom
         }
+        
         SendReceive(NULL,publish_data);
       }
     }
@@ -1780,6 +1795,7 @@ P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
       packet.PrintHex();
     }
   }
+
   return(0);
 }
 

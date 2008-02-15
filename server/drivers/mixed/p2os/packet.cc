@@ -111,6 +111,8 @@ int P2OSPacket::Receive( int fd )
 
       if (prefix[0]==0xFA && prefix[1]==0xFB) break;
       
+      GlobalTime->GetTimeDouble(&timestamp);
+      
       prefix[0]=prefix[1];
       prefix[1]=prefix[2];
       //skipped++;
