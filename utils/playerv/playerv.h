@@ -39,6 +39,7 @@
  ***************************************************************************/
 
 #define MAP_UPDATE_TIME 1.0
+#define VECTORMAP_UPDATE_TIME 1.0
 
 /***************************************************************************
  * Default colors
@@ -935,6 +936,7 @@ typedef struct
   // Menu stuff
   rtk_menu_t *menu;
   rtk_menuitem_t *subscribe_item;
+  rtk_menuitem_t *continuous_item;
   // Figures
   rtk_fig_t *fig;
 
