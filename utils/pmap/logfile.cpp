@@ -38,6 +38,13 @@ logfile_t *logfile_alloc(const char *filename)
   return self;
 }
 
+void logfile_free(logfile_t *self)
+{
+  fclose(self->file);
+  delete self->line;
+  delete self;
+}
+
 
 // Read a line from the log file
 int logfile_read(logfile_t *self)
@@ -125,6 +132,10 @@ int logfile_read(logfile_t *self)
       return 1;
     assert(self->token_count >= 13);
     self->laser_range_count = atoi(self->tokens[12]);
+    self->laser_range_max = atof(self->tokens[11]);
+    self->laser_angle_min = atof(self->tokens[8]);
+    self->laser_angle_max = atof(self->tokens[9]);
+    self->laser_angle_step = atof(self->tokens[10]);
     assert(self->token_count >= 13 + self->laser_range_count * 2);
 
     for (i = 0; i < self->laser_range_count; i++)
