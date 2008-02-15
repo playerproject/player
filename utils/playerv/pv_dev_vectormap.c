@@ -58,6 +58,7 @@ vectormap_t *vectormap_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *
   snprintf(label, sizeof(label), "vectormap:%d (%s)", index, map->drivername);
   map->menu = rtk_menu_create_sub(mainwnd->device_menu, label);
   map->subscribe_item = rtk_menuitem_create(map->menu, "Subscribe", 1);
+  map->continuous_item = rtk_menuitem_create(map->menu, "continuous update", 1);
   // Set the initial menu state
   rtk_menuitem_check(map->subscribe_item, subscribe);
 
@@ -121,8 +122,39 @@ void vectormap_update(vectormap_t *map)
 
   // Dont draw the map.
   if(map->proxy->info.subscribed)
+  {
+    if(rtk_menuitem_ischecked(map->continuous_item))
+    {
+			static struct timeval old_time = {0,0};
+			struct timeval time;
+			double time_diff = 0.0;
+			gettimeofday(&time, NULL);
+			// i don't use (map->proxy->info.datatime != map->datatime))
+			// because some drivers return strange datatimes
+			// and the map may change to often for the current map format
+			// in playerv.h you can adjust MAP_UPDATE_TIME (default 1 sec)
+			time_diff = (double)(time.tv_sec - old_time.tv_sec) +
+				(double)(time.tv_usec - old_time.tv_usec)/1000000;
+			if (time_diff > MAP_UPDATE_TIME)
+			{
+				// get the map info
+    				playerc_vectormap_get_map_info( map->proxy );
+
+    				// download intial map data
+    				for (ii = 0;  ii < map->proxy->layers_count; ++ii)
+    				{
+    				    if (playerc_vectormap_get_layer_data( map->proxy, ii ))
+    				    {
+        				PRINT_ERR1("libplayerc error: %s", playerc_error_str());
+        				return;
+    				    }
+    				}
+    				vectormap_draw( map );
+				old_time = time;
+			}
+    }
     rtk_fig_show(map->fig, 1);
-  else
+  } else
     rtk_fig_show(map->fig, 0);
 }
 
