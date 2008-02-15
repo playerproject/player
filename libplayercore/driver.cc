@@ -137,7 +137,7 @@ Driver::Publish(QueuePointer &queue,
                 player_msghdr_t* hdr,
                 void* src, bool copy)
 {
-  Message msg(*hdr,src);
+  Message msg(*hdr,src,copy);
   // push onto the given queue, which provides its own locking
   if(!queue->Push(msg))
   {
@@ -153,7 +153,7 @@ Driver::Publish(player_msghdr_t* hdr,
 {
   Device* dev;
 
-  Message msg(*hdr,src);
+  Message msg(*hdr,src,copy);
   // lock here, because we're accessing our device's queue list
   this->Lock();
   // push onto each queue subscribed to the given device
@@ -189,7 +189,8 @@ Driver::Publish(player_devaddr_t addr,
                 uint8_t subtype,
                 void* src,
                 size_t deprecated,
-                double* timestamp)
+                double* timestamp,
+                bool copy)
 {
   double t;
 
@@ -207,7 +208,7 @@ Driver::Publish(player_devaddr_t addr,
   hdr.timestamp = t;
   hdr.size = 0;
 
-  this->Publish(queue, &hdr, src);
+  this->Publish(queue, &hdr, src, copy);
 }
 
 void
@@ -216,7 +217,8 @@ Driver::Publish(player_devaddr_t addr,
                 uint8_t subtype,
                 void* src, 
                 size_t deprecated,
-                double* timestamp)
+                double* timestamp,
+                bool copy)
 {
   double t;
 
@@ -234,7 +236,7 @@ Driver::Publish(player_devaddr_t addr,
   hdr.timestamp = t;
   hdr.size = 0;
 
-  this->Publish(&hdr, src);
+  this->Publish(&hdr, src, copy);
 }
 
 void Driver::Lock()

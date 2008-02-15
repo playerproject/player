@@ -177,14 +177,16 @@ class Driver
     @param src The message body
     @param deprecated Used to be the length of the message this is now calculated
     @param timestamp Timestamp for the message body (if NULL, then the
-    current time will be filled in) */
+    current time will be filled in)
+    @param copy if set to false the data will be claimed and the caller should no longer use or free it */
     void Publish(player_devaddr_t addr,
                  QueuePointer &queue,
                  uint8_t type,
                  uint8_t subtype,
                  void* src=NULL,
                  size_t deprecated=0,
-                 double* timestamp=NULL);
+                 double* timestamp=NULL,
+                 bool copy=true);
 
      /** @brief Publish a message via one of this driver's interfaces.
      
@@ -197,13 +199,15 @@ class Driver
      @param src The message body
      @param deprecated Used to be the length of the message this is now calculated
      @param timestamp Timestamp for the message body (if NULL, then the
-     current time will be filled in) */
+     current time will be filled in)
+     @param copy if set to false the data will be claimed and the caller should no longer use or free it */
      void Publish(player_devaddr_t addr, 
                   uint8_t type, 
                   uint8_t subtype,
                   void* src=NULL, 
                   size_t deprecated=0,
-                  double* timestamp=NULL);
+                  double* timestamp=NULL,
+                  bool copy=true);
  
  
 

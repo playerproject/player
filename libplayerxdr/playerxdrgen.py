@@ -295,7 +295,7 @@ unsigned int %(typename)s_copy(%(typename)s *dest, const %(typename)s *src)
             sourcefile.write("""
   if(src->%(varstring)s != NULL && src->%(countvar)s > 0)
   {
-    if((dest->%(varstring)s = calloc(src->%(countvar)s,sizeof(%(typestring)s))) == NULL)
+    if((dest->%(varstring)s = malloc(src->%(countvar)s*sizeof(%(typestring)s))) == NULL)
       return(0);
   }
   else
