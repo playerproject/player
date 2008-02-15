@@ -79,12 +79,12 @@ The writelog driver can will log data from the following interfaces:
 - @ref interface_imu
 - @ref interface_pointcloud3d
 - @ref interface_actarray
+- @ref interface_camera
 
 The following interfaces are supported in principle but are currently
 disabled because they need to be updated:
 
 - @ref interface_blobfinder
-- @ref interface_camera
 - @ref interface_fiducial
 - @ref interface_gps
 - @ref interface_joystick
@@ -102,29 +102,37 @@ disabled because they need to be updated:
   - Default: Directory player is run from.
   - Name of the directory to store the log file in. Relative paths are 
     taken from the directory player is run from. Absolute paths work
-    as expected.
+    as expected. The directory is created if it doesn't exist.
+- timestamp_directory (integer)
+  - Default: 0
+  - Add a timestamp to log_directory, in the format "YYYY_MM_DD_HH_MM_SS",
+    where YYYY is the year, MM is the month, etc. 
 - basename (string)
-  - Default: writelog, produces the logfile: "writelog_YYYY_MM_DD_HH_MM.log", 
-    where YYYY is the year, MM is the month, etc.
-  - Base name of the logfile to attach the time stamp to. If specified the logfile
-    will be "(basename)_YYYY_MM_DD_HH_MM.log".
-- filename (string)
-  - Default: "(basename)_YYYY_MM_DD_HH_MM.log", where YYYY is the year,
-    MM is the month, etc. If this parameter is specified it will NOT be time stamped.
-  - Name of logfile.
+  - Default: "writelog_"
+  - Base name of the log file.
+- timestamp (integer)
+  - Default: 1
+  - Add a timestamp to each file, in the format "YYYY_MM_DD_HH_MM_SS",
+    where YYYY is the year, MM is the month, etc. 
+- extension (string)
+  - Default: ".log"
+  - File extension for the log file.
 - autorecord (integer)
   - Default: 0
   - Default log state; set to 1 for continous logging.
+- camera_log_images (integer)
+  - Default: 1
+  - Save image data to the log file. If this is turned off, a log line is still
+    generated for each frame, containing all information except the raw image data.
 - camera_save_images (integer)
   - Default: 0
-  - Save camera data to image files as well as to the log file.  The image
-    files are named "writelog_YYYY_MM_DD_HH_MM_camera_II_NNNNNNN.pnm",
+  - Save image data to external files within the log directory.
+    The image files are named "(basename)(timestamp)_camera_II_NNNNNNN.pnm",
     where II is the device index and NNNNNNN is the frame number.
-
 @par Example
 
 @verbatim
-# Log data from laser:0 position2d:0 to "/home/data/logs/mydata_YYYY_MM_DD_HH_MM.log"
+# Log data from laser:0 position2d:0 to "/home/data/logs/mydata_YYYY_MM_DD_HH_MM_SS.log"
 driver
 (
   name "writelog"
@@ -150,6 +158,7 @@ driver
 #include <ctype.h>
 #include <errno.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -257,15 +266,11 @@ class WriteLog: public Driver
   // Write RFID data to file
   private: int WriteRFID(player_msghdr_t* hdr, void *data);
 
+  // Write camera data to file
+  private: int WriteCamera(WriteLogDevice *device, player_msghdr_t* hdr, void *data);
 #if 0
   // Write blobfinder data to file
   private: void WriteBlobfinder(player_blobfinder_data_t *data);
-
-  // Write camera data to file
-  private: void WriteCamera(player_camera_data_t *data);
-
-  // Write camera data to image file as well
-  private: void WriteCameraImage(WriteLogDevice *device, player_camera_data_t *data, struct timeval *ts);
 
   // Write fiducial data to file
   private: void WriteFiducial(player_fiducial_data_t *data);
@@ -283,8 +288,11 @@ class WriteLog: public Driver
   private: void WritePower(player_power_data_t *data);
 
 #endif
+  // Where to save files
+  private: char log_directory[1024];
 
   // File to write data to
+  private: char filestem[1024];
   private: char filename[1024];
   private: FILE *file;
 
@@ -302,6 +310,8 @@ class WriteLog: public Driver
   private: bool enable;
   private: bool enable_default;
 
+  // Save camera frames to log file?
+  private: bool cameraLogImages;
   // Save camera frames to image files as well?
   private: bool cameraSaveImages;
 };
@@ -343,9 +353,9 @@ WriteLog::WriteLog(ConfigFile* cf, int section)
 
   char time_stamp[32];
   char basename[1024];
+  char extension[32];
   char default_filename[1024];
   char complete_filename[1024];
-  char log_directory[1024];
 
   this->file = NULL;
 
@@ -355,25 +365,35 @@ WriteLog::WriteLog(ConfigFile* cf, int section)
   time(&t);
   ts = localtime(&t);
   strftime(time_stamp, sizeof(time_stamp),
-           "_%Y_%m_%d_%H_%M", ts);
+           "%Y_%m_%d_%H_%M_%S", ts);
  
   // Let user override default basename
-  strcpy(basename, cf->ReadString(section, "basename", "writelog"));
+  strcpy(basename, cf->ReadString(section, "basename", "writelog_"));
+
+  strcpy(extension, cf->ReadString(section, "extension", ".log"));
 
   // Attach the time stamp
-  snprintf(default_filename, sizeof(default_filename), "%s%s.log",
-           basename, time_stamp);
+  snprintf(this->filestem, sizeof(this->filestem), "%s%s",
+           basename, cf->ReadInt(section, "timestamp", 1) ? time_stamp : "");
+
+  snprintf(default_filename, sizeof(default_filename), "%s%s",
+           this->filestem, extension);
 
   // Let user override default filename
   strcpy(complete_filename,
          cf->ReadString(section, "filename", default_filename));
 
   // Let user override log file directory
-  strcpy(log_directory, cf->ReadString(section, "log_directory", "."));
+  snprintf(this->log_directory, sizeof(this->log_directory), "%s%s",
+           cf->ReadString(section, "log_directory", ""), 
+           cf->ReadInt(section, "timestamp_directory", 0) ? time_stamp : "");
+
+  // If neither directory nor timestamp is specified, just use .
+  if(this->log_directory[0] == 0) strcpy(this->log_directory, ".");
 
   // Prepend the directory
   snprintf(this->filename, sizeof(this->filename), "%s/%s",
-           log_directory, complete_filename);
+           this->log_directory, complete_filename);
 
   // Default enabled?
   if(cf->ReadInt(section, "autorecord", 1) > 0)
@@ -408,6 +428,7 @@ WriteLog::WriteLog(ConfigFile* cf, int section)
   }
 
   // Camera specific settings
+  this->cameraLogImages = cf->ReadInt(section, "camera_log_images", 1);
   this->cameraSaveImages = cf->ReadInt(section, "camera_save_images", 0);
 
   return;
@@ -489,6 +510,9 @@ int WriteLog::Shutdown()
 int
 WriteLog::OpenFile()
 {
+  // Create directory
+  mkdir(this->log_directory, 0755);
+
   // Open the file
   this->file = fopen(this->filename, "w+");
   if(this->file == NULL)
@@ -848,14 +872,12 @@ void WriteLog::Write(WriteLogDevice *device,
     case PLAYER_IR_CODE:
       retval = this->WriteIR(hdr, data);
       break;
+    case PLAYER_CAMERA_CODE:
+      retval = this->WriteCamera(device, hdr, data);
+      break;
 #if 0
     case PLAYER_BLOBFINDER_CODE:
       this->WriteBlobfinder((player_blobfinder_data_t*) data);
-      break;
-    case PLAYER_CAMERA_CODE:
-      this->WriteCamera((player_camera_data_t*) data);
-      if (this->cameraSaveImages)
-        this->WriteCameraImage(device, (player_camera_data_t*) data, &time);
       break;
     case PLAYER_FIDUCIAL_CODE:
       this->WriteFiducial((player_fiducial_data_t*) data);
@@ -2073,6 +2095,7 @@ void WriteLog::WriteBlobfinder(player_blobfinder_data_t *data)
   return;
 }
 
+#endif
 
 /** @ingroup tutorial_datalog
  * @defgroup player_driver_writelog_camera Camera format
@@ -2085,77 +2108,91 @@ The format for each @ref interface_camera message is:
   - depth (int): in bits per pixel
   - format (int): image format
   - compression (int): image compression
-  - image data, encoded as a string of ASCII hex values
+  - (optional) image data, encoded as a string of ASCII hex values
 */
-void WriteLog::WriteCamera(player_camera_data_t *data)
+
+int WriteLog::WriteCamera(WriteLogDevice *device, player_msghdr_t* hdr, void *data)
 {
-  char *str;
-  size_t src_size, dst_size;
+    player_camera_data_t *camera_data;
+    switch(hdr->type)
+    {
+        case PLAYER_MSGTYPE_DATA:
+            switch(hdr->subtype)
+            {
+                case PLAYER_CAMERA_DATA_STATE:
+                    camera_data = (player_camera_data_t *) data;
+                    
+                    // Image format
+                    fprintf(this->file, "%d %d %d %d %d %d " ,
+                            camera_data->width, camera_data->height,
+                            camera_data->bpp, camera_data->format,
+                            camera_data->compression, camera_data->image_count);
+                    
+                    if(this->cameraLogImages)
+                    {
+                        char *str;
+                        size_t src_size, dst_size;
 
-  // Image format
-  fprintf(this->file, "%d %d %d %d %d %d " ,
-          HUINT16(data->width), HUINT16(data->height),
-          data->bpp, data->format, data->compression,
-          HUINT32(data->image_size));
+                        // Check image size
+                        src_size = camera_data->image_count;
+                        dst_size = ::EncodeHexSize(src_size);
+                        str = (char*) malloc(dst_size + 1);
 
-  // Check image size
-  src_size = HUINT32(data->image_size);
-  dst_size = ::EncodeHexSize(src_size);
-  str = (char*) malloc(dst_size + 1);
+                        // Encode image into string
+                        ::EncodeHex(str, dst_size, camera_data->image, src_size);
 
-  // Encode image into string
-  ::EncodeHex(str, dst_size, data->image, src_size);
+                        // Write image bytes
+                        fprintf(this->file, str);
+                        free(str);
+                    }
+                    if(this->cameraSaveImages)
+                    {
+                        FILE *file;
+                        char filename[1024];
 
-  // Write image bytes
-  fprintf(this->file, str);
-  free(str);
+                        if (camera_data->compression != PLAYER_CAMERA_COMPRESS_RAW)
+                        {
+                            PLAYER_WARN("unsupported compression method");
+                            return -1;
+                        }
 
-  return;
+                        snprintf(filename, sizeof(filename), "%s/%s_camera_%02d_%06d.pnm",
+                                 this->log_directory, this->filestem, device->addr.index, device->cameraFrame++);
+
+                        file = fopen(filename, "w+");
+                        if (file == NULL)
+                            return -1;
+
+                        if (camera_data->format == PLAYER_CAMERA_FORMAT_RGB888)
+                        {
+                            // Write ppm header
+                            fprintf(file, "P6\n%d %d\n%d\n", camera_data->width, camera_data->height, 255);
+                            fwrite(camera_data->image, 1, camera_data->image_count, file);
+                        }
+                        else if (camera_data->format == PLAYER_CAMERA_FORMAT_MONO8)
+                        {
+                            // Write pgm header
+                            fprintf(file, "P5\n%d %d\n%d\n", camera_data->width, camera_data->height, 255);
+                            fwrite(camera_data->image, 1, camera_data->image_count, file);
+                        }
+                        else
+                        {
+                            PLAYER_WARN("unsupported image format");
+                        }
+
+                        fclose(file);
+                    }
+                    return 0;
+                default:
+                    return -1;
+            }
+        default:
+            return -1;
+    }
+    return -1;
 }
 
-
-////////////////////////////////////////////////////////////////////////////
-// Write camera data to image file as well
-void WriteLog::WriteCameraImage(WriteLogDevice *device, player_camera_data_t *data, struct timeval *time)
-{
-  FILE *file;
-  char filename[1024];
-
-  if (data->compression != PLAYER_CAMERA_COMPRESS_RAW)
-  {
-    PLAYER_WARN("unsupported compression method");
-    return;
-  }
-
-  snprintf(filename, sizeof(filename), "%s_camera_%02d_%06d.pnm",
-           this->default_basename, device->id.index, device->cameraFrame++);
-
-  file = fopen(filename, "w+");
-  if (file == NULL)
-    return;
-
-  if (data->format == PLAYER_CAMERA_FORMAT_RGB888)
-  {
-    // Write ppm header
-    fprintf(file, "P6\n%d %d\n%d\n", HUINT16(data->width), HUINT16(data->height), 255);
-    fwrite(data->image, 1, HUINT32(data->image_size), file);
-  }
-  else if (data->format == PLAYER_CAMERA_FORMAT_MONO8)
-  {
-    // Write pgm header
-    fprintf(file, "P5\n%d %d\n%d\n", HUINT16(data->width), HUINT16(data->height), 255);
-    fwrite(data->image, 1, HUINT32(data->image_size), file);
-  }
-  else
-  {
-    PLAYER_WARN("unsupported image format");
-  }
-
-  fclose(file);
-
-  return;
-}
-
+#if 0
 
 /** @ingroup tutorial_datalog
  * @defgroup player_driver_writelog_fiducial Fiducial format
