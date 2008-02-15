@@ -185,6 +185,23 @@ int playerc_vectormap_get_layer_data(playerc_vectormap_t *device, unsigned layer
   return 0;
 }
 
+// Write layer data
+int playerc_vectormap_write_layer(playerc_vectormap_t *device, const player_vectormap_layer_data_t * data)
+{
+  if (playerc_client_request(
+      device->info.client,
+      &device->info,
+      PLAYER_VECTORMAP_REQ_WRITE_LAYER,
+      data,
+      NULL) < 0)
+  {
+    PLAYERC_ERR("failed to write layer data");
+    return -1;
+  }
+  return 0;
+}
+
+
 GEOSGeom playerc_vectormap_get_feature_data(playerc_vectormap_t *device, unsigned layer_index, unsigned feature_index)
 {
 #ifdef HAVE_GEOS

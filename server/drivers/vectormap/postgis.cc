@@ -70,7 +70,7 @@ driver
   provides ["vectormap:0"]
   dbname "gis"
   host "192.168.0.2"
-  port "5433"
+  port "5432"
   user "postgres"
   password "secret"
   layers ["obstacles_geom" "markers_geom"]
@@ -111,14 +111,20 @@ For more information see http://postgis.refractions.net/
 /** @} */
 
 #include <sys/types.h> // required by Darwin
-#include <stdlib.h>
+#include <cstdlib>
+#include <cstddef>
+#include <cstdio>
+#include <cstdarg>
+#include <string>
+#include <vector>
 #include <libplayercore/playercore.h>
 #include <libplayercore/error.h>
 #include "dbconn.h"
 #ifdef HAVE_GEOS
 #include <geos_c.h>
 #endif
-#include <stdarg.h>
+
+using namespace std;
 
 /** Dummy function passed as a function pointer GEOS when it is initialised. GEOS uses this for logging. */
 inline void geosprint(const char* format, ...)
@@ -142,7 +148,7 @@ class PostGIS : public Driver
             const char* user,
             const char* password,
             const char* port,
-            vector<string> layerNames);
+            vector<string> & layerNames);
     ~PostGIS();
     int Setup();
     int Shutdown();
@@ -209,7 +215,7 @@ PostGIS::PostGIS(ConfigFile* cf, int section,
                  const char* user,
                  const char* password,
                  const char* port,
-                 vector<string> layerNames)
+                 vector<string> & layerNames)
   : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_VECTORMAP_CODE)
 {
   this->dbname = dbname;
@@ -219,12 +225,20 @@ PostGIS::PostGIS(ConfigFile* cf, int section,
   this->port = port;
   this->layerNames = layerNames;
   this->conn = NULL;
-
+#ifdef HAVE_GEOS
+  PLAYER_MSG0(2, "Initialising GEOS");
+  initGEOS(geosprint, geosprint);
+  PLAYER_MSG0(2, "GEOS Initialised");
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 PostGIS::~PostGIS()
 {
+#ifdef HAVE_GEOS
+  PLAYER_MSG0(2, "Shutting down GEOS");
+  finishGEOS();
+#endif
   /*if (conn != NULL && conn->Connected())
   {
     conn->Disconnect();
@@ -243,19 +257,12 @@ int PostGIS::Setup()
 {
   PLAYER_MSG0(2, "PostGIS vectormap initialising");
 
-#ifdef HAVE_GEOS
-  PLAYER_MSG0(2, "Initialising GEOS");
-  initGEOS(geosprint, geosprint);
-  PLAYER_MSG0(2, "GEOS Initialised");
-#endif
-
   conn = new PostgresConn();
   conn->Connect(dbname, host, user, password, port);
 
   if (!conn->Connected())
   {
     PLAYER_ERROR("Could not connect to Postgres database!");
-    PLAYER_ERROR1("%s",conn->ErrorMessage());
     return(1);
   }
 
@@ -276,13 +283,9 @@ int PostGIS::Shutdown()
   if (conn != NULL)
   {
     delete conn;
-    //conn == NULL;
+    conn = NULL;
   }
-  
-#ifdef HAVE_GEOS
-  PLAYER_MSG0(2, "Shutting down GEOS");
-  finishGEOS();
-#endif
+
   PLAYER_MSG0(2, "PostGIS vectormap stopped");
   return(0);
 }
@@ -305,9 +308,7 @@ int PostGIS::ProcessMessage(QueuePointer &resp_queue,
                   resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_VECTORMAP_REQ_GET_MAP_INFO,
-                  (void*)response,
-                  0,
-                  NULL);
+                  (void*)response);
     return(0);
   }
   // Request for layer data /////////////////////////////////////////////////////////
@@ -322,9 +323,7 @@ int PostGIS::ProcessMessage(QueuePointer &resp_queue,
                   resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_VECTORMAP_REQ_GET_LAYER_DATA,
-                  (void*)response,
-                  0,
-                  NULL);
+                  (void*)response);
 
     return(0);
   }
@@ -340,9 +339,7 @@ int PostGIS::ProcessMessage(QueuePointer &resp_queue,
                   resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_VECTORMAP_REQ_WRITE_LAYER,
-                  (void*)request,
-                  0,
-                  NULL);
+                  (void*)request);
     return(0);
   }
   // Don't know how to handle this message /////////////////////////////////////////
@@ -387,5 +384,14 @@ LayerDataHolder PostGIS::RequestLayerData(const char* layer_name)
 
 void PostGIS::RequestLayerWrite(player_vectormap_layer_data_t* data)
 {
-  return;
+  if (conn == NULL || conn->Connected() == false)
+  {
+    PLAYER_ERROR("PostGis::WriteLayerData() failed! No db connection.");
+  }
+
+  LayerDataHolder layer(data);
+  if (conn->WriteLayerData(layer))
+  {
+    PLAYER_ERROR("PostGis::WriteLayerData() failed!");
+  }
 }
