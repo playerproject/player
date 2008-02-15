@@ -177,7 +177,7 @@ static double opt_skip = 0.0;
 static int opt_position_index = 0;
 static int opt_laser_index = 0;
 static double opt_scale = 0.025;
-static double opt_range_max = 8.0;
+static double opt_range_max = -1.0;
 static double opt_range_res = 0.10;
 static pose2_t opt_robot_pose;
 static pose2_t opt_laser_pose;
@@ -188,6 +188,14 @@ static double opt_grid_width = 64.0;
 static double opt_grid_height = 48.0;
 static double opt_grid_scale = 0.10;
 static int opt_fine_max = 100;
+
+// configuration data, read from logfile
+static int laser_range_count;
+static double laser_range_max;
+static double laser_angle_min;
+static double laser_angle_max;
+static double laser_angle_step;
+
 
 // GUI settings
 static int win;
@@ -218,6 +226,7 @@ static int fine_count = 0;
 // Local functions
 static void process();
 static void save();
+static void process_init();
 static int process_coarse();
 static void save_coarse();
 static int process_fine();
@@ -428,6 +437,41 @@ int win_run(int *argc, char **argv)
   return 0;
 }
 
+// recover configuration data from logfile
+void process_init()
+{ 
+  while (1)
+  {
+    int logresult = logfile_read(logfile); 
+    if (logresult < 0)
+    {
+      fprintf(stderr, "\n");
+      return;
+    }
+    else if(logresult > 0)
+      continue;
+    
+    // wait for first laser scan
+    if (strcmp(logfile->interface, "laser") == 0 &&
+        logfile->index == opt_laser_index)
+    {
+      // save data
+      laser_range_count = logfile->laser_range_count;
+      laser_range_max = logfile->laser_range_max;
+      laser_angle_min = logfile->laser_angle_min;
+      laser_angle_max = logfile->laser_angle_max;
+      laser_angle_step = logfile->laser_angle_step;
+    
+      fprintf(stderr, "range_count = %d\n", laser_range_count);
+      fprintf(stderr, "range_max = %f\n", laser_range_max);
+      fprintf(stderr, "angle_min = %f\n", laser_angle_min);
+      fprintf(stderr, "angle_max = %f\n", laser_angle_max);
+      fprintf(stderr, "angle_step = %f\n", laser_angle_step);
+    
+      return;
+    }
+  }
+}
 
 // Coarse map generation (process log file)
 int process_coarse()
@@ -469,13 +513,6 @@ int process_coarse()
     if (strcmp(logfile->interface, "laser") == 0 &&
         logfile->index == opt_laser_index)
     {
-      if (logfile->laser_range_count != 181)
-      {
-        fprintf(stderr, "incorrect range count; expecting %d, got %d",
-                lodo->num_ranges, logfile->laser_range_count);
-        exit(-1);
-      }
-
       // Update the local pose estimate (corrected odometry)
       lodo_pose = lodo_add_scan(lodo, odom_pose,
                                 logfile->laser_range_count, logfile->laser_ranges);
@@ -798,9 +835,19 @@ int main(int argc, char **argv)
   logfile = logfile_alloc(opt_filename);
   if (!logfile)
     return -1;
+    
+  //aquire laser configuration data
+  process_init();
+  
+  if (opt_range_max > 0)
+    laser_range_max = opt_range_max;  // override maximum laser range if specified in command line
+  
+  // restart logreader
+  logfile_free(logfile);
+  logfile = logfile_alloc(opt_filename);
 
   // Create lodo handle
-  lodo = lodo_alloc(181, opt_range_max, opt_range_res, -M_PI / 2, M_PI / 180);
+  lodo = lodo_alloc(laser_range_count, laser_range_max, opt_range_res, laser_angle_min, laser_angle_step);
   if (!lodo)
     return -1;
 
@@ -808,8 +855,8 @@ int main(int argc, char **argv)
   lodo->laser_pose = opt_laser_pose;
 
   // Create pmap handle
-  pmap = pmap_alloc(181, opt_range_max, -M_PI / 2, M_PI / 180,
-                    opt_num_samples, opt_grid_width, opt_grid_height, opt_grid_scale);
+  pmap = pmap_alloc(laser_range_count, laser_range_max, laser_angle_min, laser_angle_step,
+                      opt_num_samples, opt_grid_width, opt_grid_height, opt_grid_scale);  
   if (!pmap)
     return -1;
 
@@ -821,14 +868,14 @@ int main(int argc, char **argv)
   pmap_set_pose(pmap, opt_robot_pose);
 
   // Create rmap handle
-  rmap = rmap_alloc(181, opt_range_max, -M_PI / 2, M_PI / 180,
-                    opt_grid_width, opt_grid_height);
+  rmap = rmap_alloc(laser_range_count, laser_range_max, laser_angle_min, laser_angle_step,
+                      opt_grid_width, opt_grid_height);
   if (!rmap)
     return -1;
 
   // Create omap handle
-  omap = omap_alloc(181, opt_range_max, -M_PI / 2, M_PI / 180,
-                    opt_grid_width, opt_grid_height, opt_grid_scale);
+  omap = omap_alloc(laser_range_count, laser_range_max, laser_angle_min, laser_angle_step,
+                      opt_grid_width, opt_grid_height, opt_grid_scale); 
   if (!rmap)
     return -1;
 

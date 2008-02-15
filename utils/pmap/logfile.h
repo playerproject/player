@@ -41,7 +41,11 @@ typedef struct
   
   /// Laser data
   int laser_range_count;
-  double laser_ranges[181];
+  double laser_angle_min;
+  double laser_angle_max;
+  double laser_angle_step;
+  double laser_range_max;
+  double laser_ranges[2048];
   
 } logfile_t;
 
@@ -53,5 +57,7 @@ logfile_t *logfile_alloc(const char *filename);
 /// @brief Read a line from the log file
 int logfile_read(logfile_t *self);
 
+/// @brief Close Logfile and Delete logfile reader
+void logfile_free(logfile_t *self);
 
 #endif
