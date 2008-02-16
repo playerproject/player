@@ -126,7 +126,7 @@ class SR3000:public Driver
     unsigned int rows, cols, bpp, inr;
     //ModulationFrq modulation_freq;
     size_t buffer_size, buffer_points_size;
-    void *buffer;
+    uint8_t *buffer;
     float *buffer_points, *xp, *yp, *zp;
 
     // device bookkeeping
@@ -261,7 +261,7 @@ int
   }
 
   // ---[ Alloc memory for the buffer ]---
-  buffer = malloc (buffer_size);
+  buffer = (uint8_t*)malloc (buffer_size);
   memset (buffer, 0, buffer_size);
 
   // ---[ Set the buffer ]---
@@ -307,18 +307,18 @@ int
                                   player_devaddr_t cam_addr)
 {
   int res;
-  Property *property = NULL;
+  //Property *property = NULL;
 
   // Check for properties
   if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_SET_INTPROP_REQ, cam_addr))
   {
     player_intprop_req_t req = *reinterpret_cast<player_intprop_req_t*> (data);
-    if ((property = propertyBag.GetProperty (req.key)) == NULL)
-      return (-1);
-    if (property->KeyIsEqual ("auto_illumination"))
+//    if ((property = propertyBag.GetProperty (req.key)) == NULL)
+//      return (-1);
+    if (auto_illumination.KeyIsEqual (req.key))
     {
       // ---[ Set Autoillumination
-      if (req->value == 1)
+      if (req.value == 1)
         res = SR_SetAutoIllumination (srCam, 5, 255, 10, 45);
       else
         res = SR_SetAutoIllumination (srCam, 255, 0, 0, 0);
@@ -326,7 +326,7 @@ int
       // Check the error code
       if (res == 0)
       {
-        property->SetValueFromMessage (reinterpret_cast<void*> (&req));
+        auto_illumination = req.value;
         Publish(cam_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_SET_INTPROP_REQ, NULL, 0, NULL);
       }
       else
@@ -335,15 +335,16 @@ int
       }
       return (0);
     }
-    else if (property->KeyIsEqual ("integration_time")
+    else if (integration_time.KeyIsEqual (req.key))
     {
       // ---[ Set integration time
-      res = SR_SetIntegrationTime (srCam, req->value);
+      res = SR_SetIntegrationTime (srCam, req.value);
 
       // Check the error code
       if (res == 0)
       {
-        property->SetValueFromMessage (reinterpret_cast<void*> (&req));
+        //property->SetValueFromMessage (reinterpret_cast<void*> (&req));
+        integration_time = req.value;
         Publish(cam_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_SET_INTPROP_REQ, NULL, 0, NULL);
       }
       else
@@ -352,15 +353,16 @@ int
       }
       return (0);
     }
-    else if (property->KeyIsEqual ("modulation_freq")
+    else if (modulation_freq.KeyIsEqual (req.key))
     {
       // ---[ Set modulation frequency
-      res = SR_SetModulationFrequency (srCam, (ModulationFrq)req->value);
+      res = SR_SetModulationFrequency (srCam, (ModulationFrq)req.value);
 
       // Check the error code
       if (res == 0)
       {
-        property->SetValueFromMessage (reinterpret_cast<void*> (&req));
+        //property->SetValueFromMessage (reinterpret_cast<void*> (&req));
+        modulation_freq = req.value;
         Publish(cam_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_SET_INTPROP_REQ, NULL, 0, NULL);
       }
       else
@@ -369,16 +371,18 @@ int
       }
       return (0);
     }
-    else if (property->KeyIsEqual ("sat_threshold")
+    else if (sat_threshold.KeyIsEqual (req.key))
     {
       // ---[ Set saturation threshold
-      res = SR_SetSaturationThreshold (srCam, req->value);
+      res = SR_SetSaturationThreshold (srCam, req.value);
 
       // Check the error code
       if (res == 0)
       {
-        property->SetValueFromMessage (reinterpret_cast<void*> (&req));
+        //property->SetValueFromMessage (reinterpret_cast<void*> (&req));
+        sat_threshold = req.value;
         Publish(cam_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_SET_INTPROP_REQ, NULL, 0, NULL);
+
       }
       else
       {
@@ -386,15 +390,16 @@ int
       }
       return (0);
     }
-    else if (property->KeyIsEqual ("amp_threshold")
+    else if (amp_threshold.KeyIsEqual (req.key))
     {
       // ---[ Set amplitude threshold
-      res = SR_SetAmplitudeThreshold (srCam, req->value);
+      res = SR_SetAmplitudeThreshold (srCam, req.value);
 
       // Check the error code
       if (res == 0)
       {
-        property->SetValueFromMessage (reinterpret_cast<void*> (&req));
+        //property->SetValueFromMessage (reinterpret_cast<void*> (&req));
+        amp_threshold = req.value;
         Publish(cam_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_SET_INTPROP_REQ, NULL, 0, NULL);
       }
       else
@@ -408,21 +413,21 @@ int
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_GET_INTPROP_REQ, device_addr))
   {
     player_intprop_req_t req = *reinterpret_cast<player_intprop_req_t*> (data);
-    if ((property = propertyBag.GetProperty (req.key)) == NULL)
-      return (-1);
-    if (property->KeyIsEqual ("modulation_freq"))
+/*    if ((property = propertyBag.GetProperty (req.key)) == NULL)
+      return (-1);*/
+    if (modulation_freq.KeyIsEqual (req.key))
     {
       // ---[ Get modulation frequency
-      reinterpret_cast<IntProperty*> (property)->SetValue (SR_GetModulationFrequency (srCam));
-      property->GetValueToMessage (reinterpret_cast<void*> (&req));
+      modulation_freq.SetValue (SR_GetModulationFrequency (srCam));
+      modulation_freq.GetValueToMessage (reinterpret_cast<void*> (&req));
       Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_GET_INTPROP_REQ, reinterpret_cast<void*> (&req), sizeof(player_intprop_req_t), NULL);
       return (0);
     }
-    else if (property->KeyIsEqual ("integration_time"))
+    else if (integration_time.KeyIsEqual (req.key))
     {
       // ---[ Get integration time
-      reinterpret_cast<IntProperty*> (property)->SetValue (SR_GetIntegrationTime (srCam));
-      property->GetValueToMessage (reinterpret_cast<void*> (&req));
+      integration_time.SetValue (SR_GetIntegrationTime (srCam));
+      integration_time.GetValueToMessage (reinterpret_cast<void*> (&req));
       Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_GET_INTPROP_REQ, reinterpret_cast<void*> (&req), sizeof(player_intprop_req_t), NULL);
       return (0);
     }
@@ -431,18 +436,18 @@ int
   else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_SET_DBLPROP_REQ, cam_addr))
   {
     player_dblprop_req_t req = *reinterpret_cast<player_dblprop_req_t*> (data);
-    if ((property = propertyBag.GetProperty (req.key)) == NULL)
-      return (-1);
-    if (property->KeyIsEqual ("static_delay"))
+/*    if ((property = propertyBag.GetProperty (req.key)) == NULL)
+      return (-1);*/
+    if (static_delay.KeyIsEqual (req.key))
     {
       // ---[ Set IIR static delay
-      DoubleProperty *dynamic_delay = propertyBag.GetProperty ("dynamic_delay");
-      res = SR_SetTemporalIIR (srCam, req->value, dynamic_delay);
+      //DoubleProperty *dynamic_delay = propertyBag.GetProperty ("dynamic_delay");
+      res = SR_SetTemporalIIR (srCam, req.value, dynamic_delay);
 
       // Check the error code
       if (res == 0)
       {
-        property->SetValueFromMessage (reinterpret_cast<void*> (&req));
+        static_delay.SetValueFromMessage (reinterpret_cast<void*> (&req));
         Publish(cam_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_SET_DBLPROP_REQ, NULL, 0, NULL);
       }
       else
@@ -451,16 +456,16 @@ int
       }
       return (0);
     }
-    else if (property->KeyIsEqual ("dynamic_delay"))
+    else if (dynamic_delay.KeyIsEqual (req.key))
     {
       // ---[ Set IIR dynamic delay
-      DoubleProperty *static_delay = propertyBag.GetProperty ("static_delay");
-      res = SR_SetTemporalIIR (srCam, static_delay, req->value);
+      //DoubleProperty *static_delay = propertyBag.GetProperty ("static_delay");
+      res = SR_SetTemporalIIR (srCam, static_delay, req.value);
 
       // Check the error code
       if (res == 0)
       {
-        property->SetValueFromMessage (reinterpret_cast<void*> (&req));
+        dynamic_delay.SetValueFromMessage (reinterpret_cast<void*> (&req));
         Publish(cam_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_SET_DBLPROP_REQ, NULL, 0, NULL);
       }
       else
