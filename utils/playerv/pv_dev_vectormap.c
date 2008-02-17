@@ -135,7 +135,7 @@ void vectormap_update(vectormap_t *map)
 			// in playerv.h you can adjust MAP_UPDATE_TIME (default 1 sec)
 			time_diff = (double)(time.tv_sec - old_time.tv_sec) +
 				(double)(time.tv_usec - old_time.tv_usec)/1000000;
-			if (time_diff > MAP_UPDATE_TIME)
+			if (time_diff > VECTORMAP_UPDATE_TIME)
 			{
 				// get the map info
     				playerc_vectormap_get_map_info( map->proxy );
