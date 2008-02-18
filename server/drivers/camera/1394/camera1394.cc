@@ -168,6 +168,7 @@ driver
 #include <stdlib.h>       // for atoi(3)
 #include <stddef.h>       // for NULL
 #include <unistd.h>
+#include <assert.h>
 
 #ifdef HAVE_LIBRAW1394
     #include <libraw1394/raw1394.h>
@@ -300,8 +301,6 @@ class Camera1394 : public Driver
   // Save a frame to memory
   private: int GrabFrame();
 
-  private: uint8_t * resized;//[1280 * 960 * 3];
-
   // Save a frame to disk
   private: int SaveFrame( const char *filename );
 
@@ -351,18 +350,15 @@ class Camera1394 : public Driver
   // Write frames to disk?
   private: int save;
 
-  // Frame capture size
-  private: size_t frameSize;
-
   // Capture timestamp
   private: double frameTime;
   
   // Data to send to server
-  private: player_camera_data_t *data;
+  private: player_camera_data_t * data;
 
   // Bayer Colour Conversion
   private: bool DoBayerConversion;
-  private: int BayerPattern;
+  private: bayer_pattern_t BayerPattern;
   private: int BayerMethod;
 
   // Camera settings
@@ -398,7 +394,7 @@ Camera1394::Camera1394(ConfigFile* cf, int section)
 {
   float fps;
 
-  resized=NULL;
+  this->data = NULL;
 
 #ifdef HAVE_LIBRAW1394
   this->handle = NULL;
@@ -438,13 +434,11 @@ Camera1394::Camera1394(ConfigFile* cf, int section)
   if (0==strcmp(str,"160x120_yuv444"))
   {
     this->mode = MODE_160x120_YUV444;
-    this->frameSize = 160 * 120 * 2; // Is this correct?
   }
   */
   if (0==strcmp(str,"320x240_yuv422"))
   {
     this->mode = MODE_320x240_YUV422;
-    this->frameSize = 320 * 240 * 3;
   }
   /*
   else if (0==strcmp(str,"640x480_mono16"))
@@ -460,60 +454,50 @@ Camera1394::Camera1394(ConfigFile* cf, int section)
   else if (0==strcmp(str,"640x480_mono"))
   {
     this->mode = MODE_640x480_MONO;
-    this->frameSize = 640 * 480 * 1;
   }
   else if (0==strcmp(str,"640x480_yuv422"))
   {
     this->mode = MODE_640x480_YUV422;
-    this->frameSize = 640 * 480 * 3;
   }
   else if (0==strcmp(str,"640x480_rgb"))
   {
     this->mode = MODE_640x480_RGB;
-    this->frameSize = 640 * 480 * 3;
   }
   else if (0==strcmp(str,"800x600_mono"))
   {
     this->mode = MODE_800x600_MONO;
     this->format = FORMAT_SVGA_NONCOMPRESSED_1;
-    this->frameSize = 800 * 600 * 1;
   }
   else if (0==strcmp(str,"800x600_yuv422"))
   {
     this->mode = MODE_800x600_YUV422;
     this->format = FORMAT_SVGA_NONCOMPRESSED_1;
-    this->frameSize = 600 * 450 * 3;
   }
   else if (0==strcmp(str,"1024x768_mono"))
   {
     this->mode = MODE_1024x768_MONO;
     this->format = FORMAT_SVGA_NONCOMPRESSED_1;
-    this->frameSize = 1024 * 768 * 1;
   }
   else if (0==strcmp(str,"1024x768_yuv422"))
   {
     this->mode = MODE_1024x768_YUV422;
     this->format = FORMAT_SVGA_NONCOMPRESSED_1;
-    this->frameSize = 512 * 384 * 3;
   }
   else if (0==strcmp(str,"1280x960_mono"))
   {
     this->mode = MODE_1280x960_MONO;
     this->format = FORMAT_SVGA_NONCOMPRESSED_2;
-    this->frameSize = 1280 * 960 * 1;
   }
   else if (0==strcmp(str,"1280x960_yuv422"))
   {
     this->mode = MODE_1280x960_YUV422;
     this->format = FORMAT_SVGA_NONCOMPRESSED_2;
-    this->frameSize = 640 * 480 * 3;
   }
 #if LIBDC1394_VERSION == 0200
   else if (0==strcmp(str,"FORMAT7_MODE0"))
   {
     this->mode = MODE_FORMAT7_0;
     this->format = FORMAT_7;
-    this->frameSize = 0;
   }
 #endif
   else
@@ -686,7 +670,7 @@ Camera1394::Camera1394(ConfigFile* cf, int section)
       this->iso_speed = DC1394_ISO_SPEED_3200;
       break;
   }
-  
+
   return;
 }
 
@@ -694,8 +678,6 @@ Camera1394::Camera1394(ConfigFile* cf, int section)
 // Safe Cleanup
 void Camera1394::SafeCleanup()
 {
-  delete resized;
-  resized = NULL;
 
 #if LIBDC1394_VERSION == 0200
   if (this->camera)
@@ -735,13 +717,20 @@ void Camera1394::SafeCleanup()
   }
   this->handle = NULL;
 #endif
+  if (this->data)
+  {
+    if (this->data->image) delete[](this->data->image);
+    this->data->image = NULL;
+    delete (this->data);
+  }
+  this->data = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device (called by server thread).
 int Camera1394::Setup()
 {
-  this->data = 0;
+  
 
 #if LIBDC1394_VERSION == 0200
   dc1394speed_t speed;
@@ -1160,9 +1149,6 @@ int Camera1394::ProcessMessage(QueuePointer & resp_queue,
 // Store an image frame into the 'frame' buffer
 int Camera1394::GrabFrame()
 {
-  uint32_t f, c;
-  int  i, j;
-  unsigned char * ptr1, * ptr2, * dst;
 #if LIBDC1394_VERSION == 0200
   dc1394video_frame_t * frame = NULL;
 #endif
@@ -1196,7 +1182,6 @@ int Camera1394::GrabFrame()
     return -1;
   }
 
-  this->data = (player_camera_data_t *)malloc(sizeof(*this->data));
   unsigned int frame_width;
   unsigned int frame_height;
   uint8_t * capture_buffer;
@@ -1204,89 +1189,39 @@ int Camera1394::GrabFrame()
   frameTime = frame->timestamp/1.e-6;
   frame_width = frame->size[0];
   frame_height = frame->size[1];
-  capture_buffer = (uint8_t *) frame->image;
+  capture_buffer = reinterpret_cast<uint8_t *>(frame->image);
 #else
   frame_width = this->camera.frame_width;
   frame_height = this->camera.frame_height;
-  capture_buffer = (uint8_t *) this->camera.capture_buffer;
+  capture_buffer = reinterpret_cast<uint8_t *>(this->camera.capture_buffer);
 #endif
-
-  if (frameSize == 0)
-    frameSize = frame_width * frame_height;
-  
+  assert(capture_buffer);
+  assert(!(this->data));
+  this->data = reinterpret_cast<player_camera_data_t *>(malloc(sizeof(player_camera_data_t)));
+  assert(this->data);
+  // memset(this->data, 0, sizeof(player_camera_data_t)); I assume everything is set properly later!
   switch (this->mode)
   {
   case MODE_320x240_YUV422:
   case MODE_640x480_YUV422:
-    this->data->bpp = 24;
-    this->data->format = PLAYER_CAMERA_FORMAT_RGB888;
-    this->data->image_count = this->frameSize;
-    this->data->image = (uint8_t*) malloc(this->data->image_count);
-    this->data->width = frame_width;
-    this->data->height = frame_height;
-    uyvy2rgb(capture_buffer, this->data->image, (frame_width) * (frame_height));
-    break;
+  case MODE_800x600_YUV422:
   case MODE_1024x768_YUV422:
   case MODE_1280x960_YUV422:
-    if (resized == NULL)
-      resized = new uint8_t [1280 * 960 * 3];
     this->data->bpp = 24;
     this->data->format = PLAYER_CAMERA_FORMAT_RGB888;
-    this->data->image_count = this->frameSize;
-    this->data->image = (uint8_t *) malloc(this->data->image_count);
-    this->data->width = frame_width / 2;
-    this->data->height = frame_height / 2;
-    assert(this->data->image_count <= sizeof(this->data->image));
-    uyvy2rgb(capture_buffer, this->resized, (frame_width) * (frame_height));
-    ptr1 = this->resized;
-    ptr2 = this->data->image;
-    for (f = 0; f < (this->data->height); f++)
-    {
-      for (c = 0; c < (this->data->width); c++)
-      {
-	ptr2[0] = ptr1[0];
-	ptr2[1] = ptr1[1];
-	ptr2[2] = ptr1[2];
-	ptr1 += (3 * 2);
-	ptr2 += 3;
-      }
-      ptr1 += ((frame_width) * 3);
-    }
+    this->data->image_count = frame_width * frame_height * 3;
+    this->data->image = reinterpret_cast<uint8_t *>(malloc(this->data->image_count));
+    assert(this->data->image);
+    this->data->width = frame_width;
+    this->data->height = frame_height;
+    uyvy2rgb(reinterpret_cast<unsigned char *>(capture_buffer), reinterpret_cast<unsigned char *>(this->data->image), frame_width * frame_height);
     break;
-  case MODE_800x600_YUV422:
-    if (resized == NULL)
-      resized = new uint8_t [1280 * 960 * 3];
-    this->data->bpp = 24;
-    this->data->format = PLAYER_CAMERA_FORMAT_RGB888;
-    this->data->image_count = this->frameSize;
-    this->data->image = (uint8_t *) malloc(this->data->image_count);
-    this->data->width = 600;
-    this->data->height = 450;
-    uyvy2rgb(capture_buffer, this->resized, (frame_width) * (frame_height));
-    ptr1 = this->resized;
-    ptr2 = this->data->image;
-    i = 3; j = 3;
-    for (f = 0; f < (this->data->height); f++)
-    {
-      for (c = 0; c < (this->data->width); c++)
-      {
-	ptr2[0] = ptr1[0];
-	ptr2[1] = ptr1[1];
-	ptr2[2] = ptr1[2];
-	j--;
-	if (!j) ptr1 += (3 * 2), j = 3;
-	else ptr1 += 3;
-	ptr2 += 3;
-      }
-      i--;
-      if (!i) ptr1 += ((frame_width) * 3), i = 3;
-    }
-    break;  
   case MODE_640x480_RGB:
     this->data->bpp = 24;
     this->data->format = PLAYER_CAMERA_FORMAT_RGB888;
-    this->data->image_count = this->frameSize;
-    this->data->image = (uint8_t *)malloc(this->data->image_count);
+    this->data->image_count = frame_width * frame_height * 3;
+    this->data->image = reinterpret_cast<uint8_t *>(malloc(this->data->image_count));
+    assert(this->data->image);
     this->data->width = frame_width;
     this->data->height = frame_height;
     memcpy(this->data->image, capture_buffer, this->data->image_count);
@@ -1300,8 +1235,9 @@ int Camera1394::GrabFrame()
     {
       this->data->bpp = 8;
       this->data->format = PLAYER_CAMERA_FORMAT_MONO8;
-      this->data->image_count = this->frameSize;
-      this->data->image = (uint8_t*) malloc(this->data->image_count);
+      this->data->image_count = frame_width * frame_height;
+      this->data->image = reinterpret_cast<uint8_t *>(malloc(this->data->image_count));
+      assert(this->data->image);
       this->data->width = frame_width;
       this->data->height = frame_height;
       memcpy(this->data->image, capture_buffer, this->data->image_count);
@@ -1310,31 +1246,35 @@ int Camera1394::GrabFrame()
     {
       this->data->bpp = 24;
       this->data->format = PLAYER_CAMERA_FORMAT_RGB888;
-      dst = this->data->image;
       switch (this->BayerMethod)
       {
       case BAYER_DECODING_DOWNSAMPLE:
         // quarter of the image but 3 bytes per pixel
-	this->data->image_count = this->frameSize/4*3;
-    this->data->image = (uint8_t *) malloc(this->data->image_count);
-	BayerDownsample(capture_buffer, this->data->image,
-					frame_width/2, frame_height/2,
-					(bayer_pattern_t)this->BayerPattern);
+	this->data->image_count = (frame_width / 2) * (frame_height / 2) * 3;
+        this->data->image = reinterpret_cast<uint8_t *>(malloc(this->data->image_count));
+	assert(this->data->image);
+	BayerDownsample(reinterpret_cast<unsigned char *>(capture_buffer), 
+	                reinterpret_cast<unsigned char *>(this->data->image),
+			frame_width / 2, frame_height / 2,
+			this->BayerPattern);
 	break;
       case BAYER_DECODING_NEAREST:
-        this->data->image_count = this->frameSize * 3;
-        this->data->image = (uint8_t *) malloc(this->data->image_count);
-        BayerNearestNeighbor(capture_buffer, dst,
-					frame_width, frame_height,
-					(bayer_pattern_t)this->BayerPattern);
+        this->data->image_count = frame_width * frame_height * 3;
+        this->data->image = reinterpret_cast<uint8_t *>(malloc(this->data->image_count));
+	assert(this->data->image);
+        BayerNearestNeighbor(reinterpret_cast<unsigned char *>(capture_buffer),
+			     reinterpret_cast<unsigned char *>(this->data->image),
+			     frame_width, frame_height,
+			     this->BayerPattern);
 	break;
       case BAYER_DECODING_EDGE_SENSE:
-        this->data->image_count = this->frameSize * 3;
-        this->data->image = (uint8_t *) malloc(this->data->image_count);
-        
-	BayerEdgeSense(capture_buffer, dst,
-					frame_width, frame_height,
-					(bayer_pattern_t)this->BayerPattern);
+        this->data->image_count = frame_width * frame_height * 3;
+        this->data->image = reinterpret_cast<uint8_t *>(malloc(this->data->image_count));
+        assert(this->data->image);
+	BayerEdgeSense(reinterpret_cast<unsigned char *>(capture_buffer),
+	               reinterpret_cast<unsigned char *>(this->data->image),
+		       frame_width, frame_height,
+		       this->BayerPattern);
 	break;
       default:
         PLAYER_ERROR("camera1394: Unknown Bayer Method");
@@ -1347,8 +1287,8 @@ int Camera1394::GrabFrame()
       } 
       else
       {    //image is half the size of grabbed frame
-        this->data->width = frame_width/2;
-        this->data->height = frame_height/2;
+        this->data->width = frame_width / 2;
+        this->data->height = frame_height / 2;
       }
     }
     break;
@@ -1361,7 +1301,6 @@ int Camera1394::GrabFrame()
 #else
   if (this->method == methodVideo) dc1394_dma_done_with_buffer(&this->camera);
 #endif
-
   this->data->compression = PLAYER_CAMERA_COMPRESS_RAW;
   return 0;
 }
@@ -1370,14 +1309,23 @@ int Camera1394::GrabFrame()
 // Update the device data (the data going back to the client).
 void Camera1394::RefreshData()
 {
+  assert(this->data);
+  if (!(this->data->image_count))
+  {
+    PLAYER_ERROR("No image data to publish");
+    return;
+  }
+  assert(this->data->image);
   Publish(this->device_addr, 
           PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
-          reinterpret_cast<void*>(this->data),
+          reinterpret_cast<void *>(this->data),
 #if LIBDC1394_VERSION == 0200
-          0, &this->frameTime, false);  
+          0, &this->frameTime, false);
 #else
-          0, 0, false);
-#endif  
+          0, NULL, false);
+#endif
+  // I assume that Publish() freed this data!
+  this->data = NULL;
   return;
 }
 
@@ -1386,9 +1334,18 @@ void Camera1394::RefreshData()
 // Save a frame to disk
 int Camera1394::SaveFrame(const char *filename)
 {
-  FILE *fp = fopen(filename, "wb");
+  FILE * fp;
+  
+  assert(this->data);
+  if (!(this->data->image_count))
+  {
+    PLAYER_ERROR("No image data to write");
+    return -1;
+  }
+  assert(this->data->image);
 
-  if (fp == NULL)
+  fp = fopen(filename, "wb");
+  if (!fp)
   {
     PLAYER_ERROR("Couldn't create image file");
     return -1;
