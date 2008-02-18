@@ -83,6 +83,8 @@ driver
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stddef.h>
+#include <assert.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -289,7 +291,11 @@ void Iwspy::Main()
 
       if (nic->in_count > nic->out_count)
       {
-        link = data.links + data.links_count++;
+        data.links_count++;
+        data.links = reinterpret_cast<player_wifi_link_t *>(realloc(data.links, sizeof(player_wifi_link_t) * data.links_count));
+        assert(data.links);
+        link = data.links + (data.links_count - 1);
+        assert(link);
         memcpy(link->ip, nic->ip, strlen(nic->ip));
 	link->ip_count = strlen(nic->ip);
         memcpy(link->mac, nic->mac, strlen(nic->mac));
@@ -300,11 +306,13 @@ void Iwspy::Main()
         nic->out_count = nic->in_count;
       }
     }
-    data.links_count = data.links_count;
 
     // Send data
     this->Publish(this->device_addr,PLAYER_MSGTYPE_DATA,
-                  PLAYER_WIFI_DATA_STATE, &data, sizeof(data), &time);
+                  PLAYER_WIFI_DATA_STATE, &data, 0, &time);
+    if (data.links) free(data.links);
+    data.links = NULL;
+    data.links_count = 0;
   }
   return;
 }

@@ -75,6 +75,8 @@ driver
 */
 /** @} */
 
+#include <stddef.h>
+#include <assert.h>
 #include <ctype.h>
 #include <pthread.h>
 #include <stdio.h>
@@ -82,6 +84,7 @@ driver
 #include <unistd.h>
 #include <net/ethernet.h>
 #include <netinet/in.h>
+#include <linux/if.h>
 #include <linux/wireless.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
@@ -440,7 +443,7 @@ LinuxWiFi::Update(void)
  
   wifi_data.qual_type = qual_type;
 
-  Publish(device_addr, PLAYER_MSGTYPE_DATA,PLAYER_WIFI_DATA_STATE,(void*)&wifi_data, sizeof(player_wifi_data_t),NULL);
+  Publish(device_addr, PLAYER_MSGTYPE_DATA,PLAYER_WIFI_DATA_STATE,(void*)&wifi_data);
 }
 
 
