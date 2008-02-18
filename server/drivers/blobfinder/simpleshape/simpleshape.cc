@@ -100,6 +100,10 @@ driver
 */
 /** @} */
 
+#include <stddef.h>
+#include <stdlib.h>
+#include <assert.h>
+#include <string.h>
 #include "../../base/imagebase.h"
 
 #include <opencv/cv.h>
@@ -163,6 +167,8 @@ class SimpleShape : public ImageBase
   // Write the outgoing blobfinder data
   private: void WriteBlobfinderData();
 
+  private: void WriteCameraData();
+
   // Model data (this is the shape to search for)
   private: const char *modelFilename;
   private: CvMemStorage *modelStorage;
@@ -182,6 +188,11 @@ class SimpleShape : public ImageBase
   // List of potential shapes
   private: Shape shapes[256];
   private: unsigned int shapeCount;
+  
+  private: player_devaddr_t blobfinder_addr;
+  private: player_devaddr_t debugcam_addr;
+
+  private: bool debugcam;
 };
 
 
@@ -202,11 +213,36 @@ void SimpleShape_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 SimpleShape::SimpleShape( ConfigFile* cf, int section)
-	: ImageBase(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_BLOBFINDER_CODE)
+	: ImageBase(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
 {
   this->inpImage = NULL;
   this->outImage = NULL;
   this->workImage = NULL;
+  memset(&(this->blobfinder_addr), 0, sizeof blobfinder_addr);
+  memset(&(this->debugcam_addr), 0, sizeof debugcam_addr);
+  this->debugcam = true;
+
+  if (cf->ReadDeviceAddr(&(this->blobfinder_addr), section, "provides",
+                           PLAYER_BLOBFINDER_CODE, -1, NULL))
+  {
+    this->SetError(-1);
+    return;
+  }
+  if (this->AddInterface(this->blobfinder_addr))
+  {
+    this->SetError(-1);
+    return;
+  }
+  if (cf->ReadDeviceAddr(&(this->debugcam_addr), section, "provides",
+                           PLAYER_CAMERA_CODE, -1, NULL))
+  {
+    PLAYER_WARN("debug preview will not be available");
+    this->debugcam = false;
+  } else if (this->AddInterface(this->debugcam_addr))
+  {
+    this->SetError(-1);
+    return;
+  }
 
   // Filename for the target shape image
   this->modelFilename = cf->ReadFilename(section, "model", NULL);
@@ -220,7 +256,6 @@ SimpleShape::SimpleShape( ConfigFile* cf, int section)
   this->matchThresh[2] = cf->ReadTupleFloat(section, "match_thresh", 2, 0.20);  
 
   this->shapeCount = 0;
-  return;
 }
 
 
@@ -320,8 +355,10 @@ int SimpleShape::LoadModel()
 int SimpleShape::ProcessFrame()
 {
   CvSize size;
-  int width, height;
-  
+  int i, j, width, height, depth;
+  unsigned char * row1;
+  unsigned char * row2;
+
   width = this->stored_data.width;
   height = this->stored_data.height;
   assert(width > 0 && height > 0);
@@ -331,7 +368,7 @@ int SimpleShape::ProcessFrame()
   if (this->inpImage == NULL)
     this->inpImage = cvCreateImage(size, IPL_DEPTH_8U, 1);
   size = cvSize(2 * width, 2 * height);
-  if (this->outImage == NULL)
+  if ((this->outImage == NULL) && (this->debugcam))
   {
     this->outImage = cvCreateImage(size, IPL_DEPTH_8U, 1);
     cvGetSubRect(this->outImage, this->outSubImages + 0, cvRect(0, 0, width, height));
@@ -343,26 +380,38 @@ int SimpleShape::ProcessFrame()
   // Create a main image and copy in the pixels
   switch (this->stored_data.format)
   {
-    case PLAYER_CAMERA_FORMAT_MONO8:
+  case PLAYER_CAMERA_FORMAT_MONO8:
+    // Copy pixels to input image (grayscale)
+    assert(this->inpImage->imageSize >= static_cast<int>(this->stored_data.image_count));
+    memcpy(this->inpImage->imageData, this->stored_data.image, this->inpImage->imageSize);
+    break;
+  case PLAYER_CAMERA_FORMAT_RGB888:
+    depth = this->stored_data.bpp / 8;
+    assert((depth == 4) || (depth == 3));
+    assert(this->inpImage->imageSize >= static_cast<int>((this->stored_data.image_count) / depth));
+    for (i = 0; i < height; i++)
     {
-      // Copy pixels to input image (grayscale)
-      assert(this->inpImage->imageSize >= (int) this->stored_data.image_count);
-      memcpy(this->inpImage->imageData, this->stored_data.image, this->inpImage->imageSize);
-      break;
+      row1 = (reinterpret_cast<unsigned char *>(this->stored_data.image)) + (i * width * depth);
+      row2 = (reinterpret_cast<unsigned char *>(this->inpImage->imageData)) + (i * width);
+      for (j = 0; j < width; j++)
+      {
+        row2[0] = static_cast<unsigned char>((static_cast<double>(row1[0]) * 0.3) + (static_cast<double>(row1[1]) * 0.59) + (static_cast<double>(row1[2]) * 0.11));
+        row1 += depth;
+        row2++;
+      }
     }
-    default:
-    {
-      PLAYER_WARN1("image format [%d] is not supported", this->stored_data.format);
-      return -1;
-    }
+    break;
+  default:
+    PLAYER_WARN1("image format [%d] is not supported", this->stored_data.format);
+    return -1;
   }
 
   // Copy original image to output
-/*  if (this->out_camera_id.port)
+  if (this->debugcam)
   {
     cvSetZero(this->outImage);
     cvCopy(this->inpImage, this->outSubImages + 0);
-  }*/
+  }
 
   // Clone the input image to our workspace
   this->workImage = cvCloneImage(this->inpImage);
@@ -374,8 +423,9 @@ int SimpleShape::ProcessFrame()
   cvReleaseImage(&this->workImage);
   this->workImage = NULL;
 
-  WriteBlobfinderData();
-    
+  this->WriteBlobfinderData();
+  if (this->debugcam) this->WriteCameraData();
+
   return 0;
 }
 
@@ -399,8 +449,8 @@ void SimpleShape::FindShapes()
   cvCanny(this->workImage, this->workImage, this->cannyThresh1, this->cannyThresh2);
 
   // Copy edges to output image
-/*  if (this->out_camera_id.port)
-    cvCopy(this->workImage, this->outSubImages + 1);*/
+  if (this->debugcam)
+    cvCopy(this->workImage, this->outSubImages + 1);
 
   // Find contours on a binary image
   storage = cvCreateMemStorage(0);
@@ -426,9 +476,9 @@ void SimpleShape::FindShapes()
 
     
     // Draw eligable contour on the output image; useful for debugging
-/*    if (this->out_camera_id.port)
+    if (this->debugcam)
       cvDrawContours(this->outSubImages + 2, contour, CV_RGB(255, 255, 255),
-                     CV_RGB(255, 255, 255), 0, 1, 8);*/
+                     CV_RGB(255, 255, 255), 0, 1, 8);
 
     // Compute the contour features
     this->ExtractFeatureSet((CvContour*) contour, &featureSet);
@@ -439,16 +489,16 @@ void SimpleShape::FindShapes()
       continue;
 
     // Draw contour on the main image; useful for debugging
-/*    if (this->out_camera_id.port)
+    if (this->debugcam)
     {
       cvDrawContours(this->outSubImages + 3, contour, CV_RGB(128, 128, 128),
                      CV_RGB(128, 128, 128), 0, 1, 8);
       cvRectangle(this->outSubImages + 3, cvPoint(rect.x, rect.y),
                   cvPoint(rect.x + rect.width, rect.y + rect.height), CV_RGB(255, 255, 255), 1);
-    }*/
+    }
 
     // Check for overrun
-    if (this->shapeCount >= sizeof(this->shapes) / sizeof(this->shapes[0]))
+    if (this->shapeCount >= (sizeof(this->shapes) / sizeof(class Shape)))
     {
       PLAYER_WARN("image contains too many shapes");
       break;
@@ -491,8 +541,6 @@ void SimpleShape::ExtractFeatureSet(CvContour *contour, FeatureSet *feature)
 
   // Compute elliptical variance
   box = cvFitEllipse2(contour);
-
-  //printf("%f %f %f %f\n", box.center.x, box.center.y, box.size.width / 2, box.size.height / 2);
 
   aa = box.size.width * box.size.width / 4;
   bb = box.size.height * box.size.height / 4;
@@ -623,9 +671,11 @@ void SimpleShape::WriteBlobfinderData()
   }
 
   // Copy data to server.
-  Publish(device_addr,PLAYER_MSGTYPE_DATA,PLAYER_BLOBFINDER_DATA_BLOBS,&data,sizeof(data));
-  free(data.blobs);
-  
+  Publish(blobfinder_addr,PLAYER_MSGTYPE_DATA,PLAYER_BLOBFINDER_DATA_BLOBS,&data);
+  if (data.blobs) free(data.blobs);
+  data.blobs = NULL;
+  data.blobs_count = 0;
+
   return;
 }
 
@@ -633,34 +683,32 @@ void SimpleShape::WriteBlobfinderData()
 ////////////////////////////////////////////////////////////////////////////////
 // Write camera data; this is a little bit naughty: we re-use the
 // input camera data, but modify the pixels
-/*void SimpleShape::WriteCameraData()
+void SimpleShape::WriteCameraData()
 {
-  size_t size;
-  
-  if (this->camera_id.port == 0)
-    return;
+  player_camera_data_t * outCameraData;
+
   if (this->outImage == NULL)
     return;
 
+  outCameraData = reinterpret_cast<player_camera_data_t *>(malloc(sizeof(player_camera_data_t)));
+  assert(outCameraData);
   // Do some byte swapping
-  this->outCameraData.width = htons(this->outImage->width);
-  this->outCameraData.height = htons(this->outImage->height);
-  this->outCameraData.bpp = 8;
-  this->outCameraData.format = PLAYER_CAMERA_FORMAT_MONO8;
-  this->outCameraData.compression = PLAYER_CAMERA_COMPRESS_RAW;
-  this->outCameraData.image_size = htonl(this->outImage->imageSize);
-
-  // Copy in the pixels
-  memcpy(this->outCameraData.image, this->outImage->imageData, this->outImage->imageSize);
-
-  // Compute message size
-  size = sizeof(this->outCameraData) - sizeof(this->outCameraData.image)
-    + this->outImage->imageSize;
-
-  // Copy data to server
-  this->PutMsg(this->out_camera_id, NULL, PLAYER_MSGTYPE_DATA, 0, &this->outCameraData, size, &this->cameraTime);
-  
-  return;
-}*/
-
-
+  outCameraData->width = this->outImage->width;
+  outCameraData->height = this->outImage->height;
+  outCameraData->bpp = 8;
+  outCameraData->format = PLAYER_CAMERA_FORMAT_MONO8;
+  outCameraData->compression = PLAYER_CAMERA_COMPRESS_RAW;
+  outCameraData->fdiv = 0;
+  outCameraData->image_count = this->outImage->imageSize;
+  outCameraData->image = NULL;
+  if (outCameraData->image_count)
+  {
+    outCameraData->image = reinterpret_cast<uint8_t *>(malloc(outCameraData->image_count));
+    // Copy in the pixels
+    memcpy(outCameraData->image, this->outImage->imageData, outCameraData->image_count);
+  }
+  Publish(this->device_addr,
+          PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
+          reinterpret_cast<void *>(outCameraData),
+          0, NULL, false); // this call should also free outCameraData and outCameraData->image
+}

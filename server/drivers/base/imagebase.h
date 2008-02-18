@@ -65,7 +65,11 @@ class ImageBase : public Driver
 		// Constructor
 		ImageBase(ConfigFile *cf, int section, bool overwrite_cmds, size_t queue_maxlen, int interf);
 		ImageBase(ConfigFile *cf, int section, bool overwrite_cmds = true, size_t queue_maxlen = PLAYER_MSGQUEUE_DEFAULT_MAXLEN);
-		virtual ~ImageBase() {};
+		virtual ~ImageBase()
+		{
+		  if (stored_data.image) delete [](stored_data.image);
+		  PLAYER_WARN("image deleted from the memory");
+		}
 
 		// Setup/shutdown routines.
 		virtual int Setup();
@@ -73,6 +77,10 @@ class ImageBase : public Driver
 
 		// Process incoming messages from clients 
 		int ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data);
+
+	private:
+	        ImageBase(); // no default constructor
+	        ImageBase(const ImageBase &); // no copy constructor
 
 	protected: 
 		virtual int ProcessFrame() = 0;
@@ -85,5 +93,3 @@ class ImageBase : public Driver
 		player_camera_data_t stored_data;
 		bool HaveData;
 };
-
-
