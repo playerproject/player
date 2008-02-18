@@ -154,16 +154,18 @@ LayerDataHolder PostgresConn::GetLayerData(const char* layer_name)
   data.name = layer_name;
   for (int i=0; i<num_rows; ++i)
   {
-    FeatureDataHolder fd(string(PQgetvalue(res, i, 0)));
+    FeatureDataHolder * fd = new FeatureDataHolder(string(PQgetvalue(res, i, 0)));
+    assert(fd);
     uint32_t length = PQgetlength(res, i, 1);
     uint8_t * wkb = new uint8_t[length];
     assert(wkb);
     length = Text2Bin(PQgetvalue(res, i, 1), wkb, length);
-    fd.wkb.assign(wkb, wkb + length);
+    fd->wkb.assign(wkb, wkb + length);
     delete []wkb;
-    fd.attrib = string(PQgetvalue(res, i, 2));
+    fd->attrib = string(PQgetvalue(res, i, 2));
 
-    data.features.push_back(fd);
+    data.features.push_back(*fd);
+    delete fd;
   }
 
   PQclear(res);
