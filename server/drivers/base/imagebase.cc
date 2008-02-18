@@ -27,8 +27,14 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
+#include <stddef.h>
+#include <string.h>
+#include <assert.h>
 #include "imagebase.h"
 #include <libplayerxdr/playerxdr.h>
+#if HAVE_JPEGLIB_H
+#include <libplayerjpeg/playerjpeg.h>
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
@@ -37,7 +43,8 @@ ImageBase::ImageBase(ConfigFile *cf, int section, bool overwrite_cmds, size_t qu
 	: Driver(cf, section, overwrite_cmds, queue_maxlen, interf)
 {
   memset(&this->camera_addr, 0, sizeof(player_devaddr_t));
-  
+  stored_data.image = NULL;
+  stored_data.image_count = 0;
   HaveData = false;
 
   // Must have an input camera
@@ -55,7 +62,8 @@ ImageBase::ImageBase(ConfigFile *cf, int section, bool overwrite_cmds, size_t qu
 	: Driver(cf, section, overwrite_cmds, queue_maxlen)
 {
   memset(&this->camera_addr, 0, sizeof(player_devaddr_t));
-  
+  stored_data.image = NULL;
+  stored_data.image_count = 0;
   HaveData = false;
 
   // Must have an input camera
@@ -95,7 +103,6 @@ int ImageBase::Setup()
   return 0;
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device (called by server thread).
 int ImageBase::Shutdown()
@@ -111,16 +118,72 @@ int ImageBase::Shutdown()
 // Process an incoming message
 int ImageBase::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data)
 {
+  uint32_t new_image_count;
+  player_camera_data_t * compdata = reinterpret_cast<player_camera_data_t *>(data);
+
   assert(hdr);
-  assert(data);
-  
+  assert(compdata);
+
   if(Message::MatchMessage (hdr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, camera_addr))
   {
   	Lock();
   	if (!HaveData)
   	{
- 		player_camera_data_t_copy(&stored_data, (player_camera_data_t *)data);
- 		HaveData = true;
+	    this->stored_data.width = (compdata->width);
+	    this->stored_data.height = (compdata->height);
+	    this->stored_data.fdiv = (compdata->fdiv);
+#if HAVE_JPEGLIB_H
+	    if (compdata->compression != PLAYER_CAMERA_COMPRESS_JPEG)
+	    {
+#endif
+	        this->stored_data.compression = (compdata->compression);
+	        this->stored_data.format = (compdata->format);
+	        this->stored_data.bpp = (compdata->bpp);
+		if ((this->stored_data.image_count) != (compdata->image_count))
+	        {
+		    this->stored_data.image_count = (compdata->image_count);
+		    if (this->stored_data.image) delete [](this->stored_data.image);
+		    this->stored_data.image = NULL;
+		    if (this->stored_data.image_count)
+		    {
+		        this->stored_data.image = new uint8_t[this->stored_data.image_count];
+			assert(this->stored_data.image);
+		    }
+		}
+		if (this->stored_data.image_count)
+		{
+		    assert(this->stored_data.image);
+		    memcpy(this->stored_data.image, compdata->image, this->stored_data.image_count);
+		}
+#if HAVE_JPEGLIB_H
+	    } else
+	    {
+		this->stored_data.compression = PLAYER_CAMERA_COMPRESS_RAW;
+		this->stored_data.format = PLAYER_CAMERA_FORMAT_RGB888;
+		this->stored_data.bpp = 24;
+		new_image_count = (this->stored_data.width) * (this->stored_data.height) * 3;
+		if ((this->stored_data.image_count) != new_image_count)
+	        {
+		    this->stored_data.image_count = new_image_count;
+		    if (this->stored_data.image) delete [](this->stored_data.image);
+		    this->stored_data.image = NULL;
+		    if (this->stored_data.image_count)
+		    {
+		        this->stored_data.image = new uint8_t[this->stored_data.image_count];
+			assert(this->stored_data.image);
+		    }
+		}
+		if (this->stored_data.image_count)
+		{
+		    assert(this->stored_data.image);
+		    jpeg_decompress(reinterpret_cast<unsigned char *>(this->stored_data.image),
+		                    this->stored_data.image_count,
+		                    reinterpret_cast<unsigned char *>(compdata->image),
+		                    compdata->image_count);		
+		}
+	    }
+#endif
+ 	    HaveData = true;
   	}
  	Unlock();
     return 0;
