@@ -10,3 +10,4 @@ example_interface.h
 example_xdr.c
 example_xdr.h
 *.so
+.player
