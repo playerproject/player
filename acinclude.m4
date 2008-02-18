@@ -270,7 +270,7 @@ PLAYER_ADD_DRIVER([lifomcom],[no],[],[],[])
 PLAYER_ADD_DRIVER([linuxjoystick],[yes],[linux/joystick.h],[],[])
 
 PLAYER_ADD_DRIVER([linuxwifi],[yes],[linux/wireless.h],
-                  [],[],[],[],[[#include <netinet/in.h>]])
+                  [],[],[],[],[[#include <linux/if.h>]])
 
 PLAYER_ADD_DRIVER([localbb],[yes],[],[],[])
 
