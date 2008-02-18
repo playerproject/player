@@ -1248,6 +1248,7 @@ int Camera1394::GrabFrame()
       this->data->format = PLAYER_CAMERA_FORMAT_RGB888;
       switch (this->BayerMethod)
       {
+      
       case BAYER_DECODING_DOWNSAMPLE:
         // quarter of the image but 3 bytes per pixel
 	this->data->image_count = (frame_width / 2) * (frame_height / 2) * 3;
