@@ -9,3 +9,4 @@ example_functiontable.c
 example_interface.h
 example_xdr.c
 example_xdr.h
+*.so
