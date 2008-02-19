@@ -182,6 +182,8 @@ class TCPStream : public Driver
     StringProperty ip;
     IntProperty port;
     
+    bool connected;
+    
     // This is the data we store and send
     player_opaque_data_t mData;
 
@@ -224,6 +226,8 @@ TCPStream::TCPStream(ConfigFile* cf, int section)
 	rx_buffer = new uint8_t[buffer_size];
 	assert(rx_buffer);
 	
+	connected = false;
+	
 	return;
 }
 
@@ -240,9 +244,9 @@ int TCPStream::Setup()
 
 	// Open the terminal
 	if (OpenTerm())
-	    return -1;
-
-	PLAYER_MSG0(2, "TCP Opaque Driver ready");
+	    PLAYER_ERROR("Failed to connect to socket");
+	else
+		PLAYER_MSG0(2, "TCP Opaque Driver ready");
 
   // Start the device thread; spawns a new thread and executes
   // TCPStream::Main(), which contains the main loop for the driver.
@@ -274,6 +278,12 @@ int TCPStream::ProcessMessage(QueuePointer & resp_queue,
 	// If you handle the message successfully, return 0.  Otherwise,
 	// return -1, and a NACK will be sent for you, if a response is required.
 	
+	if (!connected)
+	{
+		PLAYER_MSG0(2, "TCP reconnecting");
+		OpenTerm();
+	}
+	
 	if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_OPAQUE_CMD_DATA, this->device_addr))
 	{
 	    player_opaque_data_t * recv = reinterpret_cast<player_opaque_data_t * > (data);
@@ -286,7 +296,11 @@ int TCPStream::ProcessMessage(QueuePointer & resp_queue,
 	    		result = send(sock, recv->data, recv->data_count, 0);
 	    	} while (result < 0 && errno == EAGAIN);
 	    	if (result < (int)recv->data_count)
+	    	{
 	    		PLAYER_ERROR2("Error sending data (%d, %s)", errno, strerror(errno));
+	    		// Attempt to reconnect.
+	    		CloseTerm();
+	    	}
 	    }
 	    
 	    return (0);
@@ -311,8 +325,16 @@ void TCPStream::Main()
     // called on each message.
     ProcessMessages();
 
-    // Reads the data from the serial port and then publishes it
-    ReadData();
+    if (connected)
+    {
+    	// Reads the data from the serial port and then publishes it
+    	ReadData();
+    }
+    else
+    {
+    	PLAYER_MSG0(2, "TCP reconnecting");
+    	OpenTerm();
+    }
 
     // Sleep (you might, for example, block on a read() instead)
     usleep(100000);
@@ -342,6 +364,8 @@ int TCPStream::OpenTerm()
 	
 	PLAYER_MSG0(2, "TCP Opaque Driver connected");
   
+	connected = true;
+	
   return 0;
 }
 
@@ -352,6 +376,7 @@ int TCPStream::OpenTerm()
 int TCPStream::CloseTerm()
 {
   close(sock);
+  connected = false;
   return 0;
 }
 
@@ -363,15 +388,16 @@ void TCPStream::ReadData()
   // Read a packet from the laser
   //
   int len = recv(sock, rx_buffer, buffer_size, 0);
-  if (len == 0 || (len < 0 && errno == EAGAIN))
+  if (len < 0 && errno == EAGAIN)
   {
      // PLAYER_MSG0(2, "empty packet");
     return;
   }
 
-  if (len < 0)
+  if (len <= 0)
   {
     PLAYER_ERROR2("error reading from socket: %d %s", errno, strerror(errno));
+    CloseTerm();
     return;
   }
 

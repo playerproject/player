@@ -153,8 +153,13 @@ class SickNAV200 : public Driver
     void GetReflectors();
     // Set the reflector positions.
     void SetReflectors(player_vectormap_layer_data_t* data);
-    // Fetch the reflector positions from a provided vectormap and download to device.
-    void FetchReflectors();
+    // Checks if the reflectors stored on the NAV200 are identical to those in the database.
+    // If they are not, the reflectors in the database are copied to the NAV200.
+    void FetchIfNeeded();
+    // Fetch the reflector positions from a provided vectormap.
+    player_vectormap_layer_data_t* FetchReflectors();
+    // Extract reflector positions from vectormap layer. Returns number of reflectors.
+    int InterpretLayerData(player_vectormap_layer_data_t* data, PositionXY* reflectors);
     // Build the well known binary view of the reflector positions.
     void BuildWKB();
 
@@ -170,12 +175,15 @@ class SickNAV200 : public Driver
     int numReflectors;
     uint8_t* wkbData;
     uint32_t wkbSize;
+    double speed;
+    double steeringAngle;
     
     DoubleProperty wheelBase;
     
     // If mode is set to mapping the reflector positions will be mapped,
     // and mode will be automatically set back to positioning.
     StringProperty mode;
+    bool fetchOnStart; // If true, fetch reflectors whenever connecting.
     
     // Name of device used to communicate with the laser
     //char *device_name;
@@ -204,6 +212,10 @@ class SickNAV200 : public Driver
     player_devaddr_t position_addr;
     // Vector map interface
     player_devaddr_t vectormap_addr;
+    // Position interface
+    player_devaddr_t debug_addr;
+    player_position2d_data_t debug_packet;
+    struct timeval previous;
 };
 
 // a factory creation function
@@ -228,7 +240,7 @@ void SickNAV200_Register(DriverTable* table)
 // Constructor
 SickNAV200::SickNAV200(ConfigFile* cf, int section)
     : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN),
-	  wheelBase ("wheelBase", -1.0, 0),
+	  wheelBase ("wheelbase", -1.0, 0),
       mode ("mode", DEFAULT_SICKNAV200_MODE, 0)
 {
   // Create position interface
@@ -260,6 +272,21 @@ SickNAV200::SickNAV200(ConfigFile* cf, int section)
 	this->SetError(-1);
 	return;
   }
+  
+  // Create debug interface
+  if (cf->ReadDeviceAddr(&(this->debug_addr), section, 
+                       "provides", PLAYER_POSITION2D_CODE, 2, NULL) != 0)
+  {
+	PLAYER_ERROR("Could not read debug interface device address.");
+	this->SetError(-1);
+	return;
+  }  
+  if (this->AddInterface(this->debug_addr))
+  {
+	PLAYER_ERROR("Could not add debug interface.");
+	this->SetError(-1);
+	return;
+  }
 
   // Laser geometry.
   this->pose[0] = cf->ReadTupleLength(section, "pose", 0, 0.0);
@@ -271,6 +298,10 @@ SickNAV200::SickNAV200(ConfigFile* cf, int section)
   this->numReflectors = 0;
   this->wkbData = NULL;
   this->wkbSize = 0;
+  
+  this->speed = 0;
+  this->steeringAngle = 0;
+  this->fetchOnStart = false;
   
   // Serial port - done in the opaque driver
   //this->device_name = strdup(cf->ReadString(section, "port", DEFAULT_PORT));
@@ -304,6 +335,8 @@ SickNAV200::SickNAV200(ConfigFile* cf, int section)
   memset(&this->reflector_map_id, 0, sizeof(this->reflector_map_id));
   cf->ReadDeviceAddr(&this->reflector_map_id, section, "requires",
 		  PLAYER_VECTORMAP_CODE, -1, NULL);
+  
+  gettimeofday(&previous, NULL);
   
   return;
 }
@@ -411,6 +444,15 @@ SickNAV200::ProcessMessage(QueuePointer &resp_queue,
     Laser.bytesReceived += recv->data_count;
     return 0;
   }
+
+  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE, velocity_id))
+  {
+    player_position2d_data_t * recv = reinterpret_cast<player_position2d_data_t * > (data);
+    speed = recv->vel.px;
+    steeringAngle = recv->pos.pa;
+    return 0;
+  }
+
 	
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
                                  PLAYER_POSITION2D_REQ_GET_GEOM,
@@ -547,7 +589,7 @@ SickNAV200::ProcessMessage(QueuePointer &resp_queue,
 	    	}
 	    	else if (strncmp(mode, "fetch", 5) == 0)
 	    	{
-	    		FetchReflectors(); // Fetch reflectors from database
+	    		SetReflectors(FetchReflectors()); // Fetch reflectors from database
 	    		mode.SetValue("positioning");
 	    	}
 	    	else if (strncmp(mode, "upload", 5) == 0)
@@ -606,6 +648,15 @@ void SickNAV200::Main()
   
   BuildWKB(); // Build an empty WKB.
   
+  PLAYER_MSG1(2, "Wheel base: %lf", wheelBase.GetValue());
+  
+  if (strncmp(mode, "fetch", 5) == 0)
+  {
+	fetchOnStart = true;
+    FetchIfNeeded();
+    mode.SetValue("positioning");
+  }
+  
   LaserPos Reading;
   for(;;)
   {
@@ -615,36 +666,29 @@ void SickNAV200::Main()
     // process any pending messages
     ProcessMessages();
     
-    player_position2d_geom_t* vel = NULL;
+    bool gotReading;
     if (velocity)
     {
-    	Message* response = velocity->Request(this->InQueue, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_GET_GEOM, NULL, 0, 0, true);
-    	if (response->GetDataSize() == sizeof(vel))
-    		vel = reinterpret_cast<player_position2d_geom_t*>(response->GetPayload());
-    	else
-    		PLAYER_ERROR("invalid response to velocity request\n");
-    }
-    
-    bool gotReading;
-    if (vel)
-    {
-    	if (wheelBase < 0)
+    	if (wheelBase.GetValue() <= 0)
     	{
-    		PLAYER_WARN("vehicle movement data provided but wheelBase not set. Add wheelbase to the NAV config file");
+    		PLAYER_WARN("vehicle movement data provided but wheelbase not set. Add wheelbase to the NAV config file");
     		gotReading = Laser.GetPositionAuto(Reading);
     	}
     	else
     	{
-	    	double steeringAngle = vel->pose.pyaw;
-	    	double speed = vel->pose.px;
 	    	// Convert vehicle movement data into NAV200 format and coordinates.
 	    	//double arcRadius = wheelBase / tan(steeringAngle);
 	    	//double angularVelocity = speed / arcRadius;
-	    	double angularVelocity = speed * tan(steeringAngle) / wheelBase;
+	    	double angularVelocity = speed * tan(steeringAngle) / wheelBase.GetValue();
 	    	double velX = speed - pose[1] * angularVelocity;
 	    	double velY = pose[0] * angularVelocity;
 	    	double navVelX = velX * cos(pose[2]) + velY * sin(pose[2]);
 	    	double navVelY = velY * cos(pose[2]) - velX * sin(pose[2]);
+	    	debug_packet.vel.pa = angularVelocity;
+	    	debug_packet.vel.px = navVelX;
+	    	debug_packet.vel.py = navVelY;
+	    	debug_packet.stall = 0;
+	    	this->Publish(this->debug_addr, PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE, (void*)&debug_packet, sizeof(debug_packet), NULL);
 	    	gotReading = Laser.GetPositionSpeedVelocity(short(navVelX * 1000), short(navVelY * 1000), short(angularVelocity * 32768.0 / M_PI), Reading);
     	}
     }
@@ -660,9 +704,27 @@ void SickNAV200::Main()
       double forwardy = sin(angle);
       double leftx = -sin(angle);
       double lefty = cos(angle);
-      data_packet.pos.pa = atan2(forwardy, forwardx);
-      data_packet.pos.px = static_cast<double> (Reading.pos.x)/1000 - forwardx * pose[0] - leftx * pose[1];
-      data_packet.pos.py = static_cast<double> (Reading.pos.y)/1000 - forwardy * pose[0] - lefty * pose[1];
+      double newAngle = atan2(forwardy, forwardx);
+      double newX = static_cast<double> (Reading.pos.x)/1000 - forwardx * pose[0] - leftx * pose[1];
+      double newY = static_cast<double> (Reading.pos.y)/1000 - forwardy * pose[0] - lefty * pose[1];
+      
+      // Begin debug stuff
+      struct timeval current;
+      gettimeofday(&current, NULL);
+      double dt = static_cast<double> (current.tv_sec - previous.tv_sec) + static_cast<double>(current.tv_usec - previous.tv_usec) / 1000000.0;
+      
+      double angVel = (newAngle - data_packet.pos.pa) / dt;
+      double velX = (newX - data_packet.pos.px) / dt;
+      double velY = (newY - data_packet.pos.py) / dt;
+      PLAYER_MSG3(2, "Vx: %lf\tVy: %lf\tVa: %lf", velX, velY, angVel);
+      data_packet.vel.pa = angVel;
+      data_packet.vel.px = velX;
+      data_packet.vel.py = velY;
+      // End debug stuff
+      
+      data_packet.pos.pa = newAngle;
+      data_packet.pos.px = newX;
+      data_packet.pos.py = newY;
       if(Reading.quality==0xFF || Reading.quality==0xFE || Reading.quality==0x00)
       {
 	data_packet.stall = 1;
@@ -680,7 +742,10 @@ void SickNAV200::Main()
     else
     {
       PLAYER_WARN("Failed to get reading from laser scanner\n");
-      usleep(100000);
+      sleep(1);
+      // May have been disconnected. Attempt to return to positioning mode.
+	  if (fetchOnStart)
+		FetchIfNeeded();
     }
   }
 }
@@ -804,36 +869,44 @@ void SickNAV200::GetReflectors()
 const unsigned wkbHeaderSize = 9;
 const unsigned wkbPointSize = 21;
 
-void SickNAV200::SetReflectors(player_vectormap_layer_data_t* data)
+int SickNAV200::InterpretLayerData(player_vectormap_layer_data_t* data, PositionXY* reflectors)
 {
-	PLAYER_MSG0(2, "Downloading reflectors.");
-	
-	numReflectors = 0;
+	int numReflectors = 0;
 	for (unsigned f = 0; f < data->features_count; f++)
 	{
 		player_vectormap_feature_data_t feature = data->features[f];
 		uint8_t* wkb = feature.wkb;
 		if (feature.wkb_count < wkbHeaderSize)
 		{
-			PLAYER_WARN("WKB too small in SetReflectors\n");
+			PLAYER_WARN("WKB too small in InterpretLayerData\n");
 			continue;
 		}
 		if (wkb[0] == 0)
 		{
-			PLAYER_WARN("SetReflectors does not support big endian wkb data\n");
+			PLAYER_WARN("InterpretLayerData does not support big endian wkb data\n");
 			continue;
 		}
-		if (*reinterpret_cast<uint32_t*>(wkb + 1) != 4)
+		uint32_t type = *reinterpret_cast<uint32_t*>(wkb + 1);
+		bool extendedWKB = type >> 24 == 32; // Extended WKBs seem to store a flag in the type variable.
+		int headerSize = extendedWKB ? wkbHeaderSize + 4 : wkbHeaderSize;
+		if (type & 0xffffff != 4) // Ignore the most significant byte, it might have a flag in.
 		{
-			PLAYER_WARN("SetReflectors only supports MultiPoint data\n");
+			PLAYER_WARN1("InterpretLayerData only supports MultiPoint data %d\n", *reinterpret_cast<uint32_t*>(wkb + 1));
 			continue;
 		}
-		unsigned reflectorsInFeature = *reinterpret_cast<uint32_t*>(wkb + 5);
+		unsigned reflectorsInFeature = 0;
+		if (extendedWKB)
+		{
+			unsigned spacialReferenceID = *reinterpret_cast<uint32_t*>(wkb + 5);
+			reflectorsInFeature = *reinterpret_cast<uint32_t*>(wkb + 9);
+		}
+		else
+			reflectorsInFeature = *reinterpret_cast<uint32_t*>(wkb + 5);
 		if (!reflectorsInFeature)
 			continue;
-		if (feature.wkb_count != wkbHeaderSize + wkbPointSize * reflectorsInFeature)
+		if (feature.wkb_count != headerSize + wkbPointSize * reflectorsInFeature)
 		{
-			PLAYER_WARN("Unexpected WKB size in SetReflectors\n");
+			PLAYER_WARN("Unexpected WKB size in InterpretLayerData\n");
 			continue;
 		}
 		
@@ -846,15 +919,23 @@ void SickNAV200::SetReflectors(player_vectormap_layer_data_t* data)
 		// Copy in new reflectors
 		for (unsigned r = 0; r < reflectorsInFeature; r++)
 		{
-			uint8_t* pointData = wkb + wkbHeaderSize + wkbPointSize * r;
+			uint8_t* pointData = wkb + headerSize + wkbPointSize * r;
 			if (pointData[0] == 0)
-				PLAYER_ERROR("SetReflectors does not support big endian wkb data, let alone inconsistently\n");
+				PLAYER_ERROR("InterpretLayerData does not support big endian wkb data, let alone inconsistently\n");
 			if (*reinterpret_cast<uint32_t*>(pointData + 1) != 1)
 				PLAYER_ERROR("Malformed wkb data, expected point\n");
 			reflectors[startIndex + r].x = int(*reinterpret_cast<double*>(pointData + 5) * 1000.0);
 			reflectors[startIndex + r].y = int(*reinterpret_cast<double*>(pointData + 13) * 1000.0);
 		}
 	}
+	return numReflectors;
+}
+
+void SickNAV200::SetReflectors(player_vectormap_layer_data_t* data)
+{
+	PLAYER_MSG0(2, "Downloading reflectors.");
+	
+	numReflectors = InterpretLayerData(data, reflectors);
 	
 	BuildWKB(); // Might be something odd about the passed wkb, so build it the usual way.
 	
@@ -880,8 +961,29 @@ void SickNAV200::SetReflectors(player_vectormap_layer_data_t* data)
 		PLAYER_ERROR("Unable to return to positioning mode after getting reflectors.\n");
 }
 
-void SickNAV200::FetchReflectors()
+void SickNAV200::FetchIfNeeded()
 {
+	// Check if reflectors are correct.
+	player_vectormap_layer_data_t* dbData = FetchReflectors();
+	PositionXY dbReflectors[32];
+	int numDBReflectors = InterpretLayerData(dbData, dbReflectors);
+	GetReflectors();
+	// Determine if db and nav reflectors are identical.
+	bool same = numDBReflectors == numReflectors;
+	for (int i = 0; i < numReflectors && same; i++)
+		same = reflectors[i].x == dbReflectors[i].x && reflectors[i].y == dbReflectors[i].y;
+	if (!same) // If the reflectors are different.
+	{
+		PLAYER_MSG0(2, "Updating reflectors.");
+		SetReflectors(dbData); // Update the nav200 ones.
+	}
+	else
+		PLAYER_MSG0(2, "No reflector update needed.");
+}
+
+player_vectormap_layer_data_t* SickNAV200::FetchReflectors()
+{
+	player_vectormap_layer_data_t* layerData = NULL;
 	PLAYER_MSG0(2, "Fetching reflectors from vectormap");
 	if (reflector_map)
 	{
@@ -903,9 +1005,7 @@ void SickNAV200::FetchReflectors()
 				Message* response = reflector_map->Request(this->InQueue, PLAYER_MSGTYPE_REQ, PLAYER_VECTORMAP_REQ_GET_LAYER_DATA, (void*)&request, 0, NULL);
 				if (response->GetHeader()->type == PLAYER_MSGTYPE_RESP_ACK && response->GetHeader()->subtype == PLAYER_VECTORMAP_REQ_GET_LAYER_DATA)
 				{
-					player_vectormap_layer_data_t* layerData = reinterpret_cast<player_vectormap_layer_data_t*>(response->GetPayload());
-					
-					SetReflectors(layerData);
+					layerData = reinterpret_cast<player_vectormap_layer_data_t*>(response->GetPayload());
 					gotReflectors = true;
 				}
 			}
@@ -916,6 +1016,7 @@ void SickNAV200::FetchReflectors()
 	}
 	else
 		PLAYER_WARN("no vectormap provided to fetch reflectors from\n");
+	return layerData;
 }
 
 void SickNAV200::BuildWKB()
