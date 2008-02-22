@@ -120,10 +120,30 @@ int test_graphics3d(playerc_client_t *client, int index)
 	PASS();
     }
 
-  sleep(5);
-
-
+  sleep(2);
+  
   TEST("clearing");
+  if(playerc_graphics3d_clear(device) < 0)
+    FAIL();
+  else
+    PASS();
+  
+  sleep( 1 );
+  
+  TEST( "translating" );
+  if(playerc_graphics3d_translate( device, 1, 1, 1 ) < 0)
+    FAIL();
+  else
+    PASS();
+  
+  TEST( "rotating" );
+  if(playerc_graphics3d_rotate( device, M_PI/2.0, 0, 0, 1 ) < 0)
+    FAIL();
+  else
+    PASS();
+    
+
+  /*  TEST("clearing");
   
   if(playerc_graphics3d_clear(device) < 0)
     FAIL();
@@ -131,6 +151,9 @@ int test_graphics3d(playerc_client_t *client, int index)
     PASS();
 
   sleep( 1 );
+  */
+
+  
 
   TEST("unsubscribing");
   if (playerc_graphics3d_unsubscribe(device) != 0)

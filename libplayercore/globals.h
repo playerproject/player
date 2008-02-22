@@ -51,6 +51,10 @@ extern char playerversion[];
 extern bool player_quit;
 extern bool player_quiet_startup;
 
+// global access to the command line arguments
+extern int player_argc;
+extern char** player_argv;
+
 #if HAVE_PLAYERSD
 extern struct player_sd* globalSD;
 #endif
