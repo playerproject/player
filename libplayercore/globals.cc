@@ -72,6 +72,10 @@ char playerversion[32];
 bool player_quit;
 bool player_quiet_startup;
 
+// global access to the cmdlihe arguments
+int player_argc;
+char** player_argv;
+
 #if HAVE_PLAYERSD
 struct player_sd* globalSD;
 #endif

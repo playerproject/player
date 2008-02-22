@@ -65,6 +65,10 @@ holding the tracking object in front of the lens.  Null response.
 */
 typedef struct player_blobfinder_color_config
 {
+  /** For devices that can track multiple colors, indicate which
+  color channel we are defining with this structure. Single channel
+  devices will ignore this field. */
+  uint32_t channel;
   /** RGB minimum and max values (0-255) **/
   uint32_t rmin;
   /** RGB minimum and max values (0-255) **/

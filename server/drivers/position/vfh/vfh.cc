@@ -18,7 +18,11 @@ extern PlayerTime *GlobalTime;
 /** @defgroup driver_vfh vfh
  * @brief Vector Field Histogram local navigation algorithm
 
-@note This driver may take several seconds to start up, especially on slower machines.  You may want to set the 'alwayson' option for vfh to '1' in your configuration file in order to front-load this delay.  Otherwise, your client may experience a timeout in trying to subscribe to this device.
+@note This driver may take several seconds to start up, especially on
+slower machines.  You may want to set the 'alwayson' option for vfh to
+'1' in your configuration file in order to front-load this delay.
+Otherwise, your client may experience a timeout in trying to subscribe
+to this device.
 
 The vfh driver implements the Vector Field Histogram Plus local
 navigation method by Ulrich and Borenstein.  VFH+ provides real-time
@@ -164,6 +168,9 @@ or sector_angle.
     - Default: 0.0
     - If non-zero, the maximum angular velocity that will be used when 
       trying to escape.
+  - synchronous (int)
+    - default: 0
+    -  If zero (the default), VFH runs in its own thread. If non-zero, VFH runs in the main Player thread, which will make the server less responsive, but prevent nasty asynchronous behaviour under high CPU load. This is probably only useful when running demanding simulations. 
 
 @par Example
 @verbatim
@@ -190,7 +197,7 @@ driver
 )
 @endverbatim
 
-@author Chris Jones, Brian Gerkey, Alex Brooks
+@author Chris Jones, Brian Gerkey, Alex Brooks, Richard Vaughan
 
 */
 
@@ -216,9 +223,16 @@ class VFH_Class : public Driver
     // Main function for device thread.
     virtual void Main();
 
+    // Update method called in Player's main thread
+    virtual void Update();
+
   private:
     bool active_goal;
     bool turninginplace;
+
+    // most of the work is done in this method. It is either called
+    // from ::Main() or ::Update(), depending on ::synchronous_mode.
+    void DoOneUpdate(); 
 
     // Set up the odometry device.
     int SetupOdom();
@@ -294,6 +308,31 @@ class VFH_Class : public Driver
     double reset_odom_x, reset_odom_y, reset_odom_t;
     int32_t goal_x, goal_y, goal_t;
     int cmd_state, cmd_type;
+
+
+  // iff true, run in the main Player thread instead of a dedicated
+  // thread. Useful under heavy CPU load, for example when using a
+  // simulator with lots of robots - rtv 
+  bool synchronous_mode;
+
+  /* the following vars used to be local to the Main() method. I moved
+     them here when implementing the synchronous mode - rtv */
+  
+  float dist; 
+  double angdiff; 
+  struct timeval startescape, curr; 
+  bool escaping; 
+  double timediff; int
+  escape_turnrate_deg;
+  
+  // bookkeeping to implement hysteresis when rotating at the goal
+  int rotatedir;
+
+  // bookkeeping to implement smarter escape policy
+  int escapedir;
+
+  /* end of moved vars - rtv*/
+
 };
 
 // Initialization function
@@ -329,8 +368,24 @@ int VFH_Class::Setup()
   if (this->sonar_addr.interf && this->SetupSonar() != 0)
     return -1;
 
+
+/*
+<<<<<<< vfh.cc
+  // FIXME
+  // Allocate and intialize
+  vfh_Algorithm->Init();
+
+  // initialize some navigation state
+  rotatedir = 1;
+  escapedir = 1;
+  escaping = 0;
+
+=======
+>>>>>>> 1.82
+*/
   // Start the driver thread.
-  this->StartThread();
+  if( ! synchronous_mode )
+    this->StartThread();
 
   return 0;
 }
@@ -340,7 +395,8 @@ int VFH_Class::Setup()
 int VFH_Class::Shutdown()
 {
   // Stop the driver thread.
-  this->StopThread();
+  if( ! this->synchronous_mode )
+    this->StopThread();
 
   // Stop the laser
   if(this->laser)
@@ -355,6 +411,17 @@ int VFH_Class::Shutdown()
 
   return 0;
 }
+
+
+/////////////////////////////////////////////////////////////////////////////////
+// Update the driver in the main Player thread
+void VFH_Class::Update()
+{
+  if( synchronous_mode )
+    this->DoOneUpdate();
+  // otherwise, a dedicated thread is running: see VFH_Class::Main()
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the underlying odom device.
@@ -747,33 +814,31 @@ int VFH_Class::ProcessMessage(QueuePointer & resp_queue,
 // Main function for device thread
 void VFH_Class::Main()
 {
-  float dist;
-  double angdiff;
-  struct timeval startescape, curr;
-  bool escaping = false;
-  double timediff;
-  int escape_turnrate_deg;
+  // loop over the main VFH activity. If we were in synchronous mode,
+  // this would happen in VFH_Class::Update(), in the main Player
+  // thread instead.
+  while( true )
+    {
+      // Wait till we get new data
+      this->Wait();
+      // Test if we are supposed to cancel this thread.
+      pthread_testcancel();
+      this->DoOneUpdate();
+    }
+}
 
-  // bookkeeping to implement hysteresis when rotating at the goal
-  int rotatedir = 1;
+////////////////////////////////////////////////////////////////////////////////
+//
+void VFH_Class::DoOneUpdate()
+{  
+  if( this->InQueue->Empty() )
+    return;
 
-  // bookkeeping to implement smarter escape policy
-  int escapedir;
-
-  escapedir = 1;
-  while (true)
-  {
-    // Wait till we get new data
-    this->Wait();
-
-    // Test if we are supposed to cancel this thread.
-    pthread_testcancel();
-
-    // Process any pending requests.
+  // Process any pending requests.
     this->ProcessMessages();
 
     if(!this->active_goal)
-      continue;
+      return;//continue;
 
     // Figure how far, in distance and orientation, we are from the goal
     dist = sqrt(pow((goal_x - this->odom_pose[0]),2) +
@@ -905,7 +970,7 @@ void VFH_Class::Main()
 
       this->PutCommand( this->speed, this->turnrate );
     }
-  }
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -961,6 +1026,9 @@ VFH_Class::VFH_Class( ConfigFile* cf, int section)
 
   this->speed = 0;
   this->turnrate = 0;
+  
+  // read the synchronous flag from the cfg file: defaults to not synchronous
+  this->synchronous_mode = cf->ReadInt(section, "synchronous", 0 );
 
   cell_size = cf->ReadLength(section, "cell_size", 0.1) * 1e3;
   window_diameter = cf->ReadInt(section, "window_diameter", 61);
@@ -1060,6 +1128,8 @@ VFH_Class::VFH_Class( ConfigFile* cf, int section)
   // FIXME
   // Allocate and intialize
   vfh_Algorithm->Init();
+
+
 
 
   return;

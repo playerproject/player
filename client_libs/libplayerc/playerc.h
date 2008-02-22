@@ -1,6 +1,6 @@
 /*
  *  libplayerc : a Player client library
- *  Copyright (C) Andrew Howard 2002-2003
+ *  Copyright (C) Andrew Howard and contributors 2002-2007
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -30,16 +30,20 @@
 @defgroup player_clientlib_libplayerc libplayerc
 @brief A C client library for the @ref util_player
 
-libplayerc is a client library for the @ref util_player.  It
-is written in C to maximize portability, and in the expectation that
+libplayerc is a client library for the @ref util_player.  It is
+written in C to maximize portability, and in the expectation that
 users will write bindings for other languages (such as Python and
-Java) against this library; @ref player_clientlib_libplayerc_py "Python bindings" are
-already available.
+Java) against this library; @ref player_clientlib_libplayerc_py
+"Python bindings" are already available.
 
 Be sure to check out the @ref libplayerc_example "example".
 
 The @ref libplayerc_datamodes "data modes" section is important reading for all
 client writers.
+
+libplayerc was originally written by Andrew Howard and is maintained
+by the Player Project. Subsequent contributors include Brian Gerkey,
+Geoffrey Biggs, Richard Vaughan.
 */
 /** @{ */
 
@@ -97,6 +101,7 @@ extern "C" {
 #define PLAYERC_TRANSPORT_TCP 1
 #define PLAYERC_TRANSPORT_UDP 2
 
+#define PLAYERC_QUEUE_RING_SIZE 512
 
 /** @} */
 
@@ -487,7 +492,7 @@ typedef struct _playerc_client_t
   int device_count;
 
   /** @internal A circular queue used to buffer incoming data packets. */
-  playerc_client_item_t qitems[512];
+  playerc_client_item_t qitems[PLAYERC_QUEUE_RING_SIZE];
   int qfirst, qlen, qsize;
 
   /** @internal Temp buffers for incoming / outgoing packets. */
@@ -1666,7 +1671,14 @@ int playerc_graphics3d_draw(playerc_graphics3d_t *device,
 /** @brief Clear the canvas */
 int playerc_graphics3d_clear(playerc_graphics3d_t *device );
 
+/** @brief Translate the drawing coordinate system in 3d */
+int playerc_graphics3d_translate(playerc_graphics3d_t *device, 
+				 double x, double y, double z );
 
+
+/** @brief Rotate the drawing coordinate system by [a] radians about the vector described by [x,y,z] */
+int playerc_graphics3d_rotate( playerc_graphics3d_t *device, 
+			       double a, double x, double y, double z );
 /** @} */
 
 /***************************************************************************/
