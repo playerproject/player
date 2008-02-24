@@ -18,3 +18,4 @@ missing
 .deps
 *.la
 *.lo
+*.loT
