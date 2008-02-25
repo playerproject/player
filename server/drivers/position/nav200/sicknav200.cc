@@ -177,6 +177,7 @@ class SickNAV200 : public Driver
     uint32_t wkbSize;
     double speed;
     double steeringAngle;
+    double navAngle;
     
     DoubleProperty wheelBase;
     
@@ -212,10 +213,6 @@ class SickNAV200 : public Driver
     player_devaddr_t position_addr;
     // Vector map interface
     player_devaddr_t vectormap_addr;
-    // Position interface
-    player_devaddr_t debug_addr;
-    player_position2d_data_t debug_packet;
-    struct timeval previous;
 };
 
 // a factory creation function
@@ -272,21 +269,6 @@ SickNAV200::SickNAV200(ConfigFile* cf, int section)
 	this->SetError(-1);
 	return;
   }
-  
-  // Create debug interface
-  if (cf->ReadDeviceAddr(&(this->debug_addr), section, 
-                       "provides", PLAYER_POSITION2D_CODE, 2, NULL) != 0)
-  {
-	PLAYER_ERROR("Could not read debug interface device address.");
-	this->SetError(-1);
-	return;
-  }  
-  if (this->AddInterface(this->debug_addr))
-  {
-	PLAYER_ERROR("Could not add debug interface.");
-	this->SetError(-1);
-	return;
-  }
 
   // Laser geometry.
   this->pose[0] = cf->ReadTupleLength(section, "pose", 0, 0.0);
@@ -302,6 +284,7 @@ SickNAV200::SickNAV200(ConfigFile* cf, int section)
   this->speed = 0;
   this->steeringAngle = 0;
   this->fetchOnStart = false;
+  this->navAngle = 0;
   
   // Serial port - done in the opaque driver
   //this->device_name = strdup(cf->ReadString(section, "port", DEFAULT_PORT));
@@ -335,8 +318,6 @@ SickNAV200::SickNAV200(ConfigFile* cf, int section)
   memset(&this->reflector_map_id, 0, sizeof(this->reflector_map_id));
   cf->ReadDeviceAddr(&this->reflector_map_id, section, "requires",
 		  PLAYER_VECTORMAP_CODE, -1, NULL);
-  
-  gettimeofday(&previous, NULL);
   
   return;
 }
@@ -666,6 +647,9 @@ void SickNAV200::Main()
     // process any pending messages
     ProcessMessages();
     
+    double vehicleVelX = 0;
+    double vehicleVelY = 0;
+    double angularVelocity = 0;
     bool gotReading;
     if (velocity)
     {
@@ -676,20 +660,24 @@ void SickNAV200::Main()
     	}
     	else
     	{
-	    	// Convert vehicle movement data into NAV200 format and coordinates.
-	    	//double arcRadius = wheelBase / tan(steeringAngle);
+    		// Calculate the vehicles velocity
+    		double angle = navAngle - pose[2];
+    		vehicleVelX = speed * cos(angle); // Vehicle velocity in world coordinates.
+    		vehicleVelY = speed * sin(angle);
+    		//double arcRadius = wheelBase / tan(steeringAngle);
 	    	//double angularVelocity = speed / arcRadius;
-	    	double angularVelocity = speed * tan(steeringAngle) / wheelBase.GetValue();
-	    	double velX = speed - pose[1] * angularVelocity;
+	    	angularVelocity = speed * tan(steeringAngle) / wheelBase.GetValue(); // Angular velocity of NAV and vehicle.
+    		
+	    	// Convert vehicle movement data into NAV200 coordinates.
+	    	double velX = speed - pose[1] * angularVelocity; // NAV vel in vehicle coordinates.
 	    	double velY = pose[0] * angularVelocity;
 	    	double navVelX = velX * cos(pose[2]) + velY * sin(pose[2]);
 	    	double navVelY = velY * cos(pose[2]) - velX * sin(pose[2]);
-	    	debug_packet.vel.pa = angularVelocity;
-	    	debug_packet.vel.px = navVelX;
-	    	debug_packet.vel.py = navVelY;
-	    	debug_packet.stall = 0;
-	    	this->Publish(this->debug_addr, PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE, (void*)&debug_packet, sizeof(debug_packet), NULL);
-	    	gotReading = Laser.GetPositionSpeedVelocity(short(navVelX * 1000), short(navVelY * 1000), short(angularVelocity * 32768.0 / M_PI), Reading);
+	    	//gotReading = Laser.GetPositionSpeedVelocity(short(navVelX * 1000), short(navVelY * 1000), short(angularVelocity * 32768.0 / M_PI), Reading);
+	    	// Convert NAV200 velocity into world coordinates.
+	    	double worldVelX = navVelX * cos(navAngle) - navVelY * sin(navAngle);
+	    	double worldVelY = navVelX * sin(navAngle) + navVelY * cos(navAngle);
+	    	gotReading = Laser.GetPositionSpeedVelocityAbsolute(short(worldVelX * 1000), short(worldVelY * 1000), short(angularVelocity * 32768.0 / M_PI), Reading);
     	}
     }
     else
@@ -699,7 +687,8 @@ void SickNAV200::Main()
     if(gotReading)
     {
       // Use NAV200 position and orientation data to determine vehicle position and orientation.
-      double angle = Reading.orientation/32768.0*M_PI - pose[2];
+      navAngle = Reading.orientation/32768.0*M_PI;
+      double angle = navAngle - pose[2];
       double forwardx = cos(angle);
       double forwardy = sin(angle);
       double leftx = -sin(angle);
@@ -707,24 +696,12 @@ void SickNAV200::Main()
       double newAngle = atan2(forwardy, forwardx);
       double newX = static_cast<double> (Reading.pos.x)/1000 - forwardx * pose[0] - leftx * pose[1];
       double newY = static_cast<double> (Reading.pos.y)/1000 - forwardy * pose[0] - lefty * pose[1];
-      
-      // Begin debug stuff
-      struct timeval current;
-      gettimeofday(&current, NULL);
-      double dt = static_cast<double> (current.tv_sec - previous.tv_sec) + static_cast<double>(current.tv_usec - previous.tv_usec) / 1000000.0;
-      
-      double angVel = (newAngle - data_packet.pos.pa) / dt;
-      double velX = (newX - data_packet.pos.px) / dt;
-      double velY = (newY - data_packet.pos.py) / dt;
-      PLAYER_MSG3(2, "Vx: %lf\tVy: %lf\tVa: %lf", velX, velY, angVel);
-      data_packet.vel.pa = angVel;
-      data_packet.vel.px = velX;
-      data_packet.vel.py = velY;
-      // End debug stuff
-      
       data_packet.pos.pa = newAngle;
       data_packet.pos.px = newX;
       data_packet.pos.py = newY;
+      data_packet.vel.pa = angularVelocity;
+      data_packet.vel.px = vehicleVelX;
+      data_packet.vel.py = vehicleVelY;
       if(Reading.quality==0xFF || Reading.quality==0xFE || Reading.quality==0x00)
       {
 	data_packet.stall = 1;
