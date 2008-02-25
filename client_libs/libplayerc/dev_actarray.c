@@ -39,6 +39,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include "playerc.h"
 #include "error.h"
@@ -101,6 +102,20 @@ void playerc_actarray_putmsg(playerc_actarray_t *device,
   else
     PLAYERC_WARN2("skipping actarray message with unknown type/subtype: %s/%d\n",
                   msgtype_to_str(header->type), header->subtype);
+}
+
+/** Accessor method for the actuator data */
+player_actarray_actuator_t playerc_actarray_get_actuator_data(playerc_actarray_t *device, int index)
+{
+	assert(index < device->actuators_count);
+	return device->actuators_data[index];
+}
+
+/** Accessor method for the actuator geom */
+player_actarray_actuatorgeom_t playerc_actarray_get_actuator_geom(playerc_actarray_t *device, int index)
+{
+	assert(index < device->actuators_geom_count);
+	return device->actuators_geom[index];
 }
 
 // Get the actarray geometry
