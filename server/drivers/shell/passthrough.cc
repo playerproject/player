@@ -268,8 +268,7 @@ int PassThrough::ProcessMessage(QueuePointer & resp_queue,
       newhdr.addr = dstAddr;
       this->Publish(resp_queue, 
                     &newhdr,
-                    msg->GetPayload(),
-                    false);
+                    msg->GetPayload());
       delete msg;
       inspected=true;
     }
