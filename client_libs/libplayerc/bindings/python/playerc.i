@@ -6,8 +6,6 @@
 %}
 
 %include "typemaps.i"
-%include "../../../../libplayercore/player.h"
-%include "../../../../libplayercore/player_interfaces.h"
 
 // Provide array access to the RFID tags
 // We will return a list of tuples. Each tuple contains the RFID type, and the RFID ID.
@@ -395,6 +393,7 @@
 // Include Player header so we can pick up some constants and generate
 // wrapper code for structs
 %include "../../../../libplayercore/player.h"
+%include "../../../../libplayercore/player_interfaces.h"
 
 
 // Use this for regular c-bindings;
