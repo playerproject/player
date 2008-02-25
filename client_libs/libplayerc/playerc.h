@@ -984,6 +984,12 @@ int playerc_actarray_subscribe(playerc_actarray_t *device, int access);
 /** @brief Un-subscribe from the actarray device. */
 int playerc_actarray_unsubscribe(playerc_actarray_t *device);
 
+/** Accessor method for the actuator data */
+player_actarray_actuator_t playerc_actarray_get_actuator_data(playerc_actarray_t *device, int index);
+
+/** Accessor method for the actuator geom */
+player_actarray_actuatorgeom_t playerc_actarray_get_actuator_geom(playerc_actarray_t *device, int index);
+
 /** @brief Get the actarray geometry.  The writes the result into the proxy
     rather than returning it to the caller. */
 int playerc_actarray_get_geom(playerc_actarray_t *device);
