@@ -122,3 +122,10 @@ int playerc_aio_set_output(playerc_aio_t *device,
                               &cmd,
                               NULL);
 }
+
+/** Accessor method for the aio data */
+float playerc_aio_get_data(playerc_aio_t *device, uint32_t index)
+{
+	assert(index < device->voltages_count);
+	return device->voltages[index];
+}
