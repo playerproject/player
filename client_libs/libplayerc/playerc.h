@@ -927,6 +927,9 @@ int playerc_aio_unsubscribe(playerc_aio_t *device);
 /** Set the output for the aio device. */
 int playerc_aio_set_output(playerc_aio_t *device, uint8_t id, float volt);
 
+/** get the aio data */
+float playerc_aio_get_data(playerc_aio_t *device, uint32_t index);
+
 /** @} */
 /***************************************************************************/
 
