@@ -75,7 +75,7 @@ typedef struct player_ranger_data_range
   double *ranges;
 } player_ranger_data_range_t;
 
-/** @brief Data: post-stamped range scan (@ref PLAYER_RANGER_DATA_RANGEPOSE)
+/** @brief Data: pose-stamped range scan (@ref PLAYER_RANGER_DATA_RANGEPOSE)
 
 A range scan with the (possibly estimated) pose of the device when the scan was
 acquired. */
