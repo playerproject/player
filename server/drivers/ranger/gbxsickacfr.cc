@@ -84,7 +84,7 @@ laser scanner driver provided by Gearbox.
 @verbatim
 driver
 (
-  name "sickacfr"
+  name "gbxsickacfr"
   provides ["ranger:0"]
   port "/dev/ttyS0"
   baud 57600
