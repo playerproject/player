@@ -493,6 +493,14 @@ void PostGIS_Register (DriverTable* table);
 void LocalBB_Register (DriverTable* table);
 #endif
 
+#ifdef INCLUDE_SICKACFR
+void GbxSickAcfr_Register(DriverTable* table);
+#endif
+
+#ifdef INCLUDE_URG_NZ
+void UrgDriver_Register(DriverTable* table);
+#endif
+
 /*
  * this function will be called at startup.  all available devices should
  * be added to the driverTable here.  they will be instantiated later as
@@ -628,7 +636,7 @@ player_register_drivers()
 #ifdef INCLUDE_TCPSTREAM
   TCPStream_Register(driverTable);
 #endif
-  
+
 #ifdef INCLUDE_WBR914
   wbr914_Register(driverTable);
 #endif
@@ -924,7 +932,7 @@ player_register_drivers()
 #ifdef INCLUDE_SONARTORANGER
   SonarToRanger_Register(driverTable);
 #endif
-  
+
 #ifdef INCLUDE_ROBOTEQ
   roboteq_Register(driverTable);
 #endif
@@ -943,5 +951,13 @@ player_register_drivers()
 
 #ifdef INCLUDE_LOCALBB
   LocalBB_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_SICKACFR
+  GbxSickAcfr_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_URG_NZ
+  UrgDriver_Register(driverTable);
 #endif
 }

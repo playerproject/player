@@ -149,7 +149,7 @@ PLAYER_ADD_DRIVER([amtecM5],[yes],
   [[
   #define __LINUX__
   #define UNIX
-  #define LINUX    
+  #define LINUX
   ]])
 AC_LANG_POP(C++)
 
@@ -184,8 +184,8 @@ AC_CHECK_HEADER(dc1394/control.h,
     [[#include "libdc1394/dc1394_control.h"]],
     [[dc1394_dma_setup_capture(NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL)]]),
     dc1394_dma_setup_args="12")
-  
-  
+
+
   PLAYER_ADD_DRIVER([camera1394],[yes],["libraw1394/raw1394.h libdc1394/dc1394_control.h"],[],["-lraw1394 -ldc1394_control"])]
 )
 
@@ -228,6 +228,9 @@ PLAYER_ADD_DRIVER([garcia],[no],
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $GARCIA_LIBS"
 
 PLAYER_ADD_DRIVER([garminnmea],[yes],[],[],[])
+
+PLAYER_ADD_DRIVER([gbxsickacfr],[no],[],[],[],[GBXSICKACFR],[GbxSickAcfr >= 0.0.1])
+PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $GBXSICKACFR_LIBS"
 
 PLAYER_ADD_DRIVER([imageseq],[yes],[],[],[],[OPENCV],[opencv])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $OPENCV_LIBS"
@@ -436,6 +439,9 @@ PLAYER_ADD_DRIVER([urglaser],[yes],[],[],[])
 if  test "x$enable_urglaser" = "xyes"; then
   AC_CHECK_HEADERS(linux/serial.h, [], [], [])
 fi
+
+PLAYER_ADD_DRIVER([urg_nz],[no],[],[],[],[URG_NZ],[urg_nz >= 0.0.1])
+PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $URG_NZ_LIBS"
 
 PLAYER_ADD_DRIVER([vfh],[yes],)
 
