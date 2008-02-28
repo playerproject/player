@@ -22,7 +22,7 @@
 
 ///////////////////////////////////////////////////////////////////////////
 //
-// Desc: Driver wrapper around the Gearbox sickacfr library.
+// Desc: Driver wrapper around the Gearbox urg_nz library.
 // Author: Geoffrey Biggs
 // Date: 25/02/2008
 //
