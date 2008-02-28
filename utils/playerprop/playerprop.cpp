@@ -145,6 +145,9 @@ int main (int argc, char *argv[])
 	case PLAYER_MAP_CODE:
 		deviceProxy = (ClientProxy*) new MapProxy (&client, devIndex);
 		break;
+	case PLAYER_OPAQUE_CODE:
+		deviceProxy = (OpaqueProxy*) new OpaqueProxy (&client, devIndex);
+		break;
 	case PLAYER_PLANNER_CODE:
 		deviceProxy = (ClientProxy*) new PlannerProxy (&client, devIndex);
 		break;
