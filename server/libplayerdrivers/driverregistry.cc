@@ -493,7 +493,7 @@ void PostGIS_Register (DriverTable* table);
 void LocalBB_Register (DriverTable* table);
 #endif
 
-#ifdef INCLUDE_SICKACFR
+#ifdef INCLUDE_GBXSICKACFR
 void GbxSickAcfr_Register(DriverTable* table);
 #endif
 
@@ -953,7 +953,7 @@ player_register_drivers()
   LocalBB_Register(driverTable);
 #endif
 
-#ifdef INCLUDE_SICKACFR
+#ifdef INCLUDE_GBXSICKACFR
   GbxSickAcfr_Register(driverTable);
 #endif
 

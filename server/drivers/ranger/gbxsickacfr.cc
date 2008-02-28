@@ -153,7 +153,7 @@ GbxSickAcfr_Init (ConfigFile* cf, int section)
 
 void GbxSickAcfr_Register(DriverTable* table)
 {
-    table->AddDriver ("sickacfr", GbxSickAcfr_Init);
+    table->AddDriver ("gbxsickacfr", GbxSickAcfr_Init);
 }
 
 GbxSickAcfr::GbxSickAcfr (ConfigFile* cf, int section)
@@ -225,7 +225,7 @@ int GbxSickAcfr::Setup (void)
     }
     catch (const std::exception& e)
     {
-        PLAYER_ERROR1 ("Failed to initialise laser device: %s\n", e.what ());
+        PLAYER_ERROR1 ("GbxSickAcfr: Failed to initialise laser device: %s\n", e.what ());
         return -1;
     }
 
@@ -236,7 +236,7 @@ int GbxSickAcfr::Setup (void)
     intensities = new double[config.numberOfSamples];
     if (rawRanges == NULL || ranges == NULL || rawIntensities == NULL || intensities == NULL)
     {
-        PLAYER_ERROR ("Failed to allocate data store.\n");
+        PLAYER_ERROR ("GbxSickAcfr: Failed to allocate data store.\n");
         return -1;
     }
     data.ranges = rawRanges;
