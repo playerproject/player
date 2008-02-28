@@ -47,11 +47,12 @@
 #include <string.h>
 
 Property::Property (void)
-	: key (NULL)
+	: key (NULL), readonly(false)
 {
 }
 
 Property::Property (const char *newKey, bool readOnly)
+	: readonly(readOnly)
 {
 	if ((key = strdup (newKey)) == NULL)
 	{
@@ -96,12 +97,12 @@ IntProperty::IntProperty (const char *newKey, int newValue, bool readOnly)
 
 void IntProperty::SetValue (int newValue)
 {
-	if (readonly)
-	{
-		PLAYER_WARN2 ("Property %s is read only, cannot change value 50 %d", key, newValue);
-		return;
-	}
-
+//	if (readonly)
+//	{
+//		PLAYER_WARN2 ("Property %s is read only, cannot change value 50 %d", key, newValue);
+//		return;
+//	}
+//
 	value = newValue;
 }
 
@@ -114,7 +115,7 @@ void IntProperty::SetValueFromMessage (const void *data)
 {
 	if (readonly)
 	{
-		PLAYER_WARN2 ("Property %s is read only, cannot change value 50 %d", key, reinterpret_cast<const player_intprop_req_t*> (data)->value);
+		PLAYER_WARN2 ("Property %s is read only, cannot change value %d", key, reinterpret_cast<const player_intprop_req_t*> (data)->value);
 		return;
 	}
 
@@ -131,11 +132,11 @@ bool IntProperty::ReadConfig (ConfigFile *cf, int section)
 
 const IntProperty& IntProperty::operator= (const IntProperty &rhs)
 {
-	if (readonly)
-	{
-		PLAYER_WARN2 ("Property %s is read only, cannot change value 50 %d", key, rhs.GetValue ());
-		return *this;
-	}
+//	if (readonly)
+//	{
+//		PLAYER_WARN2 ("Property %s is read only, cannot change value 50 %d", key, rhs.GetValue ());
+//		return *this;
+//	}
 
 	value = rhs.GetValue ();
 	return *this;
@@ -143,12 +144,12 @@ const IntProperty& IntProperty::operator= (const IntProperty &rhs)
 
 int IntProperty::operator= (int rhs)
 {
-	if (readonly)
-	{
-		PLAYER_WARN2 ("Property %s is read only, cannot change value 50 %d", key, rhs);
-		return value;
-	}
-
+//	if (readonly)
+//	{
+//		PLAYER_WARN2 ("Property %s is read only, cannot change value 50 %d", key, rhs);
+//		return value;
+//	}
+//
 	value = rhs;
 	return value;
 }
@@ -163,12 +164,12 @@ DoubleProperty::DoubleProperty (const char *newKey, double newValue, bool readOn
 
 void DoubleProperty::SetValue (double newValue)
 {
-	if (readonly)
-	{
-		PLAYER_WARN2 ("Property %s is read only, cannot change value 50 %f", key, newValue);
-		return;
-	}
-
+//	if (readonly)
+//	{
+//		PLAYER_WARN2 ("Property %s is read only, cannot change value 50 %f", key, newValue);
+//		return;
+//	}
+//
 	value = newValue;
 }
 
@@ -181,7 +182,7 @@ void DoubleProperty::SetValueFromMessage (const void *data)
 {
 	if (readonly)
 	{
-		PLAYER_WARN2 ("Property %s is read only, cannot change value 50 %f", key, reinterpret_cast<const player_dblprop_req_t*> (data)->value);
+		PLAYER_WARN2 ("Property %s is read only, cannot change value %f", key, reinterpret_cast<const player_dblprop_req_t*> (data)->value);
 		return;
 	}
 
@@ -198,11 +199,11 @@ bool DoubleProperty::ReadConfig (ConfigFile *cf, int section)
 
 const DoubleProperty& DoubleProperty::operator= (const DoubleProperty &rhs)
 {
-	if (readonly)
-	{
-		PLAYER_WARN2 ("Property %s is read only, cannot change value 50 %f", key, rhs.GetValue ());
-		return *this;
-	}
+//	if (readonly)
+//	{
+//		PLAYER_WARN2 ("Property %s is read only, cannot change value 50 %f", key, rhs.GetValue ());
+//		return *this;
+//	}
 
 	value = rhs.GetValue ();
 	return *this;
@@ -210,11 +211,11 @@ const DoubleProperty& DoubleProperty::operator= (const DoubleProperty &rhs)
 
 double DoubleProperty::operator= (double rhs)
 {
-	if (readonly)
-	{
-		PLAYER_WARN2 ("Property %s is read only, cannot change value 50 %f", key, rhs);
-		return value;
-	}
+//	if (readonly)
+//	{
+//		PLAYER_WARN2 ("Property %s is read only, cannot change value 50 %f", key, rhs);
+//		return value;
+//	}
 
 	value = rhs;
 	return value;
@@ -246,11 +247,11 @@ StringProperty::~StringProperty (void)
 
 void StringProperty::SetValue (const char *newValue)
 {
-	if (readonly)
-	{
-		PLAYER_WARN2 ("Property %s is read only, cannot change value 50 %s", key, newValue);
-		return;
-	}
+//	if (readonly)
+//	{
+//		PLAYER_WARN2 ("Property %s is read only, cannot change value 50 %s", key, newValue);
+//		return;
+//	}
 
 	if (value != NULL)
 		free (value);
@@ -286,7 +287,7 @@ void StringProperty::SetValueFromMessage (const void *data)
 {
 	if (readonly)
 	{
-		PLAYER_WARN2 ("Property %s is read only, cannot change value 50 %s", key, reinterpret_cast<const player_strprop_req_t*> (data)->value);
+		PLAYER_WARN2 ("Property %s is read only, cannot change value %s", key, reinterpret_cast<const player_strprop_req_t*> (data)->value);
 		return;
 	}
 
@@ -321,11 +322,11 @@ bool StringProperty::ReadConfig (ConfigFile *cf, int section)
 
 const StringProperty& StringProperty::operator= (const StringProperty &rhs)
 {
-	if (readonly)
-	{
-		PLAYER_WARN2 ("Property %s is read only, cannot change value 50 %s", key, rhs.GetValue ());
-		return *this;
-	}
+//	if (readonly)
+//	{
+//		PLAYER_WARN2 ("Property %s is read only, cannot change value 50 %s", key, rhs.GetValue ());
+//		return *this;
+//	}
 
 	if (value != NULL)
 		free (value);
