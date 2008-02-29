@@ -70,6 +70,7 @@ sonar_t *sonar_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
   rtk_menuitem_check(sonar->subscribe_item, subscribe);
 
   sonar->fig_count = 0;
+  sonar->scan_fig = NULL;
 
   return sonar;
 }
