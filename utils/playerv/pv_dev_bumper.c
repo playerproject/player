@@ -68,6 +68,7 @@ bumper_t *bumper_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client
   rtk_menuitem_check(bumper->subscribe_item, subscribe);
 
   bumper->fig_count = 0;
+  bumper->scan_fig = NULL;
   return bumper;
 }
 
