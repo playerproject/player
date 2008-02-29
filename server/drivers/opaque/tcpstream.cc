@@ -401,7 +401,7 @@ void TCPStream::ReadData()
     return;
   }
 
-  assert(len <  int(buffer_size));
+  assert(len <= int(buffer_size));
   mData.data_count = len;
   mData.data = rx_buffer;
   Publish(this->device_addr, PLAYER_MSGTYPE_DATA, PLAYER_OPAQUE_DATA_STATE, reinterpret_cast<void*>(&mData));
