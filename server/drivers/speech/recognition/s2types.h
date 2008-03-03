@@ -44,6 +44,9 @@
  * HISTORY
  * 
  * $Log$
+ * Revision 1.2  2008/03/03 21:46:04  gerkey
+ * inserted new s2types.h, following user experience
+ *
  * Revision 1.1  2006/04/20 01:05:29  gerkey
  * changed sphinx2 configure check, added s2types.h
  *
