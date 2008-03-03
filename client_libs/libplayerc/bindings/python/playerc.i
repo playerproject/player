@@ -410,7 +410,7 @@
 {
 double get_range (int index)
 {
-	return $self->ranges[index];
+	return self->ranges[index];
 };
 }
 
