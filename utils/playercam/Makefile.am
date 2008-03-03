@@ -3,7 +3,9 @@ AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir)/client_libs -I$(top_srcdir)/clie
 bin_PROGRAMS =
 
 if WITH_GTK
+if WITH_GDK_PIXBUF
 bin_PROGRAMS += playercam
+endif
 endif
 
 playercam_SOURCES = playercam.c
