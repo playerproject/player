@@ -298,7 +298,7 @@ int GbxSickAcfr::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, v
 
     if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_GET_GEOM, device_addr))
     {
-        Publish (device_addr, ret_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_RANGER_REQ_GET_GEOM, &geom, sizeof (geom), NULL);
+        Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_RANGER_REQ_GET_GEOM, &geom, sizeof (geom), NULL);
         return 0;
     }
     else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_GET_CONFIG, device_addr))
@@ -310,7 +310,7 @@ int GbxSickAcfr::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, v
         rangerConfig.max_range = config.maxRange;
         rangerConfig.range_res = 0.0f;
         rangerConfig.frequency = 0.0f;
-        Publish (device_addr, ret_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_RANGER_REQ_GET_CONFIG, &rangerConfig, sizeof (rangerConfig), NULL);
+        Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_RANGER_REQ_GET_CONFIG, &rangerConfig, sizeof (rangerConfig), NULL);
         return 0;
     }
     return -1;
