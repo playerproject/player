@@ -2308,7 +2308,7 @@ class SonarProxy : public ClientProxy
 
     /// return a particular scan value
     double GetScan(uint32_t aIndex) const
-      { if ((uint32_t)(GetVar(mDevice->scan_count)) <= aIndex) return -1.0; return GetVar(mDevice->scan[aIndex]); };
+      { if (GetVar(mDevice->scan_count) <= (int32_t)aIndex) return -1.0; return GetVar(mDevice->scan[aIndex]); };
     /// This operator provides an alternate way of access the scan data.
     /// For example, SonarProxy[0] == SonarProxy.GetRange(0)
     double operator [] (uint32_t aIndex) const { return GetScan(aIndex); }
