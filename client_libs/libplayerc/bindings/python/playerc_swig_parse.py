@@ -293,7 +293,7 @@ int set_dblprop (char * propname, double value)
 char * get_strprop (char * propname)
 {
     char * ret;
-    if (playerc_device_get_strprop(&self->info,propname,&ret) == )
+    if (playerc_device_get_strprop(&self->info,propname,&ret) == 0)
         return ret;
     else
         return NULL;
