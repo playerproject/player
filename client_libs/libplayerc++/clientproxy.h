@@ -105,7 +105,7 @@ class ClientProxy
 
     // I wish these could be pure virtual,
     // but they're used in the constructor/destructor
-    virtual void Subscribe(uint32_t aIndex) {};
+    virtual void Subscribe(uint32_t /*aIndex*/) {};
 
     // Unsubscribe from the proxy
     // This needs to be defined for every proxy.
