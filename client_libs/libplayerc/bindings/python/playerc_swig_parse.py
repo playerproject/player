@@ -252,12 +252,60 @@ if __name__ == '__main__':
         outstream = string.replace(outstream, '%s_t' % prefix, '%s' % prefix)
 
     guff = ''
+    propguff = ''
     for prefix in prefixes:
         guff += '%%header\n %%{\ntypedef %s_t %s;\n' % (prefix, prefix)
         guff += '#define new_%s %s_create\n' % (prefix, prefix)
-        guff += '#define del_%s %s_destroy\n%%}\n' % (prefix, prefix)
+        guff += '#define del_%s %s_destroy\n' % (prefix, prefix)
+        guff += '%}\n'
+        
+        # stuff for properties 
+        if prefix != "playerc_mclient" and prefix != "playerc_client":
+            propguff += """
+%%extend %(prefix)s
+{
+int get_intprop (char * propname)
+{
+    int ret;
+    if (playerc_device_get_intprop(&self->info,propname,&ret) == 0)
+        return ret;
+    else
+        return 0;
+};
+int set_intprop (char * propname, int value)
+{
+    return playerc_device_set_intprop(&self->info,propname,value);
+};
 
-    outstream = guff + outstream
+double get_dblprop (char * propname)
+{
+    double ret;
+    if (playerc_device_get_dblprop(&self->info,propname,&ret) == 0)
+        return ret;
+    else
+        return 0;
+};
+int set_dblprop (char * propname, double value)
+{
+    return playerc_device_set_dblprop(&self->info,propname,value);
+};
+
+char * get_strprop (char * propname)
+{
+    char * ret;
+    if (playerc_device_get_strprop(&self->info,propname,&ret) == )
+        return ret;
+    else
+        return NULL;
+};
+int set_strprop (char * propname, char * value)
+{
+    return playerc_device_set_strprop(&self->info,propname,value);
+};
+} """ % {"prefix": prefix}
+        
+
+    outstream = guff + outstream + propguff
 
     file = open(outfilename, 'w+')
     file.write(outstream)
