@@ -17,7 +17,7 @@ EXTRA_DIST = playerc.i setup.py libplayerc_py.html playercpy_example.py
 # Generate a OO interface file for libplayerc.  This is tweaked to
 # enable VPAPTH (distcheck) builds; the header files needed by swig
 # are copied into the build tree.
-playerc_oo.i: ../../playerc.h $(top_srcdir)/libplayercore/player.h
+playerc_oo.i: ../../playerc.h $(top_srcdir)/libplayercore/player.h $(srcdir)/playerc_swig_parse.py
 	if test ! -s ../../playerc.h; then cp $(srcdir)/../../playerc.h ../../; fi
 	if test ! -s $(top_builddir)/libplayercore/player.h; then cp $(top_srcdir)/libplayercore/player.h $(top_builddir)/libplayercore/; fi
 	if test ! -s playerc.i; then cp $(srcdir)/playerc.i .; fi
