@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <libplayercore/playercore.h>
 
-#define MAX_READINGS 769
+#define MAX_READINGS 1128
 
 typedef struct urg_laser_readings
 {
@@ -27,9 +27,12 @@ class urg_laser
 	int GetIDInfo       ();
 	float GetMaxRange   ();
 	int GetSensorConfig (player_laser_config_t *cfg);
-	int GetSCIPVersion  ();
+        int GetSCIPVersion() { return(this->SCIP_Version); }
+        int GetNumRanges() { return(this->num_ranges); }
 
   private:
+	int QuerySCIPVersion  ();
   	int SCIP_Version;
+        int num_ranges;
 	FILE * laser_port;
 };
