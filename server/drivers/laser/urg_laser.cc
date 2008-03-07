@@ -36,7 +36,7 @@ int
 //  meters Since Firmware Revision 3.0.00, it's called SCIP2.0, and the max
 //  range is 5.6 meters (hey!)
 int
-  urg_laser::GetSCIPVersion ()
+  urg_laser::QuerySCIPVersion ()
 {
   unsigned char Buffer [18];
   memset (Buffer, 0, 18);
@@ -66,7 +66,7 @@ int
     
     if (strncmp ((const char *) Buffer, "VV\n00P\n", 7) != 0)
     {
-      printf ("> E: GetSCIPVersion: Error reading after VV command. Answer: %s\n", Buffer);
+      printf ("> E: QuerySCIPVersion: Error reading after VV command. Answer: %s\n", Buffer);
       return (-1);
     }
     
@@ -86,7 +86,14 @@ int
     ReadUntil (file, Buffer, 5, -1);
       
     if (strncmp ((const char *) Buffer, "FIRM:", 5) != 0)
-      printf ("> W: GetSCIPVersion: Warning, 'FIRM:' is not where it is supposed to be!\n");
+    {
+      //printf ("> W: QuerySCIPVersion: Warning, 'FIRM:' is not where it is supposed to be!\n");
+      // HACK: assume that we're talking to a TOP-URG
+      tcflush (fileno (laser_port), TCIFLUSH);
+      this->SCIP_Version = 3;
+      this->num_ranges = 1128;
+      return(0);
+    }
       
     // Read the firmware version major value 
     ReadUntil (file, Buffer, 1, -1);
@@ -140,6 +147,9 @@ int
 int
   urg_laser::GetSensorConfig (player_laser_config_t *cfg)
 {
+  // TODO: look into getting intensity data
+  cfg->intensity = 0;
+
   if (SCIP_Version == 1)
   {
     unsigned char Buffer[10];
@@ -227,7 +237,7 @@ int
              RTOD (cfg->min_angle), RTOD (cfg->max_angle), RTOD (cfg->resolution), cfg->max_range);
     tcflush (fileno(laser_port), TCIFLUSH);
   }
-  else 			// SCIP_Version = 2
+  else if(SCIP_Version == 2)
   {
     // ask hokuyo: PP
     unsigned char Buffer[10];
@@ -303,6 +313,17 @@ int
     printf ("> I: URG-04 specifications: [min_angle, max_angle, resolution, max_range] = [%f, %f, %f, %f]\n",
              RTOD (cfg->min_angle), RTOD (cfg->max_angle), RTOD (cfg->resolution), cfg->max_range);
   }
+  else 			// SCIP_Version = 3 (TOP-URG)
+  {
+    // HACK: should ask the device, but for now just hardcode it:
+    cfg->min_angle = DTOR(-135.0);
+    cfg->max_angle = DTOR(135.0);
+    cfg->resolution = DTOR(270.0/1128.0);
+    cfg->max_range = 30.0;
+
+    printf ("> I: TOP-URG specifications: [min_angle, max_angle, resolution, max_range] = [%f, %f, %f, %f]\n",
+             RTOD (cfg->min_angle), RTOD (cfg->max_angle), RTOD (cfg->resolution), cfg->max_range);
+  }
   return (0);
 }
 
@@ -353,6 +374,7 @@ urg_laser::urg_laser ()
 {
   // Defaults to SCIP version 1
   SCIP_Version = 1;
+  num_ranges = 769;
   laser_port   = NULL;
 }
 
@@ -557,7 +579,7 @@ int
     tcflush (fd, TCIFLUSH);
     tcsetattr (fd, TCSANOW, &newtio);
     usleep (200000);
-    GetSCIPVersion ();
+    QuerySCIPVersion ();
     tcflush (fd, TCIOFLUSH);
   }
 
@@ -640,7 +662,7 @@ int
         printf ("Got too many readings! %d\n",i);
     }
   }
-  else // SCIP_Version == 2
+  else if(SCIP_Version == 2)
   {
     tcflush (fileno (laser_port), TCIFLUSH);
     // send the command
@@ -711,6 +733,81 @@ int
         printf ("> E: Got too many readings! %d\n",i);
     }
   }
+  else // SCIP_Version == 3 (TOP-URG)
+  {
+    tcflush (fileno (laser_port), TCIFLUSH);
+    // send the command
+    fprintf (laser_port, "GD0000112700\n");
+  
+    int file = fileno (laser_port);
+  
+    // check the returned command
+    ReadUntil (file, Buffer, 13, -1);
+  
+    if (strncmp ((const char *) Buffer, "GD0000112700", 12) != 0)
+    {
+      printf ("> E: GetReadings: Error reading command result: %s\n", Buffer);
+      tcflush (fileno (laser_port), TCIFLUSH);
+      return (-1);
+    }
+    
+    // check the returned status
+    ReadUntil (file, Buffer, 3, -1);
+    Buffer[2] = 0;
+    if (Buffer[0] != '0' || Buffer[1] != '0')
+      return (Buffer[0] - '0')*10 + (Buffer[1] - '0');
+
+    ReadUntil_nthOccurence (file, 2, (char)0xa);
+    
+    // NOTE: This only works for 769 requested samples.. (64 data bytes
+    // blocks are not the best choice for 3-byte values...)
+    
+    for (int i = 0; ; ++i)
+    {
+      ReadUntil (file, Buffer, 3, -1);
+    
+      //printf ("[%d of %d] 0x%x 0x%x 0x%x\n", i, MAX_READINGS, Buffer[0], Buffer[1], Buffer [2]);
+        
+      if ((Buffer[1] == '\n') && (Buffer[2] == '\n'))
+        break;
+      else if (Buffer[2] == '\n')
+      {
+        if (ReadUntil(file, &Buffer[1], 2, -1) < 0)
+          return (-1);
+      }
+      else if (Buffer[0] == '\n')
+      {
+	if (i <= MAX_READINGS)
+	{
+		readings->Readings[i - 1] = ((readings->Readings[i - 1] & 0xFFC0) | (Buffer[1]-0x30));
+		Buffer [0] = Buffer [2];
+		if (ReadUntil (file, &Buffer[1], 2, -1) < 0)
+		return (-1);
+	}
+	else
+	        printf ("> E: Got too many readings! %d\n",i);
+      }
+      else if (Buffer[1] == '\n')
+      {
+        Buffer[0] = Buffer[2];
+        if (ReadUntil (file, &Buffer[1], 2, -1) < 0)
+          return (-1);
+      }
+  
+      if (i < MAX_READINGS)
+      {
+        readings->Readings[i] = ((Buffer[0]-0x30) << 12) | ((Buffer[1]-0x30) << 6) | (Buffer[2]-0x30);
+        // > 50000 seems to be an error code for when an object is too close
+        if(readings->Readings[i] >= 50000)
+          readings->Readings[i] = 0;
+        if ((readings->Readings[i] > 30000) && (i >= min_i) && (i <= max_i))
+	  printf ("> W: [%d] read error: %i is bigger than 30.0 meters\n", i, readings->Readings[i]);
+      }
+      else
+        printf ("> E: Got too many readings! %d\n",i);
+    }
+  }
+
   return (0);
 }
 

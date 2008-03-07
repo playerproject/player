@@ -222,19 +222,24 @@ int
     return -1;
   }
   Laser.GetSensorConfig (&Conf);
+
+  int half_idx = Laser.GetNumRanges() / 2; 
   
   // Solve the min/max angle problem
-  min_i = static_cast<int> (round (384.0 + Conf.min_angle/Conf.resolution));
-  max_i = static_cast<int> (round (384.0 + Conf.max_angle/Conf.resolution));
+  min_i = static_cast<int> (round (half_idx + Conf.min_angle/Conf.resolution));
+  max_i = static_cast<int> (round (half_idx + Conf.max_angle/Conf.resolution));
   
   // For ancient firmware versions, set some hard limits on the min/max angle capabilities
-  if (min_i < URG04_MIN_STEP)
-    min_i = URG04_MIN_STEP;
-  if (max_i > URG04_MAX_STEP)
-    max_i = URG04_MAX_STEP;
+  if(Laser.GetSCIPVersion() < 3)
+  {
+    if (min_i < URG04_MIN_STEP)
+      min_i = URG04_MIN_STEP;
+    if (max_i > URG04_MAX_STEP)
+      max_i = URG04_MAX_STEP;
+  }
 
-  int user_min_i = static_cast<int> (round (384.0 + user_min_angle/Conf.resolution));
-  int user_max_i = static_cast<int> (round (384.0 + user_max_angle/Conf.resolution));
+  int user_min_i = static_cast<int> (round (half_idx + user_min_angle/Conf.resolution));
+  int user_max_i = static_cast<int> (round (half_idx + user_max_angle/Conf.resolution));
   
   if (user_min_i > user_max_i)
     user_min_i = user_max_i;
@@ -254,8 +259,8 @@ int
   }
   max_i = user_max_i;
   
-  Conf.min_angle = (min_i - 384) * Conf.resolution;
-  Conf.max_angle = (max_i - 384) * Conf.resolution;
+  Conf.min_angle = (min_i - half_idx) * Conf.resolution;
+  Conf.max_angle = (max_i - half_idx) * Conf.resolution;
   
   // Start the device thread; spawns a new thread and executes
   // ExampleDriver::Main(), which contains the main loop for the driver.
@@ -337,6 +342,8 @@ void
     Data.resolution   = Conf.resolution;
     Data.ranges_count = (max_i - min_i) + 1;
     Data.ranges = new float [Data.ranges_count];
+    // TODO: look into getting intensity data
+    Data.intensity_count = 0;
     
     for (unsigned int i = 0; i < Data.ranges_count; ++i)
     {
