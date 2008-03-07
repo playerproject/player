@@ -189,6 +189,9 @@ class ConfigFile
   /// @brief Alternate constructor, to specify the host as a string
   public: ConfigFile(const char* _default_host, uint32_t _default_robot);
 
+  /// Alternate constructor, used when not loading from a file
+  public: ConfigFile();
+
   /// @brief Standard destructor
   public: ~ConfigFile();
 
@@ -199,6 +202,18 @@ class ConfigFile
   /// @param filename Name of file; can be relative or fully qualified path.
   /// @returns Returns true on success.
   public: bool Load(const char *filename);
+
+  /// @brief Add a (name,value) pair directly into the database, without
+  /// reading from a file.  The (name,value) goes into the "global" section.
+  /// Can be called multiple times with different index to create a tuple
+  /// field.
+  /// @param index Index of the value within the field (0 unless the field
+  ///              is a tuple)
+  /// @param name Name of the field
+  /// @param value Value to be assigned
+  public: void InsertFieldValue(int index,
+                                const char* name, 
+                                const char* value);
 
   // Save config back into file
   // Set filename to NULL to save back into the original file

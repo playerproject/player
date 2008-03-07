@@ -83,6 +83,11 @@ class DeviceTable
     // find a device, based on id, and return the pointer (or NULL on
     // failure)
     Device* GetDevice(player_devaddr_t addr, bool lookup_remote=true);
+    
+    // find a device, based on id, and return the pointer (or NULL on
+    // failure)
+    Device* GetDevice(const char* str_addr,
+                      bool lookup_remote=true);
 
     // Get the first device entry.
     Device *GetFirstDevice() {return head;}
