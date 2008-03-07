@@ -47,6 +47,7 @@
 #include <libplayercore/error.h>
 #include <libplayercore/devicetable.h>
 #include <libplayercore/interface_util.h>
+#include <libplayercore/addr_util.h>
 
 // initialize the table
 DeviceTable::DeviceTable()
@@ -175,6 +176,64 @@ DeviceTable::GetDevice(player_devaddr_t addr, bool lookup_remote)
 
   pthread_mutex_unlock(&mutex);
   return(thisentry);
+}
+
+// find a device, based on id, and return the pointer (or NULL on
+// failure)
+Device* 
+DeviceTable::GetDevice(const char* str_addr,
+                       bool lookup_remote)
+{
+  player_devaddr_t addr;
+  memset(&addr,0,sizeof(player_devaddr_t));
+
+  char* str_addr_copy = strdup(str_addr);
+  char* colon;
+
+  // Must have an index
+  if(!((colon = strrchr(str_addr_copy,':'))))
+    return(NULL);
+  addr.index = atoi(colon+1);
+  *colon = '\0';
+
+  // Must have an interface (but it might not have a preceding colon)
+  if(!((colon = strrchr(str_addr_copy,':'))))
+  {
+    if(!strlen(str_addr_copy))
+      return(NULL);
+    addr.interf = str_to_interf(str_addr_copy);
+    colon = str_addr_copy;
+  }
+  else
+  {
+    addr.interf = str_to_interf(colon+1);
+  }
+  *colon = '\0';
+  
+  // Might have a robot
+  if(!((colon = strrchr(str_addr_copy,':'))))
+  {
+    colon = str_addr_copy;
+    if(strlen(str_addr_copy))
+      addr.robot = atoi(str_addr_copy);
+  }
+  else
+  {
+    addr.robot = atoi(colon+1);
+  }
+  *colon = '\0';
+
+  // Might have a host
+  if(!((colon = strrchr(str_addr_copy,':'))))
+  {
+    if(strlen(str_addr_copy))
+      hostname_to_packedaddr(&addr.host,str_addr_copy);
+  }
+  else
+    hostname_to_packedaddr(&addr.host,colon+1);
+
+
+  return(this->GetDevice(addr,lookup_remote));
 }
 
 // Call Update() on each driver with non-zero subscriptions

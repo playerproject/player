@@ -116,6 +116,15 @@ ConfigFile::ConfigFile(const char* _default_host, uint32_t _default_robot)
   this->InitFields();
 }
 
+/// Alternate constructor, used when not loading from a file
+ConfigFile::ConfigFile()
+{
+  this->default_host = 0;
+  this->default_robot = 0;
+  this->filename = strdup("");
+  this->InitFields();
+}
+
 void
 ConfigFile::InitFields()
 {
@@ -228,6 +237,19 @@ bool ConfigFile::Load(const char *filename)
   //DumpTokens();
   fclose(file);  
   return true;
+}
+
+///////////////////////////////////////////////////////////////////////////
+/// Add a (name,value) pair directly into the database, without
+/// reading from a file.  The (name,value) goes into the "global" section.
+void ConfigFile::InsertFieldValue(int index,
+                                  const char* name, 
+                                  const char* value)
+{
+  // AddField checks whether the field already exists
+  int field = this->AddField(-1,name,0);
+  this->AddToken(ConfigFile::TokenWord, value, 0);
+  this->AddFieldValue(field, index, this->token_count-1);
 }
 
 
@@ -1944,7 +1966,7 @@ int ConfigFile::ReadDeviceAddr(player_devaddr_t *addr, int section,
   // Get the field index
   if ((prop = GetField(section, name)) < 0)
   {
-    CONFIG_ERR1("missing field [%s]", this->fields[prop].line, name);
+    CONFIG_ERR1("missing field [%s]", 0, name);
     return -1;
   }
 
