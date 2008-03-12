@@ -393,7 +393,17 @@ class Driver
     @param cf Configuration file
     @param section Configuration file section that may define the property value
     @return True if the property was registered, false otherwise */
-    virtual bool RegisterProperty(char *key, Property *prop, ConfigFile* cf, int section);
+    virtual bool RegisterProperty(const char *key, Property *prop, ConfigFile* cf, int section);
+
+    /** @brief Property registration.
+
+    Simplified form that uses the key already in the property
+    @param property Pointer to a Property object - must exist for as long as the property bag does
+    @param cf Configuration file
+    @param section Configuration file section that may define the property value
+    @return True if the property was registered, false otherwise */
+    virtual bool RegisterProperty(Property *prop, ConfigFile* cf, int section);
+
 };
 
 

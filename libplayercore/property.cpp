@@ -42,6 +42,7 @@
 #include <libplayercore/player.h>
 #include <libplayercore/configfile.h>
 #include <libplayercore/error.h>
+#include <libplayercore/driver.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -59,7 +60,6 @@ Property::Property (const char *newKey, bool readOnly)
 		PLAYER_ERROR1 ("Failed to allocate memory to store property key %s", newKey);
 		key = NULL;
 	}
-
 }
 
 Property::~Property (void)
@@ -95,14 +95,15 @@ IntProperty::IntProperty (const char *newKey, int newValue, bool readOnly)
 {
 }
 
+IntProperty::IntProperty (const char *newKey, int newValue, bool readOnly, Driver * driver, ConfigFile*cf, int section)
+: Property (newKey, readOnly), value (newValue)
+{
+	driver->RegisterProperty(newKey, this, cf, section);
+}
+
+
 void IntProperty::SetValue (int newValue)
 {
-//	if (readonly)
-//	{
-//		PLAYER_WARN2 ("Property %s is read only, cannot change value 50 %d", key, newValue);
-//		return;
-//	}
-//
 	value = newValue;
 }
 
@@ -132,24 +133,12 @@ bool IntProperty::ReadConfig (ConfigFile *cf, int section)
 
 const IntProperty& IntProperty::operator= (const IntProperty &rhs)
 {
-//	if (readonly)
-//	{
-//		PLAYER_WARN2 ("Property %s is read only, cannot change value 50 %d", key, rhs.GetValue ());
-//		return *this;
-//	}
-
 	value = rhs.GetValue ();
 	return *this;
 }
 
 int IntProperty::operator= (int rhs)
 {
-//	if (readonly)
-//	{
-//		PLAYER_WARN2 ("Property %s is read only, cannot change value 50 %d", key, rhs);
-//		return value;
-//	}
-//
 	value = rhs;
 	return value;
 }
@@ -162,14 +151,15 @@ DoubleProperty::DoubleProperty (const char *newKey, double newValue, bool readOn
 {
 }
 
+DoubleProperty::DoubleProperty (const char *newKey, double newValue, bool readOnly, Driver * driver, ConfigFile*cf, int section)
+: Property (newKey, readOnly), value (newValue)
+{
+	driver->RegisterProperty(newKey, this, cf, section);
+}
+
+
 void DoubleProperty::SetValue (double newValue)
 {
-//	if (readonly)
-//	{
-//		PLAYER_WARN2 ("Property %s is read only, cannot change value 50 %f", key, newValue);
-//		return;
-//	}
-//
 	value = newValue;
 }
 
@@ -199,24 +189,12 @@ bool DoubleProperty::ReadConfig (ConfigFile *cf, int section)
 
 const DoubleProperty& DoubleProperty::operator= (const DoubleProperty &rhs)
 {
-//	if (readonly)
-//	{
-//		PLAYER_WARN2 ("Property %s is read only, cannot change value 50 %f", key, rhs.GetValue ());
-//		return *this;
-//	}
-
 	value = rhs.GetValue ();
 	return *this;
 }
 
 double DoubleProperty::operator= (double rhs)
 {
-//	if (readonly)
-//	{
-//		PLAYER_WARN2 ("Property %s is read only, cannot change value 50 %f", key, rhs);
-//		return value;
-//	}
-
 	value = rhs;
 	return value;
 }
@@ -239,6 +217,24 @@ StringProperty::StringProperty (const char *newKey, const char *newValue, bool r
 		value = NULL;
 }
 
+StringProperty::StringProperty (const char *newKey, const char * newValue,  bool readOnly, Driver * driver, ConfigFile*cf, int section)
+: Property (newKey, readOnly)
+{
+	if (newValue != NULL)
+	{
+		if ((value = strdup (newValue)) == NULL)
+		{
+			PLAYER_ERROR1 ("Failed to allocate memory to store property value %s", newValue);
+			value = NULL;
+		}
+	}
+	else
+		value = NULL;
+	driver->RegisterProperty(newKey, this, cf, section);
+
+}
+
+
 StringProperty::~StringProperty (void)
 {
 	if (value != NULL)
@@ -247,12 +243,6 @@ StringProperty::~StringProperty (void)
 
 void StringProperty::SetValue (const char *newValue)
 {
-//	if (readonly)
-//	{
-//		PLAYER_WARN2 ("Property %s is read only, cannot change value 50 %s", key, newValue);
-//		return;
-//	}
-
 	if (value != NULL)
 		free (value);
 
@@ -322,12 +312,6 @@ bool StringProperty::ReadConfig (ConfigFile *cf, int section)
 
 const StringProperty& StringProperty::operator= (const StringProperty &rhs)
 {
-//	if (readonly)
-//	{
-//		PLAYER_WARN2 ("Property %s is read only, cannot change value 50 %s", key, rhs.GetValue ());
-//		return *this;
-//	}
-
 	if (value != NULL)
 		free (value);
 
