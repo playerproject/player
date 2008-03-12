@@ -41,6 +41,7 @@
 #define __PROPERTY_H
 
 class ConfigFile;
+class Driver;
 
 // Property base class
 class Property
@@ -74,6 +75,8 @@ class IntProperty : public Property
 {
 	public:
 		IntProperty (const char *newKey, int newValue, bool readOnly);
+		/** Constructor that registers the property with a driver as well while it is constructed */
+		IntProperty (const char *newKey, int newValue, bool readOnly, Driver * driver, ConfigFile*cf, int section);
 
 		int GetValue (void) const			{ return value; }
 		void SetValue (int newValue);
@@ -100,6 +103,8 @@ class DoubleProperty : public Property
 {
 	public:
 		DoubleProperty (const char *newKey, double newValue, bool readOnly);
+		/** Constructor that registers the property with a driver as well while it is constructed */
+		DoubleProperty (const char *newKey, double newValue, bool readOnly, Driver * driver, ConfigFile*cf, int section);
 
 		double GetValue (void) const		{ return value; }
 		void SetValue (double newValue);
@@ -125,6 +130,8 @@ class StringProperty : public Property
 {
 	public:
 		StringProperty (const char *newKey, const char *newValue, bool readOnly);
+		/** Constructor that registers the property with a driver as well while it is constructed */
+		StringProperty (const char *newKey, const char *newValue, bool readOnly, Driver * driver, ConfigFile*cf, int section);
 		~StringProperty (void);
 
 		const char* GetValue (void) const	{ return value; }

@@ -403,65 +403,65 @@ int Driver::ProcessInternalMessages(QueuePointer &resp_queue,
 {
   Property *property = NULL;
 
-  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_GET_INTPROP_REQ, device_addr))
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_GET_INTPROP_REQ))
   {
     player_intprop_req_t req = *reinterpret_cast<player_intprop_req_t*> (data);
     if ((property = propertyBag.GetProperty (req.key)) == NULL)
       return -1;
     property->GetValueToMessage (reinterpret_cast<void*> (&req));
-    Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_GET_INTPROP_REQ, reinterpret_cast<void*> (&req), sizeof(player_intprop_req_t), NULL);
+    Publish(hdr->addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_GET_INTPROP_REQ, reinterpret_cast<void*> (&req), sizeof(player_intprop_req_t), NULL);
     return 0;
   }
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SET_INTPROP_REQ, device_addr))
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SET_INTPROP_REQ))
   {
     player_intprop_req_t req = *reinterpret_cast<player_intprop_req_t*> (data);
     if ((property = propertyBag.GetProperty (req.key)) == NULL)
       return -1;
     property->SetValueFromMessage (reinterpret_cast<void*> (&req));
-    Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_SET_INTPROP_REQ, NULL, 0, NULL);
+    Publish(hdr->addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_SET_INTPROP_REQ, NULL, 0, NULL);
     return 0;
   }
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_GET_DBLPROP_REQ, device_addr))
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_GET_DBLPROP_REQ))
   {
     player_dblprop_req_t req = *reinterpret_cast<player_dblprop_req_t*> (data);
     if ((property = propertyBag.GetProperty (req.key)) == NULL)
       return -1;
     property->GetValueToMessage (reinterpret_cast<void*> (&req));
-    Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_GET_DBLPROP_REQ, reinterpret_cast<void*> (&req), sizeof(player_dblprop_req_t), NULL);
+    Publish(hdr->addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_GET_DBLPROP_REQ, reinterpret_cast<void*> (&req), sizeof(player_dblprop_req_t), NULL);
     return 0;
   }
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SET_DBLPROP_REQ, device_addr))
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SET_DBLPROP_REQ))
   {
     player_dblprop_req_t req = *reinterpret_cast<player_dblprop_req_t*> (data);
     if ((property = propertyBag.GetProperty (req.key)) == NULL)
       return -1;
     property->SetValueFromMessage (reinterpret_cast<void*> (&req));
-    Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_SET_DBLPROP_REQ, NULL, 0, NULL);
+    Publish(hdr->addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_SET_DBLPROP_REQ, NULL, 0, NULL);
     return 0;
   }
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_GET_STRPROP_REQ, device_addr))
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_GET_STRPROP_REQ))
   {
     player_strprop_req_t req = *reinterpret_cast<player_strprop_req_t*> (data);
     if ((property = propertyBag.GetProperty (req.key)) == NULL)
       return -1;
     property->GetValueToMessage (reinterpret_cast<void*> (&req));
-    Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_GET_STRPROP_REQ, reinterpret_cast<void*> (&req), sizeof(player_strprop_req_t), NULL);
+    Publish(hdr->addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_GET_STRPROP_REQ, reinterpret_cast<void*> (&req), sizeof(player_strprop_req_t), NULL);
     return 0;
   }
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SET_STRPROP_REQ, device_addr))
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SET_STRPROP_REQ))
   {
     player_strprop_req_t req = *reinterpret_cast<player_strprop_req_t*> (data);
     if ((property = propertyBag.GetProperty (req.key)) == NULL)
       return -1;
     property->SetValueFromMessage (reinterpret_cast<void*> (&req));
-    Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_SET_STRPROP_REQ, NULL, 0, NULL);
+    Publish(hdr->addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_SET_STRPROP_REQ, NULL, 0, NULL);
     return 0;
   }
 
   return -1;
 }
 
-bool Driver::RegisterProperty(char *key, Property *prop, ConfigFile* cf, int section)
+bool Driver::RegisterProperty(const char *key, Property *prop, ConfigFile* cf, int section)
 {
   if (!propertyBag.AddProperty (key, prop))
     return false;
@@ -471,3 +471,9 @@ bool Driver::RegisterProperty(char *key, Property *prop, ConfigFile* cf, int sec
 
   return true;
 }
+
+bool Driver::RegisterProperty(Property *prop, ConfigFile* cf, int section)
+{
+  return RegisterProperty(prop->GetKey(), prop, cf, section);
+}
+

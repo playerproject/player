@@ -155,6 +155,19 @@ class Message
              (hdr->addr.index == addr.index));
     }
 
+    /** @brief Helper for message processing.
+
+    This version matches for any message destination (i.e. all a drivers reigstered interfaces)
+    Returns true if @p hdr matches the supplied @p type, @p subtype.  Set type and/or subtype to -1 for don't care.
+    */
+    static bool MatchMessage(player_msghdr_t* hdr,
+                             int type,
+                             int subtype)
+    {
+      return(((type < 0) || (hdr->type == (uint8_t)type)) &&
+             ((subtype < 0) || (hdr->subtype == (uint8_t)subtype)));
+    }    
+    
     /// Get pointer to header.
     player_msghdr_t * GetHeader() {return &Header;};
     /// Get pointer to payload.
