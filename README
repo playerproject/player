@@ -20,4 +20,12 @@ To see the options accepted by configure, do:
 
   $ ./configure --help
 
+Bootstrapping from SVN
+----------------------
+If you are building from SVN you will not have a configure script. This is
+created by running autoreconf
+
+  $ autoreconf -i
+
+
                     - brian gerkey (gerkey@ai.sri.com)
