@@ -1,9 +1,0 @@
-#!/bin/sh
-
-# Run the player bootstrap
-set -x
-aclocal
-libtoolize --force
-autoheader
-automake --gnu --add-missing
-autoconf
