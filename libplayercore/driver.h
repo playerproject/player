@@ -301,6 +301,21 @@ class Driver
     @returns Returns 0 on success. */
     virtual int Subscribe(player_devaddr_t addr);
 
+    /** @brief Subscribe to this driver.
+
+    The Subscribe() and Unsubscribe() methods are used to control
+    subscriptions to the driver; a driver MAY override them, but
+    usually won't. This alternative form includes the clients queue
+    so you can map future requests and unsubscriptions to a specific queue.
+    
+    If this methods returns a value other than 1 then the other form of subscribe wont be called
+
+    @param queue The queue of the subscribing client
+    @param addr Address of the device to subscribe to (the driver may
+    have more than one interface).
+    @returns Returns 0 on success, -ve on error and 1 for unimplemented. */
+    virtual int Subscribe(QueuePointer &queue, player_devaddr_t addr) {return 1;};    
+    
     /** @brief Unsubscribe from this driver.
 
     The Subscribe() and Unsubscribe() methods are used to control
@@ -312,6 +327,21 @@ class Driver
     @returns Returns 0 on success. */
     virtual int Unsubscribe(player_devaddr_t addr);
 
+    /** @brief Unsubscribe from this driver.
+
+    The Subscribe() and Unsubscribe() methods are used to control
+    subscriptions to the driver; a driver MAY override them, but
+    usually won't.This alternative form includes the clients queue
+    so you can map future requests and unsubscriptions to a specific queue.
+    
+    If this methods returns a value other than 1 then the other form of subscribe wont be called
+
+    @param queue The queue of the subscribing client
+    @param addr Address of the device to unsubscribe from (the driver may
+    have more than one interface).
+    @returns Returns 0 on success. */
+    virtual int Unsubscribe(QueuePointer &queue, player_devaddr_t addr) {return 1;};
+    
     /** @brief Initialize the driver.
 
     This function is called with the first client subscribes; it MUST

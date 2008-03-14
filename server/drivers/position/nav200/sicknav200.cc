@@ -874,7 +874,7 @@ int SickNAV200::InterpretLayerData(player_vectormap_layer_data_t* data, Position
 		unsigned reflectorsInFeature = 0;
 		if (extendedWKB)
 		{
-			unsigned spacialReferenceID = *reinterpret_cast<uint32_t*>(wkb + 5);
+			//unsigned spacialReferenceID = *reinterpret_cast<uint32_t*>(wkb + 5);
 			reflectorsInFeature = *reinterpret_cast<uint32_t*>(wkb + 9);
 		}
 		else

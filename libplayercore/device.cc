@@ -136,7 +136,16 @@ Device::Subscribe(QueuePointer &sub_queue)
 
   if(this->driver)
   {
-    if((retval = this->driver->Subscribe(this->addr)))
+    // first try the new version which passes the queue in
+    retval = this->driver->Subscribe(sub_queue, this->addr);
+    if (retval < 0)
+    {
+      // remove the subscriber's queue, since the subscription failed
+      this->queues[i] = QueuePointer();
+      this->driver->Unlock();
+      return(retval);
+    }
+    else if(retval == 1 && (retval = this->driver->Subscribe(this->addr)))
     {
       // remove the subscriber's queue, since the subscription failed
       this->queues[i] = QueuePointer();
@@ -159,7 +168,15 @@ Device::Unsubscribe(QueuePointer &sub_queue)
   {
     this->driver->Lock();
 
-    if((retval = this->driver->Unsubscribe(this->addr)))
+    // first try the new version which passes the queue in
+    retval = this->driver->Unsubscribe(sub_queue, this->addr);
+    if (retval < 0)
+    {
+      // remove the subscriber's queue, since the subscription failed
+      this->driver->Unlock();
+      return(retval);
+    }
+    else if(retval == 1 && (retval = this->driver->Unsubscribe(this->addr)))
     {
       this->driver->Unlock();
       return(retval);
