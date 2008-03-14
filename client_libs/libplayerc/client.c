@@ -1269,6 +1269,8 @@ void *playerc_client_dispatch(playerc_client_t *client,
 {
   int i, j;
   playerc_device_t *device;
+  void * ret;
+  ret = NULL;
 
   // Look for a device proxy to handle this data
   for (i = 0; i < client->device_count; i++)
@@ -1294,13 +1296,12 @@ void *playerc_client_dispatch(playerc_client_t *client,
         for (j = 0; j < device->callback_count; j++)
           (*device->callback[j]) (device->callback_data[j]);
 
-        return device->id;
+        // dont return yet as their may be multiple of the same device/index subscribed
+        ret = device->id;
       }
-      else
-        return NULL;
     }
   }
-  return NULL;
+  return ret;
 }
 
 //  Set the request timeout
