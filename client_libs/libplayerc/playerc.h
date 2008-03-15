@@ -57,7 +57,9 @@ Geoffrey Biggs, Richard Vaughan.
 #include <libplayerc/playercconfig.h>
 
 #ifdef HAVE_GEOS
+#ifndef GEOS_VERSION_MAJOR
 #include <geos_c.h>
+#endif
 #else
 typedef void * GEOSGeom;
 #endif

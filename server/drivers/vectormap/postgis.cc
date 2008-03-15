@@ -121,7 +121,9 @@ For more information see http://postgis.refractions.net/
 #include <libplayercore/error.h>
 #include "dbconn.h"
 #ifdef HAVE_GEOS
+#ifndef GEOS_VERSION_MAJOR
 #include <geos_c.h>
+#endif
 #endif
 
 using namespace std;
