@@ -302,6 +302,8 @@ BoundingBox PostgresConn::BinaryToBBox(const uint8_t* wkb, uint32_t length)
 {
   BoundingBox res;
   memset(&res, 0, sizeof(BoundingBox));
+  if (length == 0)
+    return res;
 #ifdef HAVE_GEOS
   GEOSGeom polygon;
   polygon = GEOSGeomFromWKB_buf(wkb, length);

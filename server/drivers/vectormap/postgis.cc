@@ -239,16 +239,6 @@ PostGIS::~PostGIS()
   PLAYER_MSG0(2, "Shutting down GEOS");
   finishGEOS();
 #endif
-  /*if (conn != NULL && conn->Connected())
-  {
-    conn->Disconnect();
-  }
-  if (conn != NULL)
-  {
-    printf("DELETING CONNECTION\n");
-    delete conn;
-    conn = NULL;
-  }*/
 }
 
 ////////////////////////////////////////////////////////////////////////////////
