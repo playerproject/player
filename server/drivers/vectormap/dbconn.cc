@@ -6,7 +6,9 @@
 #include <cctype>
 #include "dbconn.h"
 #ifdef HAVE_GEOS
+#ifndef GEOS_VERSION_MAJOR
 #include <geos_c.h>
+#endif
 #endif
 
 using namespace std;
