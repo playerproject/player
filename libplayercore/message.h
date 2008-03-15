@@ -74,6 +74,8 @@ class QueuePointer
 	QueuePointer & operator = (const QueuePointer & rhs);
 	/// retrieve underlying object for use
 	MessageQueue * operator -> ();
+	/// retrieve underlying object for use, may return a null pointer
+	MessageQueue * get() const;
 	/// retrieve underlying object for use
 	MessageQueue & operator * ();
 	/// check if pointers are equal

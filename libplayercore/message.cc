@@ -607,7 +607,7 @@ MessageQueue::Remove(MessageQueueElement* el)
   this->Length--;
 }
 
-/// Create an empty message queue and an auto pointer to it.
+/// Create a null pointer
 QueuePointer::QueuePointer()
 {
   Lock = NULL;
@@ -684,6 +684,12 @@ QueuePointer & QueuePointer::operator = (const QueuePointer & rhs)
   pthread_mutex_unlock(Lock);	
   return *this;
 }
+
+MessageQueue * QueuePointer::get() const 
+{
+	return Queue;
+}
+
 
 /// retrieve underlying object for use
 MessageQueue * QueuePointer::operator -> ()
