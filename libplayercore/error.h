@@ -38,7 +38,13 @@ void ErrorInit(int _msgLevel);
 
 /// @internal Function for print and logging errors.  Do not call this
 /// function directly; use the macros below.
-void ErrorPrint(int msgType, int level, const char *file, int line, const char *fmt, ...);
+void DefaultErrorPrint(int msgType, int level, const char *file, int line, const char *fmt, ...);
+
+extern void (*ErrorPrint)(int msgType, int level, const char *file, int line, const char *fmt, ...);
+extern int msgLevel;
+
+// File for logging messages
+extern FILE *msgFile;
 
 #ifdef __cplusplus
 }
