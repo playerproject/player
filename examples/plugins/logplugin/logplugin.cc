@@ -35,6 +35,7 @@
 
 #include <unistd.h>
 #include <string.h>
+#include <stdarg.h>
 
 
 #include <libplayercore/playercore.h>
