@@ -29,10 +29,11 @@
 
 // User-selected msg level: 0 for the most important messages (always
 // printed); 9 for the least important.
-static int msgLevel;
+int msgLevel;
 
 // File for logging messages
-static FILE *msgFile;
+FILE *msgFile;
+void (*ErrorPrint)(int msgType, int level, const char *file, int line, const char *fmt, ...) = DefaultErrorPrint;
 
 
 // Initialize error logging
@@ -46,7 +47,7 @@ ErrorInit(int _msgLevel)
 #define MSG_MAX 1024
 
 // Function for printing and logging errors.
-void ErrorPrint(int msgType, int level, const char *file, int line, const char *fmt, ...)
+void DefaultErrorPrint(int msgType, int level, const char *file, int line, const char *fmt, ...)
 {
   va_list ap;
 

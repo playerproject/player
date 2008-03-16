@@ -536,6 +536,9 @@ class ConfigFile
   // Parse a macro definition
   private: bool ParseTokenDefine(int *index, int *line);
 
+  // Parse a macro definition
+  private: bool ParseTokenPlugin(int *index, int *line);
+
   // Parse an word (could be a section or an field) from the token list.
   private: bool ParseTokenWord(int section, int *index, int *line);
 

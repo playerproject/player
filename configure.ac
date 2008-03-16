@@ -639,6 +639,7 @@ AC_OUTPUT(Makefile
           examples/Makefile
           examples/plugins/Makefile
           examples/plugins/exampledriver/Makefile
+          examples/plugins/logplugin/Makefile
           examples/plugins/exampleinterface/Makefile
           examples/plugins/multidriver/Makefile
           examples/plugins/opaquedriver/Makefile

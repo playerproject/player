@@ -855,6 +855,11 @@ bool ConfigFile::ParseTokens()
           if (!ParseTokenDefine(&i, &line))
             return false;
         }
+        else if (strcmp(token->value, "plugin") == 0)
+        {
+          if (!ParseTokenPlugin(&i, &line))
+            return false;
+        }
         else
         {
           if (!ParseTokenWord(section, &i, &line))
@@ -906,6 +911,43 @@ bool ConfigFile::ParseTokenInclude(int *index, int *line)
   return false;
 }
 
+///////////////////////////////////////////////////////////////////////////
+// Parse a plugin statement
+bool ConfigFile::ParseTokenPlugin(int *index, int *line)
+{
+  int i;
+  Token *token;
+
+  lt_dlhandle handle;
+
+  for (i = *index + 1; i < this->token_count; i++)
+  {
+    token = this->tokens + i;
+
+    switch (token->type)
+    {
+      case TokenString:
+        // Load the plugin
+        if((handle = LoadPlugin(token->value,this->filename)) == NULL)
+        {
+          PLAYER_ERROR1("failed to load plugin: %s", token->value);
+          return false;
+        }
+        InitDriverPlugin(handle);
+        break;
+      case TokenSpace:
+        break;
+      case TokenEOL:
+        *index = i;
+        (*line)++;
+        return true;
+      default:
+        PARSE_ERR("syntax error in plugin statement", *line);
+    }
+  }
+  PARSE_ERR("incomplete include statement", *line);
+  return false;
+}
 
 ///////////////////////////////////////////////////////////////////////////
 // Parse a macro definition
