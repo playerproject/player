@@ -798,8 +798,10 @@ int
       {
         readings->Readings[i] = ((Buffer[0]-0x30) << 12) | ((Buffer[1]-0x30) << 6) | (Buffer[2]-0x30);
         // > 50000 seems to be an error code for when an object is too close
-        if(readings->Readings[i] >= 50000)
-          readings->Readings[i] = 0;
+        //if(readings->Readings[i] >= 50000)
+          //readings->Readings[i] = 0;
+        if(readings->Readings[i] >= 30000)
+          readings->Readings[i] = 30000;
         if ((readings->Readings[i] > 30000) && (i >= min_i) && (i <= max_i))
 	  printf ("> W: [%d] read error: %i is bigger than 30.0 meters\n", i, readings->Readings[i]);
       }
