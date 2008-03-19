@@ -13,7 +13,7 @@ PROCESS_INTERFACES ("" ${PROJECT_SOURCE_DIR}/libplayercore/interfaces ${player_i
 SET (playerxdr_h "${CMAKE_CURRENT_BINARY_DIR}/playerxdr.h")
 SET (playerxdr_c "${CMAKE_CURRENT_BINARY_DIR}/playerxdr.c")
 ADD_CUSTOM_COMMAND (OUTPUT ${playerxdr_h} ${playerxdr_c}
-    COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/playerxdrgen.py -distro ${PROJECT_SOURCE_DIR}/libplayercore/player.h ${playerxdr_c} ${playerxdr_h} ${player_interfaces_h}
+    COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/playerxdrgen.py -distro ${PROJECT_SOURCE_DIR}/libplayercore/player.h ${playerxdr_c} ${playerxdr_h} ${player_interfaces_h}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     DEPENDS ${interfaceFiles} ${player_interfaces_h}
     VERBATIM
@@ -21,7 +21,7 @@ ADD_CUSTOM_COMMAND (OUTPUT ${playerxdr_h} ${playerxdr_c}
 
 SET (functiontable_gen_h "${CMAKE_CURRENT_BINARY_DIR}/functiontable_gen.h")
 ADD_CUSTOM_COMMAND (OUTPUT ${functiontable_gen_h}
-    COMMAND python ${PROJECT_SOURCE_DIR}/libplayercore/playerinterfacegen.py --functiontable ${PROJECT_SOURCE_DIR}/libplayercore/interfaces > ${functiontable_gen_h}
+    COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/libplayercore/playerinterfacegen.py --functiontable ${PROJECT_SOURCE_DIR}/libplayercore/interfaces > ${functiontable_gen_h}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     DEPENDS ${interfaceFiles}
     VERBATIM

@@ -6,7 +6,8 @@
 - Figure out why it always rebuilds driverregistry.c. Make it stop.
 - cross-compiling... does it work?
 - all those driver make files
-- install config files (easy)
 - examples dir (probably easy)
 - docs (easy)
 - dist tarballs, packages, etc
+- Fix the checks for boost threads and boost signals libraries
+- Some installable cmake modules with macros for making plugin drivers, etc

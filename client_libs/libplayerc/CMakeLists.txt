@@ -50,7 +50,7 @@ SET (playercSrcs    playerc.h
                     dev_vectormap.c
                     dev_wifi.c
                     dev_wsn.c)
-APPEND_TO_CACHED_LIST (PLAYERC_EXTRA_LINK_LIBRARIES "Libs to link to with playerc" z)
+APPEND_TO_CACHED_LIST (PLAYERC_EXTRA_LINK_LIBRARIES "Libs to link to with playerc" z m)
 
 PLAYER_ADD_LIBRARY (playerc ${playercSrcs})
 TARGET_LINK_LIBRARIES (playerc playerxdr playerutils playererror ${PLAYERC_EXTRA_LIBS})
