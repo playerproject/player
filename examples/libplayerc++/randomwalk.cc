@@ -9,7 +9,7 @@ using namespace PlayerCc;
 #include "args.h"
 
 double minfrontdistance = 0.750;
-double speed = 0.200;
+double speed = 0.350;
 double avoidspeed = 0; // -150;
 double turnrate = DTOR(40);
 
@@ -66,7 +66,7 @@ int main(int argc, char** argv)
         obs = false;
         for (uint32_t i = 0; i < lp->GetCount (); i++)
         {
-          if((*lp)[i] < minfrontdistance)
+          if(((*lp)[i]) && (*lp)[i] < minfrontdistance)
             obs = true;
         }
       }
@@ -78,7 +78,7 @@ int main(int argc, char** argv)
                (sp->GetScan (5) < minfrontdistance) );
       }
 
-      if(obs || avoidcount || pp.GetStall ())
+      if(obs || avoidcount)// || pp.GetStall ())
       {
         newspeed = avoidspeed;
 
@@ -86,7 +86,8 @@ int main(int argc, char** argv)
         /* (we run at about 10Hz, so 20 loop iterations is about 2 sec) */
         if(!avoidcount)
         {
-          avoidcount = 15;
+          avoidcount = (1+(int)(10.0*rand()/(RAND_MAX+1.0))) + 20;
+          //avoidcount = 30;
           randcount = 0;
 
           if(gUseLaser)
@@ -119,7 +120,7 @@ int main(int argc, char** argv)
           randint = rand() % 41 - 20;
 
           newturnrate = dtor(randint);
-          randcount = 20;
+          randcount = 30;
         }
         randcount--;
       }

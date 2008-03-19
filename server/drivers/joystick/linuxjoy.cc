@@ -419,7 +419,6 @@ void LinuxJoystick::Main()
       {
         this->PutPositionCommand();
       }
-#if 0
       else
       {
         player_position2d_cmd_vel_t cmd;
@@ -430,7 +429,6 @@ void LinuxJoystick::Main()
                                (void*)&cmd, sizeof(player_position2d_cmd_vel_t),
                                NULL);
       }
-#endif
     }
   }
   return;
