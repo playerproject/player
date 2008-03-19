@@ -166,6 +166,7 @@ pose2_t lodo_add_scan(lodo_t *self, pose2_t odom_pose, int num_ranges, double *r
   // Initialize the new scan
   scan.opose = odom_pose;
   assert(num_ranges == self->num_ranges);
+  assert(num_ranges <= LODO_MAX_RANGES);
   memcpy(scan.ranges, ranges, num_ranges * sizeof(ranges[0]));
 
   if (self->scan_count == 0)
