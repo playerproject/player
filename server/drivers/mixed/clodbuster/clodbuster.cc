@@ -75,9 +75,7 @@ driver
 */
 /** @} */
 
-#if HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <fcntl.h> // POSIX file i/o
 #include <signal.h>

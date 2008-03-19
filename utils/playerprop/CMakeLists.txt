@@ -1,0 +1,8 @@
+IF (BUILD_PLAYERCC)
+    INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/client_libs)
+
+    PLAYER_ADD_EXECUTABLE (playerprop playerprop.cpp)
+    TARGET_LINK_LIBRARIES (playerprop playerc++ playerc playerxdr playererror ${PLAYERC_EXTRA_LINK_LIBRARIES} ${PLAYERCC_EXTRA_LINK_LIBRARIES})
+ELSE (BUILD_PLAYERCC)
+    MESSAGE (STATUS "playerprop will not be built - playerc++ client library is disabled")
+ENDIF (BUILD_PLAYERCC)

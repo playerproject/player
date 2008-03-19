@@ -86,7 +86,7 @@ static playerxdr_function_t init_ftable[] =
     (player_pack_fn_t)player_add_replace_rule_req_pack, NULL, NULL, NULL, NULL, NULL},
 
   /* generated messages from the interface definitions */
-#include "functiontable_gen.c"
+#include "functiontable_gen.h"
 
   /* This NULL element signals the end of the list; don't remove it */
   {0,0,0,NULL,NULL,NULL}

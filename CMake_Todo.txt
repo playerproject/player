@@ -1,0 +1,12 @@
+- Python bindings for libplayerc (or c++?)
+- Java bindings for core, xdr, tcp, etc
+- Make sure all the various package searches are actually performed and options are available to change install paths of them
+- Get CMake book, read it, go through all cmake files and clean up the mess I've made
+- Check all necessary flags are being accumulated from various libraries and passed to various executable build steps (e.g. defines for boost stuff, is it needed for playerprint?)
+- Figure out why it always rebuilds driverregistry.c. Make it stop.
+- cross-compiling... does it work?
+- all those driver make files
+- install config files (easy)
+- examples dir (probably easy)
+- docs (easy)
+- dist tarballs, packages, etc

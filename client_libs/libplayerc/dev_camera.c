@@ -42,9 +42,7 @@
  * Date: 26 May 2002
  * CVS: $Id$
  **************************************************************************/
-#if HAVE_CONFIG_H
-  #include "config.h"
-#endif
+#include "config.h"
 
 #if HAVE_JPEGLIB_H
   #include "libplayerjpeg/playerjpeg.h"

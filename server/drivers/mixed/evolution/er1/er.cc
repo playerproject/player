@@ -97,9 +97,7 @@ driver
 /** @} */
 
 
-#if HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include "er.h"
 #include <errno.h>

@@ -44,12 +44,9 @@
  *  we implement some generic methods that most devices will not need
  *  to override
  */
-#if HAVE_CONFIG_H
-  #include <config.h>
-#endif
+#include <config.h>
 
 #include <stdlib.h>
-#include <device.h>
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
@@ -59,6 +56,7 @@
 
 #include <libplayercore/playertime.h>
 #include <libplayercore/driver.h>
+#include <libplayercore/device.h>
 #include <libplayercore/error.h>
 #include <libplayercore/devicetable.h>
 #include <libplayercore/configfile.h>

@@ -112,9 +112,7 @@ driver
 // ONLY if you need something that was #define'd as a result of configure
 // (e.g., HAVE_CFMAKERAW), then #include <config.h>, like so:
 /*
-#if HAVE_CONFIG_H
-  #include <config.h>
-#endif
+#include <config.h>
 */
 #include "garcia_mixed.h"
 

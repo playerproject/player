@@ -84,9 +84,7 @@ Listening on ports: 6665
 */
 /** @} */
 
-#if HAVE_CONFIG_H
-  #include <config.h>
-#endif
+#include <config.h>
 
 #include <stdio.h>
 #include <assert.h>
@@ -100,7 +98,8 @@ Listening on ports: 6665
 #include <libplayertcp/playertcp.h>
 #include <libplayertcp/playerudp.h>
 #include <libplayerxdr/functiontable.h>
-#include <libplayerdrivers/driverregistry.h>
+#include "libplayerdrivers/driverregistry.h"
+#include <config.h>
 
 #if HAVE_PLAYERSD
   #include <libplayersd/playersd.h>
@@ -352,7 +351,7 @@ Quit(int signum)
 void
 PrintVersion()
 {
-  fprintf(stderr, "Player v.%s\n", PACKAGE_VERSION);
+  fprintf(stderr, "Player v.%s\n", PLAYER_VERSION);
 }
 
 void

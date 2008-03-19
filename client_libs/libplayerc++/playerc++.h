@@ -56,7 +56,6 @@
 
 #include "libplayerc/playerc.h"
 #include "libplayerc++/utility.h"
-#include "libplayerc++/playerc++config.h"
 #include "libplayerc++/playerclient.h"
 #include "libplayerc++/playererror.h"
 #include "libplayerc++/clientproxy.h"
