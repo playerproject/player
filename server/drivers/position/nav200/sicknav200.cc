@@ -70,11 +70,6 @@ for display, as well as storing them on the nav200.
   - Default: [0.15 0.15]
   - Footprint (x,y) of the laser.
 
-- wheelBase (double)
-  - Default: -1.0
-  - Distance between front and rear wheels. Used to calculate velocities
-    when vehicle movement data is provided.
-      
 @par Example 
 
 @verbatim
@@ -175,11 +170,8 @@ class SickNAV200 : public Driver
     int numReflectors;
     uint8_t* wkbData;
     uint32_t wkbSize;
-    double speed;
-    double steeringAngle;
+    player_pose2d_t speed;
     double navAngle;
-    
-    DoubleProperty wheelBase;
     
     // If mode is set to mapping the reflector positions will be mapped,
     // and mode will be automatically set back to positioning.
@@ -237,8 +229,7 @@ void SickNAV200_Register(DriverTable* table)
 // Constructor
 SickNAV200::SickNAV200(ConfigFile* cf, int section)
     : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN),
-	  wheelBase ("wheelbase", -1.0, 0),
-      mode ("mode", DEFAULT_SICKNAV200_MODE, 0)
+      mode ("mode", DEFAULT_SICKNAV200_MODE, 0, this, cf, section)
 {
   // Create position interface
   if (cf->ReadDeviceAddr(&(this->position_addr), section, 
@@ -281,8 +272,7 @@ SickNAV200::SickNAV200(ConfigFile* cf, int section)
   this->wkbData = NULL;
   this->wkbSize = 0;
   
-  this->speed = 0;
-  this->steeringAngle = 0;
+  memset(&this->speed, 0, sizeof(speed));
   this->fetchOnStart = false;
   this->navAngle = 0;
   
@@ -292,8 +282,6 @@ SickNAV200::SickNAV200(ConfigFile* cf, int section)
   // nav200 parameters, convert to mm
   this->min_radius = static_cast<int> (cf->ReadLength(section, "min_radius", 1) * 1000);
   this->max_radius = static_cast<int> (cf->ReadLength(section, "max_radius", 30) * 1000);
-  this->RegisterProperty ("mode", &this->mode, cf, section);
-  this->RegisterProperty ("wheelbase", &this->wheelBase, cf, section);
   
   this->opaque = NULL;
   // Must have an opaque device
@@ -429,8 +417,7 @@ SickNAV200::ProcessMessage(QueuePointer &resp_queue,
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE, velocity_id))
   {
     player_position2d_data_t * recv = reinterpret_cast<player_position2d_data_t * > (data);
-    speed = recv->vel.px;
-    steeringAngle = recv->pos.pa;
+    speed = recv->vel;
     return 0;
   }
 
@@ -629,8 +616,6 @@ void SickNAV200::Main()
   
   BuildWKB(); // Build an empty WKB.
   
-  PLAYER_MSG1(2, "Wheel base: %lf", wheelBase.GetValue());
-  
   if (strncmp(mode, "fetch", 5) == 0)
   {
 	fetchOnStart = true;
@@ -653,32 +638,35 @@ void SickNAV200::Main()
     bool gotReading;
     if (velocity)
     {
-    	if (wheelBase.GetValue() <= 0)
-    	{
-    		PLAYER_WARN("vehicle movement data provided but wheelbase not set. Add wheelbase to the NAV config file");
-    		gotReading = Laser.GetPositionAuto(Reading);
-    	}
-    	else
-    	{
-    		// Calculate the vehicles velocity
-    		double angle = navAngle - pose[2];
-    		vehicleVelX = speed * cos(angle); // Vehicle velocity in world coordinates.
-    		vehicleVelY = speed * sin(angle);
-    		//double arcRadius = wheelBase / tan(steeringAngle);
-	    	//double angularVelocity = speed / arcRadius;
-	    	angularVelocity = speed * tan(steeringAngle) / wheelBase.GetValue(); // Angular velocity of NAV and vehicle.
-    		
-	    	// Convert vehicle movement data into NAV200 coordinates.
-	    	double velX = speed - pose[1] * angularVelocity; // NAV vel in vehicle coordinates.
-	    	double velY = pose[0] * angularVelocity;
-	    	double navVelX = velX * cos(pose[2]) + velY * sin(pose[2]);
-	    	double navVelY = velY * cos(pose[2]) - velX * sin(pose[2]);
-	    	//gotReading = Laser.GetPositionSpeedVelocity(short(navVelX * 1000), short(navVelY * 1000), short(angularVelocity * 32768.0 / M_PI), Reading);
-	    	// Convert NAV200 velocity into world coordinates.
-	    	double worldVelX = navVelX * cos(navAngle) - navVelY * sin(navAngle);
-	    	double worldVelY = navVelX * sin(navAngle) + navVelY * cos(navAngle);
-	    	gotReading = Laser.GetPositionSpeedVelocityAbsolute(short(worldVelX * 1000), short(worldVelY * 1000), short(angularVelocity * 32768.0 / M_PI), Reading);
-    	}
+      // RCF = robot coordinate frame
+      // NCF = Nav coordinate frame
+      // WCF = world coordinate frame
+      
+      double hyp = sqrt(pose[0]*pose[0] + pose[1]*pose[1]);
+      double theta = atan2(pose[1],pose[0]);
+      // calculate the local nav velocities, in RCF
+      double nav_tangential_vel_RCF = hyp * speed.pa;
+      // calculate nav velocities in RCF
+      player_pose2d_t nav_vel_RCF = speed;
+      // rotational components
+      nav_vel_RCF.px += nav_tangential_vel_RCF*sin(theta);
+      nav_vel_RCF.py += nav_tangential_vel_RCF*cos(theta);
+
+      // now transform to NCF, basic rotation by angle offset
+      player_pose2d_t nav_vel_NCF = nav_vel_RCF;
+      nav_vel_NCF.px = nav_vel_RCF.px * cos(pose[2]) - nav_vel_RCF.py * sin(pose[2]);
+      nav_vel_NCF.py = nav_vel_RCF.px * sin(pose[2]) + nav_vel_RCF.py * cos(pose[2]);
+      
+      // finally transform to WRF, again just rotation
+      player_pose2d_t nav_vel_WCF = nav_vel_NCF;
+      nav_vel_WCF.px = nav_vel_NCF.px * cos(navAngle) - nav_vel_NCF.py * sin(navAngle);
+      nav_vel_WCF.py = nav_vel_NCF.px * sin(navAngle) + nav_vel_NCF.py * cos(navAngle);
+      
+      //fprintf(stderr,"RCF: %f %f %f\n", nav_vel_RCF.px, nav_vel_RCF.py, nav_vel_RCF.pa);
+      //fprintf(stderr,"NCF: %f %f %f\n", nav_vel_NCF.px, nav_vel_NCF.py, nav_vel_NCF.pa);
+      //fprintf(stderr,"WCF: %f %f %f\n", nav_vel_WCF.px, nav_vel_WCF.py, nav_vel_WCF.pa);
+      
+      gotReading = Laser.GetPositionSpeedVelocityAbsolute(short(nav_vel_WCF.px * 1000), short(nav_vel_WCF.py * 1000), short(nav_vel_WCF.pa * 32768.0 / M_PI), Reading);
     }
     else
     	gotReading = Laser.GetPositionAuto(Reading);
@@ -704,11 +692,11 @@ void SickNAV200::Main()
       data_packet.vel.py = vehicleVelY;
       if(Reading.quality==0xFF || Reading.quality==0xFE || Reading.quality==0x00)
       {
-	data_packet.stall = 1;
+        data_packet.stall = 1;
       }
       else
       {
-	data_packet.stall = 0;
+        data_packet.stall = 0;
       }
 
       this->Publish(this->position_addr,
