@@ -101,6 +101,16 @@ ENDMACRO (APPEND_TO_CACHED_LIST _list _cacheDesc)
 
 
 ###############################################################################
+# APPEND_TO_CACHED_STRING (_string _cacheDesc [items...])
+# Appends items to a cached list.
+MACRO (APPEND_TO_CACHED_STRING _string _cacheDesc)
+    FOREACH (newItem ${ARGN})
+        SET (${_string} "${${_string}} ${newItem}" CACHE INTERNAL ${_cacheDesc} FORCE)
+    ENDFOREACH (newItem ${ARGN})
+ENDMACRO (APPEND_TO_CACHED_STRING _string _cacheDesc)
+
+
+###############################################################################
 # Macro to look for a pkg-config package
 INCLUDE (UsePkgConfig)
 MACRO (CHECK_PACKAGE_EXISTS _package _result _includeDir _libDir _linkFlags _cFlags)

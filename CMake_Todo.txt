@@ -11,3 +11,4 @@
 - dist tarballs, packages, etc
 - Fix the checks for boost threads and boost signals libraries
 - Some installable cmake modules with macros for making plugin drivers, etc
+- Do any of the generated files need to be installed (e.g. generated config.h)?
