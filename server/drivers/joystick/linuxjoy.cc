@@ -46,14 +46,15 @@ converting joystick positions to velocity commands.
 
 - @ref interface_joystick : joystick data
 - @ref interface_position2d : joystick data represented as 2-D 
-  position data.  Raw X- and Y-axis values are reported as xpos and ypos in the 
-  position packet (all other fields are zero).
+  position data.  Raw X-axis, Y-axis and Yaw-axis values are reported
+  as pos[0], pos[1] and pos[3] in the position packet (all other
+  fields are zero).
 
 @par Requires
 
 - @ref interface_position2d : if present, joystick positions will be
   interpreted as velocities and sent as commands to this position2d device.
-  See also max_xspeed, max_yawspeed, and deadman_button options below.
+  See also max_speed, and deadman_button options below.
 
 @par Configuration requests
 
@@ -65,14 +66,14 @@ converting joystick positions to velocity commands.
   - Default: "/dev/js0"
   - The joystick to be used.
 - axes (integer tuple)
-  - Default: [0 1]
-  - Which joystick axes to call the "X" and "Y" axes, respectively.
-- axis_maxima (integer tuple)
-  - Default: [32767 32767]
-  - Maximum absolute values attainable on the X and Y axes, respectively.
-- axis_minima (integer tuple)
-  - Default: [0 0]
-  - Minimum values on the X and Y axes, respectively.  Anything smaller
+  - Default: [1 2 0]
+  - Which joystick axes to call the "X" , "Y" and "Yaw" axes, respectively.
+- axes_maxima (integer tuple)
+  - Default: [32767 32767 32767]
+  - Maximum absolute values attainable on the X, Y and Yaw axes, respectively.
+- axes_minima (integer tuple)
+  - Default: [0 0 0]
+  - Minimum values on the X and Yaw axes, respectively.  Anything smaller
     in absolute value than this limit will be reported as zero.
     Useful for implementing a dead zone on a touchy joystick.
 - deadman_button (integer)
@@ -80,20 +81,27 @@ converting joystick positions to velocity commands.
   - When controlling a @ref interface_position2d device, if deadman_button is 
     >= 0, this joystick button must be depressed for commands to be 
     sent to that device.
-- max_xspeed (length / sec)
-  - Default: 0.5 m/sec
-  - The maximum absolute translational velocity to be used when commanding a
-    position device.
-- max_yawspeed (angle / sec)
-  - Default: 30 deg/sec
-  - The maximum absolute rotational velocity to be used when commanding a
-    position device.
+- max_speed (float tupple, m / sec or angle / sec)
+  - Default: [0.5 0.5 30]
+  - The maximum absolute X and Y translational and rotational velocities to be
+    used when commanding a position device. (Y is only revelant for
+    holonomous robot)
 - timeout (float)
   - Default: 5.0
   - Time (in seconds) since receiving a new joystick event after which
     the underlying position device will be stopped, for safety.  Set to
     0.0 for no timeout.
 
+- Notes:
+  - Joysticks use X for side-to-side and Y for forward-back, also
+    their axes are backwards with respect to intuitive driving 
+    controls.
+  - This driver does not swap any axis, you have to handle this in the
+    configuration file options via "axes". However the defaults values
+    should suit your needs.
+  - This driver reverse the axes so that the joystick respect the
+    intuitive driving controls.
+  - The Y axis is only revelant for holonomous platform (like the WizBot).
 @par Examples
 
 Basic configuration
@@ -129,15 +137,54 @@ driver
   port "/dev/usb/tts/0"
 )
 
+# 1 m/sec max linear velocity
+# 30 deg/sec max angular velocity
+# Axis 4 is X
+# Axis 3 is Yaw
+# Y is not used here
 driver
 (
   name "linuxjoystick"
   provides ["joystick:0"]
   requires ["odometry::position:0"]
-  max_yawspeed 50
-  max_xspeed 0.5
-  axes [3 4]
-  axis_minima [5000 5000]
+  max_speed [1 0 30]
+  axes [4 -1 3]
+  axes_minima [5000 0 5000]
+  port "/dev/js0"
+  alwayson 1
+)
+@endverbatim
+
+Controlling a WizBot in Gazebo, plus remapping joystick axes.
+
+@verbatim
+driver
+(
+  name "gazebo"
+  provides ["simulation:0"]
+  plugin "libgazeboplugin"
+  server_id "default"
+)
+
+driver
+(
+  name "gazebo"
+  provides ["position2d:0"]
+  gz_id "position_iface_0"
+)
+
+# 0.5 m/sec max linear velocity
+# 120 deg/sec max angular velocity
+# Axis 1 is X
+# Axis 2 is Y
+# Axis 0 is Yaw
+driver
+(
+  name "linuxjoystick"
+  provides ["joystick:0"]
+  requires ["position2d:0"]
+  max_speed [0.5 0.5 120]
+  axes [1 2 0]
   port "/dev/js0"
   alwayson 1
 )
@@ -169,15 +216,25 @@ position devices that use watchdog timers.
 #include <replace/replace.h> // for poll(2)
 #include <libplayercore/playercore.h>
 #include <libplayercore/error.h>
+#include <iostream>
 
 extern PlayerTime *GlobalTime;
 
-#define XAXIS 0
-#define YAXIS 1
+#define XAXIS 1
+#define YAXIS 2
+#define YAWAXIS 0
 
 #define MAX_XSPEED 0.5
-#define MAX_YAWSPEED DTOR(30.0)
-#define AXIS_MAX ((int16_t) 32767)
+#define MAX_YSPEED 0.5
+#define MAX_YAWSPEED 30.0
+
+#define XAXIS_MAX ((int16_t) 32767)
+#define YAXIS_MAX ((int16_t) 32767)
+#define YAWAXIS_MAX ((int16_t) 32767)
+
+#define XAXIS_MIN ((int16_t) 0)
+#define YAXIS_MIN ((int16_t) 0)
+#define YAWAXIS_MIN ((int16_t) 0)
 
 ////////////////////////////////////////////////////////////////////////////////
 // The class for the driver
@@ -213,10 +270,10 @@ class LinuxJoystick : public Driver
   private: player_devaddr_t joystick_addr;
   private: const char *dev;
   private: int fd;
-  private: int16_t xpos, ypos;
+  private: int16_t pos[3];
   private: uint16_t buttons;
-  private: int xaxis_max, yaxis_max;
-  private: int xaxis_min, yaxis_min;
+  private: int axes_max[3];
+  private: int axes_min[3];
   private: double timeout;
   private: struct timeval lastread;
 
@@ -225,8 +282,8 @@ class LinuxJoystick : public Driver
   private: player_position2d_data_t pos_data;
 
   // These are used when we send commands to a position device
-  private: double max_xspeed, max_yawspeed;
-  private: int xaxis, yaxis;
+  private: double max_speed[3];
+  private: int axes[3];
   private: int deadman_button;
   private: player_devaddr_t cmd_position_addr;
   private: Device* position;
@@ -291,13 +348,16 @@ LinuxJoystick::LinuxJoystick(ConfigFile* cf, int section) : Driver(cf, section)
   }
 
   this->dev = cf->ReadString(section, "port", "/dev/js0");
-  this->xaxis = cf->ReadTupleInt(section,"axes", 0, XAXIS);
-  this->yaxis = cf->ReadTupleInt(section,"axes", 1, YAXIS);
+  this->axes[0] = cf->ReadTupleInt(section,"axes", 0, XAXIS);
+  this->axes[1] = cf->ReadTupleInt(section,"axes", 1, YAXIS);
+  this->axes[2] = cf->ReadTupleInt(section,"axes", 2, YAWAXIS);
   this->deadman_button = cf->ReadInt(section,"deadman", -1);
-  this->xaxis_max = cf->ReadTupleInt(section, "axis_maxima", 0, AXIS_MAX);
-  this->yaxis_max = cf->ReadTupleInt(section, "axis_maxima", 1, AXIS_MAX);
-  this->xaxis_min = cf->ReadTupleInt(section, "axis_minima", 0, 0);
-  this->yaxis_min = cf->ReadTupleInt(section, "axis_minima", 1, 0);
+  this->axes_max[0] = cf->ReadTupleInt(section, "axes_maxima", 0, XAXIS_MAX);
+  this->axes_max[1] = cf->ReadTupleInt(section, "axes_maxima", 1, YAXIS_MAX);
+  this->axes_max[2] = cf->ReadTupleInt(section, "axes_maxima", 2, YAWAXIS_MAX);
+  this->axes_min[0] = cf->ReadTupleInt(section, "axes_minima", 0, XAXIS_MIN);
+  this->axes_min[1] = cf->ReadTupleInt(section, "axes_minima", 1, YAXIS_MIN);
+  this->axes_min[2] = cf->ReadTupleInt(section, "axes_minima", 2, YAWAXIS_MIN);
 
   // Do we talk to a position device?
   if(cf->GetTupleCount(section, "requires"))
@@ -305,8 +365,9 @@ LinuxJoystick::LinuxJoystick(ConfigFile* cf, int section) : Driver(cf, section)
     if(cf->ReadDeviceAddr(&(this->cmd_position_addr), section, "requires", 
                           PLAYER_POSITION2D_CODE, -1, NULL) == 0)
     {
-      this->max_xspeed = cf->ReadLength(section, "max_xspeed", MAX_XSPEED);
-      this->max_yawspeed = cf->ReadAngle(section, "max_yawspeed", MAX_YAWSPEED);
+      this->max_speed[0] = cf->ReadTupleFloat(section, "max_speed", 0, MAX_XSPEED);
+      this->max_speed[1] = cf->ReadTupleFloat(section, "max_speed", 1, MAX_YSPEED);
+      this->max_speed[2] = DTOR(cf->ReadTupleFloat(section, "max_speed", 2, MAX_YAWSPEED));
       this->timeout = cf->ReadFloat(section, "timeout", 5.0);
     }
   }
@@ -368,7 +429,7 @@ int LinuxJoystick::Setup()
                            NULL);
   }
   
-  this->xpos = this->ypos = 0;
+  this->pos[0] = this->pos[1] = this->pos[2] = 0;
   
   // Start the device thread; spawns a new thread and executes
   // LinuxJoystick::Main(), which contains the main loop for the driver.
@@ -475,18 +536,25 @@ void LinuxJoystick::ReadJoy()
     {
       case JS_EVENT_AXIS:
         {
-          if(event.number == this->xaxis)
+          if(event.number == this->axes[0])
           {
-            this->xpos = event.value;
-            if(abs(this->xpos) < this->xaxis_min)
-              this->xpos = 0;
+            this->pos[0] = event.value;
+            if(abs(this->pos[0]) < this->axes_min[0])
+              this->pos[0] = 0;
             GlobalTime->GetTime(&this->lastread);
           }
-          else if(event.number == this->yaxis)
+          else if(event.number == this->axes[1])
           {
-            this->ypos = event.value;
-            if(abs(this->ypos) < this->yaxis_min)
-              this->ypos = 0;
+            this->pos[1] = event.value;
+            if(abs(this->pos[1]) < this->axes_min[1])
+              this->pos[1] = 0;
+            GlobalTime->GetTime(&this->lastread);
+          }
+          else if(event.number == this->axes[2])
+          {
+            this->pos[2] = event.value;
+            if(abs(this->pos[2]) < this->axes_min[2])
+              this->pos[2] = 0;
             GlobalTime->GetTime(&this->lastread);
           }
         }	  
@@ -505,10 +573,12 @@ void LinuxJoystick::RefreshData()
   if(this->joystick_addr.interf)
   {
     memset(&(this->joy_data),0,sizeof(player_joystick_data_t));
-    this->joy_data.xpos = this->xpos;
-    this->joy_data.ypos = this->ypos;
-    this->joy_data.xscale = this->xaxis_max;
-    this->joy_data.yscale = this->yaxis_max;
+    this->joy_data.pos[0] = this->pos[0];
+    this->joy_data.pos[1] = this->pos[1];
+    this->joy_data.pos[2] = this->pos[2];
+    this->joy_data.scale[0] = this->axes_max[0];
+    this->joy_data.scale[1] = this->axes_max[1];
+    this->joy_data.scale[2] = this->axes_max[2];
     this->joy_data.buttons = this->buttons;
     this->Publish(this->joystick_addr, 
                   PLAYER_MSGTYPE_DATA, PLAYER_JOYSTICK_DATA_STATE,
@@ -518,8 +588,9 @@ void LinuxJoystick::RefreshData()
   if(this->position_addr.interf)
   {
     memset(&(this->pos_data),0,sizeof(player_position2d_data_t));
-    this->pos_data.pos.px = this->xpos;
-    this->pos_data.pos.py = -this->ypos;
+    this->pos_data.pos.px = this->pos[0];
+    this->pos_data.pos.py = this->pos[1];
+    this->pos_data.pos.pa = this->pos[2];
     this->Publish(this->position_addr, 
                   PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE,
                   (void*)&this->pos_data, sizeof(this->pos_data), NULL);
@@ -529,50 +600,59 @@ void LinuxJoystick::RefreshData()
 // command the robot
 void LinuxJoystick::PutPositionCommand()
 {
-  double scaled_x, scaled_y;
-  double xspeed, yawspeed;
+  double scaled[3];
+  double speed[3];
   player_position2d_cmd_vel_t cmd;
   struct timeval curr;
   double diff;
 
-  scaled_x = this->xpos / (double) this->xaxis_max;
-  scaled_y = this->ypos / (double) this->yaxis_max;
+  scaled[0] = this->pos[0] / (double) this->axes_max[0];
+  scaled[1] = this->pos[1] / (double) this->axes_max[1];
+  scaled[2] = this->pos[2] / (double) this->axes_max[2];
 
   // sanity check
-  if((scaled_x > 1.0) || (scaled_x < -1.0))
+  if((scaled[0] > 1.0) || (scaled[0] < -1.0))
   {
     PLAYER_ERROR2("X position (%d) outside of axis max (+-%d); ignoring", 
-                  this->xpos, this->xaxis_max);
+                  this->pos[0], this->axes_max[0]);
     return;
   }
-  if((scaled_y > 1.0) || (scaled_y < -1.0))
+  if((scaled[1] > 1.0) || (scaled[1] < -1.0))
   {
     PLAYER_ERROR2("Y position (%d) outside of axis max (+-%d); ignoring", 
-                  this->ypos, this->yaxis_max);
+                  this->pos[1], this->axes_max[1]);
+    return;
+  
+  }
+  if((scaled[2] > 1.0) || (scaled[2] < -1.0))
+  {
+    PLAYER_ERROR2("Yaw position (%d) outside of axis max (+-%d); ignoring", 
+                  this->pos[2], this->axes_max[2]);
     return;
   }
 
-  // Note that joysticks use X for side-to-side and Y for forward-back, and
-  // also that their axes are backwards with respect to intuitive driving
-  // controls.
-  xspeed = -scaled_y * this->max_xspeed;
-  yawspeed = -scaled_x * this->max_yawspeed;
+  // As joysticks axes are backwards with respect to intuitive driving
+  // controls, we invert the values here.
+  speed[0] = -scaled[0] * this->max_speed[0];
+  speed[1] = -scaled[1] * this->max_speed[1];
+  speed[2] = -scaled[2] * this->max_speed[2];
 
   // Make sure we've gotten a joystick fairly recently.
   GlobalTime->GetTime(&curr);
   diff = (curr.tv_sec - curr.tv_usec/1e6) -
           (this->lastread.tv_sec - this->lastread.tv_usec/1e6);
-  if(this->timeout && (diff > this->timeout) && (xspeed || yawspeed))
+  if(this->timeout && (diff > this->timeout) && (speed[0] || speed[1] || speed[2]))
   {
     PLAYER_WARN("Timeout on joystick; stopping robot");
-    xspeed = yawspeed = 0.0;
+    speed[0] = speed[1] = speed[2] = 0.0;
   }
 
-  PLAYER_MSG2(2,"sending speeds: (%f,%f)", xspeed, yawspeed);
+  PLAYER_MSG3(2,"sending speeds: (%f,%f,%f)", speed[0], speed[1], speed[2]);
 
   memset(&cmd,0,sizeof(cmd));
-  cmd.vel.px = xspeed;
-  cmd.vel.pa = yawspeed;
+  cmd.vel.px = speed[0];
+  cmd.vel.py = speed[1];
+  cmd.vel.pa = speed[2];
   //cmd.type=0;
   cmd.state=1;
   this->position->PutMsg(this->InQueue,
