@@ -146,6 +146,10 @@ thinks it has already achieved it.
     waypoint if the difference between the robot's current heading and the
     heading to the next waypoint is greater than 45 degrees.  Generally
     helps the low-level position controller, but sacrifices speed.
+- force_map_refresh (integer)
+  - Default: 0
+  - If non-zero, map is updated from subscribed map device whenever
+    new goal is set
 
 @par Example
 
@@ -209,6 +213,7 @@ driver
 //  - compute and return path length
 
 #include <string.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <assert.h>
@@ -290,6 +295,8 @@ class Wavefront : public Driver
     // Do we consider inserting a rotational waypoint between every pair of
     // waypoints, or just before the first one?
     bool always_insert_rotational_waypoints;
+    // Should map be updated on every new goal?
+    int force_map_refresh;
 
     // methods for internal use
     int SetupLocalize();
@@ -380,6 +387,7 @@ Wavefront::Wavefront( ConfigFile* cf, int section)
   this->cspace_fname = cf->ReadFilename(section,"cspace_file","player.cspace");
   this->always_insert_rotational_waypoints =
           cf->ReadInt(section, "add_rotational_waypoints", 1);
+  this->force_map_refresh = cf->ReadInt(section, "force_map_refresh", 0);
 }
 
 
@@ -1161,7 +1169,7 @@ Wavefront::SetupMap()
     return(0);
 
   printf("Wavefront: Loading map from map:%d...\n", this->map_id.index);
-  fflush(NULL);
+  fflush(stdout);
 
   // Fill in the map structure
 
@@ -1234,6 +1242,30 @@ Wavefront::ProcessMessage(QueuePointer & resp_queue,
                                 PLAYER_PLANNER_CMD_GOAL,
                                 this->device_addr))
   {
+    if (this->force_map_refresh)
+    {
+      PLAYER_WARN("requesting new map");
+
+      if (this->plan) plan_free(this->plan);
+      this->plan = plan_alloc(this->robot_radius+this->safety_dist,
+                              this->robot_radius+this->safety_dist,
+                              this->max_radius,
+                              this->dist_penalty);
+      assert(this->plan);
+
+      // Fill in the map structure
+
+      // first, get the map info
+      if(this->GetMapInfo(true) < 0) return -1;
+      // Now get the map data, possibly in separate tiles.
+      if(this->GetMap(true) < 0) return -1;
+
+      plan_update_cspace(this->plan,this->cspace_fname);
+
+      this->have_map = true;
+      this->new_map = true;
+    }
+    assert(data);
     this->ProcessCommand((player_planner_cmd_t*)data);
     return(0);
   }
@@ -1255,7 +1287,7 @@ Wavefront::ProcessMessage(QueuePointer & resp_queue,
     this->Publish(this->device_addr, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_PLANNER_REQ_GET_WAYPOINTS,
-                  (void*)&reply, sizeof(reply), NULL);
+                  (void*)&reply);
     free(reply.waypoints);
     return(0);
   }
