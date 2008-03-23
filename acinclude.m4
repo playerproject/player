@@ -332,7 +332,7 @@ PLAYER_ADD_DRIVER([phidgetIFK],[yes],
   [$LIBPHIDGET_HEADER], [$LIBPHIDGET_EXTRA_CPPFLAGS],
   [$LIBPHIDGET_EXTRA_LDFLAGS])
 
-PLAYER_ADD_DRIVER([postgis],[yes],[],[],["-lgeos"],[LIBPQXX],[libpqxx])
+PLAYER_ADD_DRIVER([postgis],[yes],["geos_c.h"],[],["-lgeos"],[LIBPQXX],[libpqxx])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $LIBPQXX_LIBS"
 
 PLAYER_ADD_DRIVER([pbslaser],[yes],[],[],[])
