@@ -4,12 +4,13 @@
 - Get CMake book, read it, go through all cmake files and clean up the mess I've made
 - Check all necessary flags are being accumulated from various libraries and passed to various executable build steps (e.g. defines for boost stuff, is it needed for playerprint?)
 - Figure out why it always rebuilds driverregistry.c. Make it stop.
-- cross-compiling... does it work?
+- cross-compiling... does it work? - better support in CMake v2.6, apparently
 - all those driver make files
-- examples dir (probably easy)
-- docs (easy)
-- dist tarballs, packages, etc
+- examples dir (probably easy) - just need to do the make files for compiling outside the source tree now
+- docs (easy) - make installing them work, someone needs to figure out what needs to change in the upload script for SVN.
+- dist tarballs, packages, etc - add in the extra_dist files to the source one
 - Fix the checks for boost threads and boost signals libraries
 - Some installable cmake modules with macros for making plugin drivers, etc
 - Install header files!
 - Do any of the generated files need to be installed (e.g. generated config.h)?
+- Clean out/replace any stragglers from autotools (including README and co)

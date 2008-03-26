@@ -208,7 +208,7 @@ GbxSickAcfr::~GbxSickAcfr (void)
 int GbxSickAcfr::Setup (void)
 {
     // Validate the configuration
-    if (!config.validate ())
+    if (!config.isValid ())
     {
         PLAYER_ERROR ("GbxSickAcfr: Invalid laser configuration.\n");
         return -1;
