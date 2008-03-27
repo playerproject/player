@@ -36,3 +36,5 @@ INCLUDE_DIRECTORIES (${CMAKE_CURRENT_BINARY_DIR})
 PLAYER_ADD_LIBRARY (playerxdr ${playerxdrSrcs})
 SET_SOURCE_FILES_PROPERTIES (${playerxdr_h} ${playerxdr_c} PROPERTIES GENERATED TRUE)
 PLAYER_MAKE_PKGCONFIG ("playerxdr" "Player XDR messaging library - part of the Player Project" "" "" "" "")
+
+PLAYER_INSTALL_HEADERS (playerxdr ${playerxdr_h} functiontable.h)

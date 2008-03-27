@@ -62,4 +62,6 @@ IF (HAVE_GEOS)
     TARGET_LINK_LIBRARIES (playerc ${GEOS_LIBS})
 ENDIF (HAVE_GEOS)
 
+PLAYER_INSTALL_HEADERS (playerc playerc.h)
+
 PLAYER_MAKE_PKGCONFIG ("playerc" "Andrew Howard's Player C client library - part of the Player Project" "playerxdr playererror" "" "" "-lm")

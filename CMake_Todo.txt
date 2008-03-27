@@ -8,8 +8,6 @@
 - all those driver make files
 - examples dir (probably easy) - just need to do the make files for compiling outside the source tree now
 - dist tarballs, packages, etc - add in the extra_dist files to the source one
-- Fix the checks for boost threads and boost signals libraries
+. Fix the checks for boost threads and boost signals libraries - possibly a better version of FindBoost is coming in 2.6, defer till then (http://www.cmake.org/Bug/view.php?id=6257)
 - Some installable cmake modules with macros for making plugin drivers, etc
-- Install header files!
-- Do any of the generated files need to be installed (e.g. generated config.h)?
 - Clean out/replace any stragglers from autotools (including README and co)

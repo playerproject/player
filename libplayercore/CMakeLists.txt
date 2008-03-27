@@ -50,3 +50,8 @@ SET (playerutils_srcs   interface_util.c
                         addr_util.c)
 PLAYER_ADD_LIBRARY (playerutils ${playerutils_srcs} ${interface_table_h})
 PLAYER_MAKE_PKGCONFIG ("playerutils" "Player utilities library - part of the Player Project" "" "" "" "")
+
+PLAYER_INSTALL_HEADERS (playercore
+    addr_util.h configfile.h device.h devicetable.h driver.h drivertable.h error.h globals.h
+    interface_util.h message.h playercommon.h playerconfig.h playercore.h player.h
+    ${player_interfaces_h} playertime.h plugins.h property.h wallclocktime.h)

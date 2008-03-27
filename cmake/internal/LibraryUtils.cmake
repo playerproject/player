@@ -78,3 +78,12 @@ MACRO (PLAYER_MAKE_PKGCONFIG _name _desc _extDeps _intDeps _cFlags _libFlags)
     CONFIGURE_FILE (${PLAYER_CMAKE_DIR}/pkgconfig.cmake ${CMAKE_CURRENT_BINARY_DIR}/${_name}.pc @ONLY)
     INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/${_name}.pc DESTINATION lib/pkgconfig/)
 ENDMACRO (PLAYER_MAKE_PKGCONFIG _name _desc _extDeps _intDeps _cFlags _libFlags)
+
+
+###############################################################################
+# PLAYER_INSTALL_HEADERS
+# Installs header files
+MACRO (PLAYER_INSTALL_HEADERS _subdir)
+    INSTALL (FILES ${ARGN}
+        DESTINATION ${PLAYER_INCLUDE_INSTALL_DIR}/${_subdir})
+ENDMACRO (PLAYER_INSTALL_HEADERS _subdir)

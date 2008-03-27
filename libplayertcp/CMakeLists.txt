@@ -12,6 +12,8 @@ IF (INCLUDE_TCP)
     TARGET_LINK_LIBRARIES (playertcp z)
     PLAYER_ADD_LINK_LIB (z)
     PLAYER_MAKE_PKGCONFIG ("playertcp" "Player TCP messaging library - part of the Player Project" "playererror playercore" "" "" "")
+
+    PLAYER_INSTALL_HEADERS (playertcp playertcp.h)
 ENDIF (INCLUDE_TCP)
 
 IF (INCLUDE_UDP)
@@ -19,4 +21,6 @@ IF (INCLUDE_UDP)
     PLAYER_ADD_LIBRARY (playerudp ${playerudpSrcs})
     TARGET_LINK_LIBRARIES (playerudp replace playercore playererror playerutils playerxdr)
     PLAYER_MAKE_PKGCONFIG ("playerudp" "Player UDP messaging library - part of the Player Project" "playererror playercore" "" "" "")
+
+    PLAYER_INSTALL_HEADERS (playertcp playerudp.h)
 ENDIF (INCLUDE_UDP)

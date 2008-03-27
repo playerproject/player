@@ -6,3 +6,7 @@ ELSE (PLAYER_OS_WIN)
 ENDIF (PLAYER_OS_WIN)
 
 MESSAGE (STATUS "Player will be installed to ${CMAKE_INSTALL_PREFIX}")
+
+# Installation prefix for include files
+STRING (TOLOWER ${PROJECT_NAME} projectNameLower)
+SET (PLAYER_INCLUDE_INSTALL_DIR "include/${projectNameLower}-${PLAYER_MAJOR_VERSION}.${PLAYER_MINOR_VERSION}")

@@ -9,4 +9,6 @@ IF (HAVE_PLAYERSD)
     TARGET_LINK_LIBRARIES (playersd playererror playerutils)
     PLAYER_ADD_LINK_LIB (dns_sd)
     PLAYER_MAKE_PKGCONFIG ("playersd" "Player service discovery library - part of the Player Project" "playererror playerutils" "" "" "-ldns_sd -lpthread")
+
+    PLAYER_INSTALL_HEADERS (playersd playersd.h)
 ENDIF (HAVE_PLAYERSD)

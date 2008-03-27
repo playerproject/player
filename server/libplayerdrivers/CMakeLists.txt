@@ -61,3 +61,5 @@ ENDIF (PLAYER_DRIVERSLIB_LINKFLAGS)
 
 # Package config file for libplayerdrivers
 PLAYER_MAKE_PKGCONFIG ("playerdrivers" "Player driver library - part of the Player Project" "playercore" "" "" "-lpthread")
+
+PLAYER_INSTALL_HEADERS (playerdrivers driverregistry.h)
