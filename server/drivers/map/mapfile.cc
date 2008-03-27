@@ -1,6 +1,6 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2004  Brian Gerkey gerkey@stanford.edu    
+ *  Copyright (C) 2004  Brian Gerkey gerkey@stanford.edu
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -79,11 +79,11 @@ delivered via a sequence of configuration requests.
     free/occupied pixels.
 - origin ([length length angle] tuple)
   - Default: [-width*resolution/2 -height*resolution/2 0]
-  - The real-world coordinates of the lower-left pixel in the image.  
-    The default puts (0,0,0) in the middle of the image.  The angle is 
+  - The real-world coordinates of the lower-left pixel in the image.
+    The default puts (0,0,0) in the middle of the image.  The angle is
     currently ignored.
- 
-@par Example 
+
+@par Example
 
 @verbatim
 driver
@@ -130,22 +130,22 @@ class MapFile : public Driver
     int size_x, size_y;
     player_pose2d_t origin;
     char* mapdata;
-    
+
     // Handle map info request
     void HandleGetMapInfo(void *client, void *request, int len);
     // Handle map data request
     void HandleGetMapData(void *client, void *request, int len);
 
   public:
-    MapFile(ConfigFile* cf, int section, const char* file, 
+    MapFile(ConfigFile* cf, int section, const char* file,
             double res, int neg, player_pose2d_t o);
     ~MapFile();
     int Setup();
     int Shutdown();
 
     // MessageHandler
-    int ProcessMessage(QueuePointer & resp_queue, 
-		       player_msghdr * hdr, 
+    int ProcessMessage(QueuePointer & resp_queue,
+		       player_msghdr * hdr,
 		       void * data);
 
 };
@@ -174,21 +174,21 @@ MapFile_Init(ConfigFile* cf, int section)
   //origin.pa = cf->ReadTupleAngle(section,"origin",2,FLT_MAX);
   origin.pa = 0.0;
 
-  return((Driver*)(new MapFile(cf, section, filename, 
+  return((Driver*)(new MapFile(cf, section, filename,
                                resolution, negate, origin)));
 }
 
 // a driver registration function
-void 
-MapFile_Register(DriverTable* table)
+void
+mapfile_Register(DriverTable* table)
 {
   table->AddDriver("mapfile", MapFile_Init);
 }
 
 
 // this one has no data or commands, just configs
-MapFile::MapFile(ConfigFile* cf, int section, const char* file, 
-                 double res, int neg, player_pose2d_t o) 
+MapFile::MapFile(ConfigFile* cf, int section, const char* file,
+                 double res, int neg, player_pose2d_t o)
   : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_MAP_CODE)
 {
   this->mapdata = NULL;
@@ -283,12 +283,12 @@ MapFile::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int MapFile::ProcessMessage(QueuePointer & resp_queue, 
-                            player_msghdr * hdr, 
+int MapFile::ProcessMessage(QueuePointer & resp_queue,
+                            player_msghdr * hdr,
                             void * data)
 {
   // Is it a request for map meta-data?
-  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_MAP_REQ_GET_INFO, 
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_MAP_REQ_GET_INFO,
                            this->device_addr))
   {
     player_map_info_t info;
@@ -312,7 +312,7 @@ int MapFile::ProcessMessage(QueuePointer & resp_queue,
     return(0);
   }
   // Is it a request for a map tile?
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
                            PLAYER_MAP_REQ_GET_DATA,
                            this->device_addr))
   {
@@ -320,13 +320,13 @@ int MapFile::ProcessMessage(QueuePointer & resp_queue,
 
     // Can't declare a map tile on the stack (it's too big)
     /*
-    size_t mapsize = (sizeof(player_map_data_t) - PLAYER_MAP_MAX_TILE_SIZE + 
+    size_t mapsize = (sizeof(player_map_data_t) - PLAYER_MAP_MAX_TILE_SIZE +
                       (mapreq->width * mapreq->height));
                       */
     size_t mapsize = sizeof(player_map_data_t);
     player_map_data_t* mapresp = (player_map_data_t*)calloc(1,mapsize);
     assert(mapresp);
-    
+
     int i, j;
     int oi, oj, si, sj;
 

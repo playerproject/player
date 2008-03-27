@@ -71,7 +71,7 @@ driver
 class Relay:public Driver
 {
   public:
-	Relay(ConfigFile* cf, int section) 
+	Relay(ConfigFile* cf, int section)
 		: Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,PLAYER_OPAQUE_CODE) {};
   	~Relay() {};
 
@@ -93,7 +93,7 @@ Relay_Init( ConfigFile* cf, int section)
 
 // a driver registration function
 void
-Relay_Register(DriverTable* table)
+relay_Register(DriverTable* table)
 {
   table->AddDriver("relay",  Relay_Init);
 }

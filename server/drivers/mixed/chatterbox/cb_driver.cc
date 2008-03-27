@@ -4,7 +4,7 @@
  *    Richard Vaughan
  *
  *  Based on Player's multidriver.cc example by Andrew Howard
- *                        
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -32,7 +32,7 @@
 #include <netinet/in.h>
 #include <math.h>
 
-extern "C" { 
+extern "C" {
 #include "cb_i2c.h" // Jens's library to talk to the CB board over i2c.
 }
 
@@ -47,15 +47,15 @@ const unsigned int LEDCOUNT = 5;
 class ChatterboxDriver : public Driver
 {
   public:
-    
+
     // Constructor; need that
     ChatterboxDriver(ConfigFile* cf, int section);
 
     // Must implement the following methods.
     virtual int Setup();
     virtual int Shutdown();
-    virtual int ProcessMessage(QueuePointer & resp_queue, 
-                               player_msghdr * hdr, 
+    virtual int ProcessMessage(QueuePointer & resp_queue,
+                               player_msghdr * hdr,
                                void * data);
 
   private:
@@ -67,13 +67,13 @@ class ChatterboxDriver : public Driver
 
     // lights interface
     player_devaddr_t blinkenlight_addr;
-  
+
   // perform a colorful display
   void LightshowColors();
-  
+
   // perform a Cylon display
   void LightshowCylon();
-  
+
   // program to use to play audio files
   char* audioplayer;
 
@@ -96,7 +96,7 @@ Driver* ChatterboxDriver_Init(ConfigFile* cf, int section)
 // that it can be invoked without object context.  In this function, we add
 // the driver into the given driver table, indicating which interface the
 // driver can support and how to create a driver instance.
-void Chatterbox_Register(DriverTable* table)
+void chatterbox_Register(DriverTable* table)
 {
   table->AddDriver("chatterbox", ChatterboxDriver_Init);
 }
@@ -127,49 +127,49 @@ ChatterboxDriver::ChatterboxDriver(ConfigFile* cf, int section)
   puts( "Autolab Chatterbox" );
 
   // establish connection with the CB board
-  init(); 
+  init();
 
   // Create my IR interface
-  if (cf->ReadDeviceAddr(&(this->ir_addr), 
-			 section, 
-                         "provides", 
+  if (cf->ReadDeviceAddr(&(this->ir_addr),
+			 section,
+                         "provides",
 			 PLAYER_IR_CODE, -1, NULL) != 0)
   {
     this->SetError(-1);
     return;
   }
-  
+
   if (this->AddInterface(this->ir_addr))
   {
-    this->SetError(-1);    
+    this->SetError(-1);
     return;
   }
-  
-  
-  if (cf->ReadDeviceAddr(&(this->blinkenlight_addr), 
-			 section, 
-			 "provides", 
+
+
+  if (cf->ReadDeviceAddr(&(this->blinkenlight_addr),
+			 section,
+			 "provides",
 			 PLAYER_BLINKENLIGHT_CODE, -1, NULL) != 0)
     {
       this->SetError(-1);
       return;
     }
-  
+
   if (this->AddInterface(this->blinkenlight_addr))
     {
-      this->SetError(-1);    
+      this->SetError(-1);
       return;
     }
-  
+
 
   // configure the sound player and play an audio greeting if requested
   audioplayer = strdup( cf->ReadString( section, "audioplayer", 0 ));
   char* audiogreeting = strdup( cf->ReadString( section, "audiogreeting", 0 ));
   if( audioplayer && audiogreeting )
     PlayAudioFile( audiogreeting );
-  
+
   // play a lightshow greeting if requested
-  char* lightgreeting = strdup( cf->ReadString( section, "lightgreeting", 0  ));      
+  char* lightgreeting = strdup( cf->ReadString( section, "lightgreeting", 0  ));
   if( lightgreeting )
     {
       if( strcmp( lightgreeting, "cylon" ) == 0 )
@@ -182,23 +182,23 @@ ChatterboxDriver::ChatterboxDriver(ConfigFile* cf, int section)
 void ChatterboxDriver::LightshowColors()
 {
   unsigned long sleeptime = 100000L;
-  
+
   // fade up and down red
   for( double u=0; u<M_PI; u+=0.3 )
-    {	    
+    {
       for( int l=0; l<LEDCOUNT; l++ )
 	{
-	  setLed( l, sin(u)*255.0,0,0 );       
+	  setLed( l, sin(u)*255.0,0,0 );
 	  usleep(sleeptime);
 	}
     }
-  
+
   // fade up and down blue
   for( double u=0; u<M_PI; u+=0.3 )
-    {	    
+    {
       for( int l=0; l<LEDCOUNT; l++ )
 	{
-	  setLed( l, 0,0,sin(u)*255.0 );       
+	  setLed( l, 0,0,sin(u)*255.0 );
 	  usleep(sleeptime);
 	}
     }
@@ -210,11 +210,11 @@ void ChatterboxDriver::LightshowColors()
   // random green
   for( int b=0; b<50; b++ )
     {
-      int now = random()%LEDCOUNT; 
+      int now = random()%LEDCOUNT;
       setLed( now, 0,255,0 );
       usleep(10000);
       setLed( now, 0,0,0 );
-    }       
+    }
 
   // white
   for( uint8_t l=0; l<LEDCOUNT; l++ )
@@ -236,23 +236,23 @@ void ChatterboxDriver::LightshowCylon()
   for(int sweeps=0; sweeps<4; sweeps++ )
     {
       setLed( 4, 255,0,0 );
-      usleep(sleeptime); 
-      setLed( 4, 0,0,0 ); 
+      usleep(sleeptime);
+      setLed( 4, 0,0,0 );
       setLed( 0, 255,0,0 );
-      usleep(sleeptime); 
-      setLed( 0, 0,0,0 ); 
+      usleep(sleeptime);
+      setLed( 0, 0,0,0 );
       setLed( 1, 255,0,0 );
-      usleep(sleeptime); 
-      setLed( 1, 0,0,0 ); 
+      usleep(sleeptime);
+      setLed( 1, 0,0,0 );
       setLed( 2, 255,0,0 );
-      usleep(sleeptime); 
-      setLed( 2, 0,0,0 ); 
+      usleep(sleeptime);
+      setLed( 2, 0,0,0 );
       setLed( 1, 255,0,0 );
-      usleep(sleeptime); 
-      setLed( 1, 0,0,0 ); 
+      usleep(sleeptime);
+      setLed( 1, 0,0,0 );
       setLed( 0, 255,0,0 );
-      usleep(sleeptime); 
-      setLed( 0, 0,0,0 ); 
+      usleep(sleeptime);
+      setLed( 0, 0,0,0 );
     }
 
   for( uint8_t l=0; l<LEDCOUNT; l++ )
@@ -263,21 +263,21 @@ void ChatterboxDriver::PlayAudioFile( char* wavfile )
 {
   if( ! audioplayer )
     return;
-  
+
   char buf[256];
-  snprintf( buf, 255, "%s %s &", audioplayer, wavfile ); 
+  snprintf( buf, 255, "%s %s &", audioplayer, wavfile );
   system( buf );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
 int ChatterboxDriver::Setup()
-{   
+{
   puts("Chatterbox: Setup");
 
   // turn on the rangefinders
-  enableIr( 1 ); 
-    
+  enableIr( 1 );
+
   puts("Chatterbox: starting thread.");
 
   // Start the device thread; spawns a new thread and executes
@@ -295,10 +295,10 @@ int ChatterboxDriver::Setup()
 int ChatterboxDriver::Shutdown()
 {
   puts("Shutting down Chatterbox driver...");
-  
+
   // turn off the LEDs
-  for( unsigned int l=0; l<LEDCOUNT; l++ )    
-    setLed( l, 0,0,0 );        
+  for( unsigned int l=0; l<LEDCOUNT; l++ )
+    setLed( l, 0,0,0 );
 
   // Stop and join the driver thread
   this->StopThread();
@@ -311,7 +311,7 @@ int ChatterboxDriver::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
-void ChatterboxDriver::Main() 
+void ChatterboxDriver::Main()
 {
   float ranges[IRCOUNT];
   float voltages[IRCOUNT];
@@ -332,11 +332,11 @@ void ChatterboxDriver::Main()
     // message.
     this->ProcessMessages();
 
-    // read ranges from the IRs    
+    // read ranges from the IRs
     float d, v;
-    for( unsigned int i=0; i<IRCOUNT; i++ ) 
+    for( unsigned int i=0; i<IRCOUNT; i++ )
       {
-	if (readDistance(i, &d, &v) == 1) 
+	if (readDistance(i, &d, &v) == 1)
 	  {
 	    irdata.ranges[i] = d;
 	    irdata.voltages[i] = v;
@@ -344,17 +344,17 @@ void ChatterboxDriver::Main()
 	else
 	  {
 	    irdata.ranges[i] = -1; // indicate bad data
-	    irdata.voltages[i] = -1; 
+	    irdata.voltages[i] = -1;
 	  }
       }
- 
+
     // publish the new range data to Player to deliver to clients
-    this->Publish(this->ir_addr, 
-		  PLAYER_MSGTYPE_DATA, 
+    this->Publish(this->ir_addr,
+		  PLAYER_MSGTYPE_DATA,
 		  PLAYER_IR_DATA_RANGES,
-		  (void*)&irdata, 
-		  0, 
-		  NULL);    
+		  (void*)&irdata,
+		  0,
+		  NULL);
 
     // TODO - gather and publish more data?
   }
@@ -362,49 +362,49 @@ void ChatterboxDriver::Main()
 }
 
 
-int ChatterboxDriver::ProcessMessage(QueuePointer & resp_queue, 
-                                player_msghdr * hdr, 
+int ChatterboxDriver::ProcessMessage(QueuePointer & resp_queue,
+                                player_msghdr * hdr,
                                 void * data)
 {
   // a bit ugly, polling for each light in turn. might be a better way to do it...
   for( unsigned int l=0; l<LEDCOUNT; l++ )
     {
-      if(Message::MatchMessage(hdr, 
-			       PLAYER_MSGTYPE_CMD, 
-			       PLAYER_BLINKENLIGHT_CMD_COLOR, 
+      if(Message::MatchMessage(hdr,
+			       PLAYER_MSGTYPE_CMD,
+			       PLAYER_BLINKENLIGHT_CMD_COLOR,
 			       this->blinkenlight_addr ))
 	{
-	  player_blinkenlight_cmd_color_t *cmd = 
-	    (player_blinkenlight_cmd_color_t*)data;      	
-	  
+	  player_blinkenlight_cmd_color_t *cmd =
+	    (player_blinkenlight_cmd_color_t*)data;
+
 	  //if( cmd->id >= 0 && cmd->id < LEDCOUNT )
-	  setLed( cmd->id, cmd->color.red, cmd->color.green, cmd->color.blue );        
+	  setLed( cmd->id, cmd->color.red, cmd->color.green, cmd->color.blue );
 
 	  return 0; // handled OK
 	}
 
-//       if(Message::MatchMessage(hdr, 
-// 			       PLAYER_MSGTYPE_CMD, 
-// 			       PLAYER_BLINKENLIGHT_CMD_POWER, 
+//       if(Message::MatchMessage(hdr,
+// 			       PLAYER_MSGTYPE_CMD,
+// 			       PLAYER_BLINKENLIGHT_CMD_POWER,
 // 			       this->blinkenlight_addr ))
 // 	{
-// 	  player_blinkenlight_cmd_power_t *cmd = 
-// 	    (player_blinkenlight_cmd_power_t*)data;      	
+// 	  player_blinkenlight_cmd_power_t *cmd =
+// 	    (player_blinkenlight_cmd_power_t*)data;
 
-	  
-// 	  setLed( l, cmd->color.red, cmd->color.green, cmd->color.blue );        
+
+// 	  setLed( l, cmd->color.red, cmd->color.green, cmd->color.blue );
 // 	  return 0; // handled OK
 // 	}
     }
-      
 
-  if(Message::MatchMessage(hdr, 
-			   PLAYER_MSGTYPE_REQ, 
-			   PLAYER_IR_REQ_POSE, 
+
+  if(Message::MatchMessage(hdr,
+			   PLAYER_MSGTYPE_REQ,
+			   PLAYER_IR_REQ_POSE,
                            this->ir_addr))
     {
       // reply with the poses of the 6 sensors
-      
+
       player_pose3d_t poses[IRCOUNT];
       bzero( poses, IRCOUNT*sizeof(player_pose3d_t));
 
@@ -432,28 +432,28 @@ int ChatterboxDriver::ProcessMessage(QueuePointer & resp_queue,
       poses[5].py = -0.076;
       poses[5].pyaw = DTOR(340);
 
-      
+
       player_ir_pose_t reply;
       reply.poses = poses;
       reply.poses_count = IRCOUNT;
-      
-      Publish( this->ir_addr, resp_queue, 
-	       PLAYER_MSGTYPE_RESP_ACK, 
+
+      Publish( this->ir_addr, resp_queue,
+	       PLAYER_MSGTYPE_RESP_ACK,
 	       PLAYER_IR_REQ_POSE,
 	       (void*)&reply, sizeof(reply), NULL );
-      
+
       return(0);
     }
-  
-  else if( Message::MatchMessage(hdr, 
-			PLAYER_MSGTYPE_REQ, 
-			PLAYER_IR_REQ_POWER, 
+
+  else if( Message::MatchMessage(hdr,
+			PLAYER_MSGTYPE_REQ,
+			PLAYER_IR_REQ_POWER,
 			this->ir_addr))
     {
       puts( "TODO: handle IR power request" );
       return -1;
     }
-  
+
   // TODO handle more messages
 
   //  else

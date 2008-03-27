@@ -13,7 +13,7 @@ MACRO (PLAYER_ADD_LIBRARY _name)
                             INSTALL_RPATH "${INSTALL_RPATH};${CMAKE_INSTALL_PREFIX}/lib"
                             BUILD_WITH_INSTALL_RPATH TRUE)
     INSTALL (TARGETS ${_name} LIBRARY DESTINATION lib/)
-ENDMACRO (PLAYER_ADD_LIBRARY name)
+ENDMACRO (PLAYER_ADD_LIBRARY)
 
 
 ###############################################################################
@@ -26,7 +26,7 @@ MACRO (PLAYER_ADD_EXECUTABLE _name)
                             INSTALL_RPATH "${INSTALL_RPATH};${CMAKE_INSTALL_PREFIX}/lib"
                             BUILD_WITH_INSTALL_RPATH TRUE)
     INSTALL (TARGETS ${_name} RUNTIME DESTINATION bin/)
-ENDMACRO (PLAYER_ADD_EXECUTABLE name)
+ENDMACRO (PLAYER_ADD_EXECUTABLE)
 
 
 ###############################################################################
@@ -77,7 +77,7 @@ MACRO (PLAYER_MAKE_PKGCONFIG _name _desc _extDeps _intDeps _cFlags _libFlags)
 
     CONFIGURE_FILE (${PLAYER_CMAKE_DIR}/pkgconfig.cmake ${CMAKE_CURRENT_BINARY_DIR}/${_name}.pc @ONLY)
     INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/${_name}.pc DESTINATION lib/pkgconfig/)
-ENDMACRO (PLAYER_MAKE_PKGCONFIG _name _desc _extDeps _intDeps _cFlags _libFlags)
+ENDMACRO (PLAYER_MAKE_PKGCONFIG)
 
 
 ###############################################################################
@@ -86,4 +86,4 @@ ENDMACRO (PLAYER_MAKE_PKGCONFIG _name _desc _extDeps _intDeps _cFlags _libFlags)
 MACRO (PLAYER_INSTALL_HEADERS _subdir)
     INSTALL (FILES ${ARGN}
         DESTINATION ${PLAYER_INCLUDE_INSTALL_DIR}/${_subdir})
-ENDMACRO (PLAYER_INSTALL_HEADERS _subdir)
+ENDMACRO (PLAYER_INSTALL_HEADERS)

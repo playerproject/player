@@ -1,9 +1,9 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2003  
+ *  Copyright (C) 2003
  *     Brian Gerkey, Andrew Howard
- *                      
- * 
+ *
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -45,8 +45,8 @@ converting joystick positions to velocity commands.
 @par Provides
 
 - @ref interface_joystick : joystick data
-- @ref interface_position2d : joystick data represented as 2-D 
-  position data.  Raw X- and Y-axis values are reported as xpos and ypos in the 
+- @ref interface_position2d : joystick data represented as 2-D
+  position data.  Raw X- and Y-axis values are reported as xpos and ypos in the
   position packet (all other fields are zero).
 
 @par Requires
@@ -77,8 +77,8 @@ converting joystick positions to velocity commands.
     Useful for implementing a dead zone on a touchy joystick.
 - deadman_button (integer)
   - Default: -1
-  - When controlling a @ref interface_position2d device, if deadman_button is 
-    >= 0, this joystick button must be depressed for commands to be 
+  - When controlling a @ref interface_position2d device, if deadman_button is
+    >= 0, this joystick button must be depressed for commands to be
     sent to that device.
 - max_xspeed (length / sec)
   - Default: 0.5 m/sec
@@ -144,7 +144,7 @@ driver
 @endverbatim
 
 @todo
-Add support for continuously sending commands, which might be needed for 
+Add support for continuously sending commands, which might be needed for
 position devices that use watchdog timers.
 
 @author Andrew Howard, Brian Gerkey, Paul Osmialowski
@@ -193,8 +193,8 @@ class LinuxJoystick : public Driver
   // Main function for device thread.
   private: virtual void Main();
 
-  public: virtual int ProcessMessage(QueuePointer & resp_queue, 
-                                     player_msghdr * hdr, 
+  public: virtual int ProcessMessage(QueuePointer & resp_queue,
+                                     player_msghdr * hdr,
                                      void * data) {return -1;}
 
   // Read the joystick
@@ -253,7 +253,7 @@ Driver* LinuxJoystick_Init(ConfigFile* cf, int section)
 // that it can be invoked without object context.  In this function, we add
 // the driver into the given driver table, indicating which interface the
 // driver can support and how to create a driver instance.
-void LinuxJoystick_Register(DriverTable* table)
+void linuxjoystick_Register(DriverTable* table)
 {
   table->AddDriver("linuxjoystick", LinuxJoystick_Init);
 }
@@ -275,7 +275,7 @@ LinuxJoystick::LinuxJoystick(ConfigFile* cf, int section) : Driver(cf, section)
   {
     if(this->AddInterface(this->position_addr))
     {
-      this->SetError(-1);    
+      this->SetError(-1);
       return;
     }
   }
@@ -285,7 +285,7 @@ LinuxJoystick::LinuxJoystick(ConfigFile* cf, int section) : Driver(cf, section)
   {
     if(this->AddInterface(this->joystick_addr))
     {
-      this->SetError(-1);    
+      this->SetError(-1);
       return;
     }
   }
@@ -302,7 +302,7 @@ LinuxJoystick::LinuxJoystick(ConfigFile* cf, int section) : Driver(cf, section)
   // Do we talk to a position device?
   if(cf->GetTupleCount(section, "requires"))
   {
-    if(cf->ReadDeviceAddr(&(this->cmd_position_addr), section, "requires", 
+    if(cf->ReadDeviceAddr(&(this->cmd_position_addr), section, "requires",
                           PLAYER_POSITION2D_CODE, -1, NULL) == 0)
     {
       this->max_xspeed = cf->ReadLength(section, "max_xspeed", MAX_XSPEED);
@@ -348,7 +348,7 @@ int LinuxJoystick::Setup()
     motorconfig.state = 1;
     Message* msg;
     if(!(msg = this->position->Request(this->InQueue,
-                                       PLAYER_MSGTYPE_REQ, 
+                                       PLAYER_MSGTYPE_REQ,
                                        PLAYER_POSITION2D_REQ_MOTOR_POWER,
                                        (void*)&motorconfig,
                                        sizeof(motorconfig),NULL,false)))
@@ -367,9 +367,9 @@ int LinuxJoystick::Setup()
                            (void*)&cmd, sizeof(player_position2d_cmd_vel_t),
                            NULL);
   }
-  
+
   this->xpos = this->ypos = 0;
-  
+
   // Start the device thread; spawns a new thread and executes
   // LinuxJoystick::Main(), which contains the main loop for the driver.
   this->StartThread();
@@ -397,7 +397,7 @@ int LinuxJoystick::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
-void LinuxJoystick::Main() 
+void LinuxJoystick::Main()
 {
   // The main loop; interact with the device here
   while (true)
@@ -407,7 +407,7 @@ void LinuxJoystick::Main()
 
     // Run and process output
     this->ReadJoy();
-    
+
     // Write outgoing data
     this->RefreshData();
 
@@ -444,7 +444,7 @@ void LinuxJoystick::ReadJoy()
   struct pollfd fd;
   struct js_event event;
   int count;
-  
+
   fd.fd = this->fd;
   fd.events = POLLIN | POLLHUP;
   fd.revents = 0;
@@ -457,7 +457,7 @@ void LinuxJoystick::ReadJoy()
     // get the next event from the joystick
     read(this->fd, &event, sizeof(struct js_event));
 
-    //printf( "value % d type %u  number %u state %X \n", 
+    //printf( "value % d type %u  number %u state %X \n",
     //        event.value, event.type, event.number, this->joy_data.buttons );
 
     // Update buttons
@@ -491,11 +491,11 @@ void LinuxJoystick::ReadJoy()
               this->ypos = 0;
             GlobalTime->GetTime(&this->lastread);
           }
-        }	  
+        }
         break;
     }
   }
-      
+
   return;
 }
 
@@ -512,7 +512,7 @@ void LinuxJoystick::RefreshData()
     this->joy_data.xscale = this->xaxis_max;
     this->joy_data.yscale = this->yaxis_max;
     this->joy_data.buttons = this->buttons;
-    this->Publish(this->joystick_addr, 
+    this->Publish(this->joystick_addr,
                   PLAYER_MSGTYPE_DATA, PLAYER_JOYSTICK_DATA_STATE,
                   (void*)&this->joy_data, sizeof(this->joy_data), NULL);
   }
@@ -522,7 +522,7 @@ void LinuxJoystick::RefreshData()
     memset(&(this->pos_data),0,sizeof(player_position2d_data_t));
     this->pos_data.pos.px = this->xpos;
     this->pos_data.pos.py = -this->ypos;
-    this->Publish(this->position_addr, 
+    this->Publish(this->position_addr,
                   PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE,
                   (void*)&this->pos_data, sizeof(this->pos_data), NULL);
   }
@@ -543,13 +543,13 @@ void LinuxJoystick::PutPositionCommand()
   // sanity check
   if((scaled_x > 1.0) || (scaled_x < -1.0))
   {
-    PLAYER_ERROR2("X position (%d) outside of axis max (+-%d); ignoring", 
+    PLAYER_ERROR2("X position (%d) outside of axis max (+-%d); ignoring",
                   this->xpos, this->xaxis_max);
     return;
   }
   if((scaled_y > 1.0) || (scaled_y < -1.0))
   {
-    PLAYER_ERROR2("Y position (%d) outside of axis max (+-%d); ignoring", 
+    PLAYER_ERROR2("Y position (%d) outside of axis max (+-%d); ignoring",
                   this->ypos, this->yaxis_max);
     return;
   }

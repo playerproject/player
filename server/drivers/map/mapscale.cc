@@ -1,6 +1,6 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2004  Brian Gerkey gerkey@stanford.edu    
+ *  Copyright (C) 2004  Brian Gerkey gerkey@stanford.edu
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -57,8 +57,8 @@ gdk_pixbuf_scale_simple() function, using the GDK_INTERP_HYPER algorithm.
 - resolution (length)
   - Default: -1.0
   - The new scale (length / pixel).
- 
-@par Example 
+
+@par Example
 
 @verbatim
 driver
@@ -93,7 +93,7 @@ class MapScale : public MapTransform
   private:
     // interpolate the map
     int Transform();
-    
+
   public:
     MapScale(ConfigFile* cf, int section);
     ~MapScale();
@@ -109,7 +109,7 @@ Driver* MapScale_Init( ConfigFile* cf, int section)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Register the driver
-void MapScale_Register(DriverTable* table)
+void mapscale_Register(DriverTable* table)
 {
   table->AddDriver("mapscale", MapScale_Init);
   return;
@@ -150,13 +150,13 @@ MapScale::Transform()
   int new_rowstride;
 
   has_alpha = FALSE;
-  
+
   bits_per_sample = 8;
   n_channels = 3;
   rowstride = source_map.width * sizeof(guchar) * n_channels;
   map_pixels = (guchar*)calloc(this->source_map.width * this->source_map.height,
                                       sizeof(guchar)*n_channels);
-  assert(map_pixels);                                      
+  assert(map_pixels);
 
   // fill in the image from the map
   for(j=0; j<this->source_map.height; j++)
@@ -187,20 +187,20 @@ MapScale::Transform()
   scale_factor = this->source_map.scale / this->new_map.scale;
   this->new_map.width = static_cast<unsigned int> (rint(this->source_map.width * scale_factor));
   this->new_map.height = static_cast<unsigned int> (rint(this->source_map.height * scale_factor));
-  
+
   PLAYER_MSG3(4,"MapScale: New map is %dx%d scale %f",new_map.width,new_map.height,new_map.scale);
 
-  new_pixbuf = gdk_pixbuf_scale_simple(pixbuf, 
+  new_pixbuf = gdk_pixbuf_scale_simple(pixbuf,
                                                  this->new_map.width,
                                                  this->new_map.height,
                                                  GDK_INTERP_HYPER);
-  g_assert(new_pixbuf);                                                 
-                                                 
+  g_assert(new_pixbuf);
+
   new_map_pixels = gdk_pixbuf_get_pixels(new_pixbuf);
   new_rowstride = gdk_pixbuf_get_rowstride(new_pixbuf);
 
   this->new_data = new char[this->new_map.width * this->new_map.height];
-  assert(new_data);                                           
+  assert(new_data);
   // fill in the map from the scaled image
   for(j=0; j<this->new_map.height; j++)
   {

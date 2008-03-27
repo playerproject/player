@@ -1,0 +1,2 @@
+PLAYERDRIVER_OPTION (camera1394 build_camera1394 OFF "API version checks are a mess - will do later")
+PLAYERDRIVER_ADD_DRIVER_SIMPLE (camera1394 build_camera1394 camera1394.cc ../../blobfinder/cmvision/conversions.c)

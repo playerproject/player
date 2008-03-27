@@ -1,8 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -58,10 +58,10 @@ The clodbuster driver controls the Clodbuster robot.
 @par Configuration file options
 
 - port (string)
-  - Default: ""/dev/ttyUSB0" 
+  - Default: ""/dev/ttyUSB0"
   - Serial port used to communicate with the robot.
-  
-@par Example 
+
+@par Example
 
 @verbatim
 driver
@@ -83,7 +83,7 @@ driver
 #include <sys/types.h>
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h> 
+#include <unistd.h>
 #include <math.h>
 #include <stdlib.h>  /* for abs() */
 #include <netinet/in.h> // socket things...
@@ -101,8 +101,8 @@ Driver* ClodBuster_Init( ConfigFile* cf, int section)
 }
 
 // a driver registration function
-void 
-ClodBuster_Register(DriverTable* table)
+void
+clodbuster_Register(DriverTable* table)
 {
   table->AddDriver("clodbuster",  ClodBuster_Init);
 }
@@ -115,7 +115,7 @@ ClodBuster::ClodBuster( ConfigFile* cf, int section)
 
   speedDemand=0, turnRateDemand=0;
 
-  
+
   strncpy(clodbuster_serial_port,
           cf->ReadString(section, "port", DEFAULT_CLODBUSTER_PORT),
           sizeof(clodbuster_serial_port));
@@ -157,17 +157,17 @@ int ClodBuster::Setup()
   // GRASPPacket packet, receivedpacket;
   int flags;
   //bool sent_close = false;
-  
+
   printf("clodbuster connection initializing (%s)...",clodbuster_serial_port);
   fflush(stdout);
 
-  if((clodbuster_fd = open(clodbuster_serial_port, 
+  if((clodbuster_fd = open(clodbuster_serial_port,
 			   O_RDWR | O_SYNC, S_IRUSR | S_IWUSR )) < 0 ) // O_NONBLOCK later..
     {
       perror("ClodBuster::Setup():open():");
       return(1);
-    }  
- 
+    }
+
   if( tcgetattr( clodbuster_fd, &term ) < 0 )
     {
       perror("ClodBuster::Setup():tcgetattr():");
@@ -175,14 +175,14 @@ int ClodBuster::Setup()
       clodbuster_fd = -1;
       return(1);
     }
-  
+
   cfmakeraw( &term );
   term.c_cc[VTIME] = 10; /* wait 1 second on port A */
-  term.c_cc[VMIN] = 0;  
+  term.c_cc[VMIN] = 0;
 
   cfsetispeed(&term, B38400);
   cfsetospeed(&term, B38400);
-  
+
   if( tcsetattr( clodbuster_fd, TCSAFLUSH, &term ) < 0 )
     {
       perror("ClodBuster::Setup():tcsetattr():");
@@ -210,18 +210,18 @@ int ClodBuster::Setup()
   flags &= ~O_NONBLOCK;
   fcntl(clodbuster_fd, F_SETFL, flags);
 
-  
+
   usleep(CLODBUSTER_CYCLETIME_USEC);
-  
-  GRASPPacket packet; 
+
+  GRASPPacket packet;
   // disable motor power
   packet.Build(SET_SLEEP_MODE,SLEEP_MODE_OFF);
   packet.Send(clodbuster_fd);
   // reset odometry
   ResetRawPositions();
- 
+
   direct_command_control = true;
-  
+
   /* now spawn reading thread */
   StartThread();
   return(0);
@@ -229,7 +229,7 @@ int ClodBuster::Setup()
 
 int ClodBuster::Shutdown()
 {
-  GRASPPacket packet; 
+  GRASPPacket packet;
 
   if(clodbuster_fd == -1)
     {
@@ -245,7 +245,7 @@ int ClodBuster::Shutdown()
   close(clodbuster_fd);
   clodbuster_fd = -1;
   puts("ClodBuster has been shutdown");
- 
+
   return(0);
 }
 
@@ -256,12 +256,12 @@ int ClodBuster::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, v
 
   assert(hdr);
   assert(data);
-	
+
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_SET_ODOM, device_addr))
   {
     assert(hdr->size == sizeof(player_position2d_set_odom_req_t));
     player_position2d_set_odom_req_t & set_odom_req = *((player_position2d_set_odom_req_t*)data);
-    
+
     this->position_data.pos = set_odom_req.pose;
 
     Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_SET_ODOM);
@@ -271,7 +271,7 @@ int ClodBuster::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, v
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_GET_GEOM, device_addr))
   {
     player_position2d_geom_t geom={{0}};
-	
+
     // TODO : get values from somewhere.
     geom.pose.px = -0.1;//htons((short) (-100));
     geom.pose.py = 0;//htons((short) (0));
@@ -287,11 +287,11 @@ int ClodBuster::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, v
   {
     assert(hdr->size == sizeof(player_position2d_power_config_t));
     player_position2d_power_config_t & power_config = *((player_position2d_power_config_t*)data);
-    GRASPPacket packet; 
-		
+    GRASPPacket packet;
+
     if(power_config.state==1)
       packet.Build(SET_SLEEP_MODE,SLEEP_MODE_OFF);
-    else 
+    else
        packet.Build(SET_SLEEP_MODE,SLEEP_MODE_ON);
 
     packet.Send(clodbuster_fd);
@@ -308,7 +308,7 @@ int ClodBuster::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, v
   {
     assert(hdr->size == sizeof(player_position2d_velocity_mode_config_t));
     player_position2d_velocity_mode_config_t & velmode_config = *((player_position2d_velocity_mode_config_t*)data);
-		
+
     if(velmode_config.value)
       direct_command_control = false;
     else
@@ -330,7 +330,7 @@ int ClodBuster::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, v
   {
     assert(hdr->size == sizeof(player_position2d_speed_pid_req_t));
 	player_position2d_speed_pid_req_t & pid = *((player_position2d_speed_pid_req_t*)data);
-		
+
     kp = static_cast<int> (pid.kp);
     ki = static_cast<int> (pid.ki);
     kd = static_cast<int> (pid.kd);
@@ -343,30 +343,30 @@ int ClodBuster::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, v
   {
     assert(hdr->size == sizeof(player_position2d_cmd_vel_t));
 	player_position2d_cmd_vel_t & command = *((player_position2d_cmd_vel_t*)data);
-		
+
     newmotorspeed = false;
     if( speedDemand != (int) command.vel.px)
       newmotorspeed = true;
     speedDemand = (int) command.vel.px;
-      
+
     newmotorturn = false;
     if(turnRateDemand != (int) command.vel.pa)
       newmotorturn = true;
-    turnRateDemand = (int) command.vel.pa;	
+    turnRateDemand = (int) command.vel.pa;
 
     return 0;
-  }	
-  
+  }
+
   return -1;
 }
 
-void 
+void
 ClodBuster::Main()
 {
 //  player_position_speed_pid_req_t pid;
 //  unsigned char config[CLODBUSTER_CONFIG_BUFFER_SIZE];
-  
-  
+
+
 //  int config_size;
 
   GetGraspBoardParams();
@@ -387,16 +387,16 @@ ClodBuster::Main()
     {
       ProcessMessages();
       pthread_testcancel();
-      
+
       // read encoders & update pose and velocity
       encoder_measurement = ReadEncoders();
-      
+
       DifferenceEncoders();
       IntegrateEncoders();
-      
+
       // remember old values
       old_encoder_measurement = encoder_measurement;
-      
+
       Publish(device_addr,PLAYER_MSGTYPE_DATA,PLAYER_POSITION2D_DATA_STATE,(void*)&this->position_data,
                     sizeof(player_position2d_data_t),NULL);
       //      printf("left: %d , right %d count: %u\n",encoder_measurement.left,encoder_measurement.right,encoder_measurement.time_count);
@@ -414,8 +414,8 @@ ClodBuster::Main()
 	  v = SetServo(SET_SERVO_THROTTLE,speedDemand);
 	  w = SetServo(SET_SERVO_FRONTSTEER,turnRateDemand);
 	  printf("The vel/turn command numbers : v:%d (%u) w:%d (%u)\n",center_limits[SET_SERVO_THROTTLE]+speedDemand,v,center_limits[SET_SERVO_FRONTSTEER]+turnRateDemand,w);
-    
-	  
+
+
 	}
       else
 	{
@@ -423,7 +423,7 @@ ClodBuster::Main()
 	     // find tracking errors
 	     errV[0] = EncV - speedDemand*1e-3;
 	     errW[0] = EncOmega - turnRateDemand*M_PI/180.0;
-	     
+
 	     // find actions
 	     uV = uVlast + Kv->K1()*errV[0] + + Kv->K2()*errV[1] + Kv->K3()*errV[2];
 	     if (uV > uVmax)
@@ -437,8 +437,8 @@ ClodBuster::Main()
 		       printf("-V control saturated!\n");
 		  }
 	     printf("V loop err: %f, u = %f, r = %f, x = %f\n",errV[0], uV,speedDemand*1e-3,EncV);
-	     //	     if (speedDemand*1e-3 > .0125) 
-	     if (fabs(EncV) > .0125) 
+	     //	     if (speedDemand*1e-3 > .0125)
+	     if (fabs(EncV) > .0125)
 		  {
 		    if (fabs(EncV) <.1)
 		      if (EncV <.1)
@@ -447,7 +447,7 @@ ClodBuster::Main()
 			V = .1;
 		    else
 		      V = EncV;
-		    // NB "-" sign for wrong convention +ve -> left 
+		    // NB "-" sign for wrong convention +ve -> left
 		    uW = uWlast - WheelBase/V*(Kw->K1()*errW[0] + + Kw->K2()*errW[1] + Kw->K3()*errW[2]);
 		    //   uW = uWlast - 1e3*WheelBase/speedDemand*(Kw->K1()*errW[0] + + Kw->K2()*errW[1] + Kw->K3()*errW[2]);
 		  }
@@ -458,7 +458,7 @@ ClodBuster::Main()
 		       uWlast = uW0;
 		       for (int i=0;i<3;i++)
 			    errW[i] = 0.;
-		  } 
+		  }
 	     if (uW > uWmax)
 		  {
 		       uW = uWmax;
@@ -470,11 +470,11 @@ ClodBuster::Main()
 		       printf("-W control saturated!\n");
 		  }
 	     printf("W loop err: %f, u = %f, r = %f, x = %f\n",errW[0], uW,turnRateDemand*M_PI/180.0,EncOmega);
-	     
+
 	     // Write actions to control board
 	     SetServo(SET_SERVO_THROTTLE,(unsigned char) uV);
 	     SetServo(SET_SERVO_FRONTSTEER,(unsigned char) uW);
-	     
+
 	     for (int i=1;i<3;i++)
 	       {
 		 errW[i] = errW[i-1];
@@ -533,10 +533,10 @@ void ClodBuster::GetGraspBoardParams()
   packet.PrintHex();
 
   rpacket.Receive(clodbuster_fd,ECHO_MAX_SERVO_LIMITS);
-  
+
   memcpy(max_limits,rpacket.packet,8);
   rpacket.size = rpacket.retsize;
-  
+
   rpacket.PrintHex();
 
   packet.Build(ECHO_MIN_SERVO_LIMITS);
@@ -544,10 +544,10 @@ void ClodBuster::GetGraspBoardParams()
    printf("Servo Limit Enquiry: ");
 
   packet.PrintHex();
- 
+
   rpacket.Receive(clodbuster_fd,ECHO_MIN_SERVO_LIMITS);
   rpacket.size = rpacket.retsize;
-  
+
   rpacket.PrintHex();
   memcpy(min_limits,rpacket.packet,8);
   packet.Build(ECHO_CEN_SERVO_LIMITS);
@@ -557,14 +557,14 @@ void ClodBuster::GetGraspBoardParams()
   packet.PrintHex();
 
   rpacket.Receive(clodbuster_fd,ECHO_CEN_SERVO_LIMITS);
-  
+
   memcpy(center_limits,rpacket.packet,8);
   rpacket.size = rpacket.retsize;
-  
+
   rpacket.PrintHex();
 }
 
-unsigned char 
+unsigned char
 ClodBuster::SetServo(unsigned char chan, int value)
 {
   GRASPPacket spacket;
@@ -583,7 +583,7 @@ ClodBuster::SetServo(unsigned char chan, int value)
 
   return(cmd);
 }
-void 
+void
 ClodBuster::SetServo(unsigned char chan, unsigned char cmd)
 {
   GRASPPacket spacket;
@@ -595,8 +595,8 @@ ClodBuster::SetServo(unsigned char chan, unsigned char cmd)
 void ClodBuster::IntegrateEncoders()
 {
   // assign something to xpos,ypos, theta
-  float dEr = encoder_measurement.right-old_encoder_measurement.right; 
-  float dEl = encoder_measurement.left-old_encoder_measurement.left; 
+  float dEr = encoder_measurement.right-old_encoder_measurement.right;
+  float dEl = encoder_measurement.left-old_encoder_measurement.left;
   float L = Kenc*(dEr+dEl)*.5;
   float D = Kenc*(dEr-dEl)/WheelSeparation;
   float Phi = this->position_data.pos.pa+0.5*D;
@@ -608,10 +608,10 @@ void ClodBuster::IntegrateEncoders()
 
 void ClodBuster::DifferenceEncoders()
 {
-  float dEr = encoder_measurement.right-old_encoder_measurement.right; 
-  float dEl = encoder_measurement.left-old_encoder_measurement.left; 
+  float dEr = encoder_measurement.right-old_encoder_measurement.right;
+  float dEl = encoder_measurement.left-old_encoder_measurement.left;
   int64_t dtc =  encoder_measurement.time_count-old_encoder_measurement.time_count;
-  if (dtc< -2147483648LL) 
+  if (dtc< -2147483648LL)
        {
 	    dtc += 4294967296LL; //(1<<32);
 	    printf("encoder timer rollover caught\n");
@@ -621,9 +621,9 @@ void ClodBuster::DifferenceEncoders()
        printf("dt way too short %f s\n",dt);
   else if  (dt > 2.0/LoopFreq)
        printf("dt way too long %f s\n",dt);
-       
+
   EncV = Kenc*(dEr+dEl)*.5/dt;
-  EncOmega = Kenc*(dEr-dEl)/WheelSeparation/dt;     
+  EncOmega = Kenc*(dEr-dEl)/WheelSeparation/dt;
   EncVleft = dEl/dt;
   EncVright = dEr/dt;
   printf("EncV = %f, EncW = %f, dt = %f\n",EncV,EncOmega*180/M_PI,dt);

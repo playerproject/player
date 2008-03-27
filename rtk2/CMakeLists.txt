@@ -1,7 +1,5 @@
 # If have GTK, give the user the option to enable RTK
 IF (WITH_GTK)
-    OPTION (INCLUDE_RTKGUI "Include the RTK GUI in the server." OFF)
-
     SET (rtkSrcs rtk.c
             rtk_canvas.c
             rtk_canvas_movie.c

@@ -116,7 +116,7 @@ Driver* BumperSafe_Init( ConfigFile* cf, int section)
 }
 
 // a driver registration function
-void BumperSafe_Register(DriverTable* table)
+void bumpersafe_Register(DriverTable* table)
 {
   table->AddDriver("bumper_safe",  BumperSafe_Init);
   return;

@@ -58,8 +58,8 @@ interface.
 - save (int)
   - Default: 0
   - If non-zero, uncompressed images are saved to disk (with a .ppm extension?)
-      
-@par Example 
+
+@par Example
 
 @verbatim
 driver
@@ -102,7 +102,7 @@ class CameraUncompress : public Driver
 
   // Main function for device thread.
   private: virtual void Main();
-  
+
   private: void ProcessImage(player_camera_data_t & compdata);
 
   // Input camera device
@@ -114,7 +114,7 @@ class CameraUncompress : public Driver
     double camera_time;
     bool camera_subscribed;
     bool NewCamData;
-	
+
     // Acquired camera data
     char *converted;
 
@@ -132,7 +132,7 @@ Driver *CameraUncompress_Init(ConfigFile *cf, int section)
   return ((Driver*) (new CameraUncompress(cf, section)));
 }
 
-void CameraUncompress_Register(DriverTable *table)
+void camerauncompress_Register(DriverTable *table)
 {
   table->AddDriver("camerauncompress", CameraUncompress_Init);
 }
@@ -147,7 +147,7 @@ CameraUncompress::CameraUncompress( ConfigFile *cf, int section)
   if (cf->ReadDeviceAddr(&this->camera_id, section, "requires",
                        PLAYER_CAMERA_CODE, -1, NULL) != 0)
   {
-    this->SetError(-1);    
+    this->SetError(-1);
     return;
   }
   this->camera_time = 0.0;
@@ -186,7 +186,7 @@ int CameraUncompress::Shutdown()
 {
   // Stop the driver thread
   StopThread();
-  
+
   camera->Unsubscribe(InQueue);
 
   return 0;
@@ -194,12 +194,12 @@ int CameraUncompress::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int CameraUncompress::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, 
+int CameraUncompress::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr,
                                void * data)
 {
   assert(hdr);
   assert(data);
-  
+
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, camera_id))
   {
     if(hdr->size < sizeof(player_camera_data_t))
@@ -216,7 +216,7 @@ int CameraUncompress::ProcessMessage(QueuePointer &resp_queue, player_msghdr * h
     ProcessImage(*camera_data);
     return 0;
   }
- 
+
   return -1;
 }
 

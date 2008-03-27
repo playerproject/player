@@ -189,7 +189,7 @@ SphereDriver_Init(ConfigFile* cf, int section)
 // that it can be invoked without object context.  In this function, we add
 // the driver into the given driver table, indicating which interface the
 // driver can support and how to create a driver instance.
-void SphereDriver_Register(DriverTable* table)
+void spheredriver_Register(DriverTable* table)
 {
   table->AddDriver("sphere", SphereDriver_Init);
 }
@@ -512,11 +512,11 @@ void SphereDriver::RefreshData()
     memcpy(mCameraData.image, mRGBFrame->data, image_size);
   }
 
-  Publish(mCameraAddr, 
+  Publish(mCameraAddr,
           PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
           reinterpret_cast<void*>(&mCameraData));
 
-  Publish(mPtzAddr, 
+  Publish(mPtzAddr,
           PLAYER_MSGTYPE_DATA, PLAYER_PTZ_DATA_STATE,
           reinterpret_cast<void*>(&mPtzData));
 

@@ -127,7 +127,7 @@ class URGLaserDriver : public Driver
 	int Shutdown();
 
 	// This method will be invoked on each incoming message
-	virtual int ProcessMessage(QueuePointer & resp_queue, 
+	virtual int ProcessMessage(QueuePointer & resp_queue,
                                player_msghdr * hdr,
                                void * data);
 
@@ -175,13 +175,13 @@ URGLaserDriver::URGLaserDriver (ConfigFile* cf, int section)
   Conf.max_angle = cf->ReadAngle (section, "max_angle", DTOR (120));
   user_min_angle = Conf.min_angle;
   user_max_angle = Conf.max_angle;
-  
+
 //  Conf.resolution = DTOR (270.0/769.0);
   Conf.resolution = DTOR (360.0/1024.0);
   Conf.max_range = 4.0;
   Conf.range_res = 0.001;
   Conf.intensity = 0;
-	
+
   int b = cf->ReadInt (section, "baud", 115200);
   switch (b)
   {
@@ -223,12 +223,12 @@ int
   }
   Laser.GetSensorConfig (&Conf);
 
-  int half_idx = Laser.GetNumRanges() / 2; 
-  
+  int half_idx = Laser.GetNumRanges() / 2;
+
   // Solve the min/max angle problem
   min_i = static_cast<int> (round (half_idx + Conf.min_angle/Conf.resolution));
   max_i = static_cast<int> (round (half_idx + Conf.max_angle/Conf.resolution));
-  
+
   // For ancient firmware versions, set some hard limits on the min/max angle capabilities
   if(Laser.GetSCIPVersion() < 3)
   {
@@ -240,10 +240,10 @@ int
 
   int user_min_i = static_cast<int> (round (half_idx + user_min_angle/Conf.resolution));
   int user_max_i = static_cast<int> (round (half_idx + user_max_angle/Conf.resolution));
-  
+
   if (user_min_i > user_max_i)
     user_min_i = user_max_i;
-    
+
   // We restrict the URG 04-LX to its capabilities
   if (user_min_i < min_i)
   {
@@ -258,14 +258,14 @@ int
     user_max_i = max_i;
   }
   max_i = user_max_i;
-  
+
   Conf.min_angle = (min_i - half_idx) * Conf.resolution;
   Conf.max_angle = (max_i - half_idx) * Conf.resolution;
-  
+
   // Start the device thread; spawns a new thread and executes
   // ExampleDriver::Main(), which contains the main loop for the driver.
   StartThread ();
-  
+
   return (0);
 }
 
@@ -294,7 +294,7 @@ int
                              PLAYER_LASER_REQ_GET_GEOM, this->device_addr))
     Publish (device_addr,resp_queue, PLAYER_MSGTYPE_RESP_ACK,
              hdr->subtype, &Geom, sizeof (Geom), NULL);
-    
+
   else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ,
 		                  PLAYER_LASER_REQ_GET_CONFIG, this->device_addr))
   {
@@ -307,13 +307,13 @@ int
     player_laser_get_id_config_t player_ID_conf;
     // Get laser identification information
     player_ID_conf.serial_number = Laser.GetIDInfo ();
-		
-    Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype, 
+
+    Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype,
              &player_ID_conf, sizeof (player_ID_conf), NULL);
   }
   else
     return (-1);
-  
+
   return (0);
 }
 
@@ -336,7 +336,7 @@ void
     Laser.GetReadings (Readings, min_i, max_i);
     Data.min_angle = Conf.min_angle;
     Data.max_angle = Conf.max_angle;
-    
+
     // TODO: check this value
     Data.max_range    = Conf.max_range;
     Data.resolution   = Conf.resolution;
@@ -344,10 +344,10 @@ void
     Data.ranges = new float [Data.ranges_count];
     // TODO: look into getting intensity data
     Data.intensity_count = 0;
-    
+
     for (unsigned int i = 0; i < Data.ranges_count; ++i)
     {
-        
+
       Data.ranges[i]  = Readings->Readings[i+min_i] < 20 ? (Data.max_range*1000) : (Readings->Readings[i+min_i]);
       Data.ranges[i] /= 1000;
     }
@@ -373,8 +373,8 @@ Driver*
 
 // Registers the driver in the driver table. Called from the
 // player_driver_init function that the loader looks for
-int 
-  URGLaserDriver_Register (DriverTable* table)
+int
+  urglaserdriver_Register (DriverTable* table)
 {
   table->AddDriver ("urglaser", URGLaserDriver_Init);
   return (0);

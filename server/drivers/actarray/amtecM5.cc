@@ -184,7 +184,7 @@ AmtecM5_Init(ConfigFile* cf, int section) {
 // that it can be invoked without object context.  In this function, we add
 // the driver into the given driver table, indicating which interface the
 // driver can support and how to create a driver instance.
-void AmtecM5_Register(DriverTable* table) {
+void amtecm5_Register(DriverTable* table) {
 	table->AddDriver("amtecM5", AmtecM5_Init);
 }
 

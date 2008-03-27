@@ -1,8 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,11 +22,11 @@
 
 /*
  * $Id$
- * 
+ *
  * Driver for the Nomadics Nomad 200 robot. Should be easily adapted for other Nomads.
  * Authors: Richard Vaughan (vaughan@sfu.ca)
  * Based on Brian Gerkey et al's P2OS driver.
- * 
+ *
  */
 
 /** @ingroup drivers */
@@ -54,7 +54,7 @@ information and an example.
 @par Configuration requests
 
 - PLAYER_POSITION2D_REQ_GET_GEOM
-  
+
 @par Configuration file options
 
 - none
@@ -85,23 +85,23 @@ information and an example.
 #include "error.h"
 #include "nomad.h"
 
-class NomadSonar:public Driver 
+class NomadSonar:public Driver
 {
   public:
 
   NomadSonar( ConfigFile* cf, int section);
   virtual ~NomadSonar();
-  
+
   // MessageHandler
   int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
-  
+
   virtual int Setup();
   virtual int Shutdown();
-  
+
 protected:
   Driver* nomad;
   player_device_id_t nomad_id;
-  
+
 };
 
 // a factory creation function
@@ -111,7 +111,7 @@ Driver* NomadSonar_Init( ConfigFile* cf, int section)
 }
 
 // a driver registration function
-void NomadSonar_Register(DriverTable* table)
+void nomadsonar_Register(DriverTable* table)
 {
   table->AddDriver( "nomad_sonar",  NomadSonar_Init);
 }
@@ -126,7 +126,7 @@ NomadSonar::NomadSonar( ConfigFile* cf, int section)
   if (cf->ReadDeviceId(&this->nomad_id, section, "requires",
                        PLAYER_NOMAD_CODE, -1, NULL) != 0)
   {
-    this->SetError(-1);    
+    this->SetError(-1);
     return;
   }
 }
@@ -140,12 +140,12 @@ int NomadSonar::Setup()
 {
   printf("NomadSonar Setup.. ");
   fflush(stdout);
-  
+
   // if we didn't specify a port for the nomad, use the same port as
   // this device
   if( this->nomad_id.port == 0 )
     this->nomad_id.port = device_id.port;
-  
+
   printf( "finding Nomad (%d:%d:%d).. ",
 	  this->nomad_id.port,
 	  this->nomad_id.code,
@@ -159,7 +159,7 @@ int NomadSonar::Setup()
     PLAYER_ERROR("unable to find nomad device");
     return(-1);
   }
-  
+
   else printf( " OK.\n" );
 
   puts( "NomadSonar setup done" );
@@ -184,7 +184,7 @@ int NomadSonar::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t
   assert(data);
   assert(resp_data);
   assert(resp_len);
-	
+
   if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_REQ_GET_GEOM, device_id))
   {
   	assert(*resp_len >= sizeof(player_sonar_geom_t));
@@ -193,7 +193,7 @@ int NomadSonar::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t
 
     double interval = (M_PI*2.0)/PLAYER_NOMAD_SONAR_COUNT;
     double radius = NOMAD_RADIUS_MM;
-	    
+
     geom.pose_count = htons((uint16_t)PLAYER_NOMAD_SONAR_COUNT);
     for (int i = 0; i < PLAYER_NOMAD_SONAR_COUNT; i++)
     {
@@ -209,20 +209,20 @@ int NomadSonar::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t
   {
   	assert(hdr->size == sizeof(player_nomad_data_t));
   	player_nomad_data_t & nomad_data = *reinterpret_cast<player_nomad_data_t *> (data);
-  
+
     // extract the sonar data from the Nomad packet
     player_sonar_data_t player_data;
     memset(&player_data,0,sizeof(player_data));
-      
+
     player_data.range_count = ntohs((uint16_t)PLAYER_NOMAD_SONAR_COUNT);
-  
-    memcpy( &player_data.ranges, 
-     &nomad_data.sonar, 
+
+    memcpy( &player_data.ranges,
+     &nomad_data.sonar,
      PLAYER_NOMAD_SONAR_COUNT * sizeof(uint16_t) );
-      
+
     PutMsg(device_id,NULL,PLAYER_MSGTYPE_DATA,0,(void*)&player_data, sizeof(player_data), NULL);
   }
-      
+
   *resp_len = 0;
   return -1;
 }

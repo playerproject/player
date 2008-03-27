@@ -1,8 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -63,8 +63,8 @@ will handle starting and stopping the Festival server.
 - libdir (string)
   - Default: "/usr/local/festival/lib"
   - The path to Festival's library of phonemes and such.
- 
-@par Example 
+
+@par Example
 
 @verbatim
 driver
@@ -110,7 +110,7 @@ driver
 #include <deque>
 using namespace std;
 
-class Festival:public Driver 
+class Festival:public Driver
 {
   private:
     int pid;      // Festival's pid so we can kill it later (if necessary)
@@ -129,8 +129,8 @@ class Festival:public Driver
   public:
     int sock;               // socket to Festival
     void KillFestival();
-    
-    // constructor 
+
+    // constructor
     Festival( ConfigFile* cf, int section);
 
     ~Festival();
@@ -153,8 +153,8 @@ Driver* Festival_Init( ConfigFile* cf, int section)
 }
 
 // a driver registration function
-void 
-Festival_Register(DriverTable* table)
+void
+festival_Register(DriverTable* table)
 {
   table->AddDriver("festival", Festival_Init);
 }
@@ -193,7 +193,7 @@ Festival::Festival( ConfigFile* cf, int section) :
           sizeof(festival_libdir_value));
   strncpy(festival_language,
           cf->ReadString(section, "language", DEFAULT_FESTIVAL_LANGUAGE),
-          sizeof(festival_language));	
+          sizeof(festival_language));
 
 /*  queuelen = cf->ReadInt(section, "queuelen", DEFAULT_QUEUE_LEN);
 
@@ -221,7 +221,7 @@ Festival::Setup()
   char festival_libdir_flag[] = "--libdir";
   /* HHAA 12-02-2007 */
   char festival_language_flag[] = "--language";
-  /* HHAA 12-02-2007 */ 
+  /* HHAA 12-02-2007 */
   //char festival_language[] = "spanish";
   //char festival_libdir_value[] = DEFAULT_FESTIVAL_LIBDIR;
 
@@ -276,7 +276,7 @@ Festival::Setup()
 
     if(execvp(festival_bin_name,festival_args) == -1)
     {
-      /* 
+      /*
        * some error.  print it here.  it will really be detected
        * later when the parent tries to connect(2) to it
        */
@@ -289,8 +289,8 @@ Festival::Setup()
     /* in parent */
     /* fill in addr structure */
     server.sin_family = PF_INET;
-    /* 
-     * this is okay to do, because gethostbyname(3) does no lookup if the 
+    /*
+     * this is okay to do, because gethostbyname(3) does no lookup if the
      * 'host' * arg is already an IP addr
      */
     if((entp = gethostbyname(host)) == NULL)
@@ -325,7 +325,7 @@ Festival::Setup()
         return(1);
       }
 
-      /* 
+      /*
       * hook it up
        */
       if(connect(sock, (struct sockaddr*)&server, sizeof(server)) == 0)
@@ -392,7 +392,7 @@ int Festival::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, voi
 		player_speech_cmd_t * cmd = (player_speech_cmd_t *) data;
 		// make ABSOLUTELY sure we've got one NULL
 		cmd->string[cmd->string_count] = '\0';
-	  
+
 		Lock();
 		/* if there's space, put it in the queue */
 		queue.push_back(strdup(cmd->string));
@@ -403,7 +403,7 @@ int Festival::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, voi
 	return -1;
 }
 
-void 
+void
 Festival::KillFestival()
 {
   if(kill(pid,SIGHUP) == -1)
@@ -487,13 +487,13 @@ Festival::Main()
       while((size_t)numread < strlen(FESTIVAL_CODE_OK))
       {
         /* i should really try to intrepret this some day... */
-        if((numthisread = 
+        if((numthisread =
             read(sock,buf+numread,strlen(FESTIVAL_CODE_OK)-numread)) == -1)
         {
           /* was there no data? */
           if(errno == EAGAIN)
             continue;
-          else 
+          else
           {
             perror("festival: read() failed for code: exiting");
             break;
@@ -504,7 +504,7 @@ Festival::Main()
       if((size_t)numread != strlen(FESTIVAL_CODE_OK))
       {
         PLAYER_WARN2("something went wrong\n"
-                "              expected %d bytes of code, but got %d\n", 
+                "              expected %d bytes of code, but got %d\n",
                 (int) strlen(FESTIVAL_CODE_OK),numread);
         break;
       }
@@ -545,7 +545,7 @@ Festival::Main()
 
       read_pending = false;
     }
-    
+
     // so we don't run too fast
     usleep(FESTIVAL_DELAY_USEC);
   }
@@ -554,7 +554,7 @@ Festival::Main()
   pthread_exit(NULL);
 }
 
-void 
+void
 QuitFestival(void* speechdevice)
 {
   char quit[] = FESTIVAL_QUIT_STRING;

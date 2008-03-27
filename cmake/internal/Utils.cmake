@@ -5,7 +5,7 @@
 # Inserts an item into a map.
 MACRO (INSERT_INTO_MAP _map _key _value)
     SET ("${_map}_${_key}" "${_value}")
-ENDMACRO (INSERT_INTO_MAP _map _key _value)
+ENDMACRO (INSERT_INTO_MAP)
 
 
 ###############################################################################
@@ -13,7 +13,7 @@ ENDMACRO (INSERT_INTO_MAP _map _key _value)
 # Removes an item from a map.
 MACRO (DELETE_FROM_MAP _map _key)
     SET ("${_map}_${_key}")
-ENDMACRO (DELETE_FROM_MAP _map _key)
+ENDMACRO (DELETE_FROM_MAP)
 
 
 ###############################################################################
@@ -21,7 +21,7 @@ ENDMACRO (DELETE_FROM_MAP _map _key)
 # Gets the value of a map entry and stores it in value.
 MACRO (GET_FROM_MAP value _map _key)
     SET (${value} ${${_map}_${_key}})
-ENDMACRO (GET_FROM_MAP value _map _key)
+ENDMACRO (GET_FROM_MAP)
 
 
 ###############################################################################
@@ -29,7 +29,7 @@ ENDMACRO (GET_FROM_MAP value _map _key)
 # Inserts an item into a global map.
 MACRO (INSERT_INTO_GLOBAL_MAP _map _key _value)
     SET ("${_map}_${_key}" "${_value}" CACHE INTERNAL "Map value" FORCE)
-ENDMACRO (INSERT_INTO_GLOBAL_MAP _map _key _value)
+ENDMACRO (INSERT_INTO_GLOBAL_MAP)
 
 
 ###############################################################################
@@ -37,7 +37,7 @@ ENDMACRO (INSERT_INTO_GLOBAL_MAP _map _key _value)
 # Removes an item from a global map.
 MACRO (DELETE_FROM_GLOBAL_MAP _map _key)
     SET ("${_map}_${_key}" CACHE INTERNAL "Map value" FORCE)
-ENDMACRO (DELETE_FROM_GLOBAL_MAP _map _key)
+ENDMACRO (DELETE_FROM_GLOBAL_MAP)
 
 
 ###############################################################################
@@ -45,7 +45,7 @@ ENDMACRO (DELETE_FROM_GLOBAL_MAP _map _key)
 # Gets the value of a global map entry and stores it in value.
 MACRO (GET_FROM_GLOBAL_MAP value _map _key)
     SET (${value} ${${_map}_${_key}})
-ENDMACRO (GET_FROM_GLOBAL_MAP value _map _key)
+ENDMACRO (GET_FROM_GLOBAL_MAP)
 
 
 ###############################################################################
@@ -58,7 +58,7 @@ MACRO (MAP_TO_LIST result _indexList _mapName)
             LIST (APPEND ${result} ${${_mapName}_${key}})
         ENDIF (${_mapName}_${key})
     ENDFOREACH (key ${_indexList})
-ENDMACRO (MAP_TO_LIST result _indexList _mapName)
+ENDMACRO (MAP_TO_LIST)
 
 
 ###############################################################################
@@ -71,7 +71,7 @@ MACRO (STRING_IN_LIST _result _list _string)
             SET (${_result} TRUE)
         ENDIF (${entry} STREQUAL ${_string})
     ENDFOREACH (entry ${_list})
-ENDMACRO (STRING_IN_LIST _result _list _string)
+ENDMACRO (STRING_IN_LIST)
 
 
 ###############################################################################
@@ -85,7 +85,7 @@ MACRO (FILTER_DUPLICATES _result _list)
             LIST (APPEND ${_result} ${newItem})
         ENDIF (NOT _found)
     ENDFOREACH (newItem ${_list})
-ENDMACRO (FILTER_DUPLICATES _result _list)
+ENDMACRO (FILTER_DUPLICATES)
 
 
 ###############################################################################
@@ -97,7 +97,7 @@ MACRO (APPEND_TO_CACHED_LIST _list _cacheDesc)
         LIST (APPEND tempList ${newItem})
     ENDFOREACH (newItem ${ARGN})
     SET (${_list} ${tempList} CACHE INTERNAL ${_cacheDesc} FORCE)
-ENDMACRO (APPEND_TO_CACHED_LIST _list _cacheDesc)
+ENDMACRO (APPEND_TO_CACHED_LIST)
 
 
 ###############################################################################
@@ -107,7 +107,7 @@ MACRO (APPEND_TO_CACHED_STRING _string _cacheDesc)
     FOREACH (newItem ${ARGN})
         SET (${_string} "${${_string}} ${newItem}" CACHE INTERNAL ${_cacheDesc} FORCE)
     ENDFOREACH (newItem ${ARGN})
-ENDMACRO (APPEND_TO_CACHED_STRING _string _cacheDesc)
+ENDMACRO (APPEND_TO_CACHED_STRING)
 
 
 ###############################################################################
@@ -119,4 +119,4 @@ MACRO (CHECK_PACKAGE_EXISTS _package _result _includeDir _libDir _linkFlags _cFl
     IF (${_includeDir} OR ${_libDir} OR ${_linkFlags} OR ${_cFlags})
         SET (${_result} TRUE)
     ENDIF (${_includeDir} OR ${_libDir} OR ${_linkFlags} OR ${_cFlags})
-ENDMACRO (CHECK_PACKAGE_EXISTS _package _result _includeDir _libDir _linkFlags _cFlags)
+ENDMACRO (CHECK_PACKAGE_EXISTS)

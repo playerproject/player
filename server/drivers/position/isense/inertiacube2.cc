@@ -140,7 +140,7 @@ class InertiaCube2 : public Driver
   // Main function for device thread.
   private: virtual void Main();
 
-  // Process incoming messages from clients 
+  // Process incoming messages from clients
   int ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data);
 
   // Update the InertiaCube.
@@ -186,7 +186,7 @@ Driver* InertiaCube2_Init( ConfigFile* cf, int section)
 
 
 // a driver registration function
-void InertiaCube2_Register(DriverTable* table)
+void inertiacube2_Register(DriverTable* table)
 {
   table->AddDriver("inertiacube2", InertiaCube2_Init);
 }

@@ -65,7 +65,7 @@ Note that only grayscale images are currently supported.
   - A printf-style format string for describing the image filenames; the
     format string must contain at most one integer argument.
 
-@par Example 
+@par Example
 
 @verbatim
 driver
@@ -112,10 +112,10 @@ class ImageSeq : public Driver
 
   // Read an image
   private: int LoadImage(const char *filename);
-  
+
   // Write camera data
   private: void WriteData();
-    
+
   // Data rate
   private: double rate;
 
@@ -137,7 +137,7 @@ Driver *ImageSeq_Init(ConfigFile *cf, int section)
 }
 
 // Driver registration function
-void ImageSeq_Register(DriverTable *table)
+void imageseq_Register(DriverTable *table)
 {
   table->AddDriver("imageseq", ImageSeq_Init);
 }
@@ -161,10 +161,10 @@ ImageSeq::ImageSeq(ConfigFile *cf, int section)
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device (called by server thread).
 int ImageSeq::Setup()
-{  
+{
   // Start at frame 0
   this->frame = 0;
-    
+
   // Start the driver thread.
   this->StartThread();
 
@@ -197,8 +197,8 @@ void ImageSeq::Main()
   {
     pthread_testcancel();
     if (nanosleep(&req, NULL) == -1)
-      continue;    
-    
+      continue;
+
     // Test if we are suppose to cancel this thread.
     pthread_testcancel();
 
@@ -211,7 +211,7 @@ void ImageSeq::Main()
 
     // Write new camera data
     this->WriteData();
-    this->frame++;          
+    this->frame++;
   }
   return;
 }
@@ -225,7 +225,7 @@ int ImageSeq::LoadImage(const char *filename)
   char *src;
   uint8_t *dst;
   IplImage *image;
-  
+
   // Load image; currently forces the image to mono
   image = cvLoadImage(filename, -1);
   if(image == NULL)
@@ -237,7 +237,7 @@ int ImageSeq::LoadImage(const char *filename)
   this->data.width = image->width;
   this->data.height = image->height;
   this->data.compression = PLAYER_CAMERA_COMPRESS_RAW;
-  
+
   if (this->data.image_count != image->imageSize || this->data.image == NULL)
   {
     this->data.image_count = image->imageSize;

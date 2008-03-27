@@ -2,12 +2,12 @@
 - Java bindings for core, xdr, tcp, etc
 - Make sure all the various package searches are actually performed and options are available to change install paths of them
 - Get CMake book, read it, go through all cmake files and clean up the mess I've made
-- Check all necessary flags are being accumulated from various libraries and passed to various executable build steps (e.g. defines for boost stuff, is it needed for playerprint?)
+- Check all necessary flags are being accumulated from various libraries and passed to various executable build steps and pkgconfig files as necessary (e.g. defines for boost stuff, is it needed for playerprint?)
 - Figure out why it always rebuilds driverregistry.c. Make it stop.
-- cross-compiling... does it work? - better support in CMake v2.6, apparently
-- all those driver make files
+. cross-compiling... does it work? - better support in CMake v2.6, apparently
 - examples dir (probably easy) - just need to do the make files for compiling outside the source tree now
-- dist tarballs, packages, etc - add in the extra_dist files to the source one
+- dist tarballs, packages, etc - add in the extra_dist files to the source one, make the debian one
 . Fix the checks for boost threads and boost signals libraries - possibly a better version of FindBoost is coming in 2.6, defer till then (http://www.cmake.org/Bug/view.php?id=6257)
 - Some installable cmake modules with macros for making plugin drivers, etc
 - Clean out/replace any stragglers from autotools (including README and co)
+- Drivers being disabled by a check used to correctly force their option to off. Figure out why this broke. Fix it.

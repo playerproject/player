@@ -1,0 +1,5 @@
+PLAYERDRIVER_OPTION (robotino build_robotino ON)
+PLAYERDRIVER_REQUIRE_HEADER (robotino build_robotino robotinocom.h)
+PLAYERDRIVER_REQUIRE_HEADER (robotino build_robotino xtimer.h)
+PLAYERDRIVER_REQUIRE_HEADER (robotino build_robotino xthread.h)
+PLAYERDRIVER_ADD_DRIVER (robotino build_robotino "" "" "-lxtimer -lrobotinocom -lxthread -lpthread" "" robotino_driver.cc)

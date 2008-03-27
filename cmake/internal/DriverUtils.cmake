@@ -20,7 +20,7 @@ SET (PLAYER_NOT_BUILT_REASONS_DESC "Map of reasons drivers are not being built")
 SET (PLAYERDRIVER_DEFINES_DESC "List of defines for driver_config.h")
 
 ###############################################################################
-# PLAYERDRIVER_ADD_DRIVER (name cumulativeVar includeDir libDir linkFlags cFlags)
+# PLAYERDRIVER_ADD_DRIVER (_name _cumulativeVar _includeDir _libDir _linkFlags _cFlags)
 # Add a driver to the list of drivers to be built or not built.
 # Only call this once you have determined the final value of cumulativeVar.
 # includeDir, libDir, linkFlags, and cFlags must be passed by reference.
@@ -31,11 +31,11 @@ MACRO (PLAYERDRIVER_ADD_DRIVER _name _cumulativeVar _includeDir _libDir _linkFla
         # Add this driver's list of sources to the list of sources for libplayerdrivers
         PLAYERDRIVER_ADD_TO_BUILT (${_name} "${_includeDir}" "${_libDir}" "${_linkFlags}" "${_cFlags}" ${ARGN})
     ENDIF (${_cumulativeVar})
-ENDMACRO (PLAYERDRIVER_ADD_DRIVER name cumulativeVar includeDir libDir linkFlags cFlags)
+ENDMACRO (PLAYERDRIVER_ADD_DRIVER)
 
 
 ###############################################################################
-# PLAYERDRIVER_ADD_DRIVER_SIMPLE (name cumulativeVar)
+# PLAYERDRIVER_ADD_DRIVER_SIMPLE (_name _cumulativeVar)
 # Convenience wrapper for PLAYERDRIVER_ADD_DRIVER that doesn't require specifying
 # directories and flags.
 MACRO (PLAYERDRIVER_ADD_DRIVER_SIMPLE _name _cumulativeVar)
@@ -43,12 +43,14 @@ MACRO (PLAYERDRIVER_ADD_DRIVER_SIMPLE _name _cumulativeVar)
         # Add this driver's list of sources to the list of sources for libplayerdrivers
         PLAYERDRIVER_ADD_TO_BUILT (${_name} "" "" "" "" ${ARGN})
     ENDIF (${_cumulativeVar})
-ENDMACRO (PLAYERDRIVER_ADD_DRIVER_SIMPLE name cumulativeVar)
+ENDMACRO (PLAYERDRIVER_ADD_DRIVER_SIMPLE)
 
 
 ###############################################################################
-# PLAYERDRIVER_OPTION (name cumulativeVar defaultValue desc [reason])
+# PLAYERDRIVER_OPTION (_name _cumulativeVar _defaultValue [reason])
 # Add an option to enable/disable a driver.
+# IMPORTANT: This macro initialises _cumulativeVar, so it must be called
+# before any other PLAYERDRIVER macros.
 #
 # name:             Driver name.
 # cumulativeVar:    The option used in the calling CMakeLists.txt to check if
@@ -58,27 +60,79 @@ ENDMACRO (PLAYERDRIVER_ADD_DRIVER_SIMPLE name cumulativeVar)
 # reason:           Give a reason for disabling to the user. If empty, a
 #                   standard reason will be given.
 MACRO (PLAYERDRIVER_OPTION _name _cumulativeVar _defaultValue)
+    # Default _cumulativeVar
+    SET (${_cumulativeVar} TRUE)
     # Check if the disabled reason has been customised
     IF (${ARGC} GREATER 3)
         SET (_reason ${ARGV3})
     ELSE (${ARGC} GREATER 3)
-        SET (_reason "Disabled by default")
+        SET (_reason "Disabled")
     ENDIF (${ARGC} GREATER 3)
     # Add an option for it.
     PLAYERDRIVER_ADD_DRIVEROPTION (${_name} ${_defaultValue} FALSE)
 
-    # Check if it's been disabled, if it has set cumulativeVar and
+    # Check if it's been disabled, if it has set _cumulativeVar and
     # add it to the list of reasons
-    IF (${_cumulativeVar} AND NOT ${_optionName})
+    PLAYERDRIVER_MAKE_OPTION_NAME (optionName ${_name})
+    IF (NOT ${optionName})
         SET (${_cumulativeVar} FALSE)
         PLAYERDRIVER_ADD_TO_NOT_BUILT (${_name} "${_reason}")
-    ENDIF (${_cumulativeVar} AND NOT ${_optionName})
-ENDMACRO (PLAYERDRIVER_OPTION _name _cumulativeVar _defaultValue)
+    ENDIF (NOT ${optionName})
+ENDMACRO (PLAYERDRIVER_OPTION)
 
 
 ###############################################################################
-# PLAYERDRIVER_REQUIRE_PKG (_name _cumulativeVar _package _includeDir _libDir _linkFlags _cFlags)
+# PLAYERDRIVER_REQUIRE_OS (_name _cumulativeVar)
+# Require a certain OS.
+#
+# _name:            Driver name.
+# _cumulativeVar:   The option used in the calling CMakeLists.txt to check if
+#                   the driver has been enabled.
+# variable args:    OS variables to check for (see FindOS.cmake in the
+#                   cmake/internal/ dir).
+MACRO (PLAYERDRIVER_REQUIRE_OS _name _cumulativeVar)
+    IF (${_cumulativeVar})
+        SET (isThisOS FALSE)
+        FOREACH (osVar ${ARGN})
+            IF (${osVar})
+                SET (isThisOS TRUE)
+            ENDIF (${osVar})
+        ENDFOREACH (osVar ${ARGN})
+        IF (NOT isThisOS)
+            SET (${_cumulativeVar} FALSE)
+            PLAYERDRIVER_ADD_TO_NOT_BUILT (${_name} "Cannot build on this operating system.")
+            PLAYERDRIVER_ADD_DRIVEROPTION (${_name} OFF TRUE)
+        ENDIF (NOT isThisOS)
+    ENDIF (${_cumulativeVar})
+ENDMACRO (PLAYERDRIVER_REQUIRE_OS)
+
+
+###############################################################################
+# PLAYERDRIVER_REJECT_OS (_name _cumulativeVar)
+# Prevent building on a certain OS.
+#
+# _name:            Driver name.
+# _cumulativeVar:   The option used in the calling CMakeLists.txt to check if
+#                   the driver has been enabled.
+# variable args:    OS variables to check for (see FindOS.cmake in the
+#                   cmake/internal/ dir).
+MACRO (PLAYERDRIVER_REJECT_OS _name _cumulativeVar)
+    IF (${_cumulativeVar})
+        FOREACH (osVar ${ARGN})
+            IF (${osVar})
+                SET (${_cumulativeVar} FALSE)
+                PLAYERDRIVER_ADD_TO_NOT_BUILT (${_name} "Cannot build on this operating system.")
+                PLAYERDRIVER_ADD_DRIVEROPTION (${_name} OFF TRUE)
+            ENDIF (${osVar})
+        ENDFOREACH (osVar ${ARGN})
+    ENDIF (${_cumulativeVar})
+ENDMACRO (PLAYERDRIVER_REJECT_OS)
+
+
+###############################################################################
+# PLAYERDRIVER_REQUIRE_PKG (_name _cumulativeVar _package _includeDir _libDir _linkFlags _cFlags [version])
 # Check if a required package is available.
+# If a minimum version is required, supply it as an optional argument. For example, ">=1.2".
 #
 # _name:            Driver name.
 # _cumulativeVar:   The option used in the calling CMakeLists.txt to check if
@@ -86,12 +140,25 @@ ENDMACRO (PLAYERDRIVER_OPTION _name _cumulativeVar _defaultValue)
 # _package:         Name of the package config file to look for.
 INCLUDE (UsePkgConfig)
 MACRO (PLAYERDRIVER_REQUIRE_PKG _name _cumulativeVar _package _includeDir _libDir _linkFlags _cFlags)
+    IF (${ARGC} GREATER 7)
+        SET (minVersionReq ${ARG7})
+    ENDIF (${ARGC} GREATER 7)
     # Look for the package using pkg-config
     PKGCONFIG (${_package} ${_includeDir} ${_libDir} ${_linkFlags} ${_cFlags})
     SET (foundPackage FALSE)    # Make sure foundPackage isn't TRUE from a previous use of this macro
     IF (${_includeDir} OR ${_libDir} OR ${_linkFlags} OR ${_cFlags})
         SET (foundPackage TRUE)
     ENDIF (${_includeDir} OR ${_libDir} OR ${_linkFlags} OR ${_cFlags})
+    # Check if the version is acceptable (if one was supplied)
+    IF (foundPackage AND minVersionReq)
+        # The UsePkgConfig module doesn't support versions, so have to do it ourselves. Joy.
+        EXECUTE_PROCESS (COMMAND pkg-config --exists --print-errors "${_package} ${minVersionReq}"
+            ERROR_VARIABLE haveMinVersionReq
+            ERROR_STRIP_TRAILING_WHITESPACE)
+        IF (NOT "x${haveMinVersionReq}" EQUAL "x")
+            SET (foundPackage FALSE)
+        ENDIF (NOT "x${haveMinVersionReq}" EQUAL "x")
+    ENDIF (foundPackage AND minVersionReq)
     # If not found, disable this driver
     # Derefernce cumulativeVar only once because IF will dereference the variable name stored inside itself
     IF (${_cumulativeVar} AND foundPackage)
@@ -105,7 +172,7 @@ MACRO (PLAYERDRIVER_REQUIRE_PKG _name _cumulativeVar _package _includeDir _libDi
         PLAYERDRIVER_ADD_TO_NOT_BUILT (${_name} "Could not find package ${_package}")
         PLAYERDRIVER_ADD_DRIVEROPTION (${_name} OFF TRUE)
     ENDIF (${_cumulativeVar} AND foundPackage)
-ENDMACRO (PLAYERDRIVER_REQUIRE_PKG _name _cumulativeVar _package _includeDir _libDir _linkFlags _cFlags)
+ENDMACRO (PLAYERDRIVER_REQUIRE_PKG)
 
 
 ###############################################################################
@@ -121,7 +188,9 @@ MACRO (PLAYERDRIVER_REQUIRE_HEADER _name _cumulativeVar _header)
     STRING (TOUPPER ${_header} _headerUpper)
     STRING (REGEX REPLACE "[./\\]" "_" _headerUpper "${_headerUpper}")
     SET (resultVar "HAVE_HDR_${_headerUpper}")
+    SET (CMAKE_REQUIRED_INCLUDES ${ARGN})
     CHECK_INCLUDE_FILES (${_header} ${resultVar})
+    SET (CMAKE_REQUIRED_INCLUDES)
     # If not found, disable this driver
     # Dereference cumulativeVar only once because IF will dereference the variable name stored inside itself
     IF (${_cumulativeVar} AND ${resultVar})
@@ -134,7 +203,7 @@ MACRO (PLAYERDRIVER_REQUIRE_HEADER _name _cumulativeVar _header)
         PLAYERDRIVER_ADD_TO_NOT_BUILT (${_name} "Could not find header ${_header}")
         PLAYERDRIVER_ADD_DRIVEROPTION (${_name} OFF TRUE)
     ENDIF (${_cumulativeVar} AND ${resultVar})
-ENDMACRO (PLAYERDRIVER_REQUIRE_HEADER _name _cumulativeVar _header)
+ENDMACRO (PLAYERDRIVER_REQUIRE_HEADER)
 
 
 ###############################################################################
@@ -162,7 +231,7 @@ MACRO (PLAYERDRIVER_REQUIRE_FUNCTION _name _cumulativeVar _function)
         PLAYERDRIVER_ADD_TO_NOT_BUILT (${_name} "Could not find function ${_function}")
         PLAYERDRIVER_ADD_DRIVEROPTION (${_name} OFF TRUE)
     ENDIF (${_cumulativeVar} AND foundFunction)
-ENDMACRO (PLAYERDRIVER_REQUIRE_FUNCTION _name _cumulativeVar _function)
+ENDMACRO (PLAYERDRIVER_REQUIRE_FUNCTION)
 
 
 ###############################################################################
@@ -192,7 +261,7 @@ MACRO (PLAYERDRIVER_REQUIRE_LIB _name _cumulativeVar _library _function _path)
         PLAYERDRIVER_ADD_TO_NOT_BUILT (${_name} "Could not find library ${_library}")
         PLAYERDRIVER_ADD_DRIVEROPTION (${_name} OFF TRUE)
     ENDIF (${_cumulativeVar} AND foundLibrary)
-ENDMACRO (PLAYERDRIVER_REQUIRE_LIB _name _cumulativeVar _library _function _path)
+ENDMACRO (PLAYERDRIVER_REQUIRE_LIB)
 
 
 ###############################################################################
@@ -213,35 +282,37 @@ MACRO (PLAYERDRIVER_ADD_DEFINEOPTION _cumulativeVar _option _defaultValue _type 
             APPEND_TO_CACHED_LIST (PLAYERDRIVER_DEFINES ${PLAYERDRIVER_DEFINES_DESC} ${_option})
         ENDIF (${_cumulativeVar})
     ENDIF (_duplicate)
-ENDMACRO (PLAYERDRIVER_ADD_DEFINEOPTION _cumulativeVar _option _defaultValue _type _desc)
+ENDMACRO (PLAYERDRIVER_ADD_DEFINEOPTION)
 
 
 ###############################################################################
 # INTERNAL MACROS
 
 ###############################################################################
-# PLAYERDRIVER_ADD_DRIVEROPTION (name value)
-# Set the option for a driver to a value. If force is true, the option
+# PLAYERDRIVER_ADD_DRIVEROPTION (_name _value _force)
+# Set the option for a driver to a value. If _force is true, the option
 # will be forced to the value rather than the cache value being used. This
 # is useful to update the ccmake GUI when an option is changed internally.
 MACRO (PLAYERDRIVER_ADD_DRIVEROPTION _name _value _force)
     # Get the option name for this driver
     PLAYERDRIVER_MAKE_OPTION_NAME (optionName ${_name})
-    IF (force)
+#     MESSAGE (STATUS "${_name} _force is ${_force}")
+    IF (_force)
         # Force the option value
+        MESSAGE (STATUS "forcing option")
         SET (${optionName} ${_value} CACHE BOOL "Build driver ${_name}" FORCE)
-    ELSE (force)
+    ELSE (_force)
         SET (${optionName} ${_value} CACHE BOOL "Build driver ${_name}")
-    ENDIF (force)
-ENDMACRO (PLAYERDRIVER_ADD_DRIVEROPTION name value force)
+    ENDIF (_force)
+ENDMACRO (PLAYERDRIVER_ADD_DRIVEROPTION)
 
 
 ###############################################################################
 # Make an option name from a driver name.
-MACRO (PLAYERDRIVER_MAKE_OPTION_NAME optionName driverName)
-    STRING (TOUPPER ${driverName} driverNameUpper)
-    SET (optionName "ENABLE_DRIVER_${driverNameUpper}")
-ENDMACRO (PLAYERDRIVER_MAKE_OPTION_NAME optionName driverName)
+MACRO (PLAYERDRIVER_MAKE_OPTION_NAME _optionName _driverName)
+    STRING (TOUPPER ${_driverName} driverNameUpper)
+    SET (${_optionName} "ENABLE_DRIVER_${driverNameUpper}")
+ENDMACRO (PLAYERDRIVER_MAKE_OPTION_NAME)
 
 
 ###############################################################################
@@ -264,15 +335,15 @@ MACRO (PLAYERDRIVER_ADD_TO_BUILT _name _includeDir _libDir _linkFlags _cFlags)
 
     # Set this driver to be built
     APPEND_TO_CACHED_LIST (PLAYER_BUILT_DRIVERS ${PLAYER_BUILT_DRIVERS_DESC} ${_name})
-ENDMACRO (PLAYERDRIVER_ADD_TO_BUILT name reason)
+ENDMACRO (PLAYERDRIVER_ADD_TO_BUILT)
 
 
 ###############################################################################
 # Add a driver to the list of drivers not to be built.
-MACRO (PLAYERDRIVER_ADD_TO_NOT_BUILT name reason)
-    APPEND_TO_CACHED_LIST (PLAYER_NOT_BUILT_DRIVERS ${PLAYER_NOT_BUILT_DRIVERS_DESC} ${name})
-    INSERT_INTO_GLOBAL_MAP (PLAYER_NOT_BUILT_REASONS ${name} ${reason})
-ENDMACRO (PLAYERDRIVER_ADD_TO_NOT_BUILT name reason)
+MACRO (PLAYERDRIVER_ADD_TO_NOT_BUILT _name _reason)
+    APPEND_TO_CACHED_LIST (PLAYER_NOT_BUILT_DRIVERS ${PLAYER_NOT_BUILT_DRIVERS_DESC} ${_name})
+    INSERT_INTO_GLOBAL_MAP (PLAYER_NOT_BUILT_REASONS ${_name} ${_reason})
+ENDMACRO (PLAYERDRIVER_ADD_TO_NOT_BUILT)
 
 
 ###############################################################################

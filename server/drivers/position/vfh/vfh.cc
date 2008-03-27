@@ -162,15 +162,15 @@ or sector_angle.
       to escape.
   - escape_time (float)
     - Default: 0.0
-    - If non-zero, the time (in seconds) for which an escape attempt will be 
+    - If non-zero, the time (in seconds) for which an escape attempt will be
       made.
   - escape_max_turnrate (angle / sec)
     - Default: 0.0
-    - If non-zero, the maximum angular velocity that will be used when 
+    - If non-zero, the maximum angular velocity that will be used when
       trying to escape.
   - synchronous (int)
     - default: 0
-    -  If zero (the default), VFH runs in its own thread. If non-zero, VFH runs in the main Player thread, which will make the server less responsive, but prevent nasty asynchronous behaviour under high CPU load. This is probably only useful when running demanding simulations. 
+    -  If zero (the default), VFH runs in its own thread. If non-zero, VFH runs in the main Player thread, which will make the server less responsive, but prevent nasty asynchronous behaviour under high CPU load. This is probably only useful when running demanding simulations.
 
 @par Example
 @verbatim
@@ -232,7 +232,7 @@ class VFH_Class : public Driver
 
     // most of the work is done in this method. It is either called
     // from ::Main() or ::Update(), depending on ::synchronous_mode.
-    void DoOneUpdate(); 
+    void DoOneUpdate();
 
     // Set up the odometry device.
     int SetupOdom();
@@ -312,19 +312,19 @@ class VFH_Class : public Driver
 
   // iff true, run in the main Player thread instead of a dedicated
   // thread. Useful under heavy CPU load, for example when using a
-  // simulator with lots of robots - rtv 
+  // simulator with lots of robots - rtv
   bool synchronous_mode;
 
   /* the following vars used to be local to the Main() method. I moved
      them here when implementing the synchronous mode - rtv */
-  
-  float dist; 
-  double angdiff; 
-  struct timeval startescape, curr; 
-  bool escaping; 
+
+  float dist;
+  double angdiff;
+  struct timeval startescape, curr;
+  bool escaping;
   double timediff; int
   escape_turnrate_deg;
-  
+
   // bookkeeping to implement hysteresis when rotating at the goal
   int rotatedir;
 
@@ -343,7 +343,7 @@ VFH_Init(ConfigFile* cf, int section)
 }
 
 // a driver registration function
-void VFH_Register(DriverTable* table)
+void vfh_Register(DriverTable* table)
 {
   table->AddDriver("vfh",  VFH_Init);
   return;
@@ -646,7 +646,7 @@ VFH_Class::ProcessSonar(player_sonar_data_t &data)
   this->laser_count = count;
   //if (!laser_ranges)
 	  //this->laser_ranges = new double[laser_count][2];
-  
+
   for(i = 0; i < laser_count; i++)
     this->laser_ranges[i][0] = -1;
 
@@ -777,7 +777,7 @@ int VFH_Class::ProcessMessage(QueuePointer & resp_queue,
     this->active_goal = false;
 
     return 0;
-  }  
+  }
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, -1, this->device_addr))
   {
     // Pass the request on to the underlying position device and wait for
@@ -830,7 +830,7 @@ void VFH_Class::Main()
 ////////////////////////////////////////////////////////////////////////////////
 //
 void VFH_Class::DoOneUpdate()
-{  
+{
   if( this->InQueue->Empty() )
     return;
 
@@ -918,15 +918,15 @@ void VFH_Class::DoOneUpdate()
                                  this->dist_eps * 1e3,
                                  this->speed,
                                  this->turnrate );
-      
-      // HACK: if we're within twice the distance threshold, 
+
+      // HACK: if we're within twice the distance threshold,
       // and still going fast, slow down.
 
       if((dist < (this->dist_eps * 1e3 * 2.0)) &&
          (this->speed > (vfh_Algorithm->GetCurrentMaxSpeed() / 2.0)))
       {
 //        int foo = this->speed;
-        this->speed = 
+        this->speed =
                 (int)rint(vfh_Algorithm->GetCurrentMaxSpeed() / 2.0);
         //printf("slowing down from %d to %d\n",
 	//     foo, this->speed);
@@ -1026,7 +1026,7 @@ VFH_Class::VFH_Class( ConfigFile* cf, int section)
 
   this->speed = 0;
   this->turnrate = 0;
-  
+
   // read the synchronous flag from the cfg file: defaults to not synchronous
   this->synchronous_mode = cf->ReadInt(section, "synchronous", 0 );
 
@@ -1124,7 +1124,7 @@ VFH_Class::VFH_Class( ConfigFile* cf, int section)
 
   // Laser settings
   //TODO this->laser_max_samples = cf->ReadInt(section, "laser_max_samples", 10);
-  
+
   // FIXME
   // Allocate and intialize
   vfh_Algorithm->Init();

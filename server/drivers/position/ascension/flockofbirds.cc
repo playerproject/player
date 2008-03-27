@@ -437,7 +437,7 @@ Driver* FlockOfBirds_Init( ConfigFile* cf, int section)
 
 // a driver registration function
 void
-FlockOfBirds_Register(DriverTable* table)
+flockofbirds_Register(DriverTable* table)
 {
   table->AddDriver("flockofbirds",  FlockOfBirds_Init);
 }

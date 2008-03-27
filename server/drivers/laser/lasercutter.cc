@@ -20,12 +20,12 @@
  */
 ///////////////////////////////////////////////////////////////////////////
 //
-// Desc: Driver for returning 'relevant' laser rays from a larger laser 
+// Desc: Driver for returning 'relevant' laser rays from a larger laser
 //       packet
 // Author: Radu Bogdan Rusu
 // Date: 14 Nov 2006
 //
-// Theory of operation - given a min and max angle, returns only the rays 
+// Theory of operation - given a min and max angle, returns only the rays
 // between them, everything else gets cut away.
 //
 // Requires - Laser device.
@@ -37,8 +37,8 @@
 /** @defgroup driver_lasercutter lasercutter
  * @brief Laser cutter
 
-The lasercutter driver processes a laser scan, and removes all rays except 
-those between min_angle and max_angle. Useful if you already know/computed 
+The lasercutter driver processes a laser scan, and removes all rays except
+those between min_angle and max_angle. Useful if you already know/computed
 ahead the 'area of interest'.
 
 @par Compile-time dependencies
@@ -51,12 +51,12 @@ ahead the 'area of interest'.
 
 @par Requires
 
-- @ref interface_laser : raw laser data 
+- @ref interface_laser : raw laser data
 
 @par Configuration requests
 
 - PLAYER_LASER_REQ_GET_GEOM
-  
+
 @par Configuration file options
 - min_angle (float)
   - Default: -pi/2
@@ -64,8 +64,8 @@ ahead the 'area of interest'.
 - max_angle (float)
   - Default: pi/2
   - Maximum angle of the new scan data
-    
-@par Example 
+
+@par Example
 
 @verbatim
 driver
@@ -124,7 +124,7 @@ Driver* LaserCutter_Init( ConfigFile* cf, int section)
 
 
 // a driver registration function
-void LaserCutter_Register(DriverTable* table)
+void lasercutter_Register(DriverTable* table)
 {
   table->AddDriver("lasercutter", LaserCutter_Init);
 }
@@ -156,7 +156,7 @@ int LaserCutter::UpdateLaser(player_laser_data_t * data)
 {
   unsigned int i;
   double current_angle;
-  
+
   // Construct the outgoing laser packet
   this->data.resolution   = data->resolution;
   this->data.min_angle    = (min_angle);
@@ -166,14 +166,14 @@ int LaserCutter::UpdateLaser(player_laser_data_t * data)
 
   this->data.ranges_count    = 0;
   this->data.intensity_count = 0;
-  
+
   current_angle = data->min_angle;
   if (data->ranges_count+1 > allocated_ranges)
     data->ranges = (float*)realloc(data->ranges,sizeof(data->ranges[0])*(data->ranges_count+1));
   for (i = 0; i < data->ranges_count; i++)
   {
     current_angle += data->resolution;
-    
+
     if ((current_angle >= min_angle) && (current_angle <= max_angle))
     {
       this->data.ranges[this->data.ranges_count] = data->ranges[i];
@@ -185,7 +185,7 @@ int LaserCutter::UpdateLaser(player_laser_data_t * data)
   for (i = 0; i < data->intensity_count; i++)
   {
     current_angle += data->resolution;
-    
+
     if ((current_angle >= min_angle) && (current_angle <= max_angle))
     {
       this->data.intensity[this->data.intensity_count] = data->intensity[i];
@@ -193,7 +193,7 @@ int LaserCutter::UpdateLaser(player_laser_data_t * data)
     }
   }
 
-  this->Publish(this->device_addr, 
+  this->Publish(this->device_addr,
                 PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN,
                 &this->data, sizeof(this->data), NULL);
 

@@ -1,6 +1,6 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2004  Brian Gerkey gerkey@stanford.edu    
+ *  Copyright (C) 2004  Brian Gerkey gerkey@stanford.edu
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -61,7 +61,7 @@
 - layers (string tuple)
   - Default: Field required
   - Names of the layers. The layers are named after the corresponding tables in the database.
-@par Example 
+@par Example
 
 @verbatim
 driver
@@ -205,7 +205,7 @@ Driver* PostGIS_Init(ConfigFile* cf, int section)
 
 ////////////////////////////////////////////////////////////////////////////////
 // a driver registration function
-void PostGIS_Register(DriverTable* table)
+void postgis_Register(DriverTable* table)
 {
   table->AddDriver("postgis", PostGIS_Init);
 }

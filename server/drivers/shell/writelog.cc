@@ -100,20 +100,20 @@ disabled because they need to be updated:
 @par Configuration file options
 - log_directory (string)
   - Default: Directory player is run from.
-  - Name of the directory to store the log file in. Relative paths are 
+  - Name of the directory to store the log file in. Relative paths are
     taken from the directory player is run from. Absolute paths work
     as expected. The directory is created if it doesn't exist.
 - timestamp_directory (integer)
   - Default: 0
   - Add a timestamp to log_directory, in the format "YYYY_MM_DD_HH_MM_SS",
-    where YYYY is the year, MM is the month, etc. 
+    where YYYY is the year, MM is the month, etc.
 - basename (string)
   - Default: "writelog_"
   - Base name of the log file.
 - timestamp (integer)
   - Default: 1
   - Add a timestamp to each file, in the format "YYYY_MM_DD_HH_MM_SS",
-    where YYYY is the year, MM is the month, etc. 
+    where YYYY is the year, MM is the month, etc.
 - extension (string)
   - Default: ".log"
   - File extension for the log file.
@@ -333,7 +333,7 @@ Driver* WriteLog_Init(ConfigFile* cf, int section)
 
 ////////////////////////////////////////////////////////////////////////////
 // Device factory registration
-void WriteLog_Register(DriverTable* table)
+void writelog_Register(DriverTable* table)
 {
   table->AddDriver("writelog", WriteLog_Init);
   return;
@@ -366,7 +366,7 @@ WriteLog::WriteLog(ConfigFile* cf, int section)
   ts = localtime(&t);
   strftime(time_stamp, sizeof(time_stamp),
            "%Y_%m_%d_%H_%M_%S", ts);
- 
+
   // Let user override default basename
   strcpy(basename, cf->ReadString(section, "basename", "writelog_"));
 
@@ -385,7 +385,7 @@ WriteLog::WriteLog(ConfigFile* cf, int section)
 
   // Let user override log file directory
   snprintf(this->log_directory, sizeof(this->log_directory), "%s%s",
-           cf->ReadString(section, "log_directory", ""), 
+           cf->ReadString(section, "log_directory", ""),
            cf->ReadInt(section, "timestamp_directory", 0) ? time_stamp : "");
 
   // If neither directory nor timestamp is specified, just use .
@@ -1288,7 +1288,7 @@ The following type:subtype opaque messages can be logged:
 - 1:1 (PLAYER_OPAQUE_DATA_STATE) Data information.  The format is:
   - data_count (uint32_t): Number of valid bytes to follow
   - list of bytes; for each byte:
-    - data uint8_t: 
+    - data uint8_t:
 
 - 2:2 (PLAYER_OPAQUE_CMD) Command information. The format is:
   - data_count (uint32_t): Number of valid bytes to follow
@@ -2126,13 +2126,13 @@ int WriteLog::WriteCamera(WriteLogDevice *device, player_msghdr_t* hdr, void *da
             {
                 case PLAYER_CAMERA_DATA_STATE:
                     camera_data = (player_camera_data_t *) data;
-                    
+
                     // Image format
                     fprintf(this->file, "%d %d %d %d %d %d " ,
                             camera_data->width, camera_data->height,
                             camera_data->bpp, camera_data->format,
                             camera_data->compression, camera_data->image_count);
-                    
+
                     if(this->cameraLogImages)
                     {
                         char *str;

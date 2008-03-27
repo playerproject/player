@@ -28,7 +28,7 @@
 /** @defgroup driver_accel_calib accel_calib
  * @brief Acceleration calibration driver
 
-The accel_calib driver receives acceleration data from a WSN interface, then 
+The accel_calib driver receives acceleration data from a WSN interface, then
 calculates the calibrated values and returns them via another WSN interface.
 
 @par Compile-time dependencies
@@ -52,7 +52,7 @@ calculates the calibrated values and returns them via another WSN interface.
 - node (integer tupple)
   - These are the calibration values for -1G/+1G for the accelerometer
     sensor (see the appropriate data sheet on how to obtain it). Each sepparate
-    board *MUST* be calibrated! 
+    board *MUST* be calibrated!
   - The tuple means: [node_id
                       group_id
                       calibration_negative_1g_x_axis
@@ -68,7 +68,7 @@ calculates the calibrated values and returns them via another WSN interface.
   - Fill the data buffer with converted engineering units (e.g. m/s^2 - 1) or
     G (2) values.
 
-@par Example 
+@par Example
 
 @verbatim
 driver
@@ -130,7 +130,7 @@ class Accel_Calib : public Driver
         virtual int Setup       ();
         virtual int Shutdown    ();
         // This method will be invoked on each incoming message
-        virtual int ProcessMessage (QueuePointer &resp_queue, 
+        virtual int ProcessMessage (QueuePointer &resp_queue,
                                     player_msghdr * hdr,
                                     void * data);
 
@@ -176,9 +176,9 @@ Driver* Accel_Calib_Init (ConfigFile* cf, int section)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-//Registers the driver in the driver table. Called from the 
+//Registers the driver in the driver table. Called from the
 // player_driver_init function that the loader looks for
-void Accel_Calib_Register (DriverTable* table)
+void accel_calib_Register (DriverTable* table)
 {
     table->AddDriver ("accel_calib", Accel_Calib_Init);
 }
@@ -187,7 +187,7 @@ void Accel_Calib_Register (DriverTable* table)
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 Accel_Calib::Accel_Calib (ConfigFile* cf, int section)
-    : Driver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, 
+    : Driver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
               PLAYER_WSN_CODE)
 {
     int i = 0;
@@ -196,7 +196,7 @@ Accel_Calib::Accel_Calib (ConfigFile* cf, int section)
     memset(&this->wsn_addr,  0, sizeof (player_devaddr_t));
 
     nodes_count = cf->ReadInt (section, "nodes", 0);
-	
+
     for (i = 0; i < nodes_count; i++)
     {
         char node_nr[7];
@@ -267,7 +267,7 @@ int Accel_Calib::Shutdown ()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
-void Accel_Calib::Main () 
+void Accel_Calib::Main ()
 {
 //    timespec sleepTime = {0, 0};
 
@@ -289,7 +289,7 @@ void Accel_Calib::Main ()
 
 ////////////////////////////////////////////////////////////////////////////////
 // ProcessMessage function
-int Accel_Calib::ProcessMessage (QueuePointer &resp_queue, 
+int Accel_Calib::ProcessMessage (QueuePointer &resp_queue,
                                  player_msghdr * hdr,
                                  void * data)
 {
@@ -301,7 +301,7 @@ int Accel_Calib::ProcessMessage (QueuePointer &resp_queue,
     assert (data);
 
     // Handle new data from the WSN device
-    if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_DATA, PLAYER_WSN_DATA_STATE, 
+    if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_DATA, PLAYER_WSN_DATA_STATE,
        wsn_addr))
     {
         original_wsn_data = reinterpret_cast<player_wsn_data_t *>(data);
@@ -310,30 +310,30 @@ int Accel_Calib::ProcessMessage (QueuePointer &resp_queue,
             node_values = FindNodeValues (original_wsn_data->node_id);
 
             if (original_wsn_data->data_packet.accel_x != -1)
-                new_wsn_data.data_packet.accel_x = ConvertAccel 
-                        (original_wsn_data->data_packet.accel_x, 
-                         node_values.c_values[0], 
+                new_wsn_data.data_packet.accel_x = ConvertAccel
+                        (original_wsn_data->data_packet.accel_x,
+                         node_values.c_values[0],
                          node_values.c_values[1], converted_units);
 
             if (original_wsn_data->data_packet.accel_y != -1)
-                new_wsn_data.data_packet.accel_y = ConvertAccel 
+                new_wsn_data.data_packet.accel_y = ConvertAccel
                         (original_wsn_data->data_packet.accel_y,
                          node_values.c_values[2],
                         node_values.c_values[3], converted_units);
 
             if (original_wsn_data->data_packet.accel_z != -1)
-                new_wsn_data.data_packet.accel_z = ConvertAccel 
+                new_wsn_data.data_packet.accel_z = ConvertAccel
                         (original_wsn_data->data_packet.accel_z,
                          node_values.c_values[4],
                         node_values.c_values[5], converted_units);
-        } 
+        }
         else
         {
-            new_wsn_data.data_packet.accel_x = 
+            new_wsn_data.data_packet.accel_x =
                     original_wsn_data->data_packet.accel_x;
-            new_wsn_data.data_packet.accel_y = 
+            new_wsn_data.data_packet.accel_y =
                     original_wsn_data->data_packet.accel_y;
-            new_wsn_data.data_packet.accel_z = 
+            new_wsn_data.data_packet.accel_z =
                     original_wsn_data->data_packet.accel_z;
         }
 
@@ -346,7 +346,7 @@ int Accel_Calib::ProcessMessage (QueuePointer &resp_queue,
         new_wsn_data.data_packet.battery     = -1;
 
         // Write the WSN data
-        Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_WSN_DATA_STATE, 
+        Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_WSN_DATA_STATE,
                  &new_wsn_data, sizeof (player_wsn_data_t), NULL);
 
         return 0;
@@ -361,14 +361,14 @@ int Accel_Calib::ProcessMessage (QueuePointer &resp_queue,
 
 ////////////////////////////////////////////////////////////////////////////////
 // ConvertAccel function - convert RAW accel. data to metric units (m/s^2)
-float Accel_Calib::ConvertAccel (float raw_accel, 
+float Accel_Calib::ConvertAccel (float raw_accel,
                            int neg_1g, int pos_1g, int converted)
 {
     if (neg_1g == 0)
         neg_1g = 450;
     if (pos_1g == 0)
         pos_1g = 550;
-	
+
     float sensitivity  = (pos_1g - neg_1g) / 2.0f;
     float offset       = (pos_1g + neg_1g) / 2.0f;
     float acceleration = (raw_accel - offset) / sensitivity;
@@ -383,17 +383,17 @@ float Accel_Calib::ConvertAccel (float raw_accel,
 NodeCalibrationValues Accel_Calib::FindNodeValues (unsigned int nodeID)
 {
     NodeCalibrationValues n;
-	
+
     unsigned int i = 0;
-	
+
     for (i = 0; i < ncv.size (); i++)
     {
         n = ncv.at (i);
-	
+
         if (n.node_id == nodeID)
             break;
     }
-	
+
     return n;
 }
 //------------------------------------------------------------------------------

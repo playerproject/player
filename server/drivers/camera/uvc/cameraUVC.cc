@@ -38,12 +38,12 @@
 /** @{ */
 /** @defgroup driver_camerauvc camerauvc
  * @brief USB video (UVC) camera interface
- 
+
 %Device driver for webcams supporting the USB video standard. Works with
-recent Logitech cams (QuickCam Fusion, QuickCam Orbit, QuickCam Pro for 
-Notebooks and QuickCam Pro 5000) and hopefully many USB webcams released 
+recent Logitech cams (QuickCam Fusion, QuickCam Orbit, QuickCam Pro for
+Notebooks and QuickCam Pro 5000) and hopefully many USB webcams released
 2007 onward will support the standard.
- 
+
 @par Compile-time dependencies
 
 - none
@@ -93,7 +93,7 @@ Driver* CameraUvc_Init(ConfigFile* cf, int section)
 	return((Driver*)(new CameraUvc(cf, section)));
 }
 
-void CameraUVC_Register(DriverTable* table)
+void camerauvc_Register(DriverTable* table)
 {
 	table->AddDriver("camerauvc", CameraUvc_Init);
 }
@@ -104,7 +104,7 @@ extern "C"
 	{
 		CameraUVC_Register(table);
 		return(0);
-	} 
+	}
 }
 
 CameraUvc::CameraUvc(ConfigFile* cf, int section)
@@ -123,28 +123,28 @@ CameraUvc::~CameraUvc()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
-// Also starts the mainloop. 
+// Also starts the mainloop.
 ////////////////////////////////////////////////////////////////////////////////
 int CameraUvc::Setup()
-{   
+{
 	printf("CameraUvc: Driver initialising\n");
 
 	if(ui->Open()==-1)
 	{
 		PLAYER_ERROR("CameraUvc: Error setting up video capture!");
 		SetError(-1);
-		return -1; 
+		return -1;
 	}
 
 	StartThread();
 	printf("CameraUvc: Driver initialisation done\n");
-	
+
 	return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Shutdown the device. 
-// Also stops the mainloop. 
+// Shutdown the device.
+// Also stops the mainloop.
 ////////////////////////////////////////////////////////////////////////////////
 int CameraUvc::Shutdown()
 {
@@ -160,7 +160,7 @@ int CameraUvc::Shutdown()
 ////////////////////////////////////////////////////////////////////////////////
 // Main function (mainloop)
 ////////////////////////////////////////////////////////////////////////////////
-void CameraUvc::Main() 
+void CameraUvc::Main()
 {
 	while (true)
 	{
@@ -173,11 +173,11 @@ void CameraUvc::Main()
 		ui->Read();
 
 		// Store image details
-		data.width=ui->GetWidth(); 
-		data.height=ui->GetHeight(); 
-		data.bpp=24; 
+		data.width=ui->GetWidth();
+		data.height=ui->GetHeight();
+		data.bpp=24;
 		data.format=PLAYER_CAMERA_FORMAT_RGB888;
-		data.fdiv=1; 
+		data.fdiv=1;
 		data.compression=PLAYER_CAMERA_COMPRESS_JPEG;
 		data.image_count=ui->GetFrameSize();
 		data.image = new unsigned char[data.image_count];
@@ -191,7 +191,7 @@ void CameraUvc::Main()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process requests.  Returns 1 if the configuration has changed.
-// Ignore all requests for now. 
+// Ignore all requests for now.
 ////////////////////////////////////////////////////////////////////////////////
 int CameraUvc::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, void *data)
 {

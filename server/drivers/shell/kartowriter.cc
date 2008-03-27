@@ -450,7 +450,7 @@ Driver* KartoLogger_Init( ConfigFile* cf, int section)
 //
 // a driver registration function
 void
-	KartoLogger_Register(DriverTable* table)
+	kartowriter_Register(DriverTable* table)
 {
 	table->AddDriver("kartowriter", KartoLogger_Init);
 }

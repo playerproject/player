@@ -1,9 +1,9 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
- * 
+ *
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -72,7 +72,7 @@ driver (eventually).
 - PLAYER_LASER_REQ_GET_GEOM
 - PLAYER_LASER_REQ_GET_CONFIG
 - PLAYER_LASER_REQ_SET_CONFIG
-  
+
 @par Configuration file options
 
 - port (string)
@@ -84,7 +84,7 @@ driver (eventually).
   - Default: 9600
   - Baud rate.  Valid values are 9600, 38400 (RS232 or RS422) and
     500000 (RS422 only).
-  
+
 - delay (integer)
   - Default: 0
   - Delay (in seconds) before laser is initialized (set this to 35 if
@@ -99,7 +99,7 @@ driver (eventually).
 
 - invert (integer)
   - Default: 0
-  - Is the laser physically inverted (i.e., upside-down)?  Is so, scan data 
+  - Is the laser physically inverted (i.e., upside-down)?  Is so, scan data
     will be reversed accordingly.
 
 - pose (length tuple)
@@ -114,8 +114,8 @@ driver (eventually).
 - ignore_errors (integer)
   - Default: 0
   - Ignore errors during initialization of the laser.
-      
-@par Example 
+
+@par Example
 
 @verbatim
 driver
@@ -168,7 +168,7 @@ driver
 class SickPLS : public Driver
 {
   public:
-    
+
     // Constructor
     SickPLS( ConfigFile* cf, int section);
 
@@ -176,8 +176,8 @@ class SickPLS : public Driver
     int Shutdown();
 
     // MessageHandler
-    int ProcessMessage(QueuePointer & resp_queue, 
-		       player_msghdr * hdr, 
+    int ProcessMessage(QueuePointer & resp_queue,
+		       player_msghdr * hdr,
 		       void * data);
   private:
 
@@ -191,7 +191,7 @@ class SickPLS : public Driver
     // Compute the start and end scan segments based on the current resolution and
     // scan angles.  Returns 0 if the configuration is valid.
     int CheckScanConfig();
-    
+
     // Open the terminal
     // Returns 0 on success
     int OpenTerm();
@@ -199,7 +199,7 @@ class SickPLS : public Driver
     // Close the terminal
     // Returns 0 on success
     int CloseTerm();
-    
+
     // Set the terminal speed
     // Valid values are 9600 and 38400
     // Returns 0 on success
@@ -219,7 +219,7 @@ class SickPLS : public Driver
     // Set the laser configuration
     // Returns 0 on success
     int SetLaserConfig(bool intensity);
-    
+
     // Request data from the laser
     // Returns 0 on success
     int RequestLaserData(int min_segment, int max_segment);
@@ -228,8 +228,8 @@ class SickPLS : public Driver
     int ReadLaserData(uint16_t *data, size_t datalen);
 
     // Write a packet to the laser
-    ssize_t WriteToLaser(uint8_t *data, ssize_t len); 
-    
+    ssize_t WriteToLaser(uint8_t *data, ssize_t len);
+
     // Read a packet from the laser
     ssize_t ReadFromLaser(uint8_t *data, ssize_t maxlen, bool ack = false, int timeout = -1);
 
@@ -238,29 +238,29 @@ class SickPLS : public Driver
 
     // Get the time (in ms)
     int64_t GetTime();
-    
+
   protected:
 
     // Laser pose in robot cs.
     double pose[3];
     double size[2];
-    
+
     // Name of device used to communicate with the laser
     const char *device_name;
-    
+
     // laser device file descriptor
-    int laser_fd;           
+    int laser_fd;
 
     // Starup delay
     int startup_delay;
-  
+
     // Scan width and resolution.
     int scan_width, scan_res;
 
     // Start and end scan angles (for restricted scan).  These are in
     // units of 0.01 degrees.
     int min_angle, max_angle;
-    
+
     // Start and end scan segments (for restricted scan).  These are
     // the values used by the laser.
     int scan_min_segment, scan_max_segment;
@@ -277,7 +277,7 @@ class SickPLS : public Driver
 
     bool can_do_hi_speed;
     int port_rate;
-  
+
   // Allow the autodetect mechanism for the rate - MB
   int autodetect_rate;
 
@@ -285,7 +285,7 @@ class SickPLS : public Driver
   int ignore_errors;
 
   int type;
-  
+
 #ifdef HAVE_HI_SPEED_SERIAL
   struct serial_struct old_serial;
 #endif
@@ -298,7 +298,7 @@ Driver* SickPLS_Init( ConfigFile* cf, int section)
 }
 
 // a driver registration function
-void SickPLS_Register(DriverTable* table)
+void sickpls_Register(DriverTable* table)
 {
   table->AddDriver("sickpls", SickPLS_Init);
 }
@@ -371,9 +371,9 @@ SickPLS::SickPLS( ConfigFile* cf, int section)
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device
 int SickPLS::Setup()
-{   
+{
   printf("Laser initialising (%s)\n", this->device_name);
-    
+
   // Open the terminal
   if (OpenTerm())
     return 1;
@@ -384,7 +384,7 @@ int SickPLS::Setup()
 
   //////// MB
   // The autodetect mechanism for speed might not work for all (older) PLS lasers
-  // we are then forced to use the rate given in the configuration file and *not* change it. 
+  // we are then forced to use the rate given in the configuration file and *not* change it.
   if(!autodetect_rate) {
     if (ChangeTermSpeed(port_rate))
       return 1;
@@ -394,13 +394,13 @@ int SickPLS::Setup()
 	return 1;
       }
     puts("laser ready");
-    
+
     // Start the device thread
     StartThread();
-    
+
     return 0;
   }
-  ////////// 
+  //////////
 
 
   // Start out at 38400 with non-blocking io
@@ -410,7 +410,7 @@ int SickPLS::Setup()
   PLAYER_MSG0(2, "connecting at 38400");
   if (RequestLaserData(0,360) != 0)
   {
-  
+
     PLAYER_MSG0(2, "connect at 38400 failed, trying 9600");
     if (ChangeTermSpeed(9600))
       return 1;
@@ -456,7 +456,7 @@ int SickPLS::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
-void SickPLS::Main() 
+void SickPLS::Main()
 {
   float tmp;
   // Ask the laser to send data
@@ -486,7 +486,7 @@ void SickPLS::Main()
       {
         //TBM: Check the configurability of the PLS before enabling this
         //if (SetLaserConfig(this->intensity) != 0)
-        //  PLAYER_ERROR("failed setting intensity");          
+        //  PLAYER_ERROR("failed setting intensity");
       }
 
       // Issue a new request for data
@@ -498,7 +498,7 @@ void SickPLS::Main()
     // This will be a pretty good estimate of when the phenomena occured
     struct timeval time;
     GlobalTime->GetTime(&time);
-    
+
     // Process incoming data
     player_laser_data_t data;
     data.ranges_count = (this->scan_max_segment - this->scan_min_segment + 1);
@@ -508,7 +508,7 @@ void SickPLS::Main()
     uint16_t * TempData = new uint16_t[data.ranges_count];
     if (ReadLaserData(TempData, data.ranges_count) == 0)
     {
-      // Prepare packet 
+      // Prepare packet
       data.min_angle = (this->scan_min_segment * this->scan_res - this->scan_width * 50);
       data.max_angle = (this->scan_max_segment * this->scan_res - this->scan_width * 50);
       data.resolution = (this->scan_res);
@@ -525,8 +525,8 @@ void SickPLS::Main()
       // i can't be bothered to figure out where.
       if(this->invert)
       {
-        for (int i = 0; 
-             i < (this->scan_max_segment - this->scan_min_segment + 1)/2; 
+        for (int i = 0;
+             i < (this->scan_max_segment - this->scan_min_segment + 1)/2;
              i++)
         {
           tmp=data.ranges[i];
@@ -539,7 +539,7 @@ void SickPLS::Main()
       }
 
       // Make data available
-      this->Publish(this->device_addr,  
+      this->Publish(this->device_addr,
                     PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN,
                     (void*)&data);
     }
@@ -551,16 +551,16 @@ void SickPLS::Main()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int 
-SickPLS::ProcessMessage(QueuePointer & resp_queue, 
+int
+SickPLS::ProcessMessage(QueuePointer & resp_queue,
                            player_msghdr * hdr,
                            void * data)
 {
   assert(hdr);
   assert(data);
-  
-  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
-                           PLAYER_LASER_REQ_SET_CONFIG, 
+
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
+                           PLAYER_LASER_REQ_SET_CONFIG,
                            this->device_addr))
   {
   	assert(hdr->size == sizeof(player_laser_config_t));
@@ -580,7 +580,7 @@ SickPLS::ProcessMessage(QueuePointer & resp_queue,
       {
         //TBM: Check the configurability of the PLS before enabling this
         //if (SetLaserConfig(this->intensity) != 0)
-        //  PLAYER_ERROR("failed setting intensity");          
+        //  PLAYER_ERROR("failed setting intensity");
       }
 
       // Issue a new request for data
@@ -592,13 +592,13 @@ SickPLS::ProcessMessage(QueuePointer & resp_queue,
       return PLAYER_MSGTYPE_RESP_NACK;
   }
 
-  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
-                           PLAYER_LASER_REQ_GET_CONFIG, 
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
+                           PLAYER_LASER_REQ_GET_CONFIG,
                            this->device_addr))
   {
   	assert(hdr->size == 0);
     player_laser_config_t lcfg;
-    
+
     lcfg.intensity = this->intensity;
     lcfg.resolution = (this->scan_res);
     lcfg.min_angle = ((short) this->min_angle);
@@ -612,8 +612,8 @@ SickPLS::ProcessMessage(QueuePointer & resp_queue,
     return 0;
   }
 
-  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
-                           PLAYER_LASER_REQ_GET_GEOM, 
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
+                           PLAYER_LASER_REQ_GET_GEOM,
                            this->device_addr))
   {
     player_laser_geom_t geom;
@@ -644,7 +644,7 @@ SickPLS::ProcessMessage(QueuePointer & resp_queue,
   char buffer[PLAYER_MAX_REQREP_SIZE];
   player_laser_config_t config;
   player_laser_geom_t geom;
-  
+
   while ((len = GetConfig(&client, &buffer, sizeof(buffer), NULL)) > 0)
   {
     switch (buffer[0])
@@ -668,7 +668,7 @@ SickPLS::ProcessMessage(QueuePointer & resp_queue,
 
         if (this->CheckScanConfig() == 0)
         {
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, 
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
                       &config, sizeof(config),NULL) != 0)
             PLAYER_ERROR("PutReply() failed");
           return 1;
@@ -697,7 +697,7 @@ SickPLS::ProcessMessage(QueuePointer & resp_queue,
         config.max_angle = htons((short) this->max_angle);
         config.range_res = htons(this->range_res);
 
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, 
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
                     &config, sizeof(config), NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
@@ -718,8 +718,8 @@ SickPLS::ProcessMessage(QueuePointer & resp_queue,
         geom.pose[2] = htons((short) (this->pose[2] * 180/M_PI));
         geom.size[0] = htons((short) (this->size[0] * 1000));
         geom.size[1] = htons((short) (this->size[1] * 1000));
-        
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, 
+
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
                     &geom, sizeof(geom),NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
@@ -747,7 +747,7 @@ int SickPLS::CheckScanConfig()
     this->scan_width = 180;
     this->scan_min_segment = (this->min_angle + 9000) / this->scan_res;
     this->scan_max_segment = (this->max_angle + 9000) / this->scan_res;
-    
+
     if (this->scan_min_segment < 0)
       this->scan_min_segment = 0;
     if (this->scan_min_segment > 360)
@@ -761,7 +761,7 @@ int SickPLS::CheckScanConfig()
     return 0;
   }
 
-  
+
   return 0;
 }
 
@@ -785,26 +785,26 @@ int SickPLS::OpenTerm()
   struct termios term;
   if( tcgetattr( this->laser_fd, &term ) < 0 )
     RETURN_ERROR(1, "Unable to get serial port attributes");
-  
+
   cfmakeraw( &term );
 
   // Set to even parity
-  term.c_iflag |= INPCK; 
+  term.c_iflag |= INPCK;
   term.c_iflag &= ~IXOFF;
   term.c_cflag |= PARENB;
 
-     
+
   cfsetispeed( &term, B9600 );
   cfsetospeed( &term, B9600 );
-     
-  tcflush( this->laser_fd, TCIFLUSH);    
-  if( tcsetattr( this->laser_fd, TCSANOW, &term ) < 0 )  
+
+  tcflush( this->laser_fd, TCIFLUSH);
+  if( tcsetattr( this->laser_fd, TCSANOW, &term ) < 0 )
     RETURN_ERROR(1, "Unable to set serial port attributes");
 
   // Make sure queue is empty
   //
   tcflush(this->laser_fd, TCIOFLUSH);
-    
+
   return 0;
 }
 
@@ -852,7 +852,7 @@ int SickPLS::ChangeTermSpeed(int speed)
   if (ioctl(this->laser_fd, TIOCSSERIAL, &serial) < 0) {
     RETURN_ERROR(1, "error on TIOCSSERIAL in beginning");
   }
-#endif  
+#endif
 
   printf("LASER: change TERM speed: %d\n", speed);
 
@@ -861,17 +861,17 @@ int SickPLS::ChangeTermSpeed(int speed)
     PLAYER_MSG0(2, "terminal speed to 9600");
     if( tcgetattr( this->laser_fd, &term ) < 0 )
       RETURN_ERROR(1, "unable to get device attributes");
-        
+
     cfmakeraw( &term );
 
-    term.c_iflag |= INPCK; 
+    term.c_iflag |= INPCK;
     term.c_iflag &= ~IXOFF;
     term.c_cflag |= PARENB;
 
     cfsetispeed( &term, B9600 );
     cfsetospeed( &term, B9600 );
 
-    tcflush( this->laser_fd, TCIFLUSH);    
+    tcflush( this->laser_fd, TCIFLUSH);
     if( tcsetattr( this->laser_fd, TCSANOW, &term ) < 0 )
       RETURN_ERROR(1, "unable to set device attributes");
     break;
@@ -880,17 +880,17 @@ int SickPLS::ChangeTermSpeed(int speed)
     PLAYER_MSG0(2, "terminal speed to 38400");
     if( tcgetattr( this->laser_fd, &term ) < 0 )
       RETURN_ERROR(1, "unable to get device attributes");
-        
+
     cfmakeraw( &term );
-    term.c_iflag |= INPCK; 
+    term.c_iflag |= INPCK;
     term.c_iflag &= ~IXOFF;
     term.c_cflag |= PARENB;
 
     cfsetispeed( &term, B38400 );
     cfsetospeed( &term, B38400 );
 
-    tcflush( this->laser_fd, TCIFLUSH);    
-    if( tcsetattr( this->laser_fd, TCSANOW, &term ) < 0 )        
+    tcflush( this->laser_fd, TCIFLUSH);
+    if( tcsetattr( this->laser_fd, TCSANOW, &term ) < 0 )
       // if( tcsetattr( this->laser_fd, TCSAFLUSH, &term ) < 0 )
       RETURN_ERROR(1, "unable to set device attributes");
     break;
@@ -898,20 +898,20 @@ int SickPLS::ChangeTermSpeed(int speed)
   case 500000:
     PLAYER_MSG0(2, "terminal speed to 500000");
 
-#ifdef HAVE_HI_SPEED_SERIAL    
+#ifdef HAVE_HI_SPEED_SERIAL
     if (ioctl(this->laser_fd, TIOCGSERIAL, &this->old_serial) < 0) {
       RETURN_ERROR(1, "error on TIOCGSERIAL ioctl");
     }
-    
+
     serial = this->old_serial;
-    
+
     serial.flags |= ASYNC_SPD_CUST;
     serial.custom_divisor = 48; // for FTDI USB/serial converter divisor is 240/5
-    
+
     if (ioctl(this->laser_fd, TIOCSSERIAL, &serial) < 0) {
       RETURN_ERROR(1, "error on TIOCSSERIAL ioctl");
     }
-    
+
 #else
     fprintf(stderr, "sicklms200: Trying to change to 500kbps, but no support compiled in, defaulting to 38.4kbps.\n");
 #endif
@@ -920,26 +920,26 @@ int SickPLS::ChangeTermSpeed(int speed)
     // the driver will know we want 500000 instead.
 
     if( tcgetattr( this->laser_fd, &term ) < 0 )
-      RETURN_ERROR(1, "unable to get device attributes");    
+      RETURN_ERROR(1, "unable to get device attributes");
 
     cfmakeraw( &term );
-    
-    term.c_iflag |= INPCK; 
+
+    term.c_iflag |= INPCK;
     term.c_iflag &= ~IXOFF;
     term.c_cflag |= PARENB;
 
     cfsetispeed( &term, B38400 );
     cfsetospeed( &term, B38400 );
-    
+
     if( tcsetattr( this->laser_fd, TCSAFLUSH, &term ) < 0 )
       RETURN_ERROR(1, "unable to set device attributes");
-    
+
     break;
   default:
     fprintf(stderr, "sicklms200: unknown speed %d\n", speed);
   }
 
-    
+
   return 0;
 }
 
@@ -954,7 +954,7 @@ int SickPLS::SetLaserMode()
 
   packet[0] = 0x20; /* mode change command */
   packet[1] = 0x00; /* configuration mode */
-  packet[2] = 0x53; // S - the password 
+  packet[2] = 0x53; // S - the password
   packet[3] = 0x49; // I
   packet[4] = 0x43; // C
   packet[5] = 0x4B; // K
@@ -964,7 +964,7 @@ int SickPLS::SetLaserMode()
   packet[9] = 'S'; // S
 
   len = 10;
-  
+
   // PLAYER_TRACE0("sending configuration mode request to laser");
   if (WriteToLaser(packet, len) < 0)
     return 1;
@@ -1013,7 +1013,7 @@ int SickPLS::SetLaserSpeed(int speed)
   // PLAYER_TRACE0("sending baud rate request to laser");
   if (WriteToLaser(packet, len) < 0)
     return 1;
-            
+
   // Wait for laser to return ack
   // This could take a while...
   //
@@ -1122,7 +1122,7 @@ int SickPLS::SetLaserConfig(bool intensity)
   packet[0] = 0x77;
 
   // Return intensity in top 3 data bits
-  packet[6] = (intensity ? 0x01 : 0x00); 
+  packet[6] = (intensity ? 0x01 : 0x00);
 
   // Set the units for the range reading
   if (this->range_res == 1)
@@ -1168,9 +1168,9 @@ int SickPLS::RequestLaserData(int min_segment, int max_segment)
 {
   ssize_t len = 0;
   uint8_t packet[20];
-  
+
   packet[len++] = 0x20; /* mode change command */
-    
+
   if (min_segment == 0 && max_segment == 360)
   {
     // Use this for raw scan data...
@@ -1178,7 +1178,7 @@ int SickPLS::RequestLaserData(int min_segment, int max_segment)
     packet[len++] = 0x24;
   }
   else
-  {        
+  {
     // Or use this for selected scan data...
     //
     int first = min_segment + 1;
@@ -1213,7 +1213,7 @@ int SickPLS::RequestLaserData(int min_segment, int max_segment)
 
   // PLAYER_TRACE0("scan data request ok");
   printf("LASER: RLD: scan data OK\n");
-   
+
   return 0;
 }
 
@@ -1259,7 +1259,7 @@ int SickPLS::ReadLaserData(uint16_t *data, size_t datalen)
     //
     //int first = ((int) raw_data[1] | ((int) raw_data[2] << 8)) - 1;
     //int last =  ((int) raw_data[3] | ((int) raw_data[4] << 8)) - 1;
-        
+
     // Determine the number of values returned
     //
     //int units = raw_data[6] >> 6;
@@ -1277,7 +1277,7 @@ int SickPLS::ReadLaserData(uint16_t *data, size_t datalen)
   }
   else
     RETURN_ERROR(1, "unexpected packet type");
-  
+
   return 0;
 }
 
@@ -1310,7 +1310,7 @@ ssize_t SickPLS::WriteToLaser(uint8_t *data, ssize_t len)
   // Make sure both input and output queues are empty
   //
   tcflush(this->laser_fd, TCIOFLUSH);
-    
+
   // Write the data to the port
   //
   ssize_t bytes = ::write( this->laser_fd, buffer, 4 + len + 2);
@@ -1319,7 +1319,7 @@ ssize_t SickPLS::WriteToLaser(uint8_t *data, ssize_t len)
   // Synchronous IO doesnt always work
   //
   ::tcdrain(this->laser_fd);
-    
+
   // Return the actual number of bytes sent, including header and footer
   //
   return bytes;
@@ -1379,7 +1379,7 @@ ssize_t SickPLS::ReadFromLaser(uint8_t *data, ssize_t maxlen, bool ack, int time
   int bytes = 0;
   uint8_t header[5] = {0};
   uint8_t footer[3];
-    
+
   // Read until we get a valid header
   // or we timeout
   //
@@ -1408,7 +1408,7 @@ ssize_t SickPLS::ReadFromLaser(uint8_t *data, ssize_t maxlen, bool ack, int time
   // Includes status, but not CRC, so subtract status to get data packet length.
   //
   ssize_t len = ((int) header[2] | ((int) header[3] << 8)) - 1;
-    
+
   // Check for buffer overflows
   //
   if (len > maxlen)
@@ -1446,7 +1446,7 @@ ssize_t SickPLS::ReadFromLaser(uint8_t *data, ssize_t maxlen, bool ack, int time
       RETURN_ERROR(0, "timeout on read (4)");
     }
   }
-    
+
   // Construct entire packet
   // And check the CRC
   //
@@ -1458,11 +1458,11 @@ ssize_t SickPLS::ReadFromLaser(uint8_t *data, ssize_t maxlen, bool ack, int time
   uint16_t crc = CreateCRC(buffer, 4 + len + 1);
   if (crc != MAKEUINT16(footer[1], footer[2]))
     RETURN_ERROR(0, "CRC error, ignoring packet");
-    
+
   return len;
 }
 
-           
+
 ////////////////////////////////////////////////////////////////////////////////
 // Create a CRC for the given packet
 //
@@ -1470,27 +1470,27 @@ unsigned short SickPLS::CreateCRC(uint8_t* data, ssize_t len)
 {
   uint16_t uCrc16;
   uint8_t abData[2];
-  
+
   uCrc16 = 0;
   abData[0] = 0;
-  
+
   while(len-- )
   {
     abData[1] = abData[0];
     abData[0] = *data++;
-    
+
     if( uCrc16 & 0x8000 )
     {
       uCrc16 = (uCrc16 & 0x7fff) << 1;
       uCrc16 ^= CRC16_GEN_POL;
     }
     else
-    {    
+    {
       uCrc16 <<= 1;
     }
     uCrc16 ^= MAKEUINT16(abData[0],abData[1]);
   }
-  return (uCrc16); 
+  return (uCrc16);
 }
 
 

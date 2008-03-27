@@ -2,8 +2,8 @@
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2005 -
  *     Brian Gerkey
- *                      
- * 
+ *
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -36,7 +36,7 @@ containing both scan and pose.
 
 @par Provides
 
-- @ref interface_laser : Pose-stamped laser scans (subtype 
+- @ref interface_laser : Pose-stamped laser scans (subtype
 PLAYER_LASER_DATA_SCANPOSE) are published via this interface
 
 @par Requires
@@ -47,22 +47,22 @@ PLAYER_LASER_DATA_SCANPOSE) are published via this interface
 @par Configuration requests
 
 - All configuration are forwarded to the underlying @ref interface_laser device for handling.
-  
+
 @par Configuration file options
 
 - interpolate (integer)
   - Default: 1
-  - Linearly interpolate between poses for each scan (1), or just attach the 
+  - Linearly interpolate between poses for each scan (1), or just attach the
     most recent pose to each scan (0).
 - max_scans (integer)
   - Default: 100
-  - Maximum number of scans to buffer while waiting for a second pose in order 
+  - Maximum number of scans to buffer while waiting for a second pose in order
     to interpolate.
 - update_thresh ([length angle] tuple)
   - Default: [-1.0 -1.0]
   - Minimum change in pose (translation or rotation) required before
     a new laser scan will be published.  Use this option to choke the data rate.
-    Set either value to -1.0 to indicate that no threshold should be applied in 
+    Set either value to -1.0 to indicate that no threshold should be applied in
     that dimension (i.e., every scan should be published).
 - update_interval (float, seconds)
   - Default: -1.0
@@ -70,10 +70,10 @@ PLAYER_LASER_DATA_SCANPOSE) are published via this interface
     the robot has moved.  Set to -1.0 to disable this threshold.
 - send_all_scans (integer)
   - Default: 1
-  - Whether to stamp and publish every laser scan.  If set to 1, this option 
+  - Whether to stamp and publish every laser scan.  If set to 1, this option
     overrides update_thresh and update_interval.
-      
-@par Example 
+
+@par Example
 
 @verbatim
 driver
@@ -98,8 +98,8 @@ driver
 
 */
 /** @} */
-  
-  
+
+
 #include <config.h>
 
 #include <math.h>
@@ -117,7 +117,7 @@ driver
 static double
 angle_diff(double a, double b)
 {
-  double d1, d2; 
+  double d1, d2;
   a = NORMALIZE(a);
   b = NORMALIZE(b);
   d1 = a-b;
@@ -134,7 +134,7 @@ angle_diff(double a, double b)
 class LaserPoseInterp : public Driver
 {
   public:
-    
+
     // Constructor
     LaserPoseInterp(ConfigFile* cf, int section);
     ~LaserPoseInterp();
@@ -143,8 +143,8 @@ class LaserPoseInterp : public Driver
     int Shutdown();
 
     // MessageHandler
-    int ProcessMessage(QueuePointer & resp_queue, 
-		       player_msghdr * hdr, 
+    int ProcessMessage(QueuePointer & resp_queue,
+		       player_msghdr * hdr,
 		       void * data);
   private:
 
@@ -176,20 +176,20 @@ Driver* LaserPoseInterp_Init(ConfigFile* cf, int section)
 }
 
 // a driver registration function
-void LaserPoseInterp_Register(DriverTable* table)
+void laserposeinterp_Register(DriverTable* table)
 {
   table->AddDriver("laserposeinterpolator", LaserPoseInterp_Init);
 }
 
 LaserPoseInterp::LaserPoseInterp(ConfigFile* cf, int section)
-    : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, 
+    : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
              PLAYER_LASER_CODE)
 {
   // Must have an input laser
   if (cf->ReadDeviceAddr(&this->laser_addr, section, "requires",
                          PLAYER_LASER_CODE, -1, NULL) != 0)
   {
-    this->SetError(-1);    
+    this->SetError(-1);
     return;
   }
   this->laser_device = NULL;
@@ -198,7 +198,7 @@ LaserPoseInterp::LaserPoseInterp(ConfigFile* cf, int section)
   if (cf->ReadDeviceAddr(&this->position_addr, section, "requires",
                          PLAYER_POSITION2D_CODE, -1, NULL) != 0)
   {
-    this->SetError(-1);    
+    this->SetError(-1);
     return;
   }
   this->position_device = NULL;
@@ -212,7 +212,7 @@ LaserPoseInterp::LaserPoseInterp(ConfigFile* cf, int section)
   this->update_interval = cf->ReadFloat(section, "update_interval", -1.0);
   this->send_all_scans = cf->ReadInt(section, "send_all_scans", 1);
 
-  this->scans = (player_laser_data_t*)calloc(this->maxnumscans, 
+  this->scans = (player_laser_data_t*)calloc(this->maxnumscans,
                                              sizeof(player_laser_data_t));
   assert(this->scans);
   this->scantimes = (double*)calloc(this->maxnumscans, sizeof(double));
@@ -272,21 +272,21 @@ int LaserPoseInterp::Setup()
 // Shutdown the device
 int LaserPoseInterp::Shutdown()
 {
-  
+
   this->laser_device->Unsubscribe(this->InQueue);
   this->position_device->Unsubscribe(this->InQueue);
   return(0);
 }
 
 
-int 
-LaserPoseInterp::ProcessMessage(QueuePointer & resp_queue, 
+int
+LaserPoseInterp::ProcessMessage(QueuePointer & resp_queue,
                                 player_msghdr * hdr,
                                 void * data)
 {
   // Is it a laser scan?
-  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 
-                           PLAYER_LASER_DATA_SCAN, 
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA,
+                           PLAYER_LASER_DATA_SCAN,
                            this->laser_addr))
   {
     // are we interpolating?
@@ -301,7 +301,7 @@ LaserPoseInterp::ProcessMessage(QueuePointer & resp_queue,
       scanpose.pose = this->lastpose.pos;
       scanpose.scan =  *((player_laser_data_t*)data);
 
-      this->Publish(this->device_addr, 
+      this->Publish(this->device_addr,
                     PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCANPOSE,
                     (void*)&scanpose, sizeof(scanpose), &hdr->timestamp);
       return(0);
@@ -326,8 +326,8 @@ LaserPoseInterp::ProcessMessage(QueuePointer & resp_queue,
     }
   }
   // Is it a new pose?
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 
-                                PLAYER_POSITION2D_DATA_STATE, 
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA,
+                                PLAYER_POSITION2D_DATA_STATE,
                                 this->position_addr))
   {
     player_position2d_data_t newpose = *((player_position2d_data_t*)data);
@@ -365,7 +365,7 @@ LaserPoseInterp::ProcessMessage(QueuePointer & resp_queue,
              (this->lastpublishposetime < 0.0) ||
              ((this->update_thresh[0] >= 0.0) &&
               (hypot(scanpose.pose.px-this->lastpublishpose.px,
-                     scanpose.pose.py-this->lastpublishpose.py) >= 
+                     scanpose.pose.py-this->lastpublishpose.py) >=
                this->update_thresh[0])) ||
              ((this->update_thresh[1] >= 0.0) &&
               (fabs(angle_diff(scanpose.pose.pa,this->lastpublishpose.pa)) >=
@@ -374,9 +374,9 @@ LaserPoseInterp::ProcessMessage(QueuePointer & resp_queue,
               ((this->scantimes[i] - this->lastpublishposetime) >=
                this->update_interval)))
           {
-            this->Publish(this->device_addr, 
+            this->Publish(this->device_addr,
                           PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCANPOSE,
-                          (void*)&scanpose, sizeof(scanpose), 
+                          (void*)&scanpose, sizeof(scanpose),
                           this->scantimes + i);
 
             this->lastpublishposetime = this->scantimes[i];
@@ -409,7 +409,7 @@ LaserPoseInterp::ProcessMessage(QueuePointer & resp_queue,
     return(0);
   }
   // Forward response (success or failure) from the laser
-  else if((Message::MatchMessage(hdr, PLAYER_MSGTYPE_RESP_ACK, 
+  else if((Message::MatchMessage(hdr, PLAYER_MSGTYPE_RESP_ACK,
                             -1, this->laser_addr)) ||
      (Message::MatchMessage(hdr, PLAYER_MSGTYPE_RESP_NACK,
                             -1, this->laser_addr)))

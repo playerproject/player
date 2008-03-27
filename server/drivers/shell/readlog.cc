@@ -395,7 +395,7 @@ Driver* ReadReadLog_Init(ConfigFile* cf, int section)
 
 ////////////////////////////////////////////////////////////////////////////
 // Device factory registration
-void ReadLog_Register(DriverTable* table)
+void readlog_Register(DriverTable* table)
 {
   table->AddDriver("readlog", ReadReadLog_Init);
   return;
@@ -1481,7 +1481,7 @@ int ReadLog::ParseLaser(player_devaddr_t id,
 
             data.ranges = new float[ data.ranges_count ];
             data.intensity = new uint8_t[ data.ranges_count ];
-            
+
             count = 0;
             for (i = 13; i < token_count; i += 2)
             {
@@ -1503,7 +1503,7 @@ int ReadLog::ParseLaser(player_devaddr_t id,
             }
             delete [] data.ranges;
             delete [] data.intensity;
-            
+
             return ret;
           }
 
@@ -1531,7 +1531,7 @@ int ReadLog::ParseLaser(player_devaddr_t id,
 
             data.scan.ranges = new float[ data.scan.ranges_count ];
             data.scan.intensity = new uint8_t[ data.scan.ranges_count ];
-            
+
             count = 0;
             for (i = 16; i < token_count; i += 2)
             {

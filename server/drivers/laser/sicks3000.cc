@@ -1,9 +1,9 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
- * 
+ *
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -54,7 +54,7 @@ It is also assumed that the laser is outputing its full 190 degree scan in a sin
 
 - PLAYER_LASER_REQ_GET_GEOM
 - PLAYER_LASER_REQ_GET_CONFIG
-  
+
 @par Configuration file options
 
 - pose (length tuple)
@@ -65,8 +65,8 @@ It is also assumed that the laser is outputing its full 190 degree scan in a sin
 - size (length tuple)
   - Default: [0.15 0.15]
   - Footprint (x,y) of the laser.
-      
-@par Example 
+
+@par Example
 
 @verbatim
 driver
@@ -89,9 +89,9 @@ driver
 
 */
 /** @} */
-  
 
-  
+
+
 #include <config.h>
 
 #include <assert.h>
@@ -118,7 +118,7 @@ extern PlayerTime* GlobalTime;
 class SickS3000 : public Driver
 {
   public:
-    
+
     // Constructor
     SickS3000(ConfigFile* cf, int section);
     ~SickS3000();
@@ -127,8 +127,8 @@ class SickS3000 : public Driver
     int Shutdown();
 
     // MessageHandler
-    int ProcessMessage(QueuePointer &resp_queue, 
-		       player_msghdr * hdr, 
+    int ProcessMessage(QueuePointer &resp_queue,
+		       player_msghdr * hdr,
 		       void * data);
   private:
 
@@ -138,13 +138,13 @@ class SickS3000 : public Driver
     // Process range data from laser
     int ProcessLaserData();
 
-    
+
     // Calculates CRC for a telegram
     unsigned short CreateCRC(uint8_t *data, ssize_t len);
 
     // Get the time (in ms)
     int64_t GetTime();
-    
+
     void SetScannerParams(int data_count);
 
   protected:
@@ -152,22 +152,22 @@ class SickS3000 : public Driver
     // Laser pose in robot cs.
     double pose[3];
     double size[2];
-    
+
     // Scan width and resolution.
     int scan_width, scan_res;
 
     // Start and end scan angles (for restricted scan).  These are in
     // units of 0.01 degrees.
     int min_angle, max_angle;
-    
+
     // Start and end scan segments (for restricted scan).  These are
     // the values used by the laser.
     int scan_min_segment, scan_max_segment;
-    
+
     IntProperty mirror;
-    
+
     bool recognisedScanner;
-    
+
     // Opaque Driver info
     Device *opaque;
     player_devaddr_t opaque_id;
@@ -189,7 +189,7 @@ Driver* SickS3000_Init(ConfigFile* cf, int section)
 }
 
 // a driver registration function
-void SickS3000_Register(DriverTable* table)
+void sicks3000_Register(DriverTable* table)
 {
   table->AddDriver("sicks3000", SickS3000_Init);
 }
@@ -206,23 +206,23 @@ void SickS3000_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Error macros
 #define RETURN_ERROR(erc, m) {PLAYER_ERROR(m); return erc;}
- 
+
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 SickS3000::SickS3000(ConfigFile* cf, int section)
     : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LASER_CODE), mirror("mirror", 0, 0)
 {
-	  
+
   rx_count = 0;
   // allocate our recieve buffer
   rx_buffer_size = cf->ReadInt(section, "buffer_size", DEFAULT_RX_BUFFER_SIZE);
   rx_buffer = new uint8_t[rx_buffer_size];
   assert(rx_buffer);
-  
+
   this->RegisterProperty ("mirror", &this->mirror, cf, section);
-  
+
   recognisedScanner = false;
-  
+
   memset(&data_packet,0,sizeof(data_packet));
   data_packet.min_angle = DTOR(-135);
   data_packet.max_angle = DTOR(135);
@@ -234,7 +234,7 @@ SickS3000::SickS3000(ConfigFile* cf, int section)
   config_packet.max_angle = DTOR(135);
   config_packet.resolution = DTOR(0.5);
   config_packet.max_range = 49;
-  
+
   // Laser geometry.
   this->pose[0] = cf->ReadTupleLength(section, "pose", 0, 0.0);
   this->pose[1] = cf->ReadTupleLength(section, "pose", 1, 0.0);;
@@ -248,7 +248,7 @@ SickS3000::SickS3000(ConfigFile* cf, int section)
                        PLAYER_OPAQUE_CODE, -1, NULL) != 0)
   {
 	puts ("No Opaque driver specified");
-    this->SetError(-1);    
+    this->SetError(-1);
     return;
   }
 
@@ -258,7 +258,7 @@ SickS3000::SickS3000(ConfigFile* cf, int section)
 
 SickS3000::~SickS3000()
 {
-  delete [] rx_buffer; 
+  delete [] rx_buffer;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -271,12 +271,12 @@ void SickS3000::SetScannerParams(int data_count)
 		data_packet.max_angle = DTOR(95);
 		data_packet.resolution = DTOR(0.25);
 		data_packet.max_range = 49;
-		
+
 		config_packet.min_angle = DTOR(-95);
 		config_packet.max_angle = DTOR(95);
 		config_packet.resolution = DTOR(0.25);
 		config_packet.max_range = 49;
-		
+
 		recognisedScanner = true;
 	}
 }
@@ -285,7 +285,7 @@ void SickS3000::SetScannerParams(int data_count)
 // Set up the device
 int SickS3000::Setup()
 {
-  
+
   PLAYER_MSG0(2, "Laser initialising");
   // Subscribe to the opaque device.
   if(Device::MatchDeviceAddress(this->opaque_id, this->device_addr))
@@ -293,13 +293,13 @@ int SickS3000::Setup()
     PLAYER_ERROR("attempt to subscribe to self");
     return(-1);
   }
-  
+
   if(!(this->opaque = deviceTable->GetDevice(this->opaque_id)))
   {
     PLAYER_ERROR("unable to locate suitable opaque device");
     return(-1);
   }
-   
+
   if(this->opaque->Subscribe(this->InQueue) != 0)
   {
     PLAYER_ERROR("unable to subscribe to opaque device");
@@ -310,7 +310,7 @@ int SickS3000::Setup()
 
   // Start the device thread
   StartThread();
-  
+
   return 0;
 }
 
@@ -323,15 +323,15 @@ int SickS3000::Shutdown()
   StopThread();
 
   opaque->Unsubscribe(InQueue);
-  
+
   PLAYER_MSG0(2, "laser shutdown");
-  
+
   return(0);
 }
 
 
-int 
-SickS3000::ProcessMessage(QueuePointer &resp_queue, 
+int
+SickS3000::ProcessMessage(QueuePointer &resp_queue,
                            player_msghdr * hdr,
                            void * data)
 {
@@ -353,7 +353,7 @@ SickS3000::ProcessMessage(QueuePointer &resp_queue,
     }
     return 0;
   }
-  
+
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
                                  PLAYER_LASER_REQ_GET_CONFIG,
                                  this->device_addr))
@@ -390,21 +390,21 @@ SickS3000::ProcessMessage(QueuePointer &resp_queue,
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
-void SickS3000::Main() 
+void SickS3000::Main()
 {
   for(;;)
   {
 	// Waits for the opaque driver to pass data onto this thread.
 	InQueue->Wait();
-	
+
     // test if we are supposed to cancel
     pthread_testcancel();
-    
+
     // process any pending messages
     ProcessMessages();
-    
+
     //usleep(1000);
-    
+
   }
 }
 
@@ -413,7 +413,7 @@ int SickS3000::ProcessLaserData()
 {
   while(rx_count >= 22)
   {
-	
+
     // find our continuous data header
     unsigned int ii;
     bool found = false;
@@ -433,8 +433,8 @@ int SickS3000::ProcessLaserData()
       rx_count -= ii;
       return 0;
     }
-    
-    // get relevant bits of the header 
+
+    // get relevant bits of the header
     // size includes all data from the data block number
     // through to the end of the packet including the checksum
     unsigned short size = 2*htons(*reinterpret_cast<unsigned short *> (&rx_buffer[6]));
@@ -445,11 +445,11 @@ int SickS3000::ProcessLaserData()
 	memmove(rx_buffer, &rx_buffer[1], --rx_count);
       	return 0;
     }
-    
+
     // check if we have enough data yet
     if (size > rx_count - 4)
       return 0;
-      
+
     unsigned short packet_checksum = *reinterpret_cast<unsigned short *> (&rx_buffer[size+2]);
     unsigned short calc_checksum = CreateCRC(&rx_buffer[4], size-2);
     if (packet_checksum != calc_checksum)
@@ -488,13 +488,13 @@ int SickS3000::ProcessLaserData()
             else
             	data_packet.ranges[ii] = distance_m;
           }
-          
+
           this->Publish(this->device_addr,
                         PLAYER_MSGTYPE_DATA,
                         PLAYER_LASER_DATA_SCAN,
                         (void*)&data_packet);
           delete [] data_packet.ranges;
-          
+
         }
         else if (data[0] == 0xCC)
         {
@@ -506,7 +506,7 @@ int SickS3000::ProcessLaserData()
         }
       }
     }
-      
+
     memmove(rx_buffer, &rx_buffer[size+4], rx_count - (size+4));
     rx_count -= (size + 4);
     continue;
@@ -549,7 +549,7 @@ static const unsigned short crc_table[256] = {
   0xef1f, 0xff3e, 0xcf5d, 0xdf7c, 0xaf9b, 0xbfba, 0x8fd9, 0x9ff8,
   0x6e17, 0x7e36, 0x4e55, 0x5e74, 0x2e93, 0x3eb2, 0x0ed1, 0x1ef0
 };
-           
+
 unsigned short SickS3000::CreateCRC(uint8_t *Data, ssize_t length)
 {
   unsigned short CRC_16 = 0xFFFF;

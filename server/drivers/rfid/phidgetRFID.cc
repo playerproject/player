@@ -24,7 +24,7 @@
 /** @defgroup driver_phidgetRFID phidgetRFID
  * @brief Phidget RFID reader
 
-The phidgetRFID driver communicates with the PhidgetRFID (Part# 1023) reader. (125 kHz Read-only). It does not support anti-collision, but it is inexpensive, small and USB Powered. 
+The phidgetRFID driver communicates with the PhidgetRFID (Part# 1023) reader. (125 kHz Read-only). It does not support anti-collision, but it is inexpensive, small and USB Powered.
 
 @par Compile-time dependencies
 
@@ -46,7 +46,7 @@ The phidgetRFID driver communicates with the PhidgetRFID (Part# 1023) reader. (1
 
 - serial (integer)
   - Default: -1
-  - This defines which phidget will be controlled if there is more than one connected to the USB bus. 
+  - This defines which phidget will be controlled if there is more than one connected to the USB bus.
     You can obtain the number with lsusb, like this:  "lsusb -v |grep iSerial".
     The default is -1 , and it will connect to the first phidget available.
 
@@ -62,8 +62,8 @@ The phidgetRFID driver communicates with the PhidgetRFID (Part# 1023) reader. (1
   - The driver supports the "speech" interface for printing data to the LCD of the Interface kits that have it.
   - An "aio" interface gives information about the analog sensors connected to the Interface Kit.
   - The "dio" interface controls the digital inputs and outputs present.
-  
-@par Example 
+
+@par Example
 
 @verbatim
 driver
@@ -470,7 +470,7 @@ PhidgetRFID_Init(ConfigFile* cf, int section) {
 // that it can be invoked without object context.  In this function, we add
 // the driver into the given driver table, indicating which interface the
 // driver can support and how to create a driver instance.
-void PhidgetRFID_Register(DriverTable* table) {
+void phidgetrfid_Register(DriverTable* table) {
 	table->AddDriver("phidgetRFID", PhidgetRFID_Init);
 }
 

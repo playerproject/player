@@ -1,8 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -59,8 +59,8 @@ our own orinoco cards.
   - Default: 1000
   - Update interval; i.e., time between reading /proc/net/wireless
     (milliseconds)
- 
-@par Example 
+
+@par Example
 
 @verbatim
 driver
@@ -127,7 +127,7 @@ protected:
   char interface_name[32]; // name of wireless device
 
   struct iwreq *req; // used for getting wireless info in ioctls
-  struct iw_range *range; 
+  struct iw_range *range;
   struct iw_statistics *stats;
 
   bool has_range;
@@ -137,7 +137,7 @@ protected:
 };
 
 Driver * LinuxWiFi_Init( ConfigFile *cf, int section);
-void LinuxWiFi_Register(DriverTable *table);
+void linuxwifi_Register(DriverTable *table);
 
 /* check for supported interfaces.
  *
@@ -145,13 +145,13 @@ void LinuxWiFi_Register(DriverTable *table);
  */
 Driver *
 LinuxWiFi_Init( ConfigFile *cf, int section)
-{ 
+{
   return ((Driver*)(new LinuxWiFi( cf, section)));
 }
 
 /* register with drivertable
  *
- * returns: 
+ * returns:
  */
 void
 LinuxWiFi_Register(DriverTable *table)
@@ -160,10 +160,10 @@ LinuxWiFi_Register(DriverTable *table)
 }
 
 LinuxWiFi::LinuxWiFi( ConfigFile *cf, int section) :
-  Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_WIFI_CODE) 
+  Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_WIFI_CODE)
 {
   info_fp = NULL;
-  
+
   sfd = -1;
   req = new struct iwreq;
   range = new struct iw_range;
@@ -173,11 +173,11 @@ LinuxWiFi::LinuxWiFi( ConfigFile *cf, int section) :
 
   last_update.tv_sec =0;
   last_update.tv_usec = 0;
-  
+
   update_interval = cf->ReadInt(section, "interval", WIFI_UPDATE_INTERVAL);
 }
 
-LinuxWiFi::~LinuxWiFi() 
+LinuxWiFi::~LinuxWiFi()
 {
   delete req;
   delete range;
@@ -188,13 +188,13 @@ int
 LinuxWiFi::Setup()
 {
   //  printf("LinuxWiFi: Wireless extensions %d\n", WIRELESS_EXT);
-  
+
   // get the wireless device from /proc/net/wireless
   if ((this->info_fp = fopen(WIFI_INFO_FILE, "r")) == NULL) {
     fprintf(stderr, "LinuxWiFi: couldn't open info file \"%s\"\n",
 	    WIFI_INFO_FILE);
     return -1;
-  } 
+  }
   GlobalTime->GetTime(&last_update);
 
   // lets read it to the point we are interested in
@@ -213,11 +213,11 @@ LinuxWiFi::Setup()
   }
 
   // now we are at line of interest
-  int eth, status; 
+  int eth, status;
   double link, level, noise;
   sscanf(buf, "  eth%d: %d %lf %lf %lf", &eth, &status,
 	 &link, &level, &noise);
-  
+
   // buf has info about wireless interface
   char *name = strchr(buf, ':');
   if (name) {
@@ -244,30 +244,30 @@ LinuxWiFi::Setup()
     // didn't get a socket
     return -1;
   }
-  
+
   struct iw_range reqbuf;
-  
+
   // set the data part of the request
   req->u.data.pointer = (caddr_t)&reqbuf;
   req->u.data.length = sizeof(struct iw_range);
   req->u.data.flags = 0;
-  
-  // get range info... get it here because we set a flag on 
+
+  // get range info... get it here because we set a flag on
   // how it returns, so we know how to update
-  if(ioctl(sfd, SIOCGIWRANGE, req) >= 0) 
+  if(ioctl(sfd, SIOCGIWRANGE, req) >= 0)
   {
     has_range = true;
     memcpy((char *) range, &reqbuf, sizeof(struct iw_range));
   }
 
   return 0;
-}  
+}
 
 int
 LinuxWiFi::Shutdown()
 {
   fclose(this->info_fp);
-  
+
   close(sfd);
   return 0;
 }
@@ -297,11 +297,11 @@ LinuxWiFi::Update(void)
   uint16_t  wmaxqual=0, wmaxlevel=0, wmaxnoise=0;
   uint8_t qual_type=0;
   uint32_t throughput=0;
-  int32_t bitrate =0; 
+  int32_t bitrate =0;
   uint8_t mode = 0;
   player_wifi_data_t wifi_data;
   player_wifi_link_t wifi_link;
-  
+
   struct timeval curr;
 
   GlobalTime->GetTime(&curr);
@@ -334,15 +334,15 @@ LinuxWiFi::Update(void)
     // Dummy rewind; this is a hack to force the kernel/stdlib to
     // re-read the file.
     rewind(this->info_fp);
-    
+
     // get the wifi info
     if (fsetpos(this->info_fp, &this->start_pos)) {
       fprintf(stderr, "LinuxWiFi: fsetpos returned error\n");
     }
-    
+
     fscanf(this->info_fp, "  eth%d: %d %d. %d. %d.", &eth, &status,
 	   &link, &level, &noise);
-    
+
     wqual = (uint16_t) link;
     wlevel = (uint16_t) level;
     wnoise = (uint16_t) noise;
@@ -354,14 +354,14 @@ LinuxWiFi::Update(void)
     if (has_range) {
       throughput = range->throughput;
       if (qual->level != 0) {
-	
+
 	if (qual->level > range->max_qual.level) {
 	  // we have dbm info
 	  qual_type = PLAYER_WIFI_QUAL_DBM;
 	} else {
 	  qual_type = PLAYER_WIFI_QUAL_REL;
 	}
-      } 
+      }
     }else {
       qual_type = PLAYER_WIFI_QUAL_UNKNOWN;
     }
@@ -406,18 +406,18 @@ LinuxWiFi::Update(void)
   // set interface data
   wifi_data.throughput = htonl(throughput);
   wifi_data.mode = mode;
-  
+
   // get AP address
   if (ioctl(sfd, SIOCGIWAP, req) >= 0) {
     // got it...
     struct sockaddr sa;
     memcpy(&sa, &(req->u.ap_addr), sizeof(sa));
-    
+
     PrintEther((char *)wifi_data.ap, (unsigned char *)sa.sa_data);
   } else {
     strncpy(wifi_data.ap, "00:00:00:00:00:00", sizeof(wifi_data.ap));
   }
-  
+
   // get bitrate
   bitrate = 0;
   if (ioctl(sfd, SIOCGIWRATE, req) >= 0) {
@@ -425,7 +425,7 @@ LinuxWiFi::Update(void)
   }
 
   wifi_data.bitrate = bitrate;
-    
+
   wifi_data.links_count = 1;
   wifi_data.links = &wifi_link;
   strncpy((char*)wifi_data.links[0].ip, "0.0.0.0", sizeof(wifi_data.links[0].ip));
@@ -436,11 +436,11 @@ LinuxWiFi::Update(void)
 
   wifi_data.links[0].mac_count = 0;
   wifi_data.links[0].essid_count = 0;
-  
+
   wifi_data.maxqual = wmaxqual;
   wifi_data.maxlevel = wmaxlevel;
   wifi_data.maxnoise = wmaxnoise;
- 
+
   wifi_data.qual_type = qual_type;
 
   Publish(device_addr, PLAYER_MSGTYPE_DATA,PLAYER_WIFI_DATA_STATE,(void*)&wifi_data);
@@ -453,13 +453,13 @@ char *
 LinuxWiFi::GetMACAddress(char *buf, int len)
 {
   struct ifreq ifr;
-  
+
   /* Get the type of hardware address */
   strncpy(ifr.ifr_name, interface_name, IFNAMSIZ);
   if ((ioctl(sfd, SIOCGIFHWADDR, &ifr) < 0) ||
       (ifr.ifr_hwaddr.sa_family != ARPHRD_ETHER)) {
     /* Deep trouble... */
-    fprintf(stderr, "LinuxWiFi: Interface %s doesn't support MAC addresses\n", 
+    fprintf(stderr, "LinuxWiFi: Interface %s doesn't support MAC addresses\n",
 	    interface_name);
     *buf='\0';
     return buf;
@@ -487,4 +487,4 @@ LinuxWiFi::PrintEther(char *buf, unsigned char *data)
   return buf;
 }
 
-  
+
