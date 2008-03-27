@@ -60,6 +60,7 @@ IF (BUILD_DOCUMENTATION)
 
         # Upload documentation target (not supported on Windows)
         SET (docWebDestination "Player-cvs")
+        SET (docName "player")
         IF (NOT PLAYER_OS_WIN)
             ADD_CUSTOM_TARGET (upload_doc
                 ${CMAKE_CURRENT_SOURCE_DIR}/upload_www.sh ${docWebDestination} ${docName}
