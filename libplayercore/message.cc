@@ -129,7 +129,7 @@ void Message::CreateMessage(const struct player_msghdr & aHeader,
     }
     else
     {
-      PLAYER_ERROR3 ("failed to clone message %s: %s, %d", interf_to_str (Header.addr.interf), msgtype_to_str (Header.type), Header.subtype);
+      PLAYER_ERROR3 ("failed to find clone function for  message %s: %s, %d", interf_to_str (Header.addr.interf), msgtype_to_str (Header.type), Header.subtype);
     }
   }
   else

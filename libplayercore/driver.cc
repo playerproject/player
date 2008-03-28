@@ -153,7 +153,6 @@ Driver::Publish(player_msghdr_t* hdr,
 {
   Device* dev;
 
-  Message msg(*hdr,src,copy);
   // lock here, because we're accessing our device's queue list
   this->Lock();
   // push onto each queue subscribed to the given device
@@ -167,6 +166,7 @@ Driver::Publish(player_msghdr_t* hdr,
     this->Unlock();
     return;
   }
+  Message msg(*hdr,src,copy);
   for(size_t i=0;i<dev->len_queues;i++)
   {
     if(dev->queues[i] != NULL)
