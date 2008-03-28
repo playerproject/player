@@ -157,7 +157,7 @@ Driver* SkyetekM1_Init (ConfigFile* cf, int section)
 ////////////////////////////////////////////////////////////////////////////////
 //Registers the driver in the driver table. Called from the
 // player_driver_init function that the loader looks for
-void skyetekm1_Register (DriverTable* table)
+void skyetekM1_Register (DriverTable* table)
 {
 	table->AddDriver ("skyetekM1", SkyetekM1_Init);
 }

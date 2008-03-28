@@ -154,7 +154,7 @@ LinuxWiFi_Init( ConfigFile *cf, int section)
  * returns:
  */
 void
-LinuxWiFi_Register(DriverTable *table)
+linuxwifi_Register(DriverTable *table)
 {
   table->AddDriver("linuxwifi", LinuxWiFi_Init);
 }

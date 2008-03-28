@@ -32,9 +32,25 @@ ENDFOREACH (driverName ${PLAYER_BUILT_DRIVERS})
 FILE (APPEND ${driverregistry_cc} "}\n")
 
 # Create a list of the sources map
-MAP_TO_LIST (driversSrcs "${PLAYER_BUILT_DRIVERS}" PLAYER_DRIVERSLIB_SOURCES_MAP)
+SET (allSourceNames ${PLAYER_BUILT_DRIVERS})
+IF (PLAYER_BUILT_DRIVEREXTRAS)
+    LIST (APPEND allSourceNames ${PLAYER_BUILT_DRIVEREXTRAS})
+ENDIF (PLAYER_BUILT_DRIVEREXTRAS)
+MAP_TO_LIST (driversSrcs "${allSourceNames}" PLAYER_DRIVERSLIB_SOURCES_MAP)
 FILTER_DUPLICATES (driversSrcs "${driversSrcs}")
 # MESSAGE (STATUS "Sources is ${driversSrcs}")
+
+# Set lib-wide link and include directories
+IF (PLAYER_DRIVERSLIB_INCLUDEDIRS)
+    FILTER_EMPTY (driverIncludeDirs "${PLAYER_DRIVERSLIB_INCLUDEDIRS}")
+    FILTER_DUPLICATES (driverIncludeDirs "${driverIncludeDirs}")
+    INCLUDE_DIRECTORIES (${driverIncludeDirs})
+ENDIF (PLAYER_DRIVERSLIB_INCLUDEDIRS)
+IF (PLAYER_DRIVERSLIB_LIBDIRS)
+    FILTER_EMPTY (driverLinkDirs "${PLAYER_DRIVERSLIB_LIBDIRS}")
+    FILTER_DUPLICATES (driverLinkDirs "${driverLinkDirs}")
+    LINK_DIRECTORIES (${driverLinkDirs})
+ENDIF (PLAYER_DRIVERSLIB_LIBDIRS)
 
 # Actually add the target
 PLAYER_ADD_LIBRARY (playerdrivers ${driver_config_h} ${driverregistry_cc} ${driversSrcs})
@@ -52,6 +68,14 @@ FOREACH (driverName ${PLAYER_BUILT_DRIVERS})
             COMPILE_FLAGS "${cFlags}")
     ENDIF (cFlags)
 ENDFOREACH (driverName ${PLAYER_BUILT_DRIVERS})
+FOREACH (extraName ${PLAYER_BUILT_DRIVEREXTRAS})
+    GET_FROM_GLOBAL_MAP (cFlags PLAYER_DRIVERSLIB_CFLAGS ${extraName})
+    IF (cFlags)
+        GET_FROM_GLOBAL_MAP (sourceFiles PLAYER_DRIVERSLIB_SOURCES_MAP ${extraName})
+        SET_SOURCE_FILES_PROPERTIES (${sourceFiles} PROPERTIES
+            COMPILE_FLAGS "${cFlags}")
+    ENDIF (cFlags)
+ENDFOREACH (extraName ${PLAYER_BUILT_DRIVEREXTRAS})
 
 # Set the link flags for the library appropriately
 IF (PLAYER_DRIVERSLIB_LINKFLAGS)

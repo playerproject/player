@@ -195,7 +195,7 @@ Driver* InsideM300_Init (ConfigFile* cf, int section)
 ////////////////////////////////////////////////////////////////////////////////
 //Registers the driver in the driver table. Called from the
 // player_driver_init function that the loader looks for
-void insidem300_Register (DriverTable* table)
+void insideM300_Register (DriverTable* table)
 {
 	table->AddDriver ("insideM300", InsideM300_Init);
 }

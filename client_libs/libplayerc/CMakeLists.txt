@@ -3,7 +3,7 @@ ADD_SUBDIRECTORY (bindings)
 
 INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/client_libs)
 
-SET (PLAYERC_EXTRA_LIBS)
+SET (PLAYERC_EXTRA_LINK_LIBRARIES)
 SET (playercSrcs    playerc.h
                     mclient.c
                     client.c
@@ -53,7 +53,7 @@ SET (playercSrcs    playerc.h
 APPEND_TO_CACHED_LIST (PLAYERC_EXTRA_LINK_LIBRARIES "Libs to link to with playerc" z m)
 
 PLAYER_ADD_LIBRARY (playerc ${playercSrcs})
-TARGET_LINK_LIBRARIES (playerc playerxdr playerutils playererror ${PLAYERC_EXTRA_LIBS})
+TARGET_LINK_LIBRARIES (playerc playerxdr playerutils playererror ${PLAYERC_EXTRA_LINK_LIBRARIES})
 IF (HAVE_LIBJPEG)
     TARGET_LINK_LIBRARIES (playerc playerjpeg)
     PLAYERC_ADD_LINK_LIB (jpeg)

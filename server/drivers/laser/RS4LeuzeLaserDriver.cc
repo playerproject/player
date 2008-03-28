@@ -443,7 +443,7 @@ Driver* RS4LeuzeLaserDriver_Init(ConfigFile* cf, int section) {
 
 //Registers the driver in the driver table. Called from the
 // player_driver_init function that the loader looks for
-int rs4leuzelaserdriver_Register(DriverTable* table) {
+int rs4leuze_Register(DriverTable* table) {
 	table->AddDriver("rs4leuze", RS4LeuzeLaserDriver_Init);
   return 0;
 }

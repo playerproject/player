@@ -1,8 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@
 
 /*
  * $Id$
- *   GRASP version of the P2OS packet class.  this class has methods 
+ *   GRASP version of the P2OS packet class.  this class has methods
  *   for building, printing, sending and receiving GRASP Board packets.
  *
  */
@@ -30,7 +30,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
-#include <packet.h>
+#include "packet.h"
 #include <unistd.h>
 #include <stdlib.h> /* for exit() */
 #include "clodbuster.h"
@@ -59,10 +59,10 @@ void GRASPPacket::PrintHex() {
 
 
 
-int GRASPPacket::Receive( int fd,unsigned char command) 
+int GRASPPacket::Receive( int fd,unsigned char command)
 {
   switch(command)
-  { 
+  {
     case ECHO_SERVO_VALUES:
     case ECHO_MAX_SERVO_LIMITS:
     case ECHO_MIN_SERVO_LIMITS:
@@ -81,11 +81,11 @@ int GRASPPacket::Receive( int fd,unsigned char command)
   memset(packet,0,retsize);
 
     int cnt = 0;
-   
-    cnt=read( fd, packet,  retsize); 
+
+    cnt=read( fd, packet,  retsize);
     if (cnt!=(int)retsize)
       printf("wrong read size: asked %d got %d\n",retsize,cnt);
-       
+
   return(0);
 }
 
@@ -95,7 +95,7 @@ int GRASPPacket::Build(unsigned char command, unsigned char data)
   packet[0]=0xFF;
   packet[1]=command;
   packet[2]=data;
-  size=3; 
+  size=3;
   return(0);
 }
 
@@ -105,21 +105,21 @@ int GRASPPacket::Build(unsigned char command)
   packet[0]=0xFF;
   packet[1]=command;
   packet[2]=0x00;
-  size=3; 
+  size=3;
   return(0);
 }
 
-int GRASPPacket::Send(int fd) 
+int GRASPPacket::Send(int fd)
 {
   int cnt=0;
   cnt = write( fd, packet, size );
- 
-   if(cnt !=(int)size) 
+
+   if(cnt !=(int)size)
     {
       perror("Send");
       return(1);
     }
-  
+
 /*  if(debug)
   {
     struct timeval dummy;

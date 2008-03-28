@@ -10,6 +10,7 @@
 INCLUDE (${PLAYER_CMAKE_DIR}/internal/Utils.cmake)
 
 SET (PLAYER_BUILT_DRIVERS_DESC "List of drivers that will be built")
+SET (PLAYER_BUILT_DRIVEREXTRAS_DESC "List of extra components for playerdrivers that will be built")
 SET (PLAYER_DRIVERSLIB_SOURCES_MAP_DESC "Source files for libplayerdrivers")
 SET (PLAYER_DRIVERSLIB_INCLUDEDIRS_DESC "Include dirs for libplayerdrivers")
 SET (PLAYER_DRIVERSLIB_LIBDIRS_DESC "Lib dirs for libplayerdrivers")
@@ -26,7 +27,6 @@ SET (PLAYERDRIVER_DEFINES_DESC "List of defines for driver_config.h")
 # includeDir, libDir, linkFlags, and cFlags must be passed by reference.
 # Don't forget to pass in the source files.
 MACRO (PLAYERDRIVER_ADD_DRIVER _name _cumulativeVar _includeDir _libDir _linkFlags _cFlags)
-#     MESSAGE (STATUS "Got arguments ${ARGV}")
     IF (${_cumulativeVar})
         # Add this driver's list of sources to the list of sources for libplayerdrivers
         PLAYERDRIVER_ADD_TO_BUILT (${_name} "${_includeDir}" "${_libDir}" "${_linkFlags}" "${_cFlags}" ${ARGN})
@@ -44,6 +44,17 @@ MACRO (PLAYERDRIVER_ADD_DRIVER_SIMPLE _name _cumulativeVar)
         PLAYERDRIVER_ADD_TO_BUILT (${_name} "" "" "" "" ${ARGN})
     ENDIF (${_cumulativeVar})
 ENDMACRO (PLAYERDRIVER_ADD_DRIVER_SIMPLE)
+
+
+###############################################################################
+# PLAYERDRIVER_ADD_EXTRA (_name _includeDir _libDir _linkFlags _cFlags)
+# Add some extra code to compile and link into playerdrivers.
+# includeDir, libDir, linkFlags, and cFlags must be passed by reference.
+# Don't forget to pass in the source files.
+MACRO (PLAYERDRIVER_ADD_EXTRA _name _includeDir _libDir _linkFlags _cFlags)
+    # Add the list of sources to the list of sources for libplayerdrivers, and add various flags
+    PLAYERDRIVER_ADD_EXTRA_TO_BUILT (${_name} "${_includeDir}" "${_libDir}" "${_linkFlags}" "${_cFlags}" ${ARGN})
+ENDMACRO (PLAYERDRIVER_ADD_EXTRA)
 
 
 ###############################################################################
@@ -178,6 +189,9 @@ ENDMACRO (PLAYERDRIVER_REQUIRE_PKG)
 ###############################################################################
 # PLAYERDRIVER_REQUIRE_HEADER (_name _cumulativeVar _header)
 # Check if a required header file is available.
+# If extra include directories are necessary for the check, set them using
+# CMAKE_REQUIRED_INCLUDES. If extra include files must be included for the
+# check to succeed, specify them as extra arguments.
 #
 # _name:            Driver name.
 # _cumulativeVar:   The option used in the calling CMakeLists.txt to check if
@@ -185,18 +199,22 @@ ENDMACRO (PLAYERDRIVER_REQUIRE_PKG)
 # _header:          Name of the header file to look for.
 INCLUDE (CheckIncludeFiles)
 MACRO (PLAYERDRIVER_REQUIRE_HEADER _name _cumulativeVar _header)
-    STRING (TOUPPER ${_header} _headerUpper)
-    STRING (REGEX REPLACE "[./\\]" "_" _headerUpper "${_headerUpper}")
-    SET (resultVar "HAVE_HDR_${_headerUpper}")
-    SET (CMAKE_REQUIRED_INCLUDES ${ARGN})
-    CHECK_INCLUDE_FILES (${_header} ${resultVar})
-    SET (CMAKE_REQUIRED_INCLUDES)
+    # Check for extra headers
+    SET (headers)
+    IF (${ARGC} GREATER 3)
+        LIST (APPEND headers ${ARGN})
+    ENDIF (${ARGC} GREATER 3)
+    LIST (APPEND headers ${_header})
+    STRING (TOUPPER ${_header} headerUpper)
+    STRING (REGEX REPLACE "[./\\]" "_" headerUpper "${headerUpper}")
+    SET (resultVar "HAVE_HDR_${headerUpper}")
+    CHECK_INCLUDE_FILES ("${headers}" ${resultVar})
     # If not found, disable this driver
     # Dereference cumulativeVar only once because IF will dereference the variable name stored inside itself
     IF (${_cumulativeVar} AND ${resultVar})
         # Driver will be built and header found - add a #define
         # Append to a list instead of setting an option so we can auto-generate driver_config.h
-        APPEND_TO_CACHED_LIST (PLAYERDRIVER_HAVE_DEFINES ${PLAYERDRIVER_HAVE_DEFINES_DESC} "HAVE_HDR_${_headerUpper}")
+        APPEND_TO_CACHED_LIST (PLAYERDRIVER_HAVE_DEFINES ${PLAYERDRIVER_HAVE_DEFINES_DESC} "HAVE_HDR_${headerUpper}")
     ELSEIF (${_cumulativeVar})
         # Case where cumulativeVar is set but header wasn't found - don't build
         SET (${_cumulativeVar} FALSE)
@@ -336,6 +354,28 @@ MACRO (PLAYERDRIVER_ADD_TO_BUILT _name _includeDir _libDir _linkFlags _cFlags)
     # Set this driver to be built
     APPEND_TO_CACHED_LIST (PLAYER_BUILT_DRIVERS ${PLAYER_BUILT_DRIVERS_DESC} ${_name})
 ENDMACRO (PLAYERDRIVER_ADD_TO_BUILT)
+
+
+###############################################################################
+# Add some extra code to playerdrivers.
+MACRO (PLAYERDRIVER_ADD_EXTRA_TO_BUILT _name _includeDir _libDir _linkFlags _cFlags)
+    # Source files go into a map so we can set the cflags on them later on
+    SET (tempList)
+    FOREACH (sourceFile ${ARGN})
+        LIST (APPEND tempList "${CMAKE_CURRENT_SOURCE_DIR}/${sourceFile}")
+    ENDFOREACH (sourceFile ${ARGN})
+    INSERT_INTO_GLOBAL_MAP (PLAYER_DRIVERSLIB_SOURCES_MAP ${_name} "${tempList}")
+
+    # Append the various build options
+    APPEND_TO_CACHED_LIST (PLAYER_DRIVERSLIB_INCLUDEDIRS ${PLAYER_DRIVERSLIB_INCLUDEDIRS_DESC} ${_includeDir})
+    APPEND_TO_CACHED_LIST (PLAYER_DRIVERSLIB_LIBDIRS ${PLAYER_DRIVERSLIB_LIBDIRS_DESC} ${_libDir})
+    SET (PLAYER_DRIVERSLIB_LINKFLAGS "${PLAYER_DRIVERSLIB_LINKFLAGS} ${_linkFlags}" CACHE INTERNAL ${PLAYER_DRIVERSLIB_LINKFLAGS_DESC} FORCE)
+    # C flags go into a map indexed by name because they're driver-specific
+    INSERT_INTO_GLOBAL_MAP (PLAYER_DRIVERSLIB_CFLAGS ${_name} "${_cFlags}")
+
+    # Set this driver to be built
+    APPEND_TO_CACHED_LIST (PLAYER_BUILT_DRIVEREXTRAS ${PLAYER_BUILT_DRIVEREXTRAS_DESC} ${_name})
+ENDMACRO (PLAYERDRIVER_ADD_EXTRA_TO_BUILT)
 
 
 ###############################################################################

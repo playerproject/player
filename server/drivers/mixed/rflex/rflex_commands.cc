@@ -12,7 +12,7 @@
 #include <stdio.h>
 //#include <pthread.h>
 #include <unistd.h>
-#include <rflex.h>
+#include "rflex.h"
 
 
 //holds data until someone wants to read it
@@ -35,7 +35,7 @@ typedef struct {
   unsigned char * ir_ranges;
   int home_bearing;
   int home_bearing_found;
-  
+
 } rflex_status_t;
 
 
@@ -57,7 +57,7 @@ static int sgn( long val )
 /* COMPUTE CRC CODE */
 
 static int computeCRC( unsigned char *buf, int nChars )
-{ 
+{
   int i, crc;
   if (nChars==0) {
     crc = 0;
@@ -72,7 +72,7 @@ static int computeCRC( unsigned char *buf, int nChars )
 
 /* CONVERSION BYTES -> NUM */
 
-#if 0 
+#if 0
 
 static unsigned int convertBytes2UInt8( unsigned char *bytes )
 {
@@ -105,7 +105,7 @@ static void convertUInt8( unsigned int i, unsigned char *bytes )
   memcpy( bytes, &i, 1 );
 }
 
-#if 0 
+#if 0
 
 static void convertUInt16( unsigned int i, unsigned char *bytes )
 {
@@ -159,11 +159,11 @@ static void cmdSend( int fd, int port, int id, int opcode, int len, unsigned cha
 	int count;
 	timeval now;
 	timeval start = {0,0};
-	do  
+	do
 	{
 		count = clear_incoming_data(fd);
   		gettimeofday(&now,NULL);
-		if (count > 0 ) 
+		if (count > 0 )
 			start = now;
 		count = (now.tv_sec - start.tv_sec) * 1000000 + (now.tv_usec - start.tv_usec);
 
@@ -171,7 +171,7 @@ static void cmdSend( int fd, int port, int id, int opcode, int len, unsigned cha
                usleep(500);
 	} while (count < 10000);
 
-  
+
   //pthread_testcancel();
 }
 
@@ -248,7 +248,7 @@ void rflex_motion_set_defaults( int fd )
 }
 
 void rflex_odometry_on( int fd, long period )
-{ 
+{
   unsigned char data[MAX_COMMAND_LENGTH];
   convertUInt32( period, &(data[0]) );         /* period in ms */
   convertUInt32( (long) 3, &(data[4]) );       /* mask */
@@ -256,7 +256,7 @@ void rflex_odometry_on( int fd, long period )
 }
 
 void rflex_odometry_off( int fd )
-{ 
+{
   unsigned char data[MAX_COMMAND_LENGTH];
   convertUInt32( (long) 0, &(data[0]) );       /* period in ms */
   convertUInt32( (long) 0, &(data[4]) );       /* mask */
@@ -277,13 +277,13 @@ void rflex_set_velocity( int fd, long tvel, long rvel,
   // ** workaround for stupid hardware bug, cause unknown, but this works
   // ** with minimal detriment to control
   // ** avoids all values with 1b in highest or 3'rd highest order byte
-  
+
   // 0x1b is part of the packet terminating string
   // which is most likely what causes the bug
 
   // ** if 2'nd order byte is 1b, round to nearest 1c, or 1a
   if((urvel&0xff00)==0x1b00){
-    // ** if lowest order byte is>127 round up, otherwise round down 
+    // ** if lowest order byte is>127 round up, otherwise round down
     urvel=urvel&0xffff0000|(urvel&0xff>127?0x1c00:0x1aff);
   }
 
@@ -303,7 +303,7 @@ void rflex_set_velocity( int fd, long tvel, long rvel,
 
   convertUInt8( (long) 1,                 &(data[0]) );       /* rotational motion */
   convertUInt32( (long) labs(urvel),        &(data[1]) );       /* abs rot velocity  */
-  /* 0.275 rad/sec * 10000 */ 
+  /* 0.275 rad/sec * 10000 */
   convertUInt32( (long) STD_ROT_ACC,      &(data[5]) );       /* rot acc */
   convertUInt32( (long) STD_ROT_TORQUE,   &(data[9]) );       /* rot torque */
   convertUInt8( (long) sgn(rvel),         &(data[13]) );      /* rot direction */
@@ -327,12 +327,12 @@ int rflex_open_connection(char *device_name, int *fd)
   rdev.stopbits       = 1;
   rdev.hwf            = 0;
   rdev.swf            = 0;
-  
-  printf("trying port %s\n",rdev.ttyport); 
+
+  printf("trying port %s\n",rdev.ttyport);
   if (DEVICE_connect_port( &rdev )<0) {
     fprintf(stderr,"Can't open device %s\n",rdev.ttyport);
     return -1;
-  } 
+  }
 
   *fd = rdev.fd;
   rflex_odometry_on(*fd, 100000);
@@ -351,7 +351,7 @@ int rflex_close_connection(int *fd)
   rflex_digital_io_off(*fd);
   rflex_sonars_off(*fd);
   rflex_ir_off(*fd);
-  
+
   printf("Closing rflex serial port\n");
   close(*fd);
   *fd=-1;
@@ -366,7 +366,7 @@ static void parseMotReport( unsigned char *buffer )
 {
   int rv, timeStamp, acc, trq;
   unsigned char axis, opcode;
-    
+
   opcode = buffer[4];
   switch(opcode) {
   case MOT_SYSTEM_REPORT:
@@ -400,7 +400,7 @@ static void parseDioReport( unsigned char *buffer )
 	length = buffer[5];
 
 
-	switch(opcode) 
+	switch(opcode)
 	{
 		case DIO_REPORT:
 			if (length < 6)
@@ -440,7 +440,7 @@ static void parseDioReport( unsigned char *buffer )
 				else
 				{
 						first_home_bearing=status.bearing;
-						found_first = true;		
+						found_first = true;
 				}
 				break;
 			}
@@ -450,7 +450,7 @@ static void parseDioReport( unsigned char *buffer )
 			{
 			   // on the b21r the bump packets are address 0x40 -> 0x4D, there are some other dio packets
 			   // but dont know what they do so we throw them away
-			   
+
 			   // check if the dio packet came from a bumper packet
 			   if ((address < rflex_configs.bumper_address) || (address >= (rflex_configs.bumper_address+status.num_bumpers)))
 			   {
@@ -470,7 +470,7 @@ static void parseDioReport( unsigned char *buffer )
 			{
 			   // on the magellan pro the bump packets are address 0x40 and 0x41. Each bits of these address
 			   // match one bumper
-			   
+
 			   // Check if the dio paquet came from a bumper packet
 			   if ((address < rflex_configs.bumper_address) || (address >= (rflex_configs.bumper_address+(status.num_bumpers/8))))
 			   {
@@ -486,7 +486,7 @@ static void parseDioReport( unsigned char *buffer )
 			      // Loop for each bit
 			      for (int i=0; i<8; i++)
 			      {
-				 // assign each bit of the data to a bumper. 
+				 // assign each bit of the data to a bumper.
 				 status.bumpers[((address - rflex_configs.bumper_address) * 8 )+ i] = data & (0x01 << i);
 			      }
 			   }
@@ -523,7 +523,7 @@ static void parseDioReport( unsigned char *buffer )
 		fprintf(stderr,"Error allocating ir range storage in rflex status\n");
    }
 
-   switch(opcode) 
+   switch(opcode)
    {
    case IR_REPORT:
    {
@@ -532,17 +532,17 @@ static void parseDioReport( unsigned char *buffer )
     	   fprintf(stderr, "IR Data Packet too small\n");
 	       break;
 	   }
-   
+
 		// get number of IR readings to make
-	   	unsigned char pckt_ir_count = buffer[6];  
+	   	unsigned char pckt_ir_count = buffer[6];
 	   	if (pckt_ir_count < rflex_configs.ir_base_bank)
    			pckt_ir_count = 0;
 		else
 			pckt_ir_count -= rflex_configs.ir_base_bank;
-   
+
 		if (pckt_ir_count > rflex_configs.ir_bank_count)
    			pckt_ir_count = rflex_configs.ir_bank_count;
-		
+
 
 		// now actually read the ir data
 		int ir_data_index = 0;
@@ -550,7 +550,7 @@ static void parseDioReport( unsigned char *buffer )
 		{
 			for (int j = 0; j < rflex_configs.ir_count[i] && ir_data_index < status.num_ir; ++j,++ir_data_index)
 			{
-				// work out the actual offset in teh packet 
+				// work out the actual offset in teh packet
 				//(current bank + bank offfset) * bank data block size + current ir sensor + constant offset
 				int data_index = (rflex_configs.ir_base_bank + i) * 13 + j + 11;
 				status.ir_ranges[ir_data_index] = buffer[data_index];
@@ -562,7 +562,7 @@ static void parseDioReport( unsigned char *buffer )
    default:
 	    break;
    }
-   
+
    // debug print
 /*   for (int i = 0; i < status.num_ir ; ++i)
    	printf("%02x ", status.ir_ranges[i]);
@@ -580,7 +580,7 @@ static void parseSysReport( unsigned char *buffer )
 
    opcode = buffer[4];
    length = buffer[5];
-   
+
 
 	switch (opcode)
 	{
@@ -592,7 +592,7 @@ static void parseSysReport( unsigned char *buffer )
 				fprintf(stderr, "Got bad Sys packet (lcd)\n");
 				break;
 			}
-			
+
 			unsigned char lcd_length, row;
 			timeStamp=convertBytes2UInt32(&(buffer[6]));
 			row = buffer[10];
@@ -600,11 +600,11 @@ static void parseSysReport( unsigned char *buffer )
 			if (row > status.lcd_y || lcd_length > status.lcd_x)
 			{
 				fprintf(stderr,"LCD Data Overflow\n");
-				break;	
+				break;
 			}
-			
+
 			memcpy(&status.lcd_data[row*status.lcd_x],&buffer[12],lcd_length);
-			
+
 			// if we got whole lcd dump to file
 /*			if (row == 239)
 			{
@@ -613,7 +613,7 @@ static void parseSysReport( unsigned char *buffer )
 				{
 					for (int y=0; y<status.lcd_y; ++y)
 					{
-						for (int x=0; x<status.lcd_x;++x)					
+						for (int x=0; x<status.lcd_x;++x)
 						{
 							unsigned char Temp = status.lcd_data[y*status.lcd_x + x];
 							for (int i = 0; i < 8; ++i)
@@ -630,10 +630,10 @@ static void parseSysReport( unsigned char *buffer )
 				}
 				fclose(fout);
 			}*/
-									
-						
+
+
 			break;
-			
+
 		case SYS_STATUS:
 			if (length < 9)
 			{
@@ -644,11 +644,11 @@ static void parseSysReport( unsigned char *buffer )
 			// raw voltage measurement...needs calibration offset added
 			voltage=convertBytes2UInt32(&(buffer[10]));
 			brake=buffer[14];
-			
+
 			status.voltage = voltage;
 			status.brake = brake;
 			break;
-			
+
 		default:
 			fprintf(stderr,"Unknown sys opcode recieved\n");
 	}
@@ -661,12 +661,12 @@ static void parseSonarReport( unsigned char *buffer )
 {
 
   unsigned int sid;
- 
+
   int x,smallest;
 
   int count, retval, timeStamp;
   unsigned char opcode, dlen;
-    
+
   opcode = buffer[4];
   dlen   = buffer[5];
 
@@ -699,7 +699,7 @@ static void parseSonarReport( unsigned char *buffer )
   }
 }
 
-//processes a joystick packet fromt the rflex, and sets as command if 
+//processes a joystick packet fromt the rflex, and sets as command if
 // joystick command enabled
 static void parseJoyReport( int fd, unsigned char *buffer )
 {
@@ -707,32 +707,32 @@ static void parseJoyReport( int fd, unsigned char *buffer )
 
 	int x,y;
   unsigned char opcode, dlen, buttons;
-    
+
   opcode = buffer[4];
   dlen   = buffer[5];
 
   switch(opcode) {
   case JSTK_GET_STATE:
   	if (dlen < 13)
-	{	
+	{
 		fprintf(stderr,"Joystick Packet too small\n");
 		break;
 	}
 	x = convertBytes2UInt32(&buffer[10]);
 	y = convertBytes2UInt32(&buffer[14]);
 	buttons = buffer[18];
-	
+
 	if ((buttons & 1) == 1)
 	{
 		JoystickWasOn = true;
-		rflex_set_velocity(fd,(long) M2ARB_ODO_CONV(y * rflex_configs.joy_pos_ratio),(long) RAD2ARB_ODO_CONV(x * rflex_configs.joy_ang_ratio),(long) M2ARB_ODO_CONV(rflex_configs.mPsec2_trans_acceleration));    
+		rflex_set_velocity(fd,(long) M2ARB_ODO_CONV(y * rflex_configs.joy_pos_ratio),(long) RAD2ARB_ODO_CONV(x * rflex_configs.joy_ang_ratio),(long) M2ARB_ODO_CONV(rflex_configs.mPsec2_trans_acceleration));
 		RFLEX::joy_control = 5;
 	}
 	else if (JoystickWasOn)
 	{
 		JoystickWasOn = false;
-		rflex_set_velocity(fd,0,0,(long) M2ARB_ODO_CONV(rflex_configs.mPsec2_trans_acceleration));    
-		RFLEX::joy_control = 5;	
+		rflex_set_velocity(fd,0,0,(long) M2ARB_ODO_CONV(rflex_configs.mPsec2_trans_acceleration));
+		RFLEX::joy_control = 5;
 	}
 
     break;
@@ -795,7 +795,7 @@ static int clear_incoming_data(int fd)
 
   // 32 bytes here because the motion packet is 34. No sense in waiting for a
   // complete packet -- we can starve because the last 2 bytes might always
-  // arrive with the next packet also, and we never leave the loop. 
+  // arrive with the next packet also, and we never leave the loop.
 
   while ((bytes = bytesWaiting(fd)) > 32) {
   	count ++;
@@ -808,7 +808,7 @@ static int clear_incoming_data(int fd)
 }
 
 //returns the odometry data saved in the struct
-void rflex_update_status(int fd, int *distance,  int *bearing, 
+void rflex_update_status(int fd, int *distance,  int *bearing,
 			   int *t_vel, int *r_vel)
 {
   clear_incoming_data(fd);
@@ -827,7 +827,7 @@ void rflex_update_status(int fd, int *distance,  int *bearing,
  * each module's sonar are numbered 0-15
  * thus for 4 sonar modules id's are 0-64
  * even if only say 5 or 8 sonar are connected to a given module
- * thus, we record values as they come in 
+ * thus, we record values as they come in
  * (data comes in in sets of n modules, 3 if you have 3 modules for example)
  *
  * note the remmapping done using the config parameters into 0-n, this mapping
@@ -835,8 +835,8 @@ void rflex_update_status(int fd, int *distance,  int *bearing,
  * this if you put the poses in that order in the config file - everything
  * will line up nicely
  *
- * -1 is returned if we get back fewer sonar than requested 
- * (meaning your parameters are probobly incorrect) otherwise we return 0 
+ * -1 is returned if we get back fewer sonar than requested
+ * (meaning your parameters are probobly incorrect) otherwise we return 0
  */
 int rflex_update_sonar(int fd,int num_sonars, int * ranges){
   int x;
@@ -879,7 +879,7 @@ void rflex_update_bumpers(int fd, int num_bumpers, char *values)
 			status.num_bumpers = rflex_configs.bumper_count;
 	}*/
 
-	if (num_bumpers > status.num_bumpers) 
+	if (num_bumpers > status.num_bumpers)
 	{
     	fprintf(stderr,"Requested more bumpers than available.\n");
     	num_bumpers = status.num_bumpers;
@@ -890,7 +890,7 @@ void rflex_update_bumpers(int fd, int num_bumpers, char *values)
 
 
 // copies data from internal bumper list to the proper rflex bumper list
-void rflex_update_ir(int fd, int num_irs, 
+void rflex_update_ir(int fd, int num_irs,
 			    unsigned char *values)
 {
   clear_incoming_data(fd);
@@ -905,7 +905,7 @@ void rflex_update_ir(int fd, int num_irs,
 
 
 //returns the last battery, timestamp and brake information
-void rflex_update_system( int fd , int *battery, 
+void rflex_update_system( int fd , int *battery,
 			     int *brake)
 {
   //cmdSend( fd, SYS_PORT, 0, SYS_LCD_DUMP, 0, NULL );
@@ -914,10 +914,10 @@ void rflex_update_system( int fd , int *battery,
   {
   	cmdSend( fd, JSTK_PORT, 0, JSTK_GET_STATE, 0, NULL);
   }
-  
- 
+
+
   clear_incoming_data(fd);
-  
+
   *battery = status.voltage;
   //timestamp = timestamp;
   *brake = status.brake;
@@ -925,7 +925,7 @@ void rflex_update_system( int fd , int *battery,
 
 
 
-/* TODO - trans_pos rot_pos unused... AGAIN, fix this 
+/* TODO - trans_pos rot_pos unused... AGAIN, fix this
  * same effects are emulated at a higher level - is it possible to
  * do it here?
  */
@@ -938,19 +938,19 @@ void rflex_initialize(int fd, int trans_acceleration,
   int x;
 
   data[0] = 0;
-  convertUInt32( (long) 0, &(data[1]) );          /* velocity */ 
-  convertUInt32( (long) trans_acceleration, &(data[5]) );       
-                                                  /* acceleration */ 
-  convertUInt32( (long) 0, &(data[9]) );      /* torque */ 
+  convertUInt32( (long) 0, &(data[1]) );          /* velocity */
+  convertUInt32( (long) trans_acceleration, &(data[5]) );
+                                                  /* acceleration */
+  convertUInt32( (long) 0, &(data[9]) );      /* torque */
   data[13] = 0;
 
   cmdSend( fd, MOT_PORT, 0, MOT_AXIS_SET_DIR, 14, data );
 
   data[0] = 1;
-  convertUInt32( (long) 0, &(data[1]) );          /* velocity */ 
-  convertUInt32( (long) rot_acceleration, &(data[5]) );       
-                                                  /* acceleration */ 
-  convertUInt32( (long) 0, &(data[9]) );      /* torque */ 
+  convertUInt32( (long) 0, &(data[1]) );          /* velocity */
+  convertUInt32( (long) rot_acceleration, &(data[5]) );
+                                                  /* acceleration */
+  convertUInt32( (long) 0, &(data[9]) );      /* torque */
   data[13] = 0;
 
   cmdSend( fd, MOT_PORT, 0, MOT_AXIS_SET_DIR, 14, data );
@@ -961,7 +961,7 @@ void rflex_initialize(int fd, int trans_acceleration,
   status.oldranges=(int*) malloc(rflex_configs.max_num_sonars*rflex_configs.sonar_age*sizeof(int));
   for(x=0;x<rflex_configs.max_num_sonars;x++)
     status.ranges[x]=-1;
-	
+
 	// initialise the LCD dump array
 	status.lcd_data=new unsigned char[320*240/8];
 	if (status.lcd_data != NULL)
@@ -969,7 +969,7 @@ void rflex_initialize(int fd, int trans_acceleration,
 		status.lcd_x=320/8;
 		status.lcd_y=240;
 	}
-	
+
 	// allocate bumper storage if we havent already
 	// must be a better place to do this but it works
 	// *** watch out this is duplicated ***
@@ -983,7 +983,7 @@ void rflex_initialize(int fd, int trans_acceleration,
 			status.bumpers[i] = 0;
 	}
 	status.home_bearing_found=false;
-	
+
 }
 
 

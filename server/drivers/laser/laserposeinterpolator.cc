@@ -176,7 +176,7 @@ Driver* LaserPoseInterp_Init(ConfigFile* cf, int section)
 }
 
 // a driver registration function
-void laserposeinterp_Register(DriverTable* table)
+void laserposeinterpolator_Register(DriverTable* table)
 {
   table->AddDriver("laserposeinterpolator", LaserPoseInterp_Init);
 }

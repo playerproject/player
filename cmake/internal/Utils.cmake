@@ -89,6 +89,21 @@ ENDMACRO (FILTER_DUPLICATES)
 
 
 ###############################################################################
+# FILTER_EMPTY (_result _list)
+# Filters a list of strings, removing empty strings.
+MACRO (FILTER_EMPTY _result _list)
+    SET (${_result})
+    FOREACH (item ${_list})
+        SET (nonWhiteSpace)
+        STRING (REGEX MATCHALL "[^\t\n ]" nonWhiteSpace "${item}")
+        IF (nonWhiteSpace)
+            LIST (APPEND ${_result} ${item})
+        ENDIF (nonWhiteSpace)
+    ENDFOREACH (item ${_list})
+ENDMACRO (FILTER_EMPTY)
+
+
+###############################################################################
 # APPEND_TO_CACHED_LIST (_list _cacheDesc [items...])
 # Appends items to a cached list.
 MACRO (APPEND_TO_CACHED_LIST _list _cacheDesc)

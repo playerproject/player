@@ -522,7 +522,7 @@ WriteLog::OpenFile()
   }
 
   // Write the file header
-  fprintf(this->file, "## Player version %s \n", VERSION);
+  fprintf(this->file, "## Player version %s \n", PLAYER_VERSION);
   fprintf(this->file, "## File version %s \n", "0.3.0");
 
   fprintf(this->file, "## Format: \n");

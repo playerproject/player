@@ -248,7 +248,7 @@ Driver*
 // Registers the driver in the driver table. Called from the player_driver_init
 // function that the loader looks for
 void
-  sickrfi341_Register (DriverTable* table)
+  sickRFI341_Register (DriverTable* table)
 {
   table->AddDriver ("sickrfi341", SickRFI341_Init);
 }

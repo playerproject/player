@@ -127,7 +127,7 @@ Driver* ER_Init( ConfigFile* cf, int section)
 
 // a driver registration function
 void
-    er_Register(DriverTable* table)
+    er1_Register(DriverTable* table)
 {
   table->AddDriver("er1", ER_Init);
 }

@@ -119,7 +119,7 @@ driver
 
 #include <assert.h>
 
-#include <khepera.h>
+#include "khepera.h"
 
 #include <libplayercore/playercore.h>
 #include <libplayerxdr/playerxdr.h>

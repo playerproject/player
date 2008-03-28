@@ -31,7 +31,7 @@
 
 #include <limits.h>
 
-#include <p2os.h>
+#include "p2os.h"
 
 typedef struct ArmJoint
 {
@@ -82,7 +82,7 @@ class SIP
 
   // Need this value to calculate approx position of lift when in between up and down
   double lastLiftPos;
-  
+
   //Timestamping SIP packets
   //double timeStandardSIP, timeGyro, timeSERAUX, timeArm;
 

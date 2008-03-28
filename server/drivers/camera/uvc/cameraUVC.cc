@@ -102,7 +102,7 @@ extern "C"
 {
 	int player_driver_init(DriverTable* table)
 	{
-		CameraUVC_Register(table);
+		camerauvc_Register(table);
 		return(0);
 	}
 }

@@ -211,7 +211,7 @@ Driver* PBSDriver_Init(ConfigFile* cf, int section)
     driver table, indicating which interface the driver can support and how
     to create a driver instance.
 */
-void pbsdriver_Register(DriverTable* table)
+void pbslaser_Register(DriverTable* table)
 {
   table->AddDriver("pbs03jn", PBSDriver_Init);
 }
