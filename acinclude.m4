@@ -242,7 +242,7 @@ PLAYER_ADD_DRIVER([isense],[yes],[isense/isense.h],
 
 PLAYER_ADD_DRIVER([iwspy],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([kartowriter],[no],[],[],[])
+PLAYER_ADD_DRIVER([kartowriter],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([khepera],[yes],[],[],[])
 
