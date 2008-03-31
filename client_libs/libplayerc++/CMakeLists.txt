@@ -2,6 +2,7 @@ ADD_SUBDIRECTORY (test)
 
 OPTION (BUILD_PLAYERCC "Build the C++ client library" ON)
 IF (BUILD_PLAYERCC)
+    SET (PLAYERCC_DEFINITIONS "" CACHE INTERNAL "" FORCE)   # Clear this out to prevent unnecessary duplication and rebuilding
     # Look for Boost libraries
     SET (boostLinkLibs)
     FIND_PACKAGE (Boost)

@@ -23,6 +23,7 @@ IF (BUILD_PLAYERCC)
                         test_speech.cc
                         test_ranger.cc)
 
+        ADD_DEFINITIONS (${PLAYERCC_DEFINITIONS})
         ADD_EXECUTABLE (playerc++_test ${testsSrcs})
         TARGET_LINK_LIBRARIES (playerc++_test playerc playerc++ playerxdr playererror ${PLAYERC_EXTRA_LINK_LIBRARIES} ${PLAYERCC_EXTRA_LINK_LIBRARIES})
     ENDIF (BUILD_CC_TESTS)

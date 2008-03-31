@@ -4,25 +4,9 @@
 - Get CMake book, read it, go through all cmake files and clean up the mess I've made
 - Figure out why it always rebuilds driverregistry.c. Make it stop.
 . cross-compiling... does it work? - better support in CMake v2.6, apparently
-- examples dir (probably easy) - just need to do the make files for compiling outside the source tree now (old ones will still work, but cmake ones would be nicer)
+. examples dir (probably easy) - just need to do the make files for compiling outside the source tree now (old ones will still work, but cmake ones would be nicer)
 - dist tarballs, packages, etc - add in the extra_dist files to the source one, make the debian one
 . Fix the checks for boost threads and boost signals libraries - possibly a better version of FindBoost is coming in 2.6, defer till then (http://www.cmake.org/Bug/view.php?id=6257)
 - Some installable cmake modules with macros for making plugin drivers, etc
 - Clean out/replace any stragglers from autotools (including README and co)
 - Drivers being disabled by a check used to correctly force their option to off. Figure out why this broke. Fix it.
-. Disabling boost breaks the playerc++ tests. Probably a caching issue. Maybe the same caching issue that causes playerc++ to get rebuilt whenever cmake is re-run, even if it hasn't changed.
-
-For the curious, times (Intel Q6600 quad-core, 4GB RAM, single-core build, completely clean builds with all default drivers I can build)
-
-autotools
-configure:      real    0m21.684s   user    0m16.107s   sys 0m10.283s
-make:           real    5m43.034s   user    4m26.815s   sys 1m19.536s
-make install:   real    0m16.099s   user    0m10.060s   sys 0m6.490s
-
-cmake
-configure:      real    0m3.809s    user    0m2.485s    sys 0m1.244s
-make:           real    1m39.678s   user    1m23.342s   sys 0m16.069s
-make install:   real    0m2.440s    user    0m1.758s    sys 0m0.660s
-
-cmake with -j 5:
-make:           real    0m32.026s   user    1m30.919s   sys 0m20.382s
