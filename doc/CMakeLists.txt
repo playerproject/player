@@ -59,6 +59,13 @@ IF (BUILD_DOCUMENTATION)
         INSTALL (DIRECTORY ${docSourceDir}
             DESTINATION ${docInstallDir})
 
+        # Compile the LaTeX documentation
+        IF (DOXYGEN_LATEX)
+            INCLUDE (${PLAYER_CMAKE_DIR}/internal/CompileLatex.cmake)
+            COMPILE_LATEX (${CMAKE_CURRENT_BINARY_DIR}/latex refman)
+            ADD_DEPENDENCIES (doc_latex doc)
+        ENDIF (DOXYGEN_LATEX)
+
         # Upload documentation target (not supported on Windows)
         SET (docWebDestination "Player-cvs")
         SET (docName "player")
