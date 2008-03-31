@@ -176,6 +176,7 @@ driver
 #include <unistd.h>
 #include <math.h>
 #include <termios.h>
+#include <stdlib.h> // for abs()
 
 #include "erratic.h"
 
