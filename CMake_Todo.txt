@@ -1,4 +1,4 @@
-- Python bindings for libplayerc (or c++?)
+- Fix installation of python bindings to install to a less-generic location (use distutils to install if possible)
 - Java bindings for core, xdr, tcp, etc
 - Make sure all the various package searches are actually performed and options are available to change install paths of them
 - Get CMake book, read it, go through all cmake files and clean up the mess I've made
