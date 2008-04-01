@@ -98,6 +98,7 @@ void CameraUVC_Register(DriverTable* table)
 	table->AddDriver("camerauvc", CameraUvc_Init);
 }
 
+/*
 extern "C"
 {
 	int player_driver_init(DriverTable* table)
@@ -106,6 +107,7 @@ extern "C"
 		return(0);
 	} 
 }
+*/
 
 CameraUvc::CameraUvc(ConfigFile* cf, int section)
     : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_CAMERA_CODE)
