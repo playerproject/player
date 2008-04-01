@@ -540,8 +540,9 @@ if test "x$with_boost_thread" != "xno"; then
         CXXFLAGS_SAVE=$CXXFLAGS
         AC_LANG_CPLUSPLUS
         AC_COMPILE_IFELSE(AC_LANG_PROGRAM([[#include "confdefs.h"
-                                            #include <boost/thread/thread.hpp>]],
-                 [[boost::thread thread; return 0;]]),
+                                            #include <boost/thread/thread.hpp>
+                                            #include <boost/bind.hpp>]],
+                 [[boost::thread thread(boost::bind(&main))]]),
                  ax_cv_boost_thread="yes", ax_cv_boost_thread="no")
         CXXFLAGS=$CXXFLAGS_SAVE
         AC_LANG_RESTORE
