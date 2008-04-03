@@ -29,6 +29,8 @@ ADD_CUSTOM_COMMAND (OUTPUT ${example_xdr_h} ${example_xdr_c}
 
 INCLUDE_DIRECTORIES (${PROJECT_BINARY_DIR} ${PROJECT_SOURCE_DIR}/client_libs ${CMAKE_CURRENT_BINARY_DIR})
 ADD_LIBRARY (eginterf SHARED ${example_interface_h} ${example_xdr_h} ${example_xdr_c} eginterf_client.c ${example_functiontable_c})
+TARGET_LINK_LIBRARIES (eginterf playerc)
 ADD_LIBRARY (eginterfdriver SHARED ${example_interface_h} ${example_xdr_h} eginterf_driver.cc)
+TARGET_LINK_LIBRARIES (eginterfdriver playercore)
 ADD_EXECUTABLE (example_client example_client.c ${example_interface_h})
 TARGET_LINK_LIBRARIES (example_client playerc playerxdr playererror ${PLAYERC_EXTRA_LINK_LIBRARIES} eginterf)

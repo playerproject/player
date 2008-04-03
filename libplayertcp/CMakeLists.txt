@@ -20,6 +20,7 @@ IF (INCLUDE_UDP)
     SET (playerudpSrcs playerudp.cc)
     PLAYER_ADD_LIBRARY (playerudp ${playerudpSrcs})
     TARGET_LINK_LIBRARIES (playerudp replace playercore playererror playerutils playerxdr)
+    TARGET_LINK_LIBRARIES (playerudp z)
     PLAYER_MAKE_PKGCONFIG ("playerudp" "Player UDP messaging library - part of the Player Project" "playererror playercore" "" "" "")
 
     PLAYER_INSTALL_HEADERS (playertcp playerudp.h)

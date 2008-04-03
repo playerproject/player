@@ -9,7 +9,7 @@ SET (gslCFlags)
 
 IF (haveGSL)
     SET (pmapSrcs logfile.cpp omap.cpp pmap.cpp rmap.cpp slap.cpp)
-    SET (lodoSrcs lodo.cpp)
+    SET (lodoSrcs lodo.cpp slap.cpp)
     SET (pmaptestSrcs pmap_test.cpp)
     SET (lododriverSrcs lodo_driver.cc)
 
@@ -23,8 +23,11 @@ IF (haveGSL)
     PLAYER_ADD_LIBRARY (pmap ${pmapSrcs})
     SET_SOURCE_FILES_PROPERTIES (${pmapSrcs} PROPERTIES
         COMPILE_FLAGS "${gslCFlags} --fast-math")
+    SET_TARGET_PROPERTIES (pmap PROPERTIES
+        LINK_FLAGS "${gslLinkFlags}")
 
     PLAYER_ADD_LIBRARY (lodo ${lodoSrcs})
+    TARGET_LINK_LIBRARIES (lodo playercore)
     SET_SOURCE_FILES_PROPERTIES (${lodoSrcs} PROPERTIES
         COMPILE_FLAGS "${gslCFlags} --fast-math")
     SET_TARGET_PROPERTIES (lodo PROPERTIES

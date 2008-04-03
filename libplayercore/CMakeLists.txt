@@ -36,7 +36,11 @@ SET (playercore_srcs    driver.cc
                         globals.cc
                         property.cpp)
 PLAYER_ADD_LIBRARY (playercore ${playercore_srcs} ${player_interfaces_h} ${playerxdr_h})
-TARGET_LINK_LIBRARIES (playercore ltdl dl pthread)
+# TODO: playerxdr should NOT be linked here; it's a bogus dependency coming
+# from the fact that message cloning functions are auto-generated into
+# playerxdr and used here.  Those functions should go into a separate
+# library.
+TARGET_LINK_LIBRARIES (playercore playerutils playererror playerxdr ltdl dl pthread)
 PLAYER_ADD_LINK_LIB (ltdl dl pthread)
 PLAYER_MAKE_PKGCONFIG ("playercore" "Player core library - part of the Player Project" "playererror" "" "" "-lltdl -lpthread")
 
@@ -49,6 +53,7 @@ PLAYER_MAKE_PKGCONFIG ("playererror" "Player error reporting library - part of t
 SET (playerutils_srcs   interface_util.c
                         addr_util.c)
 PLAYER_ADD_LIBRARY (playerutils ${playerutils_srcs} ${interface_table_h})
+TARGET_LINK_LIBRARIES (playerutils playererror)
 PLAYER_MAKE_PKGCONFIG ("playerutils" "Player utilities library - part of the Player Project" "" "" "" "")
 
 PLAYER_INSTALL_HEADERS (playercore
