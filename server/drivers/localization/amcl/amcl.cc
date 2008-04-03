@@ -315,7 +315,7 @@ Driver* AdaptiveMCL_Init( ConfigFile* cf, int section)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Register the driver
-void adaptivemcl_Register(DriverTable* table)
+void amcl_Register(DriverTable* table)
 {
   table->AddDriver("amcl", AdaptiveMCL_Init);
   return;
