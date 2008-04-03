@@ -132,6 +132,22 @@ Driver::AddInterface(player_devaddr_t addr)
   return 0;
 }
 
+int
+Driver::AddInterface(player_devaddr_t *addr, ConfigFile * cf, int section, int code, char * key)
+{
+  assert(addr);
+  // Create position interface
+  if (cf->ReadDeviceAddr(addr, section,"provides", code, -1, key) != 0)
+  {
+    if (key)
+      PLAYER_ERROR2("Could not load interface address. %s:*:*:%s:*",key,interf_to_str(code));
+    else
+      PLAYER_ERROR1("Could not load interface address. %s:*",interf_to_str(code));
+    return -1;
+  }
+  return this->AddInterface(*addr);
+}
+
 void
 Driver::Publish(QueuePointer &queue,
                 player_msghdr_t* hdr,

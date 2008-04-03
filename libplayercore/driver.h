@@ -137,6 +137,16 @@ class Driver
     @returns 0 on success, non-zero otherwise. */
     int AddInterface(player_devaddr_t addr);
 
+    /** @brief Add an interface.
+
+    This form loads the address details from the config file and then adds the interface.
+
+    @param addr Pointer to Player device address, this is filled in with the address details.
+
+    @returns 0 on success, non-zero otherwise. */
+    int AddInterface(player_devaddr_t *addr, ConfigFile * cf, int section, int code, char * key = NULL);
+
+    
     /** @brief Set/reset error code */
     void SetError(int code) {this->error = code;}
 
