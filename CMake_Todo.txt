@@ -10,3 +10,4 @@
 - Some installable cmake modules with macros for making plugin drivers, etc
 - Clean out/replace any stragglers from autotools (including README and co)
 - Drivers being disabled by a check used to correctly force their option to off. Figure out why this broke. Fix it.
+- Figure out why C++ tests and C++ examples don't link properly when building as static libs, even though the server and utils do.

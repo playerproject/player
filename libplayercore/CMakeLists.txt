@@ -9,7 +9,13 @@ ENDIF (NOT PYTHONINTERP_FOUND)
 SET (player_interfaces_h "${CMAKE_CURRENT_BINARY_DIR}/player_interfaces.h")
 SET (interface_table_h "${CMAKE_CURRENT_BINARY_DIR}/interface_table.h")
 PROCESS_INTERFACES ("" ${CMAKE_CURRENT_SOURCE_DIR}/interfaces ${player_interfaces_h})
+ADD_CUSTOM_TARGET (player_interfaces ALL
+    DEPENDS ${player_interfaces_h}
+    COMMENT "Generating player_interfaces.h")
 PROCESS_INTERFACES ("--utils" ${CMAKE_CURRENT_SOURCE_DIR}/interfaces ${interface_table_h} ${player_interfaces_h})
+ADD_CUSTOM_TARGET (interface_table ALL
+    DEPENDS ${interface_table_h}
+    COMMENT "Generating interface_table.h")
 
 # For now, we're generating our own copy of playerxdr.h (and .c as a side-effect) here.
 # This can be fixed when the cross-directory dependency with libplayerxdr is removed.
