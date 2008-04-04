@@ -13,10 +13,8 @@ $ make install
 
 If you want to change build options, you could do it the old-fashioned way
 using cmake, or you could replace cmake with ccmake in your command to change
-them using an ncurses-based GUI. For a start, you'll probably want to turn off
-the python libplayerc bindings, since they don't work yet. You might also want
-to change CMAKE_INSTALL_PREFIX so it doesn't install over your current copy of
-player.
+them using an ncurses-based GUI. You might want to change CMAKE_INSTALL_PREFIX
+so it doesn't install over your current copy of player.
 
 To get under the hood and see the actual compile / link lines (very helpful
 in debugging build problems):
