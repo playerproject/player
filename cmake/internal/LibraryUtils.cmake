@@ -6,13 +6,13 @@ INCLUDE (${PLAYER_CMAKE_DIR}/internal/Utils.cmake)
 # Adds a library to be built and installed and sets some common properties on it.
 MACRO (PLAYER_ADD_LIBRARY _name)
 #     MESSAGE (STATUS "Building library ${name} with sources ${ARGN}")
-    ADD_LIBRARY (${_name} SHARED ${ARGN})
+    ADD_LIBRARY (${_name} ${ARGN})
     SET_TARGET_PROPERTIES (${_name} PROPERTIES
                             VERSION ${PLAYER_VERSION}
                             SOVERSION ${PLAYER_API_VERSION}
                             INSTALL_RPATH "${INSTALL_RPATH};${CMAKE_INSTALL_PREFIX}/lib"
                             BUILD_WITH_INSTALL_RPATH TRUE)
-    INSTALL (TARGETS ${_name} LIBRARY DESTINATION lib/)
+    INSTALL (TARGETS ${_name} DESTINATION lib/)
 ENDMACRO (PLAYER_ADD_LIBRARY)
 
 

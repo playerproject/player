@@ -339,7 +339,13 @@ MACRO (PLAYERDRIVER_ADD_TO_BUILT _name _includeDir _libDir _linkFlags _cFlags)
     # Source files go into a map so we can set the cflags on them later on
     SET (tempList)
     FOREACH (sourceFile ${ARGN})
-        LIST (APPEND tempList "${CMAKE_CURRENT_SOURCE_DIR}/${sourceFile}")
+        # If the path begins with a /, it's absolute so add it raw. Otherwise it's relative so
+        # we need to add a full path to the front to make it absolute.
+        IF (sourceFile MATCHES "^/.*")
+            LIST (APPEND tempList ${sourceFile})
+        ELSE (sourceFile MATCHES "^/.*")
+            LIST (APPEND tempList "${CMAKE_CURRENT_SOURCE_DIR}/${sourceFile}")
+        ENDIF (sourceFile MATCHES "^/.*")
     ENDFOREACH (sourceFile ${ARGN})
     INSERT_INTO_GLOBAL_MAP (PLAYER_DRIVERSLIB_SOURCES_MAP ${_name} "${tempList}")
 
