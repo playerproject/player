@@ -105,14 +105,6 @@ plan_compute_dist_kernel(plan_t* plan)
         plan->dist_kernel_3x3[i+1][j+1] = *p;
     }
   }
-  for(j=0;j<3;j++)
-  {
-    for(i=0;i<3;i++)
-    {
-      printf("%.3f ", plan->dist_kernel_3x3[i][j]);
-    }
-    puts("");
-  }
 }
 
 
@@ -270,24 +262,22 @@ plan_update_cspace_naive(plan_t* plan)
       if (cell->occ_state < 0)
         continue;
 
-      cell->occ_dist = FLT_MAX;
+      cell->occ_dist = plan->max_radius;
 
       p = plan->dist_kernel;
       for (dj = -plan->dist_kernel_width/2; 
            dj <= plan->dist_kernel_width/2; 
            dj++)
       {
-        di = -plan->dist_kernel_width/2; 
-        //ncell = plan->cells + PLAN_INDEX(plan, i + di, j + dj);
-        ncell = cell + di + dj*plan->size_x;
-        for (; di <= plan->dist_kernel_width/2; 
-             di++, ncell++, p++)
+        ncell = cell + -plan->dist_kernel_width/2 + dj*plan->size_x;
+        for (di = -plan->dist_kernel_width/2;
+             di <= plan->dist_kernel_width/2; 
+             di++, p++, ncell++)
         {
           if (!PLAN_VALID_BOUNDS(plan, i + di, j + dj))            
             continue;
 
-          //if(*p < ncell->occ_dist)
-          if(0.1 < ncell->occ_dist)
+          if(*p < ncell->occ_dist)
             ncell->occ_dist = *p;
         }
       }
@@ -295,7 +285,7 @@ plan_update_cspace_naive(plan_t* plan)
   }
 }
 
-#if 1
+#if 0
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
         void

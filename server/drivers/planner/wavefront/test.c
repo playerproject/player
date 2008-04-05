@@ -90,6 +90,8 @@ main(int argc, char** argv)
 
   free(mapdata);
 
+  plan_set_bbox(plan, 25.0, 0.0, lx, ly, gx, gy);
+
   t_c0 = get_time();
   plan_update_cspace(plan,NULL);
   t_c1 = get_time();
@@ -111,6 +113,8 @@ main(int argc, char** argv)
   printf("cspace: %.6lf\n", t_c1-t_c0);
   printf("plan  : %.6lf\n", t_p1-t_p0);
   printf("waypnt: %.6lf\n", t_w1-t_w0);
+  printf("total : %.6lf\n", (t_c1-t_c0)+(t_p1-t_p0)+(t_w1-t_w0));
+
 
   if(plan->waypoint_count == 0)
   {
