@@ -20,18 +20,20 @@ plan_cell_t *plan_pop(plan_t *plan);
 
 
 // Generate the plan
-void plan_update_plan(plan_t *plan, double gx, double gy)
+void 
+plan_update_plan(plan_t *plan, double lx, double ly, double gx, double gy)
 {
   int oi, oj, di, dj, ni, nj;
+  int gi, gj, li,lj;
   float cost;
   plan_cell_t *cell, *ncell;
 
   // Reset the grid
+  cell = plan->cells;
   for (nj = 0; nj < plan->size_y; nj++)
   {
-    for (ni = 0; ni < plan->size_x; ni++)
+    for (ni = 0; ni < plan->size_x; ni++,cell++)
     {
-      cell = plan->cells + PLAN_INDEX(plan, ni, nj);
       cell->plan_cost = PLAN_MAX_COST;
       cell->plan_next = NULL;
     }
@@ -43,13 +45,20 @@ void plan_update_plan(plan_t *plan, double gx, double gy)
   heap_reset(plan->heap);
 
   // Initialize the goal cell
-  ni = PLAN_GXWX(plan, gx);
-  nj = PLAN_GYWY(plan, gy);
+  gi = PLAN_GXWX(plan, gx);
+  gj = PLAN_GYWY(plan, gy);
   
-  if (!PLAN_VALID_BOUNDS(plan, ni, nj))
+  if (!PLAN_VALID_BOUNDS(plan, gi, gj))
+    return;
+  
+  // Initialize the start cell
+  li = PLAN_GXWX(plan, lx);
+  lj = PLAN_GYWY(plan, ly);
+  
+  if (!PLAN_VALID_BOUNDS(plan, li, lj))
     return;
 
-  cell = plan->cells + PLAN_INDEX(plan, ni, nj);
+  cell = plan->cells + PLAN_INDEX(plan, gi, gj);
   cell->plan_cost = 0;
   plan_push(plan, cell);
 
@@ -83,10 +92,14 @@ void plan_update_plan(plan_t *plan, double gx, double gy)
         if (ncell->occ_dist < plan->abs_min_radius)
           continue;
 
+        /*
         if(di && dj)
           cost = cell->plan_cost + plan->scale * M_SQRT2;
         else
           cost = cell->plan_cost + plan->scale;
+          */
+
+        cost = cell->plan_cost + plan->dist_kernel_3x3[di+1][dj+1];
 
         if (ncell->occ_dist < plan->max_radius)
           cost += plan->dist_penalty * (plan->max_radius - ncell->occ_dist);
@@ -95,6 +108,10 @@ void plan_update_plan(plan_t *plan, double gx, double gy)
         {
           ncell->plan_cost = cost;
           ncell->plan_next = cell;
+
+          // Are we done?
+          if((ncell->ci == li) && (ncell->cj == lj))
+            return;
           plan_push(plan, ncell);
         }
       }
