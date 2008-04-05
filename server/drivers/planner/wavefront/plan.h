@@ -66,8 +66,11 @@ typedef struct
 
   // The grid data
   plan_cell_t *cells;
-  unsigned char* marks;
-  size_t marks_size;
+
+  // Distance penalty kernel, pre-computed in plan_compute_dist_kernel();
+  float* dist_kernel;
+  int dist_kernel_width;
+  float dist_kernel_3x3[3][3];
   
   // Queue of cells to update
   //int queue_start, queue_len, queue_size;
@@ -83,6 +86,8 @@ typedef struct
 // Create a planner
 plan_t *plan_alloc(double abs_min_radius, double des_min_radius,
                    double max_radius, double dist_penalty);
+
+void plan_compute_dist_kernel(plan_t* plan);
 
 // Destroy a planner
 void plan_free(plan_t *plan);
@@ -106,7 +111,7 @@ int plan_check_inbounds(plan_t* plan, double x, double y);
 void plan_update_cspace(plan_t *plan, const char* cachefile);
 
 // Generate the plan
-void plan_update_plan(plan_t *plan, double gx, double gy);
+void plan_update_plan(plan_t *plan, double lx, double ly, double gx, double gy);
 
 // Generate a path to the goal
 void plan_update_waypoints(plan_t *plan, double px, double py);

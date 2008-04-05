@@ -507,6 +507,7 @@ Wavefront::ProcessMapInfo(player_map_info_t* info)
   // Got new map info pushed to us.  We'll save this info and get the new
   // map.
   this->plan->scale = info->scale;
+  plan_compute_dist_kernel(this->plan);
   this->plan->size_x = info->width;
   this->plan->size_y = info->height;
   this->plan->origin_x = info->origin.px;
@@ -767,7 +768,8 @@ void Wavefront::Main()
 #endif
 
       // compute costs to the new goal
-      plan_update_plan(this->plan, this->target_x, this->target_y);
+      plan_update_plan(this->plan, this->localize_x, this->localize_x, 
+                       this->target_x, this->target_y);
 
       // compute a path to the goal from the current position
       plan_update_waypoints(this->plan, this->localize_x, this->localize_y);
@@ -1124,6 +1126,7 @@ Wavefront::GetMapInfo(bool threaded)
   {
     PLAYER_WARN("failed to get map info");
     this->plan->scale = 0.1;
+    plan_compute_dist_kernel(this->plan);
     this->plan->size_x = 0;
     this->plan->size_y = 0;
     this->plan->origin_x = 0.0;
@@ -1135,6 +1138,7 @@ Wavefront::GetMapInfo(bool threaded)
 
   // copy in the map info
   this->plan->scale = info->scale;
+  plan_compute_dist_kernel(this->plan);
   this->plan->size_x = info->width;
   this->plan->size_y = info->height;
   this->plan->origin_x = info->origin.px;

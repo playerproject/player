@@ -61,6 +61,7 @@ main(int argc, char** argv)
 			    dist_penalty)));
 
   plan->scale = res;
+  plan_compute_dist_kernel(plan);
   plan->size_x = sx;
   plan->size_y = sy;
   plan->origin_x = 0.0;
@@ -97,7 +98,7 @@ main(int argc, char** argv)
 
   // compute costs to the new goal
   t_p0 = get_time();
-  plan_update_plan(plan, gx, gy);
+  plan_update_plan(plan, lx, ly, gx, gy);
   t_p1 = get_time();
 
   // compute a path to the goal from the current position
