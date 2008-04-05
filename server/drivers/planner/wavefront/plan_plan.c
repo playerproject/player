@@ -32,14 +32,15 @@ void plan_update_plan(plan_t *plan, double gx, double gy)
     for (ni = 0; ni < plan->size_x; ni++)
     {
       cell = plan->cells + PLAN_INDEX(plan, ni, nj);
-      cell->plan_cost = 1e6;
+      cell->plan_cost = PLAN_MAX_COST;
       cell->plan_next = NULL;
     }
   }
   
   // Reset the queue
-  plan->queue_start = 0;
-  plan->queue_len = 0;
+  //plan->queue_start = 0;
+  //plan->queue_len = 0;
+  heap_reset(plan->heap);
 
   // Initialize the goal cell
   ni = PLAN_GXWX(plan, gx);
@@ -67,8 +68,10 @@ void plan_update_plan(plan_t *plan, double gx, double gy)
     {
       for (di = -1; di <= +1; di++)
       {
-        if (di == 0 && dj == 0)
+        if (!di && !dj)
           continue;
+        //if (di && dj)
+          //continue;
         
         ni = oi + di;
         nj = oj + dj;
@@ -80,7 +83,10 @@ void plan_update_plan(plan_t *plan, double gx, double gy)
         if (ncell->occ_dist < plan->abs_min_radius)
           continue;
 
-        cost = cell->plan_cost + plan->scale;
+        if(di && dj)
+          cost = cell->plan_cost + plan->scale * M_SQRT2;
+        else
+          cost = cell->plan_cost + plan->scale;
 
         if (ncell->occ_dist < plan->max_radius)
           cost += plan->dist_penalty * (plan->max_radius - ncell->occ_dist);
@@ -102,6 +108,7 @@ void plan_update_plan(plan_t *plan, double gx, double gy)
 // Push a plan location onto the queue
 void plan_push(plan_t *plan, plan_cell_t *cell)
 {
+  /*
   int i;
 
   // HACK: should resize the queue dynamically (tricky for circular queue)
@@ -110,6 +117,11 @@ void plan_push(plan_t *plan, plan_cell_t *cell)
   i = (plan->queue_start + plan->queue_len) % plan->queue_size;
   plan->queue[i] = cell;
   plan->queue_len++;
+  */
+
+  // Substract from max cost because the heap is set up to return the max
+  // element.  This could of course be changed.
+  heap_insert(plan->heap, PLAN_MAX_COST - cell->plan_cost, cell);
 
   return;
 }
@@ -118,6 +130,7 @@ void plan_push(plan_t *plan, plan_cell_t *cell)
 // Pop a plan location from the queue
 plan_cell_t *plan_pop(plan_t *plan)
 {
+  /*
   int i;
   plan_cell_t *cell;
   
@@ -128,6 +141,10 @@ plan_cell_t *plan_pop(plan_t *plan)
   cell = plan->queue[i];
   plan->queue_start++;
   plan->queue_len--;
+  */
 
-  return cell;
+  if(heap_empty(plan->heap))
+    return(NULL);
+  else
+    return(heap_extract_max(plan->heap));
 }
