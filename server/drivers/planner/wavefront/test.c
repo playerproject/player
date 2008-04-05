@@ -12,6 +12,9 @@
 // compute linear index for given map coords
 #define MAP_IDX(sx, i, j) ((sx) * (j) + (i))
 
+void draw_cspace(plan_t* plan, const char* fname);
+void draw_path(plan_t* plan, double lx, double ly, const char* fname);
+
 double get_time(void);
 
 int read_map_from_image(int* size_x, int* size_y, char** mapdata, 
@@ -35,7 +38,7 @@ main(int argc, char** argv)
   double max_radius=1.0;
   double dist_penalty=1.0;;
 
-  double t0, t1, t2, t3;
+  double t_c0, t_c1, t_p0, t_p1, t_w0, t_w1;
 
   if(argc < 7)
   {
@@ -86,21 +89,27 @@ main(int argc, char** argv)
 
   free(mapdata);
 
-  t0 = get_time();
+  t_c0 = get_time();
   plan_update_cspace(plan,NULL);
-  t1 = get_time();
+  t_c1 = get_time();
+
+  draw_cspace(plan,"cspace.png");
 
   // compute costs to the new goal
+  t_p0 = get_time();
   plan_update_plan(plan, gx, gy);
-  t2 = get_time();
+  t_p1 = get_time();
 
   // compute a path to the goal from the current position
+  t_w0 = get_time();
   plan_update_waypoints(plan, lx, ly);
-  t3 = get_time();
+  t_w1 = get_time();
 
-  printf("cspace: %.6lf\n", t1-t0);
-  printf("update: %.6lf\n", t2-t1);
-  printf("waypnt: %.6lf\n", t3-t2);
+  draw_path(plan,lx,ly,"plan.png");
+
+  printf("cspace: %.6lf\n", t_c1-t_c0);
+  printf("plan  : %.6lf\n", t_p1-t_p0);
+  printf("waypnt: %.6lf\n", t_w1-t_w0);
 
   if(plan->waypoint_count == 0)
   {

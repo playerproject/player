@@ -9,9 +9,14 @@
 #ifndef PLAN_H
 #define PLAN_H
 
+#include "heap.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#define PLAN_DEFAULT_HEAP_SIZE 1000
+#define PLAN_MAX_COST 1e9
 
 // Description for a grid single cell
 typedef struct _plan_cell_t
@@ -65,8 +70,9 @@ typedef struct
   size_t marks_size;
   
   // Queue of cells to update
-  int queue_start, queue_len, queue_size;
-  plan_cell_t **queue;
+  //int queue_start, queue_len, queue_size;
+  //plan_cell_t **queue;
+  heap_t* heap;
 
   // Waypoints
   int waypoint_count, waypoint_size;
