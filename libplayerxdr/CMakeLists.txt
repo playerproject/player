@@ -16,7 +16,6 @@ ADD_CUSTOM_COMMAND (OUTPUT ${playerxdr_h} ${playerxdr_c}
     COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/playerxdrgen.py -distro ${PROJECT_SOURCE_DIR}/libplayercore/player.h ${playerxdr_c} ${playerxdr_h} ${player_interfaces_h}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     DEPENDS ${interfaceFiles} ${player_interfaces_h}
-    VERBATIM
 )
 ADD_CUSTOM_TARGET (playerxdr_src ALL
     DEPENDS ${playerxdr_h} ${playerxdr_c}
@@ -27,7 +26,6 @@ ADD_CUSTOM_COMMAND (OUTPUT ${functiontable_gen_h}
     COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/libplayercore/playerinterfacegen.py --functiontable ${PROJECT_SOURCE_DIR}/libplayercore/interfaces > ${functiontable_gen_h}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     DEPENDS ${interfaceFiles}
-    VERBATIM
 )
 ADD_CUSTOM_TARGET (functiontable_gen ALL
     DEPENDS ${functiontable_gen_h}

@@ -7,7 +7,6 @@ SET (example_interface_h ${CMAKE_CURRENT_BINARY_DIR}/example_interface.h)
 ADD_CUSTOM_COMMAND (OUTPUT ${example_interface_h}
     COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/libplayercore/playerinterfacegen.py --plugin 128_example.def > ${example_interface_h}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    VERBATIM
 )
 
 SET (example_functiontable_c ${CMAKE_CURRENT_BINARY_DIR}/example_functiontable.c)
@@ -15,7 +14,6 @@ ADD_CUSTOM_COMMAND (OUTPUT ${example_functiontable_c}
     COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/libplayercore/playerinterfacegen.py --plugin --functiontable 128_example.def > ${example_functiontable_c}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     DEPENDS
-    VERBATIM
 )
 
 SET (example_xdr_h ${CMAKE_CURRENT_BINARY_DIR}/example_xdr.h)
@@ -24,7 +22,6 @@ ADD_CUSTOM_COMMAND (OUTPUT ${example_xdr_h} ${example_xdr_c}
     COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/libplayerxdr/playerxdrgen.py ${example_interface_h} ${example_xdr_c} ${example_xdr_h}
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/example_interface.h
-    VERBATIM
 )
 
 INCLUDE_DIRECTORIES (${PROJECT_BINARY_DIR} ${PROJECT_SOURCE_DIR}/client_libs ${CMAKE_CURRENT_BINARY_DIR})

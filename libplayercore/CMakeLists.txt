@@ -25,7 +25,6 @@ ADD_CUSTOM_COMMAND (OUTPUT ${playerxdr_h} ${playerxdr_c}
     COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/libplayerxdr/playerxdrgen.py -distro ${CMAKE_CURRENT_SOURCE_DIR}/player.h ${playerxdr_c} ${playerxdr_h} ${CMAKE_CURRENT_BINARY_DIR}/player_interfaces.h
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     DEPENDS ${interfaceFiles} ${CMAKE_CURRENT_BINARY_DIR}/player_interfaces.h
-    VERBATIM
 )
 
 # Include from the binary dir to get player_interfaces.h and interface_table.h

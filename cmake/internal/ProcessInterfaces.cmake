@@ -12,6 +12,5 @@ MACRO (PROCESS_INTERFACES options directory outputFile)
         COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/libplayercore/playerinterfacegen.py ${options} ${directory} > ${outputFile}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         DEPENDS ${INTERFACE_DEPENDENCIES} ${ARGN}
-        VERBATIM
     )
 ENDMACRO (PROCESS_INTERFACES outputFile directory)
