@@ -767,11 +767,17 @@ void Wavefront::Main()
       }
 #endif
 
-      // compute costs to the new goal
-      plan_do_global(this->plan, this->localize_x, this->localize_x, 
-		     this->target_x, this->target_y);
+      // compute costs to the new goal.  Try local plan first
+      if(plan_do_local(this->plan, this->localize_x, this->localize_y, 5.0) < 0)
+      {
+        puts("Wavefront: local plan failed");
 
-      // compute a path to the goal from the current position
+        if(plan_do_global(this->plan, this->localize_x, this->localize_x, 
+                          this->target_x, this->target_y) < 0)
+          puts("Wavefront: global plan failed");
+      }
+                       
+      // extract waypoints along the path to the goal from the current position
       plan_update_waypoints(this->plan, this->localize_x, this->localize_y);
 
 #if 0

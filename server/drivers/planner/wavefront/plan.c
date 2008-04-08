@@ -224,9 +224,9 @@ void plan_reset(plan_t *plan)
   int i, j;
   plan_cell_t *cell;
 
-  cell = plan->cells;
   for (j = plan->min_y; j <= plan->max_y; j++)
   {
+    cell = plan->cells + PLAN_INDEX(plan,plan->min_x,j);
     for (i = plan->min_x; i <= plan->max_x; i++, cell++)
     {
       cell->plan_cost = PLAN_MAX_COST;
@@ -256,6 +256,10 @@ plan_set_bounds(plan_t* plan, int min_x, int min_y, int max_x, int max_y)
   plan->min_y = min_y;
   plan->max_x = max_x;
   plan->max_y = max_y;
+
+  //printf("new bounds: (%d,%d) -> (%d,%d)\n",
+         //plan->min_x, plan->min_y,
+         //plan->max_x, plan->max_y);
 }
 
 int

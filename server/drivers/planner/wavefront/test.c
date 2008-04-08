@@ -94,7 +94,16 @@ main(int argc, char** argv)
     puts("no global path");
   t_p1 = get_time();
 
+  plan_update_waypoints(plan, lx, ly);
+
   printf("gplan : %.6lf\n", t_p1-t_p0);
+  for(i=0;i<plan->waypoint_count;i++)
+  {
+    double wx, wy;
+    plan_convert_waypoint(plan, plan->waypoints[i], &wx, &wy);
+    printf("%d: (%d,%d) : (%.3lf,%.3lf)\n",
+           i, plan->waypoints[i]->ci, plan->waypoints[i]->cj, wx, wy);
+  }
 
   for(i=0;i<1;i++)
   {
