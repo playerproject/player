@@ -189,7 +189,7 @@ class Driver
     @param timestamp Timestamp for the message body (if NULL, then the
     current time will be filled in)
     @param copy if set to false the data will be claimed and the caller should no longer use or free it */
-    void Publish(player_devaddr_t addr,
+    virtual void Publish(player_devaddr_t addr,
                  QueuePointer &queue,
                  uint8_t type,
                  uint8_t subtype,
@@ -211,7 +211,7 @@ class Driver
      @param timestamp Timestamp for the message body (if NULL, then the
      current time will be filled in)
      @param copy if set to false the data will be claimed and the caller should no longer use or free it */
-     void Publish(player_devaddr_t addr, 
+     virtual void Publish(player_devaddr_t addr, 
                   uint8_t type, 
                   uint8_t subtype,
                   void* src=NULL, 
@@ -229,7 +229,7 @@ class Driver
     @param hdr The message header
     @param src The message body 
     @param copy if set to false the data will be claimed and the caller should no longer use or free it */
-    void Publish(QueuePointer &queue,
+    virtual void Publish(QueuePointer &queue,
                  player_msghdr_t* hdr,
                  void* src,
                  bool copy = true);
@@ -241,7 +241,7 @@ class Driver
     @param hdr The message header
     @param src The message body 
     @param copy if set to false the data will be claimed and the caller should no longer use or free it */ 
-    void Publish(player_msghdr_t* hdr,
+    virtual void Publish(player_msghdr_t* hdr,
                  void* src,
                  bool copy = true);
 
