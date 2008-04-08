@@ -209,12 +209,14 @@ _plan_update_plan(plan_t *plan, double lx, double ly, double gx, double gy)
     }
   }
 
+  /*
   if(!reached_start)
   {
     puts("never found start");
     return(-1);
   }
   else
+  */
     return(0);
 }
 
