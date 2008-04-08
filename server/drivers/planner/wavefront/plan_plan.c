@@ -124,6 +124,7 @@ _plan_update_plan(plan_t *plan, double lx, double ly, double gx, double gy)
   int gi, gj, li,lj;
   float cost;
   plan_cell_t *cell, *ncell;
+  int reached_start=0;
 
   // Reset the queue
   heap_reset(plan->heap);
@@ -138,15 +139,17 @@ _plan_update_plan(plan_t *plan, double lx, double ly, double gx, double gy)
 
   printf("planning from %d,%d to %d,%d\n", li,lj,gi,gj);
 
-  printf("bounds: (%d,%d) -> (%d,%d)\n",
-         plan->min_x, plan->min_y,
-         plan->max_x, plan->max_y);
-  
   if(!PLAN_VALID_BOUNDS(plan, gi, gj))
+  {
+    puts("goal out of bounds");
     return(-1);
+  }
   
   if(!PLAN_VALID_BOUNDS(plan, li, lj))
+  {
+    puts("start out of bounds");
     return(-1);
+  }
 
   cell = plan->cells + PLAN_INDEX(plan, gi, gj);
   cell->plan_cost = 0;
@@ -198,7 +201,7 @@ _plan_update_plan(plan_t *plan, double lx, double ly, double gx, double gy)
 
           // Are we done?
           if((ncell->ci == li) && (ncell->cj == lj))
-            return(0);
+            reached_start=1;
 
           plan_push(plan, ncell);
         }
@@ -206,7 +209,13 @@ _plan_update_plan(plan_t *plan, double lx, double ly, double gx, double gy)
     }
   }
 
-  return(-1);
+  if(!reached_start)
+  {
+    puts("never found start");
+    return(-1);
+  }
+  else
+    return(0);
 }
 
 int 
@@ -218,12 +227,14 @@ _plan_find_local_goal(plan_t *plan, double* gx, double* gy,
   double squared_d;
   double squared_d_min;
   int li,lj;
-  double px, py;
   plan_cell_t* cell;
 
   // Must already have computed a global goal
   if(plan->path_count == 0)
+  {
+    puts("no global path");
     return(-1);
+  }
 
   li = PLAN_GXWX(plan, lx);
   lj = PLAN_GYWY(plan, ly);
@@ -249,17 +260,18 @@ _plan_find_local_goal(plan_t *plan, double* gx, double* gy,
   for(c=c_min; c<plan->path_count; c++)
   {
     cell = plan->path[c];
-    px = PLAN_WXGX(plan, cell->ci);
-    py = PLAN_WXGX(plan, cell->cj);
+    
+    //printf("step %d: (%d,%d)\n", c, cell->ci, cell->cj);
 
-    if((px <= plan->min_x) || (px >= plan->max_x) ||
-       (py <= plan->min_y) || (py >= plan->max_y))
+    if((cell->ci < plan->min_x) || (cell->ci > plan->max_x) ||
+       (cell->cj < plan->min_y) || (cell->cj > plan->max_y))
     {
       // Did we move at least one cell along the path?
       if(c == c_min)
       {
         // nope; the entire global path is outside the local region; can't
         // fix that here
+        puts("global path not in local region");
         return(-1);
       }
       else
@@ -271,7 +283,7 @@ _plan_find_local_goal(plan_t *plan, double* gx, double* gy,
 
   cell = plan->path[c-1];
 
-  printf("ci: %d cj: %d\n", cell->ci, cell->cj);
+  //printf("ci: %d cj: %d\n", cell->ci, cell->cj);
   *gx = PLAN_WXGX(plan, cell->ci);
   *gy = PLAN_WYGY(plan, cell->cj);
   
