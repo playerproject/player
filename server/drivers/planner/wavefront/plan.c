@@ -60,6 +60,9 @@ plan_t *plan_alloc(double abs_min_radius, double des_min_radius,
   plan->path_size = 1000;
   plan->path = calloc(plan->path_size, sizeof(plan->path[0]));
 
+  plan->lpath_size = 100;
+  plan->lpath = calloc(plan->lpath_size, sizeof(plan->lpath[0]));
+
   plan->waypoint_size = 100;
   plan->waypoints = calloc(plan->waypoint_size, sizeof(plan->waypoints[0]));
   
@@ -228,6 +231,7 @@ void plan_reset(plan_t *plan)
     {
       cell->plan_cost = PLAN_MAX_COST;
       cell->plan_next = NULL;
+      cell->mark = 0;
     }
   }
   plan->waypoint_count = 0;
@@ -438,7 +442,6 @@ draw_path(plan_t* plan, double lx, double ly, const char* fname)
   int p;
   int paddr;
   int i, j;
-  int ci, cj;
   plan_cell_t* cell;
 
   pixels = (guchar*)malloc(sizeof(guchar)*plan->size_x*plan->size_y*3);
@@ -484,39 +487,44 @@ draw_path(plan_t* plan, double lx, double ly, const char* fname)
     }
   }
 
-  ci = PLAN_GXWX(plan, lx);
-  cj = PLAN_GYWY(plan, ly);
-
-  if(PLAN_VALID_BOUNDS(plan,ci,cj))
+  for(i=0;i<plan->path_count;i++)
   {
-    cell = plan->cells + PLAN_INDEX(plan, ci, cj);
-    while (cell != NULL)
-    {
-      paddr = 3*PLAN_INDEX(plan,cell->ci,plan->size_y - cell->cj - 1);
-      pixels[paddr] = 0;
-      pixels[paddr+1] = 255;
-      pixels[paddr+2] = 0;
+    cell = plan->path[i];
+    
+    paddr = 3*PLAN_INDEX(plan,cell->ci,plan->size_y - cell->cj - 1);
+    pixels[paddr] = 0;
+    pixels[paddr+1] = 255;
+    pixels[paddr+2] = 0;
+  }
 
-      cell = cell->plan_next;
-    }
+  for(i=0;i<plan->lpath_count;i++)
+  {
+    cell = plan->lpath[i];
+    
+    paddr = 3*PLAN_INDEX(plan,cell->ci,plan->size_y - cell->cj - 1);
+    pixels[paddr] = 255;
+    pixels[paddr+1] = 0;
+    pixels[paddr+2] = 255;
+  }
 
-    for(p=0;p<plan->waypoint_count;p++)
+  /*
+  for(p=0;p<plan->waypoint_count;p++)
+  {
+    cell = plan->waypoints[p];
+    for(j=-3;j<=3;j++)
     {
-      cell = plan->waypoints[p];
-      for(j=-3;j<=3;j++)
+      cj = cell->cj + j;
+      for(i=-3;i<=3;i++)
       {
-        cj = cell->cj + j;
-        for(i=-3;i<=3;i++)
-        {
-          ci = cell->ci + i;
-          paddr = 3*PLAN_INDEX(plan,ci,plan->size_y - cj - 1);
-          pixels[paddr] = 255;
-          pixels[paddr+1] = 0;
-          pixels[paddr+2] = 255;
-        }
+        ci = cell->ci + i;
+        paddr = 3*PLAN_INDEX(plan,ci,plan->size_y - cj - 1);
+        pixels[paddr] = 255;
+        pixels[paddr+1] = 0;
+        pixels[paddr+2] = 255;
       }
     }
   }
+  */
 
   pixbuf = gdk_pixbuf_new_from_data(pixels, 
                                     GDK_COLORSPACE_RGB,
