@@ -1,4 +1,5 @@
-CFLAGS = -I. -I../../../.. -Wall -Werror -O2 -g `pkg-config --cflags gdk-pixbuf-2.0`
+#CFLAGS = -I. -I../../../.. -Wall -Werror -O3  `pkg-config --cflags gdk-pixbuf-2.0`
+CFLAGS = -I. -I../../../.. -Wall -Werror -g  `pkg-config --cflags gdk-pixbuf-2.0`
 LIBS = -L../../../../libplayercore/.libs -lplayererror `pkg-config --libs gdk-pixbuf-2.0`
 
 SRCS = test.c plan.c plan_plan.c plan_waypoint.c heap.c

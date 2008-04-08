@@ -768,8 +768,8 @@ void Wavefront::Main()
 #endif
 
       // compute costs to the new goal
-      plan_update_plan(this->plan, this->localize_x, this->localize_x, 
-                       this->target_x, this->target_y);
+      plan_do_global(this->plan, this->localize_x, this->localize_x, 
+		     this->target_x, this->target_y);
 
       // compute a path to the goal from the current position
       plan_update_waypoints(this->plan, this->localize_x, this->localize_y);
@@ -1184,7 +1184,8 @@ Wavefront::SetupMap()
   if(this->GetMap(false) < 0)
     return(-1);
 
-  plan_update_cspace(this->plan,this->cspace_fname);
+  //plan_update_cspace(this->plan,this->cspace_fname);
+  plan_compute_cspace(this->plan);
 
   this->have_map = true;
   this->new_map = true;
@@ -1264,7 +1265,8 @@ Wavefront::ProcessMessage(QueuePointer & resp_queue,
       // Now get the map data, possibly in separate tiles.
       if(this->GetMap(true) < 0) return -1;
 
-      plan_update_cspace(this->plan,this->cspace_fname);
+      //plan_update_cspace(this->plan,this->cspace_fname);
+      plan_compute_cspace(this->plan);
 
       this->have_map = true;
       this->new_map = true;
