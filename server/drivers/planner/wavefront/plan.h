@@ -26,12 +26,17 @@ typedef struct _plan_cell_t
   
   // Occupancy state (-1 = free, 0 = unknown, +1 = occ)
   char occ_state;
+  char occ_state_dyn;
 
   // Distance to the nearest occupied cell
   float occ_dist;
+  float occ_dist_dyn;
 
   // Distance (cost) to the goal
   float plan_cost;
+
+  // Mark used in dynamic programming
+  char mark;
 
   // The next cell in the plan
   struct _plan_cell_t *plan_next;
@@ -67,17 +72,24 @@ typedef struct
   // The grid data
   plan_cell_t *cells;
 
+  // Dynamic obstacle hitpoints
+  unsigned short* obs_pts;
+  size_t obs_pts_size;
+  size_t obs_pts_num;
+
   // Distance penalty kernel, pre-computed in plan_compute_dist_kernel();
   float* dist_kernel;
   int dist_kernel_width;
-  float dist_kernel_3x3[3][3];
+  float dist_kernel_3x3[9];
   
-  // Queue of cells to update
-  //int queue_start, queue_len, queue_size;
-  //plan_cell_t **queue;
+  // Priority queue of cells to update
   heap_t* heap;
 
-  // Waypoints
+  // The global path
+  int path_count, path_size;
+  plan_cell_t **path;
+
+  // Waypoints extracted from global path
   int waypoint_count, waypoint_size;
   plan_cell_t **waypoints;
 } plan_t;
@@ -91,6 +103,10 @@ void plan_compute_dist_kernel(plan_t* plan);
 
 // Destroy a planner
 void plan_free(plan_t *plan);
+
+// Initialize the plan
+void plan_init(plan_t *plan, 
+               double res, double sx, double sy, double ox, double oy);
 
 // Reset the plan
 void plan_reset(plan_t *plan);
@@ -108,10 +124,12 @@ void plan_set_bbox(plan_t* plan, double padding, double min_size,
 int plan_check_inbounds(plan_t* plan, double x, double y);
 
 // Construct the configuration space from the occupancy grid.
-void plan_update_cspace(plan_t *plan, const char* cachefile);
+//void plan_update_cspace(plan_t *plan, const char* cachefile);
+void plan_compute_cspace(plan_t *plan);
 
-// Generate the plan
-void plan_update_plan(plan_t *plan, double lx, double ly, double gx, double gy);
+int plan_do_global(plan_t *plan, double lx, double ly, double gx, double gy);
+
+int plan_do_local(plan_t *plan, double lx, double ly, double plan_halfwidth);
 
 // Generate a path to the goal
 void plan_update_waypoints(plan_t *plan, double px, double py);

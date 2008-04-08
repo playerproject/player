@@ -60,61 +60,51 @@ main(int argc, char** argv)
 			    max_radius,
 			    dist_penalty)));
 
-  plan->scale = res;
-  plan_compute_dist_kernel(plan);
-  plan->size_x = sx;
-  plan->size_y = sy;
-  plan->origin_x = 0.0;
-  plan->origin_y = 0.0;
-
-  // Set the bounds to search the whole grid.
-  plan_set_bounds(plan, 0, 0, plan->size_x - 1, plan->size_y - 1);
-  
   // allocate space for map cells
   assert(plan->cells == NULL);
   assert((plan->cells = 
 	  (plan_cell_t*)realloc(plan->cells,
 				(sx * sy * sizeof(plan_cell_t)))));
-  plan_reset(plan);
-
+  
+  // Copy over obstacle information from the image data that we read
   for(j=0;j<sy;j++)
   {
     for(i=0;i<sx;i++)
     {
-      plan->cells[PLAN_INDEX(plan,i,j)].occ_dist = max_radius;
-      if((plan->cells[PLAN_INDEX(plan,i,j)].occ_state = 
-          mapdata[MAP_IDX(sx,i,j)]) >= 0)
-        plan->cells[PLAN_INDEX(plan,i,j)].occ_dist = 0;
+      plan->cells[i+j*sx].occ_state = mapdata[MAP_IDX(sx,i,j)];
     }
   }
-
   free(mapdata);
-
-  plan_set_bbox(plan, 25.0, 0.0, lx, ly, gx, gy);
+  
+  // Do initialization
+  plan_init(plan, res, sx, sy, 0.0, 0.0);
 
   t_c0 = get_time();
-  plan_update_cspace(plan,NULL);
+  plan_compute_cspace(plan);
   t_c1 = get_time();
 
   draw_cspace(plan,"cspace.png");
 
-  // compute costs to the new goal
-  t_p0 = get_time();
-  plan_update_plan(plan, lx, ly, gx, gy);
-  t_p1 = get_time();
-
-  // compute a path to the goal from the current position
-  t_w0 = get_time();
-  plan_update_waypoints(plan, lx, ly);
-  t_w1 = get_time();
-
-  draw_path(plan,lx,ly,"plan.png");
-
   printf("cspace: %.6lf\n", t_c1-t_c0);
-  printf("plan  : %.6lf\n", t_p1-t_p0);
-  printf("waypnt: %.6lf\n", t_w1-t_w0);
-  printf("total : %.6lf\n", (t_c1-t_c0)+(t_p1-t_p0)+(t_w1-t_w0));
 
+  for(i=0;i<10;i++)
+  {
+    // compute costs to the new goal
+    t_p0 = get_time();
+    plan_do_global(plan, lx, ly, gx, gy);
+    t_p1 = get_time();
+
+    // compute a path to the goal from the current position
+    t_w0 = get_time();
+    plan_update_waypoints(plan, lx, ly);
+    t_w1 = get_time();
+
+    draw_path(plan,lx,ly,"plan.png");
+
+    printf("plan  : %.6lf\n", t_p1-t_p0);
+    printf("waypnt: %.6lf\n", t_w1-t_w0);
+    puts("");
+  }
 
   if(plan->waypoint_count == 0)
   {
