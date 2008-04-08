@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <limits.h>
+#include <float.h>
 
 #include "plan.h"
 
@@ -65,20 +66,53 @@ int
 plan_do_local(plan_t *plan, double lx, double ly, double plan_halfwidth)
 {
   double gx, gy;
+  int li, lj;
+  int xmin,ymin,xmax,ymax;
+  plan_cell_t* cell;
 
   // Set bounds as directed
-  plan_set_bounds(plan, 
-                  lx - plan_halfwidth, ly - plan_halfwidth,
-                  lx + plan_halfwidth, ly + plan_halfwidth);
+  xmin = PLAN_GXWX(plan, lx - plan_halfwidth);
+  ymin = PLAN_GXWX(plan, ly - plan_halfwidth);
+  xmax = PLAN_GXWX(plan, lx + plan_halfwidth);
+  ymax = PLAN_GXWX(plan, ly + plan_halfwidth);
+  plan_set_bounds(plan, xmin, ymin, xmax, ymax);
 
   // Reset plan costs (within the local patch)
   plan_reset(plan);
 
   // Find a local goal to pursue
   if(_plan_find_local_goal(plan, &gx, &gy, lx, ly) != 0)
+  {
+    puts("no local goal");
     return(-1);
+  }
 
-  return(_plan_update_plan(plan, lx, ly, gx, gy));
+  printf("local goal: %.3lf, %.3lf\n", gx, gy);
+
+  if(_plan_update_plan(plan, lx, ly, gx, gy) != 0)
+  {
+    puts("local plan update failed");
+    return(-1);
+  }
+
+  li = PLAN_GXWX(plan, lx);
+  lj = PLAN_GYWY(plan, ly);
+
+  // Cache the path
+  for(cell = plan->cells + PLAN_INDEX(plan,li,lj);
+      cell;
+      cell = cell->plan_next)
+  {
+    if(plan->lpath_count >= plan->lpath_size)
+    {
+      plan->lpath_size *= 2;
+      plan->lpath = (plan_cell_t**)realloc(plan->lpath,
+                                           plan->lpath_size * sizeof(plan_cell_t*));
+      assert(plan->lpath);
+    }
+    plan->lpath[plan->lpath_count++] = cell;
+  }
+  return(0);
 }
 
 
@@ -91,33 +125,27 @@ _plan_update_plan(plan_t *plan, double lx, double ly, double gx, double gy)
   float cost;
   plan_cell_t *cell, *ncell;
 
-  // Reset the grid
-  cell = plan->cells;
-  for (nj = 0; nj < plan->size_y; nj++)
-  {
-    for (ni = 0; ni < plan->size_x; ni++,cell++)
-    {
-      cell->plan_cost = PLAN_MAX_COST;
-      cell->plan_next = NULL;
-      cell->mark = 0;
-    }
-  }
-  
   // Reset the queue
   heap_reset(plan->heap);
 
   // Initialize the goal cell
   gi = PLAN_GXWX(plan, gx);
   gj = PLAN_GYWY(plan, gy);
-  
-  if (!PLAN_VALID_BOUNDS(plan, gi, gj))
-    return(-1);
-  
+
   // Initialize the start cell
   li = PLAN_GXWX(plan, lx);
   lj = PLAN_GYWY(plan, ly);
+
+  printf("planning from %d,%d to %d,%d\n", li,lj,gi,gj);
+
+  printf("bounds: (%d,%d) -> (%d,%d)\n",
+         plan->min_x, plan->min_y,
+         plan->max_x, plan->max_y);
   
-  if (!PLAN_VALID_BOUNDS(plan, li, lj))
+  if(!PLAN_VALID_BOUNDS(plan, gi, gj))
+    return(-1);
+  
+  if(!PLAN_VALID_BOUNDS(plan, li, lj))
     return(-1);
 
   cell = plan->cells + PLAN_INDEX(plan, gi, gj);
@@ -185,6 +213,68 @@ int
 _plan_find_local_goal(plan_t *plan, double* gx, double* gy, 
                       double lx, double ly)
 {
+  int c;
+  int c_min;
+  double squared_d;
+  double squared_d_min;
+  int li,lj;
+  double px, py;
+  plan_cell_t* cell;
+
+  // Must already have computed a global goal
+  if(plan->path_count == 0)
+    return(-1);
+
+  li = PLAN_GXWX(plan, lx);
+  lj = PLAN_GYWY(plan, ly);
+
+  // Find the closest place to jump on the global path
+  squared_d_min = DBL_MAX;
+  c_min = -1;
+  for(c=0;c<plan->path_count;c++)
+  {
+    cell = plan->path[c];
+    squared_d = ((cell->ci - li) * (cell->ci - li) + 
+                 (cell->cj - lj) * (cell->cj - lj));
+    if(squared_d < squared_d_min)
+    {
+      squared_d_min = squared_d;
+      c_min = c;
+    }
+  }
+  assert(c_min > -1);
+
+  // Follow the path to find the last cell that's inside the local planning
+  // area
+  for(c=c_min; c<plan->path_count; c++)
+  {
+    cell = plan->path[c];
+    px = PLAN_WXGX(plan, cell->ci);
+    py = PLAN_WXGX(plan, cell->cj);
+
+    if((px <= plan->min_x) || (px >= plan->max_x) ||
+       (py <= plan->min_y) || (py >= plan->max_y))
+    {
+      // Did we move at least one cell along the path?
+      if(c == c_min)
+      {
+        // nope; the entire global path is outside the local region; can't
+        // fix that here
+        return(-1);
+      }
+      else
+        break;
+    }
+  }
+
+  assert(c > c_min);
+
+  cell = plan->path[c-1];
+
+  printf("ci: %d cj: %d\n", cell->ci, cell->cj);
+  *gx = PLAN_WXGX(plan, cell->ci);
+  *gy = PLAN_WYGY(plan, cell->cj);
+  
   return(0);
 }
 

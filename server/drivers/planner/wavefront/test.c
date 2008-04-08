@@ -37,6 +37,7 @@ main(int argc, char** argv)
   double safety_dist=0.2;
   double max_radius=1.0;
   double dist_penalty=1.0;;
+  double plan_halfwidth = 5.0;
 
   double t_c0, t_c1, t_p0, t_p1, t_w0, t_w1;
 
@@ -86,13 +87,24 @@ main(int argc, char** argv)
   draw_cspace(plan,"cspace.png");
 
   printf("cspace: %.6lf\n", t_c1-t_c0);
+  
+  // compute costs to the new goal
+  t_p0 = get_time();
+  if(plan_do_global(plan, lx, ly, gx, gy) < 0)
+    puts("no global path");
+  t_p1 = get_time();
 
-  for(i=0;i<10;i++)
+  printf("gplan : %.6lf\n", t_p1-t_p0);
+
+  for(i=0;i<1;i++)
   {
     // compute costs to the new goal
     t_p0 = get_time();
-    plan_do_global(plan, lx, ly, gx, gy);
+    if(plan_do_local(plan, lx, ly, plan_halfwidth) < 0)
+       puts("no local path");
     t_p1 = get_time();
+
+    printf("lplan : %.6lf\n", t_p1-t_p0);
 
     // compute a path to the goal from the current position
     t_w0 = get_time();
@@ -101,14 +113,13 @@ main(int argc, char** argv)
 
     draw_path(plan,lx,ly,"plan.png");
 
-    printf("plan  : %.6lf\n", t_p1-t_p0);
     printf("waypnt: %.6lf\n", t_w1-t_w0);
     puts("");
   }
 
   if(plan->waypoint_count == 0)
   {
-    puts("no path");
+    puts("no waypoints");
   }
   else
   {
