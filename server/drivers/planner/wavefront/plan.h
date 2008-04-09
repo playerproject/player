@@ -109,8 +109,7 @@ void plan_compute_dist_kernel(plan_t* plan);
 void plan_free(plan_t *plan);
 
 // Initialize the plan
-void plan_init(plan_t *plan, 
-               double res, double sx, double sy, double ox, double oy);
+void plan_init(plan_t *plan);
 
 // Reset the plan
 void plan_reset(plan_t *plan);
@@ -144,6 +143,10 @@ int plan_get_waypoint(plan_t *plan, int i, double *px, double *py);
 // Convert given waypoint cell to global x,y
 void plan_convert_waypoint(plan_t* plan, plan_cell_t *waypoint, 
                            double *px, double *py);
+
+double plan_get_carrot(plan_t* plan, double* px, double* py, 
+                       double lx, double ly, 
+                       double maxdist, double distweight);
 
 #if HAVE_OPENSSL_MD5_H && HAVE_LIBCRYPTO
 // Write the cspace occupancy distance values to a file, one per line.

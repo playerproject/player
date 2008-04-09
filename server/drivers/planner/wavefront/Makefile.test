@@ -2,7 +2,7 @@
 CFLAGS = -I. -I../../../.. -Wall -Werror -g  `pkg-config --cflags gdk-pixbuf-2.0`
 LIBS = -L../../../../libplayercore/.libs -lplayererror `pkg-config --libs gdk-pixbuf-2.0`
 
-SRCS = test.c plan.c plan_plan.c plan_waypoint.c heap.c
+SRCS = test.c plan.c plan_plan.c plan_waypoint.c heap.c plan_control.c
 
 test: $(SRCS) plan.h heap.h
 	gcc $(CFLAGS) -o $@ $(SRCS) $(LIBS)

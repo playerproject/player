@@ -182,17 +182,10 @@ void plan_free(plan_t *plan)
 }
 
 // Initialize the plan
-void plan_init(plan_t *plan, 
-               double res, double sx, double sy, double ox, double oy)
+void plan_init(plan_t *plan)
 {
   int i, j;
   plan_cell_t *cell;
-
-  plan->scale = res;
-  plan->size_x = sx;
-  plan->size_y = sy;
-  plan->origin_x = ox;
-  plan->origin_y = oy;
 
   cell = plan->cells;
   for (j = 0; j < plan->size_y; j++)
@@ -226,9 +219,9 @@ void plan_reset(plan_t *plan)
 
   for (j = plan->min_y; j <= plan->max_y; j++)
   {
-    cell = plan->cells + PLAN_INDEX(plan,plan->min_x,j);
-    for (i = plan->min_x; i <= plan->max_x; i++, cell++)
+    for (i = plan->min_x; i <= plan->max_x; i++)
     {
+      cell = plan->cells + PLAN_INDEX(plan,i,j);
       cell->plan_cost = PLAN_MAX_COST;
       cell->plan_next = NULL;
       cell->mark = 0;
