@@ -13,6 +13,9 @@
 #include <limits.h>
 #include <float.h>
 
+#include <sys/time.h>
+static double get_time(void);
+
 #include "plan.h"
 
 // Plan queue stuff
@@ -27,6 +30,9 @@ plan_do_global(plan_t *plan, double lx, double ly, double gx, double gy)
 {
   plan_cell_t* cell;
   int li, lj;
+  double t0,t1;
+
+  t0 = get_time();
 
   // Set bounds to look over the entire grid
   plan_set_bounds(plan, 0, 0, plan->size_x - 1, plan->size_y - 1);
@@ -35,7 +41,7 @@ plan_do_global(plan_t *plan, double lx, double ly, double gx, double gy)
   plan_reset(plan);
 
   plan->path_count = 0;
-  if(_plan_update_plan(plan, lx, ly, gx, gy) != 0)
+  if(_plan_update_plan(plan, lx, ly, gx, gy) < 0)
   {
     // no path
     return(-1);
@@ -59,6 +65,10 @@ plan_do_global(plan_t *plan, double lx, double ly, double gx, double gy)
     plan->path[plan->path_count++] = cell;
   }
 
+  t1 = get_time();
+
+  printf("computed global path: %.6lf\n", t1-t0);
+
   return(0);
 }
 
@@ -69,6 +79,9 @@ plan_do_local(plan_t *plan, double lx, double ly, double plan_halfwidth)
   int li, lj;
   int xmin,ymin,xmax,ymax;
   plan_cell_t* cell;
+  double t0,t1;
+
+  t0 = get_time();
 
   // Set bounds as directed
   xmin = PLAN_GXWX(plan, lx - plan_halfwidth);
@@ -87,8 +100,9 @@ plan_do_local(plan_t *plan, double lx, double ly, double plan_halfwidth)
     return(-1);
   }
 
-  printf("local goal: %.3lf, %.3lf\n", gx, gy);
+  //printf("local goal: %.3lf, %.3lf\n", gx, gy);
 
+  plan->lpath_count = 0;
   if(_plan_update_plan(plan, lx, ly, gx, gy) != 0)
   {
     puts("local plan update failed");
@@ -112,6 +126,10 @@ plan_do_local(plan_t *plan, double lx, double ly, double plan_halfwidth)
     }
     plan->lpath[plan->lpath_count++] = cell;
   }
+
+  t1 = get_time();
+
+  printf("computed local path: %.6lf\n", t1-t0);
   return(0);
 }
 
@@ -124,7 +142,6 @@ _plan_update_plan(plan_t *plan, double lx, double ly, double gx, double gy)
   int gi, gj, li,lj;
   float cost;
   plan_cell_t *cell, *ncell;
-  int reached_start=0;
 
   // Reset the queue
   heap_reset(plan->heap);
@@ -137,7 +154,7 @@ _plan_update_plan(plan_t *plan, double lx, double ly, double gx, double gy)
   li = PLAN_GXWX(plan, lx);
   lj = PLAN_GYWY(plan, ly);
 
-  printf("planning from %d,%d to %d,%d\n", li,lj,gi,gj);
+  //printf("planning from %d,%d to %d,%d\n", li,lj,gi,gj);
 
   if(!PLAN_VALID_BOUNDS(plan, gi, gj))
   {
@@ -199,24 +216,19 @@ _plan_update_plan(plan_t *plan, double lx, double ly, double gx, double gy)
           ncell->plan_cost = cost;
           ncell->plan_next = cell;
 
-          // Are we done?
-          if((ncell->ci == li) && (ncell->cj == lj))
-            reached_start=1;
-
           plan_push(plan, ncell);
         }
       }
     }
   }
 
-  /*
-  if(!reached_start)
+  cell = plan->cells + PLAN_INDEX(plan, li, lj);
+  if(!cell->plan_next)
   {
     puts("never found start");
     return(-1);
   }
   else
-  */
     return(0);
 }
 
@@ -313,4 +325,12 @@ plan_cell_t *plan_pop(plan_t *plan)
     return(NULL);
   else
     return(heap_extract_max(plan->heap));
+}
+
+double 
+static get_time(void)
+{
+  struct timeval curr;
+  gettimeofday(&curr,NULL);
+  return(curr.tv_sec + curr.tv_usec / 1e6);
 }
