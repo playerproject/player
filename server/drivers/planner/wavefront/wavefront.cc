@@ -883,13 +883,14 @@ void Wavefront::Main()
           }
           else
           {
-            // Establish fake waypoint, for client-side visualization
+            // Establish fake waypoints, for client-side visualization
             this->curr_waypoint = 0;
             this->waypoint_count = 2;
             this->waypoints[0][0] = this->localize_x;
             this->waypoints[0][1] = this->localize_y;
-            this->waypoints[1][0] = wx;
-            this->waypoints[1][1] = wy;
+            this->waypoint_x = this->waypoints[1][0] = wx;
+            this->waypoint_y = this->waypoints[1][1] = wy;
+            this->waypoint_a = 0.0;
 
             // TODO: expose these control params in the .cfg file
             double tvmin = 0.1;
