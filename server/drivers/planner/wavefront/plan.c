@@ -375,7 +375,7 @@ plan_compute_cspace(plan_t* plan)
   }
 }
 
-#if 1
+#if 0
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
         void
