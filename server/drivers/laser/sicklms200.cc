@@ -29,10 +29,10 @@
 /** @ingroup drivers Drivers */
 /** @{ */
 /** @defgroup driver_sicklms200 sicklms200
- * @brief SICK LMS 200 laser range-finder
+ * @brief SICK LMS 200 / PLS laser range-finder
 
 
-The sicklms200 driver controls the SICK LMS 200 scanning laser range-finder.
+The sicklms200 driver controls the SICK LMS 200 and PLS scanning laser range-finders.
 
 @note LMS200 lasers may take several seconds to start up.  You may want to set the 'alwayson' option for sicklms200  to '1' in your configuration file in order start the laser when player starts.  Otherwise, your client may experience a timeout in trying to subscribe to this device.
 
@@ -72,6 +72,21 @@ The sicklms200 driver controls the SICK LMS 200 scanning laser range-finder.
   - Default: 38400
   - Baud rate.  Valid values are 9600, 38400 (RS232 or RS422) and
     500000 (RS422 only).
+
+- serial_high_speed_mode (integer)
+  - Default: 0 (FTDI)
+  - Method to achieve high speed (RS422) communication
+    0: FTDI RS422 to USB, using Linux High Speed Serial
+  1: CP210x RS422 to USB (And maybe others). This chipset has 
+     the hardware remap some normal baudrate (230400 for 
+     example) to 500000, so the host machine doesn't need to
+     know it's running at 500000 (Works on Mac OS X).
+
+- serial_high_speed_baudremap (integer)
+   - Default: 38400 (Needed for FTDI)
+   - The fake baud rate to use after 500Kbps is achieved. In 
+     high_speed_mode 1, this is the baud rate that the hardware
+     is remapping.
 
 - retry (integer)
   - Default: 0
@@ -114,14 +129,50 @@ The sicklms200 driver controls the SICK LMS 200 scanning laser range-finder.
 @par Example 
 
 @verbatim
+#linux config
 driver
 (
   name "sicklms200"
-  provides ["laser:0"]
-  port "/dev/ttyS0"
-  resolution 100   # Angular resolution 1 degree (181 readings @ 10Hz)
-  range_res 10     # Range resolution 1 cm (maximum range 81.92m)
+  provides [ "laser:0" ]
+  port "/dev/ttyUSB0"
+  resolution 50
+  serial_high_speed_mode 1
+  serial_high_speed_baudremap 230400
+  connect_rate [ 9600 500000 38400]
+  transfer_rate 38400
+  retry 2
+  alwayson 1
 )
+
+# MAC config
+driver
+(
+  name "sicklms200"
+  provides [ "laser:0" ]
+  port "/dev/cu.SLAB_USBtoUART"
+  resolution 50
+  serial_high_speed_mode 1
+  serial_high_speed_baudremap 230400
+  connect_rate [ 9600 500000 38400]
+  transfer_rate 38400
+  retry 2
+  alwayson 1
+)
+
+#FTDI Config
+driver
+(
+  name "sicklms200"
+  provides [ "laser:0" ]
+  port "/dev/ttyUSB0"
+  resolution 50
+  serial_high_speed_mode 0
+  connect_rate [ 9600 500000 38400]
+  transfer_rate 38400
+  retry 2
+  alwayson 1
+)
+
 @endverbatim
 
 @author Andrew Howard, Richard Vaughan, Kasper Stoy
@@ -159,7 +210,7 @@ driver
 
 #include <libplayercore/playercore.h>
 #include <libplayerxdr/playerxdr.h>
-#include <replace/replace.h>
+//#include <replace/replace.h>
 extern PlayerTime* GlobalTime;
 
 #define DEFAULT_LASER_PORT "/dev/ttyS1"
@@ -228,6 +279,11 @@ class SickLMS200 : public Driver
     // Change the resolution of the laser
     int SetLaserRes(int angle, int res);
     
+
+    // RequestLaserStopStream()
+    // Returns 0 on success
+    int RequestLaserStopStream();
+
     // Request data from the laser
     // Returns 0 on success
     int RequestLaserData(int min_segment, int max_segment);
@@ -239,7 +295,7 @@ class SickLMS200 : public Driver
     ssize_t WriteToLaser(uint8_t *data, ssize_t len); 
     
     // Read a packet from the laser
-    ssize_t ReadFromLaser(uint8_t *data, ssize_t maxlen, bool ack = false, int timeout = -1);
+    ssize_t ReadFromLaser(uint8_t *data, ssize_t maxlen, bool ack = false, int timeout = -1, int timeout_header = -1);
 
     // Calculates CRC for a telegram
     unsigned short CreateCRC(uint8_t *data, ssize_t len);
@@ -261,6 +317,10 @@ class SickLMS200 : public Driver
 
     // Starup delay
     int startup_delay;
+
+
+    // Type of laser (from GetLaserType)
+    char laser_type[64];
 
     // Number of time to try connecting
     int retry_limit;
@@ -286,14 +346,17 @@ class SickLMS200 : public Driver
     // readings)
     int invert;
 
-    bool can_do_hi_speed;
     int connect_rates[MAX_CONNECT_RATES]; // Ordered list of connection rates
     int num_connect_rates;  // Length of connect_rates
     int connect_rate; // The final connection rate that we settle on
     int transfer_rate; // Desired rate for operation
     int current_rate;  // Current rate
+    int serial_high_speed_mode; // Which method to use for 500k mode
+    int serial_high_speed_baudremap; // Baud rate to fake as 500k
 
     int scan_id;
+
+
     player_laser_data_t data;
 
 #ifdef HAVE_HI_SPEED_SERIAL
@@ -311,7 +374,9 @@ Driver* SickLMS200_Init(ConfigFile* cf, int section)
 void SickLMS200_Register(DriverTable* table)
 {
   table->AddDriver("sicklms200", SickLMS200_Init);
+  table->AddDriver("sickpls", SickLMS200_Init);
 }
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Device codes
@@ -368,18 +433,38 @@ SickLMS200::SickLMS200(ConfigFile* cf, int section)
   this->current_rate = 0;
   this->retry_limit = cf->ReadInt(section, "retry", 0) + 1;
 
-#ifdef HAVE_HI_SPEED_SERIAL
-  this->can_do_hi_speed = true;
-#else
-  this->can_do_hi_speed = false;
-#endif
 
-  if (!this->can_do_hi_speed && this->transfer_rate > 38400)
+
+#ifdef HAVE_HI_SPEED_SERIAL
+  this->serial_high_speed_mode = cf->ReadInt(section, "serial_high_speed_mode", 0);
+#else
+  this->serial_high_speed_mode = cf->ReadInt(section, "serial_high_speed_mode", 1);
+#endif
+  this->serial_high_speed_baudremap = cf->ReadInt(section, "serial_high_speed_baudremap", 38400);
+
+ switch(this->serial_high_speed_baudremap)
   {
-    PLAYER_ERROR1("sicklms200: requested hi speed serial, but no support compiled in. Defaulting to %d bps.",
-		    DEFAULT_LASER_TRANSFER_RATE);
-    this->transfer_rate = DEFAULT_LASER_TRANSFER_RATE;
+    case 9600:
+        this->serial_high_speed_baudremap = B9600;
+        break;
+     case 38400:
+        this->serial_high_speed_baudremap = B38400;
+        break;
+     case 57600:
+        this->serial_high_speed_baudremap = B57600;
+        break;
+     case 115200:
+        this->serial_high_speed_baudremap = B115200;
+        break;
+     case 230400:
+        this->serial_high_speed_baudremap = B230400;
+        break;
+     default:
+        printf("Unknown baud rate [%d] defaulting to B38400\n", this->serial_high_speed_baudremap);
+        this->serial_high_speed_baudremap = B38400;
+        break;
   }
+
 
   // Set default configuration
   this->startup_delay = cf->ReadInt(section, "delay", 0);
@@ -422,65 +507,48 @@ int SickLMS200::Setup()
   // for the laser to initialized
   sleep(this->startup_delay);
   
-  // Try connecting at each rate, in order
-  for(int j=0;j<this->num_connect_rates;j++)
+  for(int i=0;i<this->retry_limit;i++)
   {
-    this->connect_rate = this->connect_rates[j];
-
-    if (!this->can_do_hi_speed && this->connect_rate > 38400)
+    PLAYER_MSG1(2, "Connection attempt #%d", i);
+    // Try connecting at each rate, in order
+    for(int j=0;j<this->num_connect_rates;j++)
     {
-      PLAYER_ERROR1("sicklms200: requested hi speed serial, but no support compiled in. Defaulting to %d bps.",
-                    DEFAULT_LASER_CONNECT_RATE);
-      this->connect_rate = DEFAULT_LASER_CONNECT_RATE;
-    }
-
-    for(int i=0;i<this->retry_limit;i++)
-    {
-      // Try connecting at the given rate
+      this->connect_rate = this->connect_rates[j];
+  
       PLAYER_MSG1(2, "connecting at %d", this->connect_rate);
       if (ChangeTermSpeed(this->connect_rate))
         continue;
-      if (SetLaserMode() == 0)
+      if (RequestLaserStopStream() == 0)
         this->current_rate = this->connect_rate;
 
       if(this->current_rate != 0)
+      {
+        PLAYER_MSG1(2, "connected at %d!", this->current_rate);
         break;
+      }
     }
     if(this->current_rate != 0)
       break;
   }
-
+  
   // Could not find the laser
   if (this->current_rate == 0)
   {
     PLAYER_ERROR("unable to connect to laser");
     return 1;
   }
-
-  // Jump up to 38400 rate
-  if (this->current_rate != this->transfer_rate && this->transfer_rate == 38400)
+  
+  sleep(1);
+  if (this->current_rate != this->transfer_rate && (this->transfer_rate == 38400 || this->transfer_rate == 500000) )
   {
     PLAYER_MSG2(2, "laser operating at %d; changing to %d", this->current_rate, this->transfer_rate);
     if (SetLaserSpeed(this->transfer_rate))
       return 1;
-    sleep(1);
+
     if (ChangeTermSpeed(this->transfer_rate))
       return 1;
     sleep(1);
   }
-
-  // Jump up to 500000
-  else if (this->current_rate != 500000 && this->transfer_rate == 500000 && this->can_do_hi_speed)
-  {
-    PLAYER_MSG2(2, "laser operating at %d; changing to %d", this->current_rate, this->transfer_rate);
-    if (SetLaserSpeed(this->transfer_rate))
-      return 1;
-    sleep(1);
-    if (ChangeTermSpeed(this->transfer_rate))
-      return 1;
-    sleep(1);
-  }
-
   // Dont know this rate
   else if (this->current_rate != this->transfer_rate)
   {
@@ -489,11 +557,15 @@ int SickLMS200::Setup()
   }
 
   // Display the laser type
-  char type[64];
-  memset(type,0,sizeof(type));
-  if (GetLaserType(type, sizeof(type)))
+//  char type[64];
+  memset(this->laser_type,0,sizeof(this->laser_type));
+  if (GetLaserType(this->laser_type, sizeof(this->laser_type)))
     return 1;
-  PLAYER_MSG3(2, "SICK laser type [%s] at [%s:%d]", type, this->device_name, this->transfer_rate);
+  PLAYER_MSG3(2, "SICK laser type [%s] at [%s:%d]", this->laser_type, this->device_name, this->transfer_rate);
+
+  if (SetLaserMode())
+    return 1;
+
 
   // Configure the laser
   if (SetLaserRes(this->scan_width, this->scan_res))
@@ -547,11 +619,14 @@ SickLMS200::ProcessMessage(QueuePointer & resp_queue,
   {
     player_laser_config_t * config = 
             reinterpret_cast<player_laser_config_t *> (data);
+    int old_scan_width, old_scan_res;
+    
     this->intensity = config->intensity;
     this->scan_res = (int) rint(RTOD(config->resolution)*100);
     this->min_angle = (int)rint(RTOD(config->min_angle)*100);
     this->max_angle = (int)rint(RTOD(config->max_angle)*100);
-    this->range_res = (int)config->range_res*1000;
+    this->range_res = (int) (config->range_res*1000);
+    printf("range_res: %f %d\n", config->range_res, this->range_res);
 
     if(this->CheckScanConfig() != 0)
     {
@@ -562,12 +637,14 @@ SickLMS200::ProcessMessage(QueuePointer & resp_queue,
       PLAYER_ERROR("request for config mode failed");
     else
     {
-      if (SetLaserRes(this->scan_width, this->scan_res) != 0)
-        PLAYER_ERROR("failed setting resolution");
-      /* This call fails for me, but I've only tested with one laser - BPG
-       * */
+      if(old_scan_width != this->scan_width  || old_scan_res != this->scan_res) {
+       if (SetLaserRes(this->scan_width, this->scan_res) != 0)
+         PLAYER_ERROR("failed setting resolution [SetLaserRes()]");
+       /* This call fails for me, but I've only tested with one laser - BPG
+        * */
+      }
       if(SetLaserConfig(this->intensity) != 0)
-        PLAYER_ERROR("failed setting intensity");          
+        PLAYER_ERROR("failed setting intensity [SetLaserConfig()]");          
     }
 
     // Issue a new request for data
@@ -669,7 +746,7 @@ void SickLMS200::Main()
     {
       if (first)
       {
-        PLAYER_MSG0(2, "receiving data");
+        PLAYER_MSG0(2, "SickLMS200: receiving data");
         first = false;
       }
       
@@ -704,7 +781,12 @@ void SickLMS200::Main()
       }
       for (int i = 0; i < this->scan_max_segment - this->scan_min_segment + 1; i++)
       {
-        data.intensity[i] = ((mm_ranges[i] >> 13) & 0x0007);
+        /* Not sure about this */
+        if(strncmp(this->laser_type, "PLS", 3) == 0)
+          data.intensity[i] = ((mm_ranges[i] >> 13) & 0x000E);
+        else
+          data.intensity[i] = ((mm_ranges[i] >> 13) & 0x0007);
+
         data.ranges[i] =  (mm_ranges[i] & 0x1FFF)  * this->range_res / 1e3;
       }
 
@@ -858,26 +940,29 @@ int SickLMS200::ChangeTermSpeed(int speed)
 
 #ifdef HAVE_HI_SPEED_SERIAL
   struct serial_struct serial;
+  if(this->serial_high_speed_mode == 0)
+  {
 
-  // we should check and reset the AYSNC_SPD_CUST flag
-  // since if it's set and we request 38400, we're likely
-  // to get another baud rate instead (based on custom_divisor)
-  // this way even if the previous player doesn't reset the
-  // port correctly, we'll end up with the right speed we want
-  if (ioctl(this->laser_fd, TIOCGSERIAL, &serial) < 0) 
-  {
-    //RETURN_ERROR(1, "error on TIOCGSERIAL in beginning");
-    PLAYER_WARN("ioctl() failed while trying to get serial port info");
-  }
-  else
-  {
-    serial.flags &= ~ASYNC_SPD_CUST;
-    serial.custom_divisor = 0;
-    if (ioctl(this->laser_fd, TIOCSSERIAL, &serial) < 0) 
-    {
-      //RETURN_ERROR(1, "error on TIOCSSERIAL in beginning");
-      PLAYER_WARN("ioctl() failed while trying to set serial port info");
-    }
+	  // we should check and reset the AYSNC_SPD_CUST flag
+	  // since if it's set and we request 38400, we're likely
+	  // to get another baud rate instead (based on custom_divisor)
+	  // this way even if the previous player doesn't reset the
+	  // port correctly, we'll end up with the right speed we want
+	  if (ioctl(this->laser_fd, TIOCGSERIAL, &serial) < 0) 
+	  {
+	    //RETURN_ERROR(1, "error on TIOCGSERIAL in beginning");
+	    PLAYER_WARN("ioctl() failed while trying to get serial port info");
+	  }
+	  else
+	  {
+	    serial.flags &= ~ASYNC_SPD_CUST;
+	    serial.custom_divisor = 0;
+	    if (ioctl(this->laser_fd, TIOCSSERIAL, &serial) < 0) 
+	    {
+	      //RETURN_ERROR(1, "error on TIOCSSERIAL in beginning");
+	      PLAYER_WARN("ioctl() failed while trying to set serial port info");
+	    }
+	  } 
   }
 #endif  
 
@@ -913,41 +998,63 @@ int SickLMS200::ChangeTermSpeed(int speed)
 
     case 500000:
       //PLAYER_MSG0(2, "terminal speed to 500000");
+     if(this->serial_high_speed_mode == 0)
+     {
+	#ifdef HAVE_HI_SPEED_SERIAL    
+	      if (ioctl(this->laser_fd, TIOCGSERIAL, &this->old_serial) < 0) {
+	        RETURN_ERROR(1, "error on TIOCGSERIAL ioctl");
+	      }
+	    
+	      serial = this->old_serial;
+	    
+	      serial.flags |= ASYNC_SPD_CUST;
+	      serial.custom_divisor = 240/5; // for FTDI USB/serial converter divisor is 240/5
+	    
+	      if (ioctl(this->laser_fd, TIOCSSERIAL, &serial) < 0) {
+	        RETURN_ERROR(1, "error on TIOCSSERIAL ioctl");
+	      }
+	    
+	#else
+	      fprintf(stderr, "sicklms200: Trying to change to 500kbps in serial_high_speed_mode = 0, but no support compiled in, defaulting to 38.4kbps.\n");
+	#endif
+	
+	      // even if we are doing 500kbps, we have to set the speed to 38400...
+	      // the FTDI will know we want 500000 instead.
 
-#ifdef HAVE_HI_SPEED_SERIAL    
-      if (ioctl(this->laser_fd, TIOCGSERIAL, &this->old_serial) < 0) {
-        RETURN_ERROR(1, "error on TIOCGSERIAL ioctl");
-      }
-    
-      serial = this->old_serial;
-    
-      serial.flags |= ASYNC_SPD_CUST;
-      serial.custom_divisor = 48; // for FTDI USB/serial converter divisor is 240/5
-    
-      if (ioctl(this->laser_fd, TIOCSSERIAL, &serial) < 0) {
-        RETURN_ERROR(1, "error on TIOCSSERIAL ioctl");
-      }
-    
-#else
-      fprintf(stderr, "sicklms200: Trying to change to 500kbps, but no support compiled in, defaulting to 38.4kbps.\n");
-#endif
+	      if( tcgetattr( this->laser_fd, &term ) < 0 )
+	        RETURN_ERROR(1, "unable to get device attributes");    
 
-      // even if we are doing 500kbps, we have to set the speed to 38400...
-      // the driver will know we want 500000 instead.
-
-      if( tcgetattr( this->laser_fd, &term ) < 0 )
-        RETURN_ERROR(1, "unable to get device attributes");    
-
-      cfmakeraw( &term );
-      cfsetispeed( &term, B38400 );
-      cfsetospeed( &term, B38400 );
+	      cfmakeraw( &term );
+	      cfsetispeed( &term, B38400 );
+	      cfsetospeed( &term, B38400 );
     
-      if( tcsetattr( this->laser_fd, TCSAFLUSH, &term ) < 0 )
-        RETURN_ERROR(1, "unable to set device attributes");
-    
-      break;
-    default:
-      PLAYER_ERROR1("unknown speed %d", speed);
+	      if( tcsetattr( this->laser_fd, TCSAFLUSH, &term ) < 0 )
+	        RETURN_ERROR(1, "unable to set device attributes");
+	}
+	else if(this->serial_high_speed_mode == 1)
+	{
+		tcflush(this->laser_fd, TCIFLUSH);
+	        close(this->laser_fd);
+	        usleep(1000000);
+	        this->laser_fd = ::open(this->device_name, O_RDWR | O_NOCTTY | O_SYNC);
+	        if(this->laser_fd < 0)
+	                RETURN_ERROR(1, "error opening");
+	
+	        if( tcgetattr( this->laser_fd, &term ) < 0 )
+	                 RETURN_ERROR(1, "unable to get device attributes");
+	
+	        term.c_cflag = this->serial_high_speed_baudremap | CS8 | CLOCAL | CREAD;
+	              cfmakeraw( &term );
+	              cfsetispeed( &term, this->serial_high_speed_baudremap );
+	              cfsetospeed( &term, this->serial_high_speed_baudremap );
+	        tcflush(this->laser_fd, TCIFLUSH);
+	        tcsetattr(this->laser_fd, TCSANOW, &term);
+	        tcflush(this->laser_fd, TCIFLUSH);
+	}
+	break;
+	
+        default:
+	      PLAYER_ERROR1("unknown speed %d", speed);
   }
   return 0;
 }
@@ -963,7 +1070,7 @@ int SickLMS200::SetLaserMode()
   int tries;
   ssize_t len;
   uint8_t packet[20];
-
+  
   for (tries = 0; tries < DEFAULT_LASER_RETRIES; tries++)
   {
     packet[0] = 0x20; /* mode change command */
@@ -973,12 +1080,18 @@ int SickLMS200::SetLaserMode()
     packet[4] = 0x43; // C
     packet[5] = 0x4B; // K
     packet[6] = 0x5F; // _
+/*
     packet[7] = 0x4C; // L
     packet[8] = 0x4D; // M
     packet[9] = 0x53; // S
+*/
+    packet[7] = this->laser_type[0];
+    packet[8] = this->laser_type[1];
+    packet[9] = this->laser_type[2];
+
     len = 10;
   
-    PLAYER_MSG0(2, "sending configuration mode request to laser");
+    PLAYER_MSG0(2, "sending configuration mode request to laser [SetLaserMode()]");
     if (WriteToLaser(packet, len) < 0)
       return 1;
 
@@ -986,22 +1099,22 @@ int SickLMS200::SetLaserMode()
     // This could take a while...
     //
     PLAYER_MSG0(2, "waiting for acknowledge");
-    len = ReadFromLaser(packet, sizeof(packet), true, 2000);
+    len = ReadFromLaser(packet, sizeof(packet), true, 2500, 250);
     if (len < 0)
       return 1;
     else if (len < 1)
     {
-      PLAYER_WARN("timeout");
+      PLAYER_WARN("SetLaserMode(): timeout in ReadFromLaser");
       continue;
     }
     else if (packet[0] == NACK)
     {
-      PLAYER_ERROR("request denied by laser");
+      PLAYER_ERROR("SetLaserMode(): request denied by laser");
       return 1;
     }
     else if (packet[0] != ACK)
     {
-      PLAYER_ERROR("unexpected packet type");
+      PLAYER_ERROR("SetLaserMode(): unexpected packet type");
       return 1;
     }
     break;
@@ -1033,22 +1146,22 @@ int SickLMS200::SetLaserSpeed(int speed)
             
     // Wait for laser to return ack
     //PLAYER_MSG0(2, "waiting for acknowledge");
-    len = ReadFromLaser(packet, sizeof(packet), true, 10000);
+    len = ReadFromLaser(packet, sizeof(packet), true, 20000, 5000);
     if (len < 0)
       return 1;
     else if (len < 1)
     {
-      PLAYER_ERROR("no reply from laser");
+      PLAYER_ERROR("SetLaserSpeed(): no reply from laser");
       return 1;
     }
     else if (packet[0] == NACK)
     {
-      PLAYER_ERROR("request denied by laser");
+      PLAYER_ERROR("SetLaserSpeed(): request denied by laser");
       return 1;
     }
     else if (packet[0] != ACK)
     {
-      PLAYER_ERROR("unexpected packet type");
+      PLAYER_ERROR("SetLaserSpeed(): unexpected packet type");
       return 1;      
     }
     break;
@@ -1077,21 +1190,22 @@ int SickLMS200::GetLaserType(char *buffer, size_t bufflen)
 
     // Wait for laser to return data
     len = ReadFromLaser(packet, sizeof(packet), false, 2000);
+
     if (len < 0)
       return 1;
     else if (len < 1)
     {
-      PLAYER_WARN("timeout");
+      PLAYER_WARN("GetLaserType(): timeout in ReadFromLaser()");
       continue;
     }
     else if (packet[0] == NACK)
     {
-      PLAYER_ERROR("request denied by laser");
+      PLAYER_ERROR("GetLaserType(): request denied by laser");
       return 1;
     }
     else if (packet[0] != 0xBA)
     {
-      PLAYER_ERROR("unexpected packet type");
+      PLAYER_ERROR("GetLaserType(): unexpected packet type");
       return 1;
     }
 
@@ -1131,22 +1245,22 @@ int SickLMS200::SetLaserConfig(bool intensity)
 
     // Wait for laser to return data
     //PLAYER_MSG0(2, "waiting for reply");
-    len = ReadFromLaser(packet, sizeof(packet), false, 2000);
+    len = ReadFromLaser(packet, sizeof(packet), false, 25000, 5000);
     if (len < 0)
       return 1;
     else if (len < 1)
     {
-      PLAYER_WARN("timeout");
+      PLAYER_WARN("SetLaserConfig(): timeout in ReadFromLaser() [1]");
       continue;
     }
     else if (packet[0] == NACK)
     {
-      PLAYER_ERROR("request denied by laser");
+      PLAYER_ERROR("SetLaserConfig(): request denied by laser [1]");
       return 1;
     }
     else if (packet[0] != 0xF4)
     {
-      PLAYER_ERROR("unexpected packet type");
+      PLAYER_ERROR("SetLaserConfig(): unexpected packet type [1]");
       return 1;
     }
     break;
@@ -1181,22 +1295,22 @@ int SickLMS200::SetLaserConfig(bool intensity)
 
     // Wait for the change to "take"
     //PLAYER_MSG0(2, "waiting for acknowledge");
-    len = ReadFromLaser(packet, sizeof(packet), false, 2000);
+    len = ReadFromLaser(packet, sizeof(packet), false, 25000, 10000);
     if (len < 0)
       return 1;
     else if (len < 1)
     {
-      PLAYER_ERROR("timeout");
+      PLAYER_WARN("SetLaserConfig(): timeout in ReadFromLaser() [2]");
       continue;
     }
     else if (packet[0] == NACK)
     {
-      PLAYER_ERROR("request denied by laser");
+      PLAYER_ERROR("SetLaserConfig(): request denied by laser [2]");
       return 1;
     }
     else if (packet[0] != 0xF7)
     {
-      PLAYER_ERROR("unexpected packet type");
+      PLAYER_ERROR("SetLaserConfig(): unexpected packet type [2]");
       return 1;
     }
 
@@ -1266,6 +1380,52 @@ int SickLMS200::SetLaserRes(int width, int res)
   return (tries >= DEFAULT_LASER_RETRIES);
 }
 
+
+////////////////////////////////////////////////////////////////////////////////
+// Request status from the laser
+// Returns 0 on success
+//
+int SickLMS200::RequestLaserStopStream()
+{
+  int tries;
+  ssize_t len;
+  uint8_t packet[20];
+
+  for (tries = 0; tries < DEFAULT_LASER_RETRIES; tries++)
+  {
+    packet[0] = 0x20;
+    packet[1] = 0x25;
+    len = 2;
+    PLAYER_MSG0(2, "sending LMS stop continuous mode [RequestLaserStopStream()]");
+    if (WriteToLaser(packet, len) < 0)
+      return 1;
+
+    // Wait for laser to return ack
+    // This could take a while...
+    //
+    PLAYER_MSG0(2, "waiting for acknowledge");
+    len = ReadFromLaser(packet, sizeof(packet), true, 2500, 500);
+    if (len < 0)
+      return 1;
+    else if (len < 1)
+    {
+      PLAYER_WARN("RequestLaserStopStream(): timeout in ReadFromLaser");
+      continue;
+    }
+    else if (packet[0] == NACK)
+    {
+      PLAYER_ERROR("RequestLaserStopStream(): request denied by laser");
+      return 1;
+    }
+    else if (packet[0] != ACK)
+    {
+      PLAYER_ERROR("RequestLaserStopStream(): unexpected packet type");
+      return 1;
+    }
+    break;
+  }
+  return (tries >= DEFAULT_LASER_RETRIES);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Request data from the laser
@@ -1428,48 +1588,53 @@ ssize_t SickLMS200::WriteToLaser(uint8_t *data, ssize_t len)
   tcflush(this->laser_fd, TCIOFLUSH);
 
   ssize_t bytes = 0;
+#if 0
+  printf("WriteToLaser: [ ");
+  for(int i = 0; i < len + 6; i++)
+    printf("%02x ", buffer[i]);
+  printf("]\n");
+#endif
 
 #ifdef HAVE_HI_SPEED_SERIAL
-  struct timeval start, end;
-  // have to write one char at a time, because if we're
-  // high speed, then must take no longer than 55 us between
-  // chars
+  if(this->serial_high_speed_mode == 0 && current_rate > 38400)
+  {
+	  struct timeval start, end;
+	  // have to write one char at a time, because if we're
+	  // high speed, then must take no longer than 55 us between
+	  // chars
+	
+	  int ret;
+	  //printf("LASER: writing %d bytes\n", 6+len);
+	  for (int i =0; i < 6 + len; i++) {
+	    do {
+	      gettimeofday(&start, NULL);
+	      ret = ::write(this->laser_fd, buffer + i, 1);
+	    } while (!ret);
+	    if (ret > 0) {
+	      bytes += ret;
+	    }
 
-  int ret;
-  if (current_rate > 38400) {
-    //printf("LASER: writing %d bytes\n", 6+len);
-    for (int i =0; i < 6 + len; i++) {
-      do {
-        gettimeofday(&start, NULL);
-        ret = ::write(this->laser_fd, buffer + i, 1);
-      } while (!ret);
-      if (ret > 0) {
-        bytes += ret;
-      }
+     // need to do this sort of busy wait to ensure the right timing
+     // although I've noticed you will get some anamolies that are
+     // in the ms range; this could be a problem...
+     int usecs; 
+     do {
+       gettimeofday(&end, NULL);
+       usecs= (end.tv_sec - start.tv_sec)*1000000 +
+         (end.tv_usec - start.tv_usec);
+     } while (usecs < 60);
 
-      // need to do this sort of busy wait to ensure the right timing
-      // although I've noticed you will get some anamolies that are
-      // in the ms range; this could be a problem...
-      int usecs; 
-      do {
-        gettimeofday(&end, NULL);
-        usecs= (end.tv_sec - start.tv_sec)*1000000 +
-          (end.tv_usec - start.tv_usec);
-      } while (usecs < 60);
-
-      //printf("usecs: %d bytes=%02X\n", (end.tv_sec - start.tv_sec)*1000000 +
-      //     (end.tv_usec - start.tv_usec), *(buffer + i));
-      
+     //printf("usecs: %d bytes=%02X\n", (end.tv_sec - start.tv_sec)*1000000 +
+     //     (end.tv_usec - start.tv_usec), *(buffer + i));
     }
   } else {
-    bytes = ::write( this->laser_fd, buffer, 4 + len + 2);
+  /* Notice for high_speed_mode != 0 but 500k we still use this method */
+ 	 bytes = ::write( this->laser_fd, buffer, 4 + len + 2);
   }
 #else
-    
-  // Write the data to the port
-  //
   bytes = ::write( this->laser_fd, buffer, 4 + len + 2);
 #endif
+
   // Make sure the queue is drained
   // Synchronous IO doesnt always work
   //
@@ -1487,8 +1652,12 @@ ssize_t SickLMS200::WriteToLaser(uint8_t *data, ssize_t len)
 // Set timeout to -1 to make this blocking, otherwise it will return in timeout ms.
 // Returns the packet length (0 if timeout occurs)
 //
-ssize_t SickLMS200::ReadFromLaser(uint8_t *data, ssize_t maxlen, bool ack, int timeout)
+ssize_t SickLMS200::ReadFromLaser(uint8_t *data, ssize_t maxlen, bool ack, int timeout, int timeout_header)
 {
+
+  if(timeout_header == -1)
+    timeout_header = timeout;
+
   // If the timeout is infinite,
   // go to blocking io
   //
@@ -1528,6 +1697,7 @@ ssize_t SickLMS200::ReadFromLaser(uint8_t *data, ssize_t maxlen, bool ack, int t
 
   int64_t start_time = GetTime();
   int64_t stop_time = start_time + timeout;
+  int64_t stop_time_header = start_time + timeout_header;
 
   //PLAYER_MSG2(2, "%Ld %Ld", start_time, stop_time);
 
@@ -1555,10 +1725,10 @@ ssize_t SickLMS200::ReadFromLaser(uint8_t *data, ssize_t maxlen, bool ack, int t
         break;
     }
     memmove(header, header + 1, sizeof(header) - 1);
-    if (timeout >= 0 && GetTime() >= stop_time)
+    if (timeout >= 0 && GetTime() >= stop_time_header)
     {
       //PLAYER_MSG2(2, "%Ld %Ld", GetTime(), stop_time);
-      //PLAYER_MSG0(2, "timeout on read (1)");
+      PLAYER_MSG0(2, "timeout on read (1)");
       return 0;
     }
   }
