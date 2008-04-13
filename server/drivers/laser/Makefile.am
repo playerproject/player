@@ -20,10 +20,6 @@ if INCLUDE_LASERCSPACE
 noinst_LTLIBRARIES += liblasercspace.la
 endif
 
-if INCLUDE_SICKPLS
-noinst_LTLIBRARIES += libsickpls.la
-endif
-
 if INCLUDE_LASERPOSEINTERPOLATOR
 noinst_LTLIBRARIES += liblaserposeinterpolator.la
 endif
