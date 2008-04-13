@@ -58,6 +58,9 @@ or sector_angle.
   underlying @ref interface_position2d device.  All data and commands
   are in the odometric frame of the underlying device.
 
+- @ref interface_planner : similar to above, but uses the planer
+  interface which allows extras such as "done" when arrived.
+
 @par Requires
 
 - @ref interface_position2d : the underlying robot that will be
@@ -268,9 +271,19 @@ class VFH_Class : public Driver
     // and return values are in degrees.
     double angle_diff(double a, double b);
 
+    // Devices we provide
+    player_devaddr_t position_id;
+    player_devaddr_t planner_id;
+    bool planner;
+
+    player_planner_data_t planner_data;
+    
+
+    // Devices we require
     // Odometry device info
     Device *odom;
     player_devaddr_t odom_addr;
+
     double dist_eps;
     double ang_eps;
 
@@ -588,8 +601,21 @@ VFH_Class::ProcessOdom(player_msghdr_t* hdr, player_position2d_data_t &data)
 
   // Also change this info out for use by others
   player_msghdr_t newhdr = *hdr;
-  newhdr.addr = this->device_addr;
+  newhdr.addr = this->position_id;
   this->Publish(&newhdr, (void*)&data);
+
+ if(this->planner)
+ {
+   this->planner_data.pos.px = data.pos.px;
+   this->planner_data.pos.py = data.pos.py;
+   this->planner_data.pos.pa = data.pos.pa;
+
+   this->Publish(this->planner_id,
+                 PLAYER_MSGTYPE_DATA,
+                 PLAYER_PLANNER_DATA_STATE,
+                 (void*)&this->planner_data,sizeof(this->planner_data), NULL);
+ }
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -757,8 +783,28 @@ int VFH_Class::ProcessMessage(QueuePointer & resp_queue,
     return 0;
   }
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD,
+                                PLAYER_PLANNER_CMD_GOAL,
+                                this->planner_id))
+  {
+    // Message on the planner interface
+    // Emulate a message on the position2d interface
+
+    player_position2d_cmd_pos_t cmd_pos;
+    player_planner_cmd_t *cmd_planner = (player_planner_cmd_t *) data;
+
+    memset(&cmd_pos, 0, sizeof(cmd_pos));
+    cmd_pos.pos.px = cmd_planner->goal.px;
+    cmd_pos.pos.py = cmd_planner->goal.py;
+    cmd_pos.pos.pa = cmd_planner->goal.pa;
+    cmd_pos.state = 1;
+
+    /* Process position2d command */
+    ProcessCommand(hdr, cmd_pos);
+    return 0;
+  }
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD,
                                 PLAYER_POSITION2D_CMD_POS,
-                                this->device_addr))
+                                this->position_id))
   {
     assert(hdr->size == sizeof(player_position2d_cmd_pos_t));
     ProcessCommand(hdr, *reinterpret_cast<player_position2d_cmd_pos_t *> (data));
@@ -766,7 +812,7 @@ int VFH_Class::ProcessMessage(QueuePointer & resp_queue,
   }
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD,
                                 PLAYER_POSITION2D_CMD_VEL,
-                                this->device_addr))
+                                this->position_id))
   {
     assert(hdr->size == sizeof(player_position2d_cmd_vel_t));
     // make a copy of the header and change the address
@@ -778,7 +824,7 @@ int VFH_Class::ProcessMessage(QueuePointer & resp_queue,
 
     return 0;
   }  
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, -1, this->device_addr))
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, -1, this->position_id))
   {
     // Pass the request on to the underlying position device and wait for
     // the reply.
@@ -799,7 +845,7 @@ int VFH_Class::ProcessMessage(QueuePointer & resp_queue,
     player_msghdr_t* rephdr = msg->GetHeader();
     void* repdata = msg->GetPayload();
     // Copy in our address and forward the response
-    rephdr->addr = this->device_addr;
+    rephdr->addr = this->position_id;
     this->Publish(resp_queue, rephdr, repdata);
     delete msg;
     return(0);
@@ -897,6 +943,7 @@ void VFH_Class::DoOneUpdate()
       this->speed = this->turnrate = 0;
       PutCommand( this->speed, this->turnrate );
       this->turninginplace = false;
+      this->planner_data.done = 1;
     }
     // CASE 3: The robot is too far from the goal position, so invoke VFH to
     //         get there.
@@ -994,14 +1041,27 @@ VFH_Class::ProcessCommand(player_msghdr_t* hdr, player_position2d_cmd_pos_t &cmd
     this->goal_x = x;
     this->goal_y = y;
     this->goal_t = t;
+    
+    if(this->planner)
+    {
+       this->planner_data.goal.px = cmd.pos.px;
+       this->planner_data.goal.py = cmd.pos.py;
+       this->planner_data.goal.pa = cmd.pos.pa;
+       this->planner_data.done = 0;
+
+       this->planner_data.valid = 1;
+            /* Not necessarily. But VFH will try anything once */
+
+       this->planner_data.waypoint_idx = -1; /* Not supported */
+       this->planner_data.waypoints_count = -1; /* Not supported */
+    }
   }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 VFH_Class::VFH_Class( ConfigFile* cf, int section)
-  : Driver(cf, section, true,
-           PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION2D_CODE)
+  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
 {
   double cell_size;
   int window_diameter;
@@ -1097,6 +1157,34 @@ VFH_Class::VFH_Class( ConfigFile* cf, int section)
                                           obs_cutoff_1ms,
                                           weight_desired_dir,
                                           weight_current_dir);
+
+  // Devices we provide
+  memset(&this->planner_id, 0, sizeof(player_devaddr_t));
+  memset(&this->planner_data, 0, sizeof(player_planner_data_t));
+  planner = false;
+  if (cf->ReadDeviceAddr(&(this->planner_id), section, "provides",
+                        PLAYER_PLANNER_CODE, -1, NULL) == 0)
+  {
+    planner = true;
+    if (this->AddInterface(this->planner_id) != 0)
+    {
+      this->SetError(-1);
+      return;
+    }
+  }
+
+  memset(&this->position_id, 0, sizeof(player_devaddr_t));
+  if (cf->ReadDeviceAddr(&(this->position_id), section, "provides",
+                        PLAYER_POSITION2D_CODE, -1, NULL) == 0)
+  {
+    if (this->AddInterface(this->position_id) != 0)
+    {
+      this->SetError(-1);
+      return;
+    }
+  }
+
+
   this->odom = NULL;
   if (cf->ReadDeviceAddr(&this->odom_addr, section, "requires",
                          PLAYER_POSITION2D_CODE, -1, NULL) != 0)
@@ -1140,7 +1228,8 @@ VFH_Class::VFH_Class( ConfigFile* cf, int section)
 // VFH Code
 
 
-VFH_Class::~VFH_Class() {
+VFH_Class::~VFH_Class()
+{
   delete this->vfh_Algorithm;
 
   return;
