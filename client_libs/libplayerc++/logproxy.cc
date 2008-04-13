@@ -82,6 +82,37 @@ LogProxy::Unsubscribe()
   mDevice = NULL;
 }
 
+void LogProxy::QueryState()
+{
+  scoped_lock_t lock(mPc->mMutex);
+
+  if (0 != playerc_log_get_state(mDevice))
+    throw PlayerError("LogProxy::QueryState()", "error querying state");
+  return;
+}
+
+void
+LogProxy::SetState(int aState)
+{
+  scoped_lock_t lock(mPc->mMutex);
+
+  if (mDevice->type == 0) {
+    if (0 != playerc_log_get_state(mDevice))
+      throw PlayerError("LogProxy::SetState()", "error querying type");
+  }
+
+  if (mDevice->type == PLAYER_LOG_TYPE_READ) {
+    if (0 != playerc_log_set_read_state(mDevice,aState))
+      throw PlayerError("LogProxy::SetState()", "error setting read");
+  } else if(mDevice->type == PLAYER_LOG_TYPE_WRITE) {
+    if (0 != playerc_log_set_write_state(mDevice,aState))
+      throw PlayerError("LogProxy::SetState()", "error setting write");
+  } else {
+    // unknown type
+  }
+  return;
+}
+
 void
 LogProxy::SetWriteState(int aState)
 {
