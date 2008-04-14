@@ -160,6 +160,8 @@ PLAYER_ADD_DRIVER([aodv],[yes],[],[],[])
 PLAYER_ADD_DRIVER([artoolkitplus],[yes],[],[],[],[ARTOOLKITPLUS],[artoolkitplus >= 2.1])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $ARTOOLKITPLUS_LIBS"
 
+PLAYER_ADD_DRIVER([bumper2laser],[yes],[],[],[])
+
 PLAYER_ADD_DRIVER([bumpersafe],[yes],[],[],[])
 
 dnl Check to see if we have version 1 or 2 API for dc1394
@@ -442,6 +444,8 @@ fi
 
 PLAYER_ADD_DRIVER([urg_nz],[no],[],[],[],[URG_NZ],[urg_nz >= 0.0.1])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $URG_NZ_LIBS"
+
+PLAYER_ADD_DRIVER([vec2map],[yes],["geos_c.h"],[],["-lgeos"])
 
 PLAYER_ADD_DRIVER([vfh],[yes],)
 
