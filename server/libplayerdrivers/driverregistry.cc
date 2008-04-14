@@ -490,6 +490,14 @@ void PBSDriver_Register (DriverTable* table);
 void PostGIS_Register (DriverTable* table);
 #endif
 
+#ifdef INCLUDE_VEC2MAP
+void Vec2Map_Register(DriverTable * table);
+#endif
+
+#ifdef INCLUDE_BUMPER2LASER
+void Bumper2Laser_Register(DriverTable * table);
+#endif
+
 #ifdef INCLUDE_LOCALBB
 void LocalBB_Register (DriverTable* table);
 #endif
@@ -950,6 +958,14 @@ player_register_drivers()
 
 #ifdef INCLUDE_POSTGIS
   PostGIS_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_VEC2MAP
+  Vec2Map_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_BUMPER2LASER
+  Bumper2Laser_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_LOCALBB
