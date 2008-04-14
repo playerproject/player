@@ -55,6 +55,8 @@ converting joystick positions to velocity commands.
 - @ref interface_position2d : if present, joystick positions will be
   interpreted as velocities and sent as commands to this position2d device.
   See also max_speed, and deadman_button options below.
+- @ref interface_gripper : if present, joystick buttons will be used to
+  control given gripper (open, close, store, retrieve, stop).
 
 @par Configuration requests
 
@@ -205,6 +207,7 @@ position devices that use watchdog timers.
 
 #include <netinet/in.h>
 #include <string.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -291,7 +294,9 @@ class LinuxJoystick : public Driver
   private: int axes[3];
   private: int deadman_button;
   private: player_devaddr_t cmd_position_addr;
-  private: Device* position;
+  private: Device * position;
+  private: player_devaddr_t cmd_gripper_addr;
+  private: Device * gripper;
 
   // Joystick
   private: player_joystick_data_t joy_data;
@@ -327,9 +332,12 @@ void LinuxJoystick_Register(DriverTable* table)
 LinuxJoystick::LinuxJoystick(ConfigFile* cf, int section) : Driver(cf, section)
 {
   // zero ids, so that we'll know later which interfaces were requested
-  memset(&this->cmd_position_addr, 0, sizeof(player_devaddr_t));
-  memset(&this->position_addr, 0, sizeof(player_devaddr_t));
-  memset(&this->joystick_addr, 0, sizeof(player_devaddr_t));
+  memset(&(this->cmd_position_addr), 0, sizeof(player_devaddr_t));
+  memset(&(this->cmd_gripper_addr), 0, sizeof(player_devaddr_t));
+  memset(&(this->position_addr), 0, sizeof(player_devaddr_t));
+  memset(&(this->joystick_addr), 0, sizeof(player_devaddr_t));
+  this->position = NULL;
+  this->gripper = NULL;
 
   // Do we create a position interface?
   if(cf->ReadDeviceAddr(&(this->position_addr), section, "provides",
@@ -367,17 +375,21 @@ LinuxJoystick::LinuxJoystick(ConfigFile* cf, int section) : Driver(cf, section)
   this->scale_pos[1] = cf->ReadTupleFloat(section, "scale_pos", 1, 1.0);
   this->scale_pos[2] = cf->ReadTupleFloat(section, "scale_pos", 2, 1.0);
 
-  // Do we talk to a position device?
+  // Do we talk to any device?
   if(cf->GetTupleCount(section, "requires"))
   {
-    if(cf->ReadDeviceAddr(&(this->cmd_position_addr), section, "requires", 
+    if(cf->ReadDeviceAddr(&(this->cmd_position_addr), section, "requires",
                           PLAYER_POSITION2D_CODE, -1, NULL) == 0)
     {
       this->max_speed[0] = cf->ReadTupleFloat(section, "max_speed", 0, MAX_XSPEED);
       this->max_speed[1] = cf->ReadTupleFloat(section, "max_speed", 1, MAX_YSPEED);
       this->max_speed[2] = DTOR(cf->ReadTupleFloat(section, "max_speed", 2, MAX_YAWSPEED));
       this->timeout = cf->ReadFloat(section, "timeout", 5.0);
-    }
+    } else memset(&(this->cmd_position_addr), 0, sizeof(player_devaddr_t));
+    if (cf->ReadDeviceAddr(&(this->cmd_gripper_addr), section, "requires",
+                          PLAYER_GRIPPER_CODE, -1, NULL) == 0)
+    {
+    } else memset(&(this->cmd_gripper_addr), 0, sizeof(player_devaddr_t));
   }
 
   return;
@@ -398,18 +410,19 @@ int LinuxJoystick::Setup()
 
   this->lastread.tv_sec = this->lastread.tv_usec = 0;
 
-  // If we're asked, open the position device
+  this->position = NULL;
+  // If we're asked, open the position2d device
   if(this->cmd_position_addr.interf)
   {
     if(!(this->position = deviceTable->GetDevice(this->cmd_position_addr)))
     {
-      PLAYER_ERROR("unable to locate suitable position device");
-      return(-1);
+      PLAYER_ERROR("unable to locate suitable position2d device");
+      return -1;
     }
     if(this->position->Subscribe(this->InQueue) != 0)
     {
-      PLAYER_ERROR("unable to subscribe to position device");
-      return(-1);
+      PLAYER_ERROR("unable to subscribe to position2d device");
+      return -1;
     }
 
     // Enable the motors
@@ -436,6 +449,26 @@ int LinuxJoystick::Setup()
                            (void*)&cmd, sizeof(player_position2d_cmd_vel_t),
                            NULL);
   }
+  this->gripper = NULL;
+  // If we're asked, open the gripper device
+  if (this->cmd_gripper_addr.interf)
+  {
+    this->gripper = deviceTable->GetDevice(this->cmd_gripper_addr);
+    if (!(this->gripper))
+    {
+      PLAYER_ERROR("unable to locate suitable gripper device");
+      if ((this->cmd_position_addr.interf) && (this->position))
+        this->position->Unsubscribe(this->InQueue);
+      return -1;
+    }
+    if (this->gripper->Subscribe(this->InQueue) != 0)
+    {
+      PLAYER_ERROR("unable to subscribe to gripper device");
+      if ((this->cmd_position_addr.interf) && (this->position))
+        this->position->Unsubscribe(this->InQueue);
+      return -1;
+    }
+  }
   
   this->pos[0] = this->pos[1] = this->pos[2] = 0;
   
@@ -443,7 +476,7 @@ int LinuxJoystick::Setup()
   // LinuxJoystick::Main(), which contains the main loop for the driver.
   this->StartThread();
 
-  return(0);
+  return 0;
 }
 
 
@@ -454,8 +487,10 @@ int LinuxJoystick::Shutdown()
   // Stop and join the driver thread
   this->StopThread();
 
-  if(this->cmd_position_addr.interf)
+  if ((this->cmd_position_addr.interf) && (this->position))
     this->position->Unsubscribe(this->InQueue);
+  if ((this->cmd_gripper_addr.interf) && (this->gripper))
+    this->gripper->Unsubscribe(this->InQueue);
 
   // Close the joystick
   close(this->fd);
@@ -500,6 +535,26 @@ void LinuxJoystick::Main()
                                PLAYER_POSITION2D_CMD_VEL,
                                (void*)&cmd, sizeof(player_position2d_cmd_vel_t),
                                NULL);
+      }
+    }
+    // Send new commands to gripper device
+    if (this->cmd_gripper_addr.interf)
+    {
+      if ((this->buttons) & 0x01)
+      {
+        this->gripper->PutMsg(this->InQueue, PLAYER_MSGTYPE_CMD, PLAYER_GRIPPER_CMD_CLOSE, NULL, 0, NULL);
+      } else if ((this->buttons) & 0x02)
+      {
+        this->gripper->PutMsg(this->InQueue, PLAYER_MSGTYPE_CMD, PLAYER_GRIPPER_CMD_OPEN, NULL, 0, NULL);
+      } else if ((this->buttons) & 0x04)
+      {
+        this->gripper->PutMsg(this->InQueue, PLAYER_MSGTYPE_CMD, PLAYER_GRIPPER_CMD_STORE, NULL, 0, NULL);
+      } else if ((this->buttons) & 0x08)
+      {
+        this->gripper->PutMsg(this->InQueue, PLAYER_MSGTYPE_CMD, PLAYER_GRIPPER_CMD_RETRIEVE, NULL, 0, NULL);
+      } else if ((this->buttons) & 0x10)
+      {
+        this->gripper->PutMsg(this->InQueue, PLAYER_MSGTYPE_CMD, PLAYER_GRIPPER_CMD_STOP, NULL, 0, NULL);
       }
     }
   }
