@@ -148,6 +148,8 @@ double plan_get_carrot(plan_t* plan, double* px, double* py,
                        double lx, double ly, 
                        double maxdist, double distweight);
 
+void plan_set_obstacles(plan_t* plan, double* obs, size_t num);
+
 #if HAVE_OPENSSL_MD5_H && HAVE_LIBCRYPTO
 // Write the cspace occupancy distance values to a file, one per line.
 // Read them back in with plan_read_cspace().
