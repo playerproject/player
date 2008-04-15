@@ -238,6 +238,7 @@ class Wavefront : public Driver
     player_devaddr_t localize_id;
     player_devaddr_t map_id;
     player_devaddr_t laser_id;
+    player_devaddr_t graphics2d_id;
     double map_res;
     double robot_radius;
     double safety_dist;
@@ -255,6 +256,7 @@ class Wavefront : public Driver
     Device* localize;
     Device* mapdevice;
     Device* laser;
+    Device* graphics2d;
 
     // are we disabled?
     bool enable;
@@ -316,12 +318,14 @@ class Wavefront : public Driver
     int SetupLaser();
     int SetupPosition();
     int SetupMap();
+    int SetupGraphics2d();
     int GetMap(bool threaded);
     int GetMapInfo(bool threaded);
     int ShutdownPosition();
     int ShutdownLocalize();
     int ShutdownLaser();
     int ShutdownMap();
+    int ShutdownGraphics2d();
     double angle_diff(double a, double b);
 
     void ProcessCommand(player_planner_cmd_t* cmd);
@@ -393,10 +397,15 @@ Wavefront::Wavefront( ConfigFile* cf, int section)
     return;
   }
   
-  // Can use a map device
+  // Can use a laser device
   memset(&this->laser_id,0,sizeof(player_devaddr_t));
   cf->ReadDeviceAddr(&this->laser_id, section, "requires",
                      PLAYER_LASER_CODE, -1, NULL);
+
+  // Can use a graphics2d device
+  memset(&this->graphics2d_id,0,sizeof(player_devaddr_t));
+  cf->ReadDeviceAddr(&this->graphics2d_id, section, "requires",
+                     PLAYER_GRAPHICS2D_CODE, -1, NULL);
 
   this->safety_dist = cf->ReadLength(section,"safety_dist", 0.25);
   this->max_radius = cf->ReadLength(section,"max_radius",1.0);
@@ -483,6 +492,12 @@ Wavefront::Setup()
     this->scan_points_count = 0;
   }
 
+  if(this->graphics2d_id.interf)
+  {
+    if(SetupGraphics2d() < 0)
+      return(-1);
+  }
+
   // Start the driver thread.
   this->StartThread();
   return 0;
@@ -507,6 +522,8 @@ Wavefront::Shutdown()
   ShutdownMap();
   if(this->laser_id.interf)
     ShutdownLaser();
+  if(this->graphics2d_id.interf)
+    ShutdownGraphics2d();
 
   return 0;
 }
@@ -599,6 +616,36 @@ Wavefront::ProcessLaserScan(player_laser_data_scanpose_t* data)
 
   printf("setting %d hit points\n", this->scan_points_count);
   plan_set_obstacles(plan, this->scan_points, this->scan_points_count);
+
+  if(this->graphics2d_id.interf)
+  {
+    // Clear the canvas
+    this->graphics2d->PutMsg(this->InQueue,
+                             PLAYER_MSGTYPE_CMD,
+                             PLAYER_GRAPHICS2D_CMD_CLEAR,
+                             NULL,0,NULL);
+    
+    // Draw the points
+    player_graphics2d_cmd_points pts;
+    assert(pts.points = (player_point_2d_t*)malloc(sizeof(player_point_2d_t)*
+                                                   hitpt_cnt/2));
+    pts.points_count = hitpt_cnt/2;
+    pts.color.alpha = 0;
+    pts.color.red = 0;
+    pts.color.blue = 0;
+    pts.color.green = 255;
+    for(int i=0;i<hitpt_cnt/2;i++)
+    {
+      pts.points[i].px = this->scan_points[2*i];
+      pts.points[i].py = this->scan_points[2*i+1];
+    }
+
+    this->graphics2d->PutMsg(this->InQueue,
+                             PLAYER_MSGTYPE_CMD,
+                             PLAYER_GRAPHICS2D_CMD_POINTS,
+                             (void*)&pts,0,NULL);
+    free(pts.points);
+  }
 }
 
 void
@@ -1230,6 +1277,24 @@ Wavefront::SetupLaser()
   return(0);
 }
 
+int
+Wavefront::SetupGraphics2d()
+{
+  // Subscribe to the graphics2d device.
+  if(!(this->graphics2d = deviceTable->GetDevice(this->graphics2d_id)))
+  {
+    PLAYER_ERROR("unable to locate suitable graphics2d device");
+    return(-1);
+  }
+  if(this->graphics2d->Subscribe(this->InQueue) != 0)
+  {
+    PLAYER_ERROR("unable to subscribe to graphics2d device");
+    return(-1);
+  }
+
+  return(0);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the underlying localize device.
 int
@@ -1418,6 +1483,12 @@ int
 Wavefront::ShutdownLaser()
 {
   return(this->laser->Unsubscribe(this->InQueue));
+}
+
+int
+Wavefront::ShutdownGraphics2d()
+{
+  return(this->graphics2d->Unsubscribe(this->InQueue));
 }
 
 int
