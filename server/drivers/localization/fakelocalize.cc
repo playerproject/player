@@ -48,6 +48,7 @@ cost of actually running a localization algorithm.
 @par Provides
 
 - @ref interface_localize
+- @ref interface_position2d (optionally)
 
 @par Requires
 
@@ -88,23 +89,27 @@ driver
 */
 /** @} */
 
-
-#include <sys/types.h>
-#include <netinet/in.h>
 #include <unistd.h>
+#include <cstddef>
+#include <cstdlib>
+#include <ctime>
+#include <cassert>
+#include <cstring>
 
 #include <libplayercore/playercore.h>
 
-#define SLEEPTIME_US 100000
+#define SLEEPTIME_NS 100000000
 
-#define min(x,y) (x < y ? x : y)
+#define min(x,y) ((x) < (y) ? (x) : (y))
+
+using namespace std;
 
 // Driver for computing the free c-space from a laser scan.
 class FakeLocalize : public Driver
 {
   // Constructor
   public: FakeLocalize( ConfigFile* cf, int section);
-  ~FakeLocalize();
+  public: virtual ~FakeLocalize();
 
   // Setup/shutdown/run routines.
   public: virtual int Setup();
@@ -114,15 +119,14 @@ class FakeLocalize : public Driver
                                      player_msghdr * hdr,
                                      void * data);
 
-
   // Simulation stuff.
   private: int UpdateData();
   private: Device *sim;
   private: player_devaddr_t sim_id;
   private: player_devaddr_t localize_addr;
+  private: player_devaddr_t position2d_addr;
   private: char* model;
 };
-
 
 // Initialization function
 Driver* FakeLocalize_Init( ConfigFile* cf, int section)
@@ -130,13 +134,11 @@ Driver* FakeLocalize_Init( ConfigFile* cf, int section)
   return ((Driver*) (new FakeLocalize( cf, section)));
 }
 
-
 // a driver registration function
 void FakeLocalize_Register(DriverTable* table)
 {
   table->AddDriver("fakelocalize", FakeLocalize_Init);
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
@@ -151,8 +153,8 @@ FakeLocalize::FakeLocalize( ConfigFile* cf, int section)
     return;
   }
   this->sim = NULL;
-
-  memset(&this->localize_addr, 0, sizeof(player_devaddr_t));
+  memset(&(this->localize_addr), 0, sizeof(player_devaddr_t));
+  memset(&(this->position2d_addr), 0, sizeof(player_devaddr_t));
   // Do we create a localize interface?
   if(cf->ReadDeviceAddr(&(this->localize_addr), section, "provides",
                         PLAYER_LOCALIZE_CODE, -1, NULL) == 0)
@@ -163,7 +165,22 @@ FakeLocalize::FakeLocalize( ConfigFile* cf, int section)
       return;
     }
   }
+  // Do we create a position2d interface?
+  if(cf->ReadDeviceAddr(&(this->position2d_addr), section, "provides",
+                        PLAYER_POSITION2D_CODE, -1, NULL) == 0)
+  {
+    if(this->AddInterface(this->position2d_addr))
+    {
+      this->SetError(-1);
+      return;
+    }
+  }
 
+  if (!((this->localize_addr.interf) || (this->position2d_addr.interf)))
+  {
+    this->SetError(-1);
+    return;
+  }
 
   if(!(this->model = strdup(cf->ReadString(section, "model", NULL))))
   {
@@ -177,7 +194,7 @@ FakeLocalize::FakeLocalize( ConfigFile* cf, int section)
 
 FakeLocalize::~FakeLocalize()
 {
-  free (this->model);
+  free(this->model);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -188,18 +205,17 @@ int FakeLocalize::Setup()
   if(!(this->sim = deviceTable->GetDevice(this->sim_id)))
   {
     PLAYER_ERROR("unable to locate suitable simulation device");
-    return(-1);
+    return -1;
   }
   if(this->sim->Subscribe(this->InQueue) != 0)
   {
     PLAYER_ERROR("unable to subscribe to simulation device");
-    return(-1);
+    return -1;
   }
 
   this->StartThread();
   return 0;
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device (called by server thread).
@@ -209,7 +225,7 @@ int FakeLocalize::Shutdown()
   // Unsubscribe from devices.
   this->sim->Unsubscribe(this->InQueue);
   sim = NULL;
-  
+
   return 0;
 }
 
@@ -217,53 +233,70 @@ int
 FakeLocalize::UpdateData()
 {
   player_localize_data_t loc_data;
+  player_position2d_data_t pos_data;
   player_simulation_pose2d_req_t cfg;
   
   // Request pose
+  memset(&cfg, 0, sizeof cfg);
   cfg.name = this->model;
-  cfg.name_count = strlen(cfg.name);
+  cfg.name_count = strlen(cfg.name) + 1;
 
   Message * Reply = sim->Request(InQueue, PLAYER_MSGTYPE_REQ, PLAYER_SIMULATION_REQ_GET_POSE2D,
-  		(void *) &cfg, sizeof(cfg), NULL);
+  		reinterpret_cast<void *>(&cfg), sizeof cfg, NULL);
   		
-  if (Reply && Reply->GetHeader()->type == PLAYER_MSGTYPE_RESP_ACK)
+  if (!Reply) return -1;
+  if (Reply->GetHeader()->type == PLAYER_MSGTYPE_RESP_ACK)
   {
-  	// we got a good reply so update our data
-  	assert(Reply->GetDataSize() > 0);
-  	player_simulation_pose2d_req_t * resp = reinterpret_cast<player_simulation_pose2d_req_t *> (Reply->GetPayload());
-  	
-    // Fill in loc_data, byteswapping as we go.
-    loc_data.pending_count = 0;
-    loc_data.pending_time = Reply->GetHeader()->timestamp;
-    loc_data.hypoths_count = 1;
-    loc_data.hypoths = new player_localize_hypoth_t[1];
+    // we got a good reply so update our data
+    assert(Reply->GetDataSize() > 0);
+    player_simulation_pose2d_req_t * resp = reinterpret_cast<player_simulation_pose2d_req_t *>(Reply->GetPayload());
+    assert(resp);
+    if (this->localize_addr.interf)
+    {
+      // Fill in loc_data
+      memset(&loc_data, 0, sizeof loc_data);
+      loc_data.pending_count = 0;
+      loc_data.pending_time = Reply->GetHeader()->timestamp;
+      loc_data.hypoths_count = 1;
+      loc_data.hypoths = new player_localize_hypoth_t[1];
 
-    loc_data.hypoths[0].mean = resp->pose;
+      loc_data.hypoths[0].mean = resp->pose;
 
-    // zero covariance and max weight
-    memset(loc_data.hypoths[0].cov,0,sizeof(loc_data.hypoths[0].cov));
-    loc_data.hypoths[0].alpha = 1e6;
+      // zero covariance and max weight
+      memset(loc_data.hypoths[0].cov, 0, sizeof loc_data.hypoths[0].cov);
+      loc_data.hypoths[0].alpha = 1e6;
 
-    Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_LOCALIZE_DATA_HYPOTHS,&loc_data);
-    delete [] loc_data.hypoths;
+      Publish(this->localize_addr, PLAYER_MSGTYPE_DATA, PLAYER_LOCALIZE_DATA_HYPOTHS, reinterpret_cast<void *>(&loc_data));
+      delete []loc_data.hypoths;
+    }
+    if (this->position2d_addr.interf)
+    {
+      // Fill in pos_data
+      memset(&pos_data, 0, sizeof pos_data);
+      pos_data.pos.px = resp->pose.px;
+      pos_data.pos.py = resp->pose.py;
+      pos_data.pos.pa = resp->pose.pa;
+      this->Publish(this->position2d_addr, PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE,
+                                          reinterpret_cast<void *>(&pos_data), sizeof pos_data, NULL);
+    }
     delete Reply;
     Reply = NULL;
   }
   else
   {
-  	// we got an error, thats bad
+  	// we got an error, that's bad
   	delete Reply;
   	return -1;
   }
-    
 
-  return(0);
+  return 0;
 }
-
 
 void
 FakeLocalize::Main()
 {
+  struct timespec ts;
+
   for(;;)
   {
     if(this->UpdateData() < 0)
@@ -272,8 +305,9 @@ FakeLocalize::Main()
       pthread_exit(NULL);
     }
     this->ProcessMessages();
-
-    usleep(SLEEPTIME_US);
+    ts.tv_sec = 0;
+    ts.tv_nsec = SLEEPTIME_NS;
+    nanosleep(&ts, NULL);
   }
 }
 
@@ -281,36 +315,37 @@ int FakeLocalize::ProcessMessage(QueuePointer &resp_queue,
 				 player_msghdr * hdr,
 				 void * data) 
 {
-  player_localize_set_pose_t* setposereq;
-
   // Is it a request to set the filter's pose?
   if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
                            PLAYER_LOCALIZE_REQ_SET_POSE,
                            this->localize_addr))
     {
-      setposereq = (player_localize_set_pose_t*)data;
       player_simulation_pose2d_req_t req; 
-            
+      player_localize_set_pose_t * setposereq = (player_localize_set_pose_t*)data;
+      assert(setposereq);
       req.pose.px = setposereq->mean.px;
       req.pose.py = setposereq->mean.py;
       req.pose.pa = setposereq->mean.pa;
-      
-      strcpy(req.name, this->model); 
+
+      req.name = this->model;
+      req.name_count = strlen(req.name) + 1;
+
       // look up the named model
       Message * Reply = sim->Request(InQueue, PLAYER_MSGTYPE_REQ, 
 				     PLAYER_SIMULATION_REQ_SET_POSE2D,
-				     (void *) &req, sizeof(req), NULL);
-      if (Reply && Reply->GetHeader()->type == PLAYER_MSGTYPE_RESP_ACK)
+				     reinterpret_cast<void *>(&req), sizeof req, NULL);
+      if (!Reply) return -1;
+      if (Reply->GetHeader()->type == PLAYER_MSGTYPE_RESP_ACK)
 	{
 	  // Send an ACK
 	  this->Publish(this->localize_addr, resp_queue,
 			PLAYER_MSGTYPE_RESP_ACK,
 			PLAYER_LOCALIZE_REQ_SET_POSE);
-	  return(0);
+	  return 0;
 	}
       else
 	{
-	  delete (Reply);
+	  delete Reply;
 	  return -1;
 	}
     }
@@ -323,16 +358,16 @@ int FakeLocalize::ProcessMessage(QueuePointer &resp_queue,
 
       // Request pose
       cfg.name = this->model;
-      cfg.name_count = strlen(cfg.name);
-      
+      cfg.name_count = strlen(cfg.name) + 1;
+
       Message * Reply = sim->Request(InQueue, PLAYER_MSGTYPE_REQ, PLAYER_SIMULATION_REQ_GET_POSE2D,
-				     (void *) &cfg, sizeof(cfg), NULL);
-      
-      if (Reply && Reply->GetHeader()->type == PLAYER_MSGTYPE_RESP_ACK)
+				     reinterpret_cast<void *>(&cfg), sizeof cfg, NULL);
+      if (!Reply) return -1;
+      if (Reply->GetHeader()->type == PLAYER_MSGTYPE_RESP_ACK)
 	{
-	  assert(Reply->GetDataSize() == sizeof(cfg));
+	  assert(Reply->GetDataSize() == sizeof cfg);
 	  player_simulation_pose2d_req_t * ans = reinterpret_cast<player_simulation_pose2d_req_t *> (Reply->GetPayload());
-	  
+	  assert(ans);
 	  player_localize_get_particles_t resp;
 	  resp.mean.px = ans->pose.px;
 	  resp.mean.py = ans->pose.py;
@@ -355,7 +390,7 @@ int FakeLocalize::ProcessMessage(QueuePointer &resp_queue,
 	  delete Reply;
 	  Reply = NULL;
 	  
-	  return(0);
+	  return 0;
 	}
       else 
 	{
@@ -363,6 +398,5 @@ int FakeLocalize::ProcessMessage(QueuePointer &resp_queue,
 	  return -1;
 	}
     } 
-  return(-1);
+  return -1;
 }
-
