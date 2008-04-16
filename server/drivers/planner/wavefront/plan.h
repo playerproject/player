@@ -72,11 +72,6 @@ typedef struct
   // The grid data
   plan_cell_t *cells;
 
-  // Dynamic obstacle hitpoints
-  unsigned short* obs_pts;
-  size_t obs_pts_size;
-  size_t obs_pts_num;
-
   // Distance penalty kernel, pre-computed in plan_compute_dist_kernel();
   float* dist_kernel;
   int dist_kernel_width;
