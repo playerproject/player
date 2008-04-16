@@ -41,8 +41,8 @@ plan_get_carrot(plan_t* plan, double* px, double* py,
     // Check whether the straight-line path is clear
     if((cost = _plan_check_path(plan, cell, ncell)) < 0.0)
     {
-      printf("no path from (%d,%d) to (%d,%d)\n",
-             cell->ci, cell->cj, ncell->ci, ncell->cj);
+      //printf("no path from (%d,%d) to (%d,%d)\n",
+             //cell->ci, cell->cj, ncell->ci, ncell->cj);
       continue;
     }
 

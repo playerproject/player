@@ -588,7 +588,7 @@ Wavefront::ProcessLaserScan(player_laser_data_scanpose_t* data)
   this->scans_count = MIN(this->scans_count,this->scans_size);
   this->scans_idx = (this->scans_idx + 1) % this->scans_size;
 
-  printf("%d scans\n", this->scans_count);
+  //printf("%d scans\n", this->scans_count);
 
   // run through the scans to see how much room we need to store all the
   // hitpoints
@@ -639,11 +639,11 @@ Wavefront::ProcessLaserScan(player_laser_data_scanpose_t* data)
     }
   }
 
-  printf("setting %d hit points\n", this->scan_points_count);
+  //printf("setting %d hit points\n", this->scan_points_count);
   plan_set_obstacles(plan, this->scan_points, this->scan_points_count);
 
   t1 = get_time();
-  printf("ProcessLaserScan: %.6lf\n", t1-t0);
+  //printf("ProcessLaserScan: %.6lf\n", t1-t0);
 
   if(this->graphics2d_id.interf)
   {
@@ -857,6 +857,7 @@ void Wavefront::Main()
   bool rotate_waypoint=false;
   bool replan;
   int rotate_dir=0;
+  double m0=0.0,m1;
 
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED,NULL);
 
@@ -867,17 +868,25 @@ void Wavefront::Main()
 
   for(;;)
   {
+    GlobalTime->GetTimeDouble(&t);
+
+    m1 = get_time();
+    printf("loop time: %.6lf\n", m1-m0);
+    m0 = get_time();
+
     pthread_testcancel();
 
     ProcessMessages();
 
     if(!this->have_map && !this->new_map_available)
     {
-      usleep(CYCLE_TIME_US);
+      double currt,tdiff;
+      GlobalTime->GetTimeDouble(&currt);
+      tdiff = MAX(0.0, (CYCLE_TIME_US) - (currt-t)*1e6);
+      usleep((unsigned int)rint(tdiff));
       continue;
     }
 
-    GlobalTime->GetTimeDouble(&t);
 
     if((t - last_publish_time) > 0.25)
     {
@@ -888,7 +897,11 @@ void Wavefront::Main()
     if(!this->enable)
     {
       this->StopPosition();
-      usleep(CYCLE_TIME_US);
+      double currt,tdiff;
+      GlobalTime->GetTimeDouble(&currt);
+      tdiff = MAX(0.0, (CYCLE_TIME_US) - (currt-t)*1e6);
+      printf("sleeping: %u\n", (unsigned int)rint(tdiff));
+      usleep((unsigned int)rint(tdiff));
       continue;
     }
 
@@ -1004,8 +1017,29 @@ void Wavefront::Main()
         free(line.points);
       }
 
+      if(this->graphics2d_id.interf && this->plan->path_count)
+      {
+        player_graphics2d_cmd_polyline_t line;
+        line.points_count = this->plan->path_count;
+        line.points = (player_point_2d_t*)malloc(sizeof(player_point_2d_t)*line.points_count);
+        line.color.alpha = 0;
+        line.color.red = 255;
+        line.color.green = 0;
+        line.color.blue = 0;
+        for(int i=0;i<this->plan->path_count;i++)
+        {
+          line.points[i].px = PLAN_WXGX(this->plan,this->plan->path[i]->ci);
+          line.points[i].py = PLAN_WYGY(this->plan,this->plan->path[i]->cj);
+        }
+        this->graphics2d->PutMsg(this->InQueue,
+                                 PLAYER_MSGTYPE_CMD,
+                                 PLAYER_GRAPHICS2D_CMD_POLYLINE,
+                                 (void*)&line,0,NULL);
+        free(line.points);
+      }
+
       t1 = get_time();
-      printf("planning: %.6lf\n", t1-t0);
+      //printf("planning: %.6lf\n", t1-t0);
 
       if(!this->velocity_control)
       {
@@ -1092,8 +1126,8 @@ void Wavefront::Main()
           double maxd=2.0;
           double distweight=10.0;
 
-          printf("pose: (%.3lf,%.3lf,%.3lf)\n",
-                 this->localize_x, this->localize_y, RTOD(this->localize_a));
+          //printf("pose: (%.3lf,%.3lf,%.3lf)\n",
+                 //this->localize_x, this->localize_y, RTOD(this->localize_a));
           if(plan_get_carrot(this->plan, &wx, &wy,
                              this->localize_x, this->localize_y,
                              maxd, distweight) < 0)
@@ -1143,6 +1177,10 @@ void Wavefront::Main()
             double amin = DTOR(5.0);
             double amax = DTOR(20.0);
 
+            double goald = sqrt((this->localize_x-this->target_x)*
+                                (this->localize_x-this->target_x) +
+                                (this->localize_y-this->target_y)*
+                                (this->localize_y-this->target_y));
             double d = sqrt((this->localize_x-wx)*(this->localize_x-wx) +
                             (this->localize_y-wy)*(this->localize_y-wy));
             double b = atan2(wy - this->localize_y, wx - this->localize_x);
@@ -1152,7 +1190,7 @@ void Wavefront::Main()
             double ad = angle_diff(b, this->localize_a);
 
             // Are we on top of the goal?
-            if(d < this->dist_eps)
+            if(goald < this->dist_eps)
             {
               if(!rotate_dir)
               {
@@ -1190,7 +1228,7 @@ void Wavefront::Main()
         this->StopPosition();
 
       t1 = get_time();
-      printf("control: %.6lf\n", t1-t0);
+      //printf("control: %.6lf\n", t1-t0);
     }
     else // !velocity_control
     {
@@ -1243,7 +1281,10 @@ void Wavefront::Main()
             // no more waypoints, so wait for target achievement
 
             //puts("waiting for goal achievement");
-            usleep(CYCLE_TIME_US);
+            double currt,tdiff;
+            GlobalTime->GetTimeDouble(&currt);
+            tdiff = MAX(0.0, (CYCLE_TIME_US) - (currt-t)*1e6);
+            usleep((unsigned int)rint(tdiff));
             continue;
           }
           // get next waypoint
@@ -1283,7 +1324,11 @@ void Wavefront::Main()
       }
     }
 
-    usleep(CYCLE_TIME_US);
+    double currt,tdiff;
+    GlobalTime->GetTimeDouble(&currt);
+    tdiff = MAX(0.0, (CYCLE_TIME_US) - (currt-t)*1e6);
+    usleep((unsigned int)rint(tdiff));
+    printf("sleeping: %u\n", (unsigned int)rint(tdiff));
   }
 }
 

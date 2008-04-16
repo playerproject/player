@@ -67,7 +67,7 @@ plan_do_global(plan_t *plan, double lx, double ly, double gx, double gy)
 
   t1 = get_time();
 
-  printf("computed global path: %.6lf\n", t1-t0);
+  //printf("computed global path: %.6lf\n", t1-t0);
 
   return(0);
 }
@@ -136,7 +136,7 @@ plan_do_local(plan_t *plan, double lx, double ly, double plan_halfwidth)
 
   t1 = get_time();
 
-  printf("computed local path: %.6lf\n", t1-t0);
+  //printf("computed local path: %.6lf\n", t1-t0);
   return(0);
 }
 
