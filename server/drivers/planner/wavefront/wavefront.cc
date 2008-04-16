@@ -645,15 +645,8 @@ Wavefront::ProcessLaserScan(player_laser_data_scanpose_t* data)
   t1 = get_time();
   printf("ProcessLaserScan: %.6lf\n", t1-t0);
 
-#if 0
   if(this->graphics2d_id.interf)
   {
-    // Clear the canvas
-    this->graphics2d->PutMsg(this->InQueue,
-                             PLAYER_MSGTYPE_CMD,
-                             PLAYER_GRAPHICS2D_CMD_CLEAR,
-                             NULL,0,NULL);
-    
     // Draw the points
     player_graphics2d_cmd_points pts;
     assert(pts.points = (player_point_2d_t*)malloc(sizeof(player_point_2d_t)*
@@ -675,7 +668,6 @@ Wavefront::ProcessLaserScan(player_laser_data_scanpose_t* data)
                              (void*)&pts,0,NULL);
     free(pts.points);
   }
-#endif
 }
 
 void
@@ -962,6 +954,14 @@ void Wavefront::Main()
         this->new_map = false;
       }
 #endif
+      if(this->graphics2d_id.interf)
+      {
+        this->graphics2d->PutMsg(this->InQueue,
+                                 PLAYER_MSGTYPE_CMD,
+                                 PLAYER_GRAPHICS2D_CMD_CLEAR,
+                                 NULL,0,NULL);
+      }
+
       double t0,t1;
 
       t0 = get_time();
@@ -985,11 +985,6 @@ void Wavefront::Main()
 
       if(this->graphics2d_id.interf && this->plan->lpath_count)
       {
-        this->graphics2d->PutMsg(this->InQueue,
-                                 PLAYER_MSGTYPE_CMD,
-                                 PLAYER_GRAPHICS2D_CMD_CLEAR,
-                                 NULL,0,NULL);
-
         player_graphics2d_cmd_polyline_t line;
         line.points_count = this->plan->lpath_count;
         line.points = (player_point_2d_t*)malloc(sizeof(player_point_2d_t)*line.points_count);
@@ -1110,6 +1105,27 @@ void Wavefront::Main()
           }
           else
           {
+            if(this->graphics2d_id.interf)
+            {
+              player_graphics2d_cmd_polyline_t line;
+              line.points_count = 2;
+              line.points = (player_point_2d_t*)malloc(sizeof(player_point_2d_t)*line.points_count);
+              line.color.alpha = 0;
+              line.color.red = 0;
+              line.color.green = 0;
+              line.color.blue = 255;
+
+              line.points[0].px = this->localize_x;
+              line.points[0].py = this->localize_y;
+              line.points[1].px = wx;
+              line.points[1].py = wy;
+              this->graphics2d->PutMsg(this->InQueue,
+                                       PLAYER_MSGTYPE_CMD,
+                                       PLAYER_GRAPHICS2D_CMD_POLYLINE,
+                                       (void*)&line,0,NULL);
+              free(line.points);
+            }
+
             // Establish fake waypoints, for client-side visualization
             this->curr_waypoint = 0;
             this->waypoint_count = 2;
@@ -1123,7 +1139,7 @@ void Wavefront::Main()
             double tvmin = 0.1;
             double tvmax = 0.5;
             double avmin = DTOR(10.0);
-            double avmax = DTOR(45.0);
+            double avmax = DTOR(90.0);
             double amin = DTOR(5.0);
             double amax = DTOR(20.0);
 
@@ -1156,7 +1172,10 @@ void Wavefront::Main()
               if(fabs(ad) > a)
                 tv = 0.0;
               else
-                tv = tvmin + (d / (M_SQRT2 * maxd)) * (tvmax-tvmin);
+              {
+                //tv = tvmin + (d / (M_SQRT2 * maxd)) * (tvmax-tvmin);
+                tv = tvmin + (d / maxd) * (tvmax-tvmin);
+              }
 
               av = avmin + (fabs(ad)/M_PI) * (avmax-avmin);
               if(ad < 0)
