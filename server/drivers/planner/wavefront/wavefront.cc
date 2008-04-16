@@ -229,14 +229,13 @@ extern "C" { void draw_cspace(plan_t* plan, const char* fname); }
 
 // TODO: monitor localize timestamps, and slow or stop robot accordingly
 
-// time to sleep between loops (us)
-#define CYCLE_TIME_US 100000
-
 class Wavefront : public Driver
 {
   private:
     // Main function for device thread.
     virtual void Main();
+
+    void Sleep(double loopstart);
 
     // bookkeeping
     player_devaddr_t position_id;
@@ -251,7 +250,8 @@ class Wavefront : public Driver
     double dist_penalty;
     double dist_eps;
     double ang_eps;
-    const char* cspace_fname;
+    double cycletime;
+    double tvmin, tvmax, avmin, avmax, amin, amax;
 
     // the plan object
     plan_t* plan;
@@ -422,11 +422,22 @@ Wavefront::Wavefront( ConfigFile* cf, int section)
   this->replan_dist_thresh = cf->ReadLength(section,"replan_dist_thresh",2.0);
   this->replan_min_time = cf->ReadFloat(section,"replan_min_time",2.0);
   this->request_map = cf->ReadInt(section,"request_map",1);
-  this->cspace_fname = cf->ReadFilename(section,"cspace_file","player.cspace");
   this->always_insert_rotational_waypoints =
           cf->ReadInt(section, "add_rotational_waypoints", 1);
   this->force_map_refresh = cf->ReadInt(section, "force_map_refresh", 0);
+  this->cycletime = 1.0 / cf->ReadFloat(section, "update_rate", 10.0);
+
   this->velocity_control = cf->ReadInt(section, "velocity_control", 0);
+  if(this->velocity_control)
+  {
+    this->tvmin = cf->ReadTupleLength(section, "control_tv", 0, 0.1);
+    this->tvmax = cf->ReadTupleLength(section, "control_tv", 1, 0.5);
+    this->avmin = cf->ReadTupleAngle(section, "control_av", 0, DTOR(10.0));
+    this->avmax = cf->ReadTupleAngle(section, "control_av", 1, DTOR(90.0));
+    this->amin = cf->ReadTupleAngle(section, "control_a", 0, DTOR(5.0));
+    this->amax = cf->ReadTupleAngle(section, "control_a", 1, DTOR(20.0));
+  }
+
   if(this->laser_id.interf)
   {
     this->scans_size = cf->ReadInt(section, "laser_buffer_size", 10);
@@ -438,7 +449,11 @@ Wavefront::Wavefront( ConfigFile* cf, int section)
     this->scan_maxrange = cf->ReadLength(section, "laser_maxrange", 6.0);
   }
   else
+  {
     this->scans_size = 0;
+    if(this->velocity_control)
+      PLAYER_WARN("Wavefront doing direct velocity control, but without a laser for obstacle detection; this is not safe!");
+  }
 }
 
 
@@ -843,6 +858,19 @@ Wavefront::SetWaypoint(double wx, double wy, double wa)
   this->waypoint_odom_a = wa_odom;
 }
 
+void
+Wavefront::Sleep(double loopstart)
+{
+  double currt,tdiff;
+  //GlobalTime->GetTimeDouble(&currt);
+  currt = get_time();
+  //printf("cycle: %.6lf\n", currt-loopstart);
+  tdiff = MAX(0.0, this->cycletime - (currt-loopstart));
+  if(tdiff == 0.0)
+    PLAYER_WARN("Wavefront missed deadline and not sleeping; check machine load");
+  usleep((unsigned int)rint(tdiff));
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
@@ -857,7 +885,6 @@ void Wavefront::Main()
   bool rotate_waypoint=false;
   bool replan;
   int rotate_dir=0;
-  double m0=0.0,m1;
 
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED,NULL);
 
@@ -868,11 +895,8 @@ void Wavefront::Main()
 
   for(;;)
   {
-    GlobalTime->GetTimeDouble(&t);
-
-    m1 = get_time();
-    printf("loop time: %.6lf\n", m1-m0);
-    m0 = get_time();
+    //GlobalTime->GetTimeDouble(&t);
+    t = get_time();
 
     pthread_testcancel();
 
@@ -880,10 +904,7 @@ void Wavefront::Main()
 
     if(!this->have_map && !this->new_map_available)
     {
-      double currt,tdiff;
-      GlobalTime->GetTimeDouble(&currt);
-      tdiff = MAX(0.0, (CYCLE_TIME_US) - (currt-t)*1e6);
-      usleep((unsigned int)rint(tdiff));
+      this->Sleep(t);
       continue;
     }
 
@@ -897,11 +918,7 @@ void Wavefront::Main()
     if(!this->enable)
     {
       this->StopPosition();
-      double currt,tdiff;
-      GlobalTime->GetTimeDouble(&currt);
-      tdiff = MAX(0.0, (CYCLE_TIME_US) - (currt-t)*1e6);
-      printf("sleeping: %u\n", (unsigned int)rint(tdiff));
-      usleep((unsigned int)rint(tdiff));
+      this->Sleep(t);
       continue;
     }
 
@@ -1169,14 +1186,6 @@ void Wavefront::Main()
             this->waypoint_y = this->waypoints[1][1] = wy;
             this->waypoint_a = 0.0;
 
-            // TODO: expose these control params in the .cfg file
-            double tvmin = 0.1;
-            double tvmax = 0.5;
-            double avmin = DTOR(10.0);
-            double avmax = DTOR(90.0);
-            double amin = DTOR(5.0);
-            double amax = DTOR(20.0);
-
             double goald = sqrt((this->localize_x-this->target_x)*
                                 (this->localize_x-this->target_x) +
                                 (this->localize_y-this->target_y)*
@@ -1186,7 +1195,7 @@ void Wavefront::Main()
             double b = atan2(wy - this->localize_y, wx - this->localize_x);
 
             double av,tv;
-            double a = amin + (d / maxd) * (amax-amin);
+            double a = this->amin + (d / maxd) * (this->amax-this->amin);
             double ad = angle_diff(b, this->localize_a);
 
             // Are we on top of the goal?
@@ -1201,7 +1210,8 @@ void Wavefront::Main()
               }
 
               tv = 0.0;
-              av = rotate_dir * (avmin + (fabs(ad)/M_PI) * (avmax-avmin));
+              av = rotate_dir * (this->avmin + (fabs(ad)/M_PI) * 
+                                 (this->avmax-this->avmin));
             }
             else
             {
@@ -1212,10 +1222,10 @@ void Wavefront::Main()
               else
               {
                 //tv = tvmin + (d / (M_SQRT2 * maxd)) * (tvmax-tvmin);
-                tv = tvmin + (d / maxd) * (tvmax-tvmin);
+                tv = this->tvmin + (d / maxd) * (this->tvmax-this->tvmin);
               }
 
-              av = avmin + (fabs(ad)/M_PI) * (avmax-avmin);
+              av = this->avmin + (fabs(ad)/M_PI) * (this->avmax-this->avmin);
               if(ad < 0)
                 av = -av;
             }
@@ -1281,10 +1291,7 @@ void Wavefront::Main()
             // no more waypoints, so wait for target achievement
 
             //puts("waiting for goal achievement");
-            double currt,tdiff;
-            GlobalTime->GetTimeDouble(&currt);
-            tdiff = MAX(0.0, (CYCLE_TIME_US) - (currt-t)*1e6);
-            usleep((unsigned int)rint(tdiff));
+            this->Sleep(t);
             continue;
           }
           // get next waypoint
@@ -1324,11 +1331,7 @@ void Wavefront::Main()
       }
     }
 
-    double currt,tdiff;
-    GlobalTime->GetTimeDouble(&currt);
-    tdiff = MAX(0.0, (CYCLE_TIME_US) - (currt-t)*1e6);
-    usleep((unsigned int)rint(tdiff));
-    printf("sleeping: %u\n", (unsigned int)rint(tdiff));
+    this->Sleep(t);
   }
 }
 
