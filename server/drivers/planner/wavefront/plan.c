@@ -193,6 +193,8 @@ void plan_init(plan_t *plan)
   int i, j;
   plan_cell_t *cell;
 
+  printf("scale: %.3lf\n", plan->scale);
+
   cell = plan->cells;
   for (j = 0; j < plan->size_y; j++)
   {
