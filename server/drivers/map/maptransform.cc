@@ -199,7 +199,8 @@ int MapTransform::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, 
   PLAYER_MSG0(9,"ProcessMessage called for MapTransform Driver");
 
   assert(hdr);
-  assert(data);
+  // assert fails on empty messages
+  //assert(data);
  
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_MAP_REQ_GET_INFO, device_addr))
   {
