@@ -1150,9 +1150,9 @@ void Wavefront::Main()
                              maxd, distweight) < 0)
           {
             puts("Failed to find a carrot");
-            draw_cspace(this->plan, "debug.png");
+            //draw_cspace(this->plan, "debug.png");
             this->StopPosition();
-            exit(-1);
+            //exit(-1);
           }
           else
           {
