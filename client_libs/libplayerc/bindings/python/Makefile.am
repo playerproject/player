@@ -20,6 +20,7 @@ EXTRA_DIST = playerc.i setup.py libplayerc_py.html playercpy_example.py
 playerc_oo.i: ../../playerc.h $(top_srcdir)/libplayercore/player.h $(srcdir)/playerc_swig_parse.py
 	if test ! -s ../../playerc.h; then cp $(srcdir)/../../playerc.h ../../; fi
 	if test ! -s $(top_builddir)/libplayercore/player.h; then cp $(top_srcdir)/libplayercore/player.h $(top_builddir)/libplayercore/; fi
+	if test ! -s $(top_builddir)/libplayercore/player_interfaces.h; then cp $(top_srcdir)/libplayercore/player_interfaces.h $(top_builddir)/libplayercore/; fi
 	if test ! -s playerc.i; then cp $(srcdir)/playerc.i .; fi
 	python $(srcdir)/playerc_swig_parse.py ../../playerc.h playerc_oo.i
 
@@ -34,8 +35,8 @@ srcbuilddirs.py:
 
 # Use distutils to build module
 pythonbuild: playerc_oo.i ../../playerc.h srcbuilddirs.py
-	if test ! -s $(top_builddir)/client_libs/libplayerc/bindings/python/setup.py; then cp $(srcdir)/setup.py $(top_builddir)/client_libs/libplayerc/bindings/python/setup.py; fi
-	python $(top_builddir)/client_libs/libplayerc/bindings/python/setup.py build
+	if test ! -s $(builddir)/setup.py; then cp $(srcdir)/setup.py $(builddir)/setup.py; fi
+	python $(builddir)/setup.py build
 
 # For distcheck builds, clean up the files we created in the build tree
 # This generates warnings, so I'm relying on the top-level Makefile.am override.
@@ -53,7 +54,8 @@ install-data-hook: $(PYTHONINSTALL)
 
 # use distutils to install
 pythoninstall:
-	python $(srcdir)/setup.py install --prefix=$(DESTDIR)/$(prefix)
+	if test ! -s $(builddir)/setup.py; then cp $(srcdir)/setup.py $(builddir)/setup.py; fi
+	python $(builddir)/setup.py install --prefix=$(DESTDIR)/$(prefix)
 
 # seems that distutils doesn't support 'uninstall', oh well
 uninstall-local:

@@ -6,11 +6,11 @@ pkgconfig_DATA = playercore.pc playererror.pc playerutils.pc
 
 dist_bin_SCRIPTS = playerinterfacegen.py
 
-EXTRA_DIST = playercore.pc.in playererror.pc.in playerutils.pc.in interfaces/ADDING_INTERFACES player_interfaces.h interface_table.c $(shell find $(srcdir)/interfaces -name "*.def")
+EXTRA_DIST = playercore.pc.in playererror.pc.in playerutils.pc.in interfaces/ADDING_INTERFACES $(shell find $(srcdir)/interfaces -name "*.def")
 
 BUILT_SOURCES = playerconfig.h player_interfaces.h interface_table.c
 CLEANFILES = playercore.pc playererror.pc playerutils.pc
-DISTCLEANFIELS = playerconfig.h 
+DISTCLEANFIELS = $BUILT_SOURCES 
 
 lib_LTLIBRARIES = libplayererror.la libplayerutils.la libplayercore.la
 
@@ -26,7 +26,7 @@ libplayercore_la_SOURCES = driver.cc driver.h \
                           globals.cc globals.h \
                           property.cpp property.h
 libplayercore_la_LDFLAGS = $(PLAYER_VERSION_INFO) -rpath $(libdir) $(top_builddir)/libplayercore/libplayererror.la $(top_builddir)/libplayercore/libplayerutils.la
-libplayercore_la_DEPENDENCIES = $(top_builddir)/libplayercore/libplayererror.la $(top_builddir)/libplayercore/libplayerutils.la player_interfaces.h
+libplayercore_la_DEPENDENCIES = $(top_builddir)/libplayercore/libplayererror.la $(top_builddir)/libplayercore/libplayerutils.la $(top_builddir)/libplayercore/player_interfaces.h
 
 libplayererror_la_SOURCES = error.h error.c
 libplayererror_la_LDFLAGS = $(PLAYER_VERSION_INFO) -rpath $(libdir)
@@ -59,9 +59,10 @@ coreinclude_HEADERS = configfile.h \
                       player_interfaces.h
                       
 player_interfaces.h: $(srcdir)/interfaces/* playerinterfacegen.py
-	python $(srcdir)/playerinterfacegen.py > $(top_builddir)/libplayercore/player_interfaces.h
+	python $(srcdir)/playerinterfacegen.py > $(builddir)/player_interfaces.h
 #	if ! ./playerinterfacegen.py > player_interfaces.h; then rm player_interfaces.h; fi
 
 interface_table.c: $(srcdir)/interfaces/* playerinterfacegen.py
 	python $(srcdir)/playerinterfacegen.py --utils > $(top_builddir)/libplayercore/interface_table.c
 #	if ! ./playerinterfacegen.py --utils > interface_table.c; then rm interface_table.c; fi
+
