@@ -80,6 +80,7 @@ plan_do_local(plan_t *plan, double lx, double ly, double plan_halfwidth)
   int xmin,ymin,xmax,ymax;
   plan_cell_t* cell;
   double t0,t1;
+  int i;
 
   t0 = get_time();
 
@@ -112,6 +113,11 @@ plan_do_local(plan_t *plan, double lx, double ly, double plan_halfwidth)
   li = PLAN_GXWX(plan, lx);
   lj = PLAN_GYWY(plan, ly);
 
+  // Reset path marks (TODO: find a smarter place to do this)
+  cell = plan->cells;
+  for(i=0;i<plan->size_x*plan->size_y;i++,cell++)
+    cell->lpathmark = 0;
+
   // Cache the path
   for(cell = plan->cells + PLAN_INDEX(plan,li,lj);
       cell;
@@ -125,6 +131,7 @@ plan_do_local(plan_t *plan, double lx, double ly, double plan_halfwidth)
       assert(plan->lpath);
     }
     plan->lpath[plan->lpath_count++] = cell;
+    cell->lpathmark = 1;
   }
 
   t1 = get_time();
@@ -215,7 +222,11 @@ _plan_update_plan(plan_t *plan, double lx, double ly, double gx, double gy)
         if (ncell->occ_dist_dyn < plan->abs_min_radius)
           continue;
 
-        cost = cell->plan_cost + *p;
+        cost = cell->plan_cost;
+        if(ncell->lpathmark)
+          cost += (*p) * plan->hysteresis_factor;
+        else
+          cost += *p;
 
         if(ncell->occ_dist_dyn < plan->max_radius)
           cost += plan->dist_penalty * (plan->max_radius - ncell->occ_dist_dyn);

@@ -45,7 +45,8 @@ void draw_cspace(plan_t* plan, const char* fname);
 
 // Create a planner
 plan_t *plan_alloc(double abs_min_radius, double des_min_radius,
-                   double max_radius, double dist_penalty)
+                   double max_radius, double dist_penalty,
+                   double hysteresis_factor)
 {
   plan_t *plan;
 
@@ -56,6 +57,7 @@ plan_t *plan_alloc(double abs_min_radius, double des_min_radius,
 
   plan->max_radius = max_radius;
   plan->dist_penalty = dist_penalty;
+  plan->hysteresis_factor = hysteresis_factor;
   
   plan->heap = heap_alloc(PLAN_DEFAULT_HEAP_SIZE, (heap_free_elt_fn_t)NULL);
   assert(plan->heap);

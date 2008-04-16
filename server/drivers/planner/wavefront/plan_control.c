@@ -13,15 +13,20 @@ plan_get_carrot(plan_t* plan, double* px, double* py,
   int li, lj;
   double dist, d;
   double cost, bestcost;
+  char old_occ_state;
+  float old_occ_dist;
 
   li = PLAN_GXWX(plan, lx);
   lj = PLAN_GYWY(plan, ly);
 
   cell = plan->cells + PLAN_INDEX(plan,li,lj);
 
-  printf("finding carrot from (%d,%d) : %.3lf\n",
-         cell->ci, cell->cj, cell->occ_dist_dyn);
-  assert(cell->occ_dist_dyn >= plan->abs_min_radius);
+  // Latch and clear the obstacle state for the cell I'm in
+  cell = plan->cells + PLAN_INDEX(plan, li, lj);
+  old_occ_state = cell->occ_state_dyn;
+  old_occ_dist = cell->occ_dist_dyn;
+  cell->occ_state_dyn = -1;
+  cell->occ_dist_dyn = plan->max_radius;
 
   // Step back from maxdist, looking for the best carrot
   bestcost = -1.0;
@@ -50,6 +55,11 @@ plan_get_carrot(plan_t* plan, double* px, double* py,
       *py = PLAN_WYGY(plan,ncell->cj);
     }
   }
+ 
+  // Restore the obstacle state for the cell I'm in
+  cell = plan->cells + PLAN_INDEX(plan, li, lj);
+  cell->occ_state_dyn = old_occ_state;
+  cell->occ_dist_dyn = old_occ_dist;
 
   return(bestcost);
 }
