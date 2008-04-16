@@ -219,8 +219,13 @@ driver
 #include <assert.h>
 #include <math.h>
 
+
 #include <libplayercore/playercore.h>
 #include "plan.h"
+
+#include <sys/time.h>
+static double get_time(void);
+extern "C" { void draw_cspace(plan_t* plan, const char* fname); }
 
 // TODO: monitor localize timestamps, and slow or stop robot accordingly
 
@@ -305,6 +310,8 @@ class Wavefront : public Driver
     bool velocity_control;
     // How many laser scans should we buffer?
     int scans_size;
+    // How far out do we insert obstacles?
+    double scan_maxrange;
     // The scan buffer
     player_laser_data_scanpose_t* scans;
     int scans_count;
@@ -428,6 +435,7 @@ Wavefront::Wavefront( ConfigFile* cf, int section)
       PLAYER_WARN("must buffer at least one laser scan");
       this->scans_size = 1;
     }
+    this->scan_maxrange = cf->ReadLength(section, "laser_maxrange", 6.0);
   }
   else
     this->scans_size = 0;
@@ -558,14 +566,28 @@ Wavefront::ProcessCommand(player_planner_cmd_t* cmd)
 void 
 Wavefront::ProcessLaserScan(player_laser_data_scanpose_t* data)
 {
-  // update counters;
-  this->scans_idx = (this->scans_idx + 1) % this->scans_size;
+  double t0,t1;
+
+  t0 = get_time();
+
+  // free up the old scan, if we're replacing one
+  if(this->scans_idx < this->scans_count)
+    playerxdr_cleanup_message(this->scans+this->scans_idx,
+                              PLAYER_LASER_CODE, PLAYER_MSGTYPE_DATA,
+                              PLAYER_LASER_DATA_SCANPOSE);
+  // copy in the new scan
+  playerxdr_deepcopy_message(data, this->scans+this->scans_idx,
+                             PLAYER_LASER_CODE, PLAYER_MSGTYPE_DATA,
+                             PLAYER_LASER_DATA_SCANPOSE);
+  //memcpy(this->scans+this->scans_idx, data,
+         //sizeof(player_laser_data_scanpose_t));
+
+  // update counters
   this->scans_count++;
   this->scans_count = MIN(this->scans_count,this->scans_size);
+  this->scans_idx = (this->scans_idx + 1) % this->scans_size;
 
-  // copy in the new scan
-  memcpy(this->scans+this->scans_idx, data,
-         sizeof(player_laser_data_scanpose_t));
+  printf("%d scans\n", this->scans_count);
 
   // run through the scans to see how much room we need to store all the
   // hitpoints
@@ -579,7 +601,7 @@ Wavefront::ProcessLaserScan(player_laser_data_scanpose_t* data)
   {
     this->scan_points_size = hitpt_cnt;
     this->scan_points = (double*)realloc(this->scan_points,
-                                         this->scan_points_size);
+                                         this->scan_points_size*sizeof(double));
     assert(this->scan_points);
   }
 
@@ -595,17 +617,19 @@ Wavefront::ProcessLaserScan(player_laser_data_scanpose_t* data)
         j<scan->scan.ranges_count;
         j++,r++,b+=scan->scan.resolution)
     {
-      double rx, ry;
-      rx = (*r)*cos(b);
-      ry = (*r)*sin(b);
+      if(((*r) >= this->scan_maxrange) || ((*r) >= scan->scan.max_range))
+        continue;
+      //double rx, ry;
+      //rx = (*r)*cos(b);
+      //ry = (*r)*sin(b);
 
       double cs,sn;
-      cs = cos(scan->pose.pa);
-      sn = sin(scan->pose.pa);
+      cs = cos(scan->pose.pa+b);
+      sn = sin(scan->pose.pa+b);
 
       double lx,ly;
-      lx = scan->pose.px + rx*cs - ry*sn;
-      ly = scan->pose.py + rx*sn + ry*cs;
+      lx = scan->pose.px + (*r)*cs;
+      ly = scan->pose.py + (*r)*sn;
 
       assert(this->scan_points_count*2 < this->scan_points_size);
       *(pts++) = lx;
@@ -617,6 +641,10 @@ Wavefront::ProcessLaserScan(player_laser_data_scanpose_t* data)
   printf("setting %d hit points\n", this->scan_points_count);
   plan_set_obstacles(plan, this->scan_points, this->scan_points_count);
 
+  t1 = get_time();
+  printf("ProcessLaserScan: %.6lf\n", t1-t0);
+
+#if 0
   if(this->graphics2d_id.interf)
   {
     // Clear the canvas
@@ -631,9 +659,9 @@ Wavefront::ProcessLaserScan(player_laser_data_scanpose_t* data)
                                                    hitpt_cnt/2));
     pts.points_count = hitpt_cnt/2;
     pts.color.alpha = 0;
-    pts.color.red = 0;
+    pts.color.red = 255;
     pts.color.blue = 0;
-    pts.color.green = 255;
+    pts.color.green = 0;
     for(int i=0;i<hitpt_cnt/2;i++)
     {
       pts.points[i].px = this->scan_points[2*i];
@@ -646,6 +674,7 @@ Wavefront::ProcessLaserScan(player_laser_data_scanpose_t* data)
                              (void*)&pts,0,NULL);
     free(pts.points);
   }
+#endif
 }
 
 void
@@ -863,6 +892,13 @@ void Wavefront::Main()
       this->PutPlannerData();
     }
 
+    if(!this->enable)
+    {
+      this->StopPosition();
+      usleep(CYCLE_TIME_US);
+      continue;
+    }
+
     // Is it time to replan?
     replan_timediff = t - last_replan_time;
     replan_dist = sqrt(((this->localize_x - last_replan_lx) *
@@ -925,12 +961,15 @@ void Wavefront::Main()
         this->new_map = false;
       }
 #endif
+      double t0,t1;
+
+      t0 = get_time();
 
       // compute costs to the new goal.  Try local plan first
       if(new_goal ||
          (this->plan->path_count == 0) ||
          (plan_do_local(this->plan, this->localize_x, 
-                         this->localize_y, 5.0) < 0))
+                         this->localize_y, this->scan_maxrange) < 0))
       {
         if(!new_goal && (this->plan->path_count != 0))
            puts("Wavefront: local plan failed");
@@ -942,6 +981,35 @@ void Wavefront::Main()
         else
           this->new_goal = false;
       }
+
+      if(this->graphics2d_id.interf && this->plan->lpath_count)
+      {
+        this->graphics2d->PutMsg(this->InQueue,
+                                 PLAYER_MSGTYPE_CMD,
+                                 PLAYER_GRAPHICS2D_CMD_CLEAR,
+                                 NULL,0,NULL);
+
+        player_graphics2d_cmd_polyline_t line;
+        line.points_count = this->plan->lpath_count;
+        line.points = (player_point_2d_t*)malloc(sizeof(player_point_2d_t)*line.points_count);
+        line.color.alpha = 0;
+        line.color.red = 0;
+        line.color.green = 255;
+        line.color.blue = 0;
+        for(int i=0;i<this->plan->lpath_count;i++)
+        {
+          line.points[i].px = PLAN_WXGX(this->plan,this->plan->lpath[i]->ci);
+          line.points[i].py = PLAN_WYGY(this->plan,this->plan->lpath[i]->cj);
+        }
+        this->graphics2d->PutMsg(this->InQueue,
+                                 PLAYER_MSGTYPE_CMD,
+                                 PLAYER_GRAPHICS2D_CMD_POLYLINE,
+                                 (void*)&line,0,NULL);
+        free(line.points);
+      }
+
+      t1 = get_time();
+      printf("planning: %.6lf\n", t1-t0);
 
       if(!this->velocity_control)
       {
@@ -1001,16 +1069,11 @@ void Wavefront::Main()
       }
     }
 
-    if(!this->enable)
-    {
-      this->StopPosition();
-      usleep(CYCLE_TIME_US);
-      continue;
-    }
-
 
     if(this->velocity_control)
     {
+      double t0, t1;
+      t0 = get_time();
       if(this->plan->path_count && !this->atgoal)
       {
         // Check doneness
@@ -1033,12 +1096,16 @@ void Wavefront::Main()
           double maxd=2.0;
           double distweight=10.0;
 
+          printf("pose: (%.3lf,%.3lf,%.3lf)\n",
+                 this->localize_x, this->localize_y, RTOD(this->localize_a));
           if(plan_get_carrot(this->plan, &wx, &wy,
                              this->localize_x, this->localize_y,
                              maxd, distweight) < 0)
           {
             puts("Failed to find a carrot");
+            draw_cspace(this->plan, "debug.png");
             this->StopPosition();
+            exit(-1);
           }
           else
           {
@@ -1101,6 +1168,9 @@ void Wavefront::Main()
       }
       else
         this->StopPosition();
+
+      t1 = get_time();
+      printf("control: %.6lf\n", t1-t0);
     }
     else // !velocity_control
     {
@@ -1249,8 +1319,11 @@ Wavefront::SetupPosition()
 
   // take the bigger of the two dimensions, convert to meters, and halve
   // to get a radius
-  this->robot_radius = MAX(geom->size.sl, geom->size.sw);
+  //this->robot_radius = MAX(geom->size.sl, geom->size.sw);
+  this->robot_radius = geom->size.sw;
   this->robot_radius /= 2.0;
+
+  printf("robot radius: %.3lf\n", this->robot_radius);
 
   delete msg;
 
@@ -1391,6 +1464,7 @@ Wavefront::GetMap(bool threaded)
 
   plan_init(this->plan);
   plan_compute_cspace(this->plan);
+  draw_cspace(this->plan,"cspace.png");
 
   return(0);
 }
@@ -1649,4 +1723,12 @@ Wavefront::angle_diff(double a, double b)
     return(d1);
   else
     return(d2);
+}
+
+double 
+static get_time(void)
+{
+  struct timeval curr;
+  gettimeofday(&curr,NULL);
+  return(curr.tv_sec + curr.tv_usec / 1e6);
 }

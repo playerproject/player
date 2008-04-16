@@ -85,9 +85,9 @@ plan_do_local(plan_t *plan, double lx, double ly, double plan_halfwidth)
 
   // Set bounds as directed
   xmin = PLAN_GXWX(plan, lx - plan_halfwidth);
-  ymin = PLAN_GXWX(plan, ly - plan_halfwidth);
+  ymin = PLAN_GYWY(plan, ly - plan_halfwidth);
   xmax = PLAN_GXWX(plan, lx + plan_halfwidth);
-  ymax = PLAN_GXWX(plan, ly + plan_halfwidth);
+  ymax = PLAN_GYWY(plan, ly + plan_halfwidth);
   plan_set_bounds(plan, xmin, ymin, xmax, ymax);
 
   // Reset plan costs (within the local patch)
@@ -142,6 +142,8 @@ _plan_update_plan(plan_t *plan, double lx, double ly, double gx, double gy)
   int gi, gj, li,lj;
   float cost;
   plan_cell_t *cell, *ncell;
+  char old_occ_state;
+  float old_occ_dist;
 
   // Reset the queue
   heap_reset(plan->heap);
@@ -153,7 +155,7 @@ _plan_update_plan(plan_t *plan, double lx, double ly, double gx, double gy)
   // Initialize the start cell
   li = PLAN_GXWX(plan, lx);
   lj = PLAN_GYWY(plan, ly);
-
+  
   //printf("planning from %d,%d to %d,%d\n", li,lj,gi,gj);
 
   if(!PLAN_VALID_BOUNDS(plan, gi, gj))
@@ -167,6 +169,13 @@ _plan_update_plan(plan_t *plan, double lx, double ly, double gx, double gy)
     puts("start out of bounds");
     return(-1);
   }
+
+  // Latch and clear the obstacle state for the cell I'm in
+  cell = plan->cells + PLAN_INDEX(plan, li, lj);
+  old_occ_state = cell->occ_state_dyn;
+  old_occ_dist = cell->occ_dist_dyn;
+  cell->occ_state_dyn = -1;
+  cell->occ_dist_dyn = plan->max_radius;
 
   cell = plan->cells + PLAN_INDEX(plan, gi, gj);
   cell->plan_cost = 0;
@@ -222,7 +231,11 @@ _plan_update_plan(plan_t *plan, double lx, double ly, double gx, double gy)
     }
   }
 
+  // Restore the obstacle state for the cell I'm in
   cell = plan->cells + PLAN_INDEX(plan, li, lj);
+  cell->occ_state_dyn = old_occ_state;
+  cell->occ_dist_dyn = old_occ_dist;
+
   if(!cell->plan_next)
   {
     puts("never found start");
@@ -252,6 +265,8 @@ _plan_find_local_goal(plan_t *plan, double* gx, double* gy,
 
   li = PLAN_GXWX(plan, lx);
   lj = PLAN_GYWY(plan, ly);
+
+  assert(PLAN_VALID_BOUNDS(plan,li,lj));
 
   // Find the closest place to jump on the global path
   squared_d_min = DBL_MAX;

@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <assert.h>
 
 #include "plan.h"
 
@@ -18,6 +19,10 @@ plan_get_carrot(plan_t* plan, double* px, double* py,
 
   cell = plan->cells + PLAN_INDEX(plan,li,lj);
 
+  printf("finding carrot from (%d,%d) : %.3lf\n",
+         cell->ci, cell->cj, cell->occ_dist_dyn);
+  assert(cell->occ_dist_dyn >= plan->abs_min_radius);
+
   // Step back from maxdist, looking for the best carrot
   bestcost = -1.0;
   for(dist = maxdist; dist >= plan->scale; dist -= plan->scale)
@@ -30,7 +35,11 @@ plan_get_carrot(plan_t* plan, double* px, double* py,
 
     // Check whether the straight-line path is clear
     if((cost = _plan_check_path(plan, cell, ncell)) < 0.0)
+    {
+      printf("no path from (%d,%d) to (%d,%d)\n",
+             cell->ci, cell->cj, ncell->ci, ncell->cj);
       continue;
+    }
 
     // Weight distance
     cost += distweight * (1.0/(dist*dist));
