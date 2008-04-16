@@ -473,7 +473,8 @@ Wavefront::Setup()
   if(!(this->plan = plan_alloc(this->robot_radius+this->safety_dist,
                                this->robot_radius+this->safety_dist,
                                this->max_radius,
-                               this->dist_penalty)))
+                               this->dist_penalty,
+                               0.5)))
   {
     PLAYER_ERROR("failed to allocate plan");
     return(-1);
@@ -1613,7 +1614,8 @@ Wavefront::ProcessMessage(QueuePointer & resp_queue,
       this->plan = plan_alloc(this->robot_radius+this->safety_dist,
                               this->robot_radius+this->safety_dist,
                               this->max_radius,
-                              this->dist_penalty);
+                              this->dist_penalty,
+                              0.5);
       assert(this->plan);
 
       // Fill in the map structure
