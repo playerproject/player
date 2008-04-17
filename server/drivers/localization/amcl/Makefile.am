@@ -40,6 +40,8 @@ libamcl_la_SOURCES = amcl.h \
                      pf/pf_pdf.h \
                      pf/pf_kdtree.h \
                      pf/pf_vector.h \
+                     pf/eig3.h \
+                     pf/eig3.c \
                      map/map.c \
                      map/map_range.c \
                      map/map_store.c \

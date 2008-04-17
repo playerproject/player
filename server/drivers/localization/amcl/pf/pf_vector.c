@@ -7,11 +7,12 @@
  *************************************************************************/
 
 #include <math.h>
-#include <gsl/gsl_matrix.h>
-#include <gsl/gsl_eigen.h>
-#include <gsl/gsl_linalg.h>
+//#include <gsl/gsl_matrix.h>
+//#include <gsl/gsl_eigen.h>
+//#include <gsl/gsl_linalg.h>
 
 #include "pf_vector.h"
+#include "eig3.h"
 
 
 // Return a zero vector
@@ -156,6 +157,7 @@ void pf_matrix_fprintf(pf_matrix_t a, FILE *file, const char *fmt)
 }
 
 
+/*
 // Compute the matrix inverse
 pf_matrix_t pf_matrix_inverse(pf_matrix_t a, double *det)
 {
@@ -193,6 +195,7 @@ pf_matrix_t pf_matrix_inverse(pf_matrix_t a, double *det)
 
   return ai;
 }
+*/
 
 
 // Decompose a covariance matrix [a] into a rotation matrix [r] and a diagonal
@@ -200,6 +203,7 @@ pf_matrix_t pf_matrix_inverse(pf_matrix_t a, double *det)
 void pf_matrix_unitary(pf_matrix_t *r, pf_matrix_t *d, pf_matrix_t a)
 {
   int i, j;
+  /*
   gsl_matrix *aa;
   gsl_vector *eval;
   gsl_matrix *evec;
@@ -208,27 +212,45 @@ void pf_matrix_unitary(pf_matrix_t *r, pf_matrix_t *d, pf_matrix_t a)
   aa = gsl_matrix_alloc(3, 3);
   eval = gsl_vector_alloc(3);
   evec = gsl_matrix_alloc(3, 3);
+  */
+
+  double aa[3][3];
+  double eval[3];
+  double evec[3][3];
 
   for (i = 0; i < 3; i++)
+  {
     for (j = 0; j < 3; j++)
-      gsl_matrix_set(aa, i, j, a.m[i][j]);
+    {
+      //gsl_matrix_set(aa, i, j, a.m[i][j]);
+      aa[i][j] = a.m[i][j];
+    }
+  }
 
   // Compute eigenvectors/values
+  /*
   w = gsl_eigen_symmv_alloc(3);
   gsl_eigen_symmv(aa, eval, evec, w);
   gsl_eigen_symmv_free(w);
+  */
+
+  eigen_decomposition(aa,evec,eval);
 
   *d = pf_matrix_zero();
   for (i = 0; i < 3; i++)
   {
-    d->m[i][i] = gsl_vector_get(eval, i);
+    //d->m[i][i] = gsl_vector_get(eval, i);
+    d->m[i][i] = eval[i];
     for (j = 0; j < 3; j++)
-      r->m[i][j] = gsl_matrix_get(evec, i, j);
+    {
+      //r->m[i][j] = gsl_matrix_get(evec, i, j);
+      r->m[i][j] = evec[i][j];
+    }
   }
   
-  gsl_matrix_free(evec);
-  gsl_vector_free(eval);
-  gsl_matrix_free(aa);
+  //gsl_matrix_free(evec);
+  //gsl_vector_free(eval);
+  //gsl_matrix_free(aa);
   
   return;
 }
