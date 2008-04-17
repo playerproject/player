@@ -217,15 +217,20 @@ void pf_update_resample(pf_t *pf)
 {
   int i;
   double total;
-  double *randlist;
+  //double *randlist;
   pf_sample_set_t *set_a, *set_b;
   pf_sample_t *sample_a, *sample_b;
-  pf_pdf_discrete_t *pdf;
+  //pf_pdf_discrete_t *pdf;
+
+  double r,c,U;
+  int m;
+  double count_inv;
 
   set_a = pf->sets + pf->current_set;
   set_b = pf->sets + (pf->current_set + 1) % 2;
 
   // Create the discrete distribution to sample from
+  /*
   total = 0;
   randlist = calloc(set_a->sample_count, sizeof(double));
   for (i = 0; i < set_a->sample_count; i++)
@@ -233,21 +238,48 @@ void pf_update_resample(pf_t *pf)
     total += set_a->samples[i].weight;
     randlist[i] = set_a->samples[i].weight;
   }
+  */
 
   //printf("resample total %f\n", total);
 
   // Initialize the random number generator
-  pdf = pf_pdf_discrete_alloc(set_a->sample_count, randlist);
+  //pdf = pf_pdf_discrete_alloc(set_a->sample_count, randlist);
 
   // Create the kd tree for adaptive sampling
   pf_kdtree_clear(set_b->kdtree);
-
+  
   // Draw samples from set a to create set b.
   total = 0;
   set_b->sample_count = 0;
-  while (set_b->sample_count < pf->max_samples)
+
+  // Low-variance resampler, taken from Probabilistic Robotics, p110
+  count_inv = 1.0/set_a->sample_count;
+  r = drand48() * count_inv;
+  c = set_a->samples[0].weight;
+  i = 0;
+  m = 0;
+  while(set_b->sample_count < pf->max_samples)
   {
-    i = pf_pdf_discrete_sample(pdf);    
+    U = r + m * count_inv;
+    while(U>c)
+    {
+      i++;
+      // Handle wrap-around by resetting counters and picking a new random
+      // number
+      if(i >= set_a->sample_count)
+      {
+        r = drand48() * count_inv;
+        c = set_a->samples[0].weight;
+        i = 0;
+        m = 0;
+        U = r + m * count_inv;
+        continue;
+      }
+      c += set_a->samples[i].weight;
+    }
+
+    //i = pf_pdf_discrete_sample(pdf);    
+
     sample_a = set_a->samples + i;
 
     //printf("%d %f\n", i, sample_a->weight);
@@ -263,17 +295,19 @@ void pf_update_resample(pf_t *pf)
     pf_kdtree_insert(set_b->kdtree, sample_b->pose, sample_b->weight);
 
     //fprintf(stderr, "resample %d %d %d\n", set_b->sample_count, set_b->kdtree->leaf_count,
-    //        pf_resample_limit(pf, set_b->kdtree->leaf_count));
+            //pf_resample_limit(pf, set_b->kdtree->leaf_count));
 
     // See if we have enough samples yet
     if (set_b->sample_count > pf_resample_limit(pf, set_b->kdtree->leaf_count))
       break;
+
+    m++;
   }
 
   //fprintf(stderr, "\n\n");
 
-  pf_pdf_discrete_free(pdf);
-  free(randlist);
+  //pf_pdf_discrete_free(pdf);
+  //free(randlist);
 
   // Normalize weights
   for (i = 0; i < set_b->sample_count; i++)

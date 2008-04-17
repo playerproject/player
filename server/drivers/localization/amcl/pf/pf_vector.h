@@ -62,7 +62,7 @@ void pf_matrix_fprintf(pf_matrix_t s, FILE *file, const char *fmt);
 
 // Compute the matrix inverse.  Will also return the determinant,
 // which should be checked for underflow (indicated singular matrix).
-pf_matrix_t pf_matrix_inverse(pf_matrix_t a, double *det);
+//pf_matrix_t pf_matrix_inverse(pf_matrix_t a, double *det);
 
 // Decompose a covariance matrix [a] into a rotation matrix [r] and a
 // diagonal matrix [d] such that a = r * d * r^T.
