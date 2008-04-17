@@ -127,7 +127,8 @@ dnl installation of gsl have a .pc file.
 dnl PKG_CHECK_MODULES(GSL,gsl,
 dnl                   found_gsl=yes,
 dnl                  found_gsl=no)
-PLAYER_ADD_DRIVER([amcl], [yes],[gsl/gsl_version.h],[],["-lgsl -lgslcblas"])
+dnl PLAYER_ADD_DRIVER([amcl], [yes],[gsl/gsl_version.h],[],["-lgsl -lgslcblas"])
+PLAYER_ADD_DRIVER([amcl], [yes],[],[],[])
 
 dnl Where's AMTECM5?
 AC_ARG_WITH(amtecM5, [  --with-amtecM5=dir      Location of the AMTEC M5 headers and libraries],
