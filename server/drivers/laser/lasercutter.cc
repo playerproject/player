@@ -161,42 +161,35 @@ int LaserCutter::UpdateLaser(player_laser_data_t * indata)
 
   // Construct the outgoing laser packet
   this->data.resolution   = indata->resolution;
-  this->data.min_angle    = (min_angle);
-  this->data.max_angle    = (max_angle);
+  this->data.min_angle    = min_angle;
+  this->data.max_angle    = max_angle;
   this->data.max_range    = indata->max_range;
   this->data.id           = indata->id;
 
   this->data.ranges_count    = 0;
   this->data.intensity_count = 0;
 
-  current_angle = indata->min_angle;
-  if (indata->ranges_count+1 > allocated_ranges)
+  // check we have space for the scans
+  if (indata->ranges_count+1 > allocated_ranges || indata->intensity_count+1 > allocated_ranges)
   {
-    data.ranges = (float*)realloc(data.ranges,sizeof(data.ranges[0])*(indata->ranges_count+1));
-    data.intensity = (uint8_t*)realloc(data.intensity,sizeof(data.intensity[0])*(indata->ranges_count+1));
+    allocated_ranges = (indata->ranges_count+1) > (indata->intensity_count+1) ? indata->ranges_count+1 : indata->intensity_count+1;
+    data.ranges = (float*)realloc(data.ranges,sizeof(data.ranges[0])*(allocated_ranges));
+    data.intensity = (uint8_t*)realloc(data.intensity,sizeof(data.intensity[0])*(allocated_ranges));
   }
-  for (i = 0; i < indata->ranges_count; i++)
+
+  
+  current_angle = indata->min_angle;
+  for (i = 0; i < indata->ranges_count && current_angle <= max_angle; i++)
   {
-    if ((current_angle >= min_angle) && (current_angle <= max_angle))
+    if (current_angle >= min_angle)
     {
       this->data.ranges[this->data.ranges_count] = indata->ranges[i];
       this->data.ranges_count++;
-    }
-    current_angle += indata->resolution;
-  }
-
-  current_angle = indata->min_angle;
-  if (indata->intensity_count+1 > allocated_ranges)
-  {
-    data.ranges = (float*)realloc(data.ranges,sizeof(data.ranges[0])*(indata->intensity_count+1));
-    data.intensity = (uint8_t*)realloc(data.intensity,sizeof(data.intensity[0])*(indata->intensity_count+1));
-  }
-  for (i = 0; i < indata->intensity_count; i++)
-  {
-    if ((current_angle >= min_angle) && (current_angle <= max_angle))
-    {
-      this->data.intensity[this->data.intensity_count] = indata->intensity[i];
-      this->data.intensity_count++;
+      if (i < indata->intensity_count)
+      {
+        this->data.intensity[this->data.intensity_count] = indata->intensity[i];
+        this->data.intensity_count++;
+      }
     }
     current_angle += indata->resolution;
   }
