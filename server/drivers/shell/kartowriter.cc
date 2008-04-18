@@ -395,7 +395,7 @@ int
 //
 KartoLogger::~KartoLogger()
 {
-	Shutdown();
+	//Shutdown();
 }
 
 //
