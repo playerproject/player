@@ -6,7 +6,7 @@
 . cross-compiling... does it work? - better support in CMake v2.6, apparently
 . examples dir (probably easy) - just need to do the make files for compiling outside the source tree now (old ones will still work, but cmake ones would be nicer)
 - dist tarballs, packages, etc - add in the extra_dist files to the source one, make the debian one
-. Fix the checks for boost threads and boost signals libraries - possibly a better version of FindBoost is coming in 2.6, defer till then (http://www.cmake.org/Bug/view.php?id=6257)
+. Fix the checks for boost threads and boost signals libraries (including check for boost::bind) - possibly a better version of FindBoost is coming in 2.6, defer till then (http://www.cmake.org/Bug/view.php?id=6257)
 - Some installable cmake modules with macros for making plugin drivers, etc
 - Clean out/replace any stragglers from autotools (including README and co)
 - Drivers being disabled by a check used to correctly force their option to off. Figure out why this broke. Fix it.

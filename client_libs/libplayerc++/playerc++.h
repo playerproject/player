@@ -61,6 +61,8 @@
 #include "libplayerc++/clientproxy.h"
 #include "libplayercore/interface_util.h"
 
+// Don't think we need to include these here
+/*
 #ifdef HAVE_BOOST_SIGNALS
   #include <boost/signal.hpp>
   #include <boost/bind.hpp>
@@ -71,6 +73,7 @@
   #include <boost/thread/thread.hpp>
   #include <boost/thread/xtime.hpp>
 #endif
+*/
 
 namespace PlayerCc
 {

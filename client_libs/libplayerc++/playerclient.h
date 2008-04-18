@@ -51,13 +51,13 @@
 
 #ifdef HAVE_BOOST_SIGNALS
   #include <boost/signal.hpp>
-  #include <boost/bind.hpp>
 #endif
 
 #ifdef HAVE_BOOST_THREAD
   #include <boost/thread/mutex.hpp>
   #include <boost/thread/thread.hpp>
   #include <boost/thread/xtime.hpp>
+  #include <boost/bind.hpp>
 #else
   // we have to define this so we don't have to
   // comment out all the instances of scoped_lock
