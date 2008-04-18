@@ -46,31 +46,122 @@ plan_t *plan_alloc(double abs_min_radius, double des_min_radius,
 
   plan = calloc(1, sizeof(plan_t));
 
-  plan->size_x = 0;
-  plan->size_y = 0;
-  plan->scale = 0.0;
-
-  plan->min_x = 0;
-  plan->min_y = 0;
-  plan->max_x = 0;
-  plan->max_y = 0;
-
   plan->abs_min_radius = abs_min_radius;
   plan->des_min_radius = des_min_radius;
 
   plan->max_radius = max_radius;
   plan->dist_penalty = dist_penalty;
   
-  plan->queue_start = 0;
-  plan->queue_len = 0;
-  plan->queue_size = 400000; // HACK: FIX
-  plan->queue = calloc(plan->queue_size, sizeof(plan->queue[0]));
+  plan->heap = heap_alloc(PLAN_DEFAULT_HEAP_SIZE, (heap_free_elt_fn_t)NULL);
+  assert(plan->heap);
 
-  plan->waypoint_count = 0;
+  plan->path_size = 1000;
+  plan->path = calloc(plan->path_size, sizeof(plan->path[0]));
+
+  plan->lpath_size = 100;
+  plan->lpath = calloc(plan->lpath_size, sizeof(plan->lpath[0]));
+
   plan->waypoint_size = 100;
   plan->waypoints = calloc(plan->waypoint_size, sizeof(plan->waypoints[0]));
   
   return plan;
+}
+
+void
+plan_set_obstacles(plan_t* plan, double* obs, size_t num)
+{
+  size_t i;
+  int di,dj;
+  float* p;
+  plan_cell_t* cell, *ncell;
+
+  // Remove any previous obstacles
+  for(i=0;i<plan->obs_pts_num;i++)
+  {
+    cell = plan->cells + 
+            PLAN_INDEX(plan,plan->obs_pts[2*i],plan->obs_pts[2*i+1]);
+    cell->occ_state_dyn = cell->occ_state;
+    cell->occ_dist_dyn = cell->occ_dist;
+  }
+
+  // Do we need more room?
+  if(num > plan->obs_pts_size)
+  {
+    plan->obs_pts_size = num;
+    plan->obs_pts = (unsigned short*)realloc(plan->obs_pts, 
+                                             sizeof(unsigned short) * 2 *
+                                             plan->obs_pts_size);
+    assert(plan->obs_pts);
+  }
+
+  // Copy and expand costs around them
+  plan->obs_pts_num = num;
+  for(i=0;i<plan->obs_pts_num;i++)
+  {
+    // Convert to grid coords
+    int gx,gy;
+    gx = PLAN_GXWX(plan, obs[2*i]);
+    gy = PLAN_GYWY(plan, obs[2*i+1]);
+    plan->obs_pts[2*i] = gx;
+    plan->obs_pts[2*i+1] = gy;
+
+    cell = plan->cells + PLAN_INDEX(plan,gx,gy);
+
+    cell->occ_state_dyn = 1;
+    cell->occ_dist_dyn = 0.0;
+
+    p = plan->dist_kernel;
+    for (dj = -plan->dist_kernel_width/2; 
+         dj <= plan->dist_kernel_width/2; 
+         dj++)
+    {
+      ncell = cell + -plan->dist_kernel_width/2 + dj*plan->size_x;
+      for (di = -plan->dist_kernel_width/2;
+           di <= plan->dist_kernel_width/2; 
+           di++, p++, ncell++)
+      {
+        if(!PLAN_VALID_BOUNDS(plan,cell->ci+di,cell->cj+dj))            
+          continue;
+
+        if(*p < ncell->occ_dist_dyn)
+          ncell->occ_dist_dyn = *p;
+      }
+    }
+  }
+}
+
+void
+plan_compute_dist_kernel(plan_t* plan)
+{
+  int i,j;
+  float* p;
+
+  // Compute variable sized kernel, for use in propagating distance from
+  // obstacles
+  plan->dist_kernel_width = 1 + 2 * (int)ceil(plan->max_radius / plan->scale);
+  plan->dist_kernel = (float*)realloc(plan->dist_kernel,
+                                      sizeof(float) * 
+                                      plan->dist_kernel_width *
+                                      plan->dist_kernel_width);
+  assert(plan->dist_kernel);
+
+  p = plan->dist_kernel;
+  for(j=-plan->dist_kernel_width/2;j<=plan->dist_kernel_width/2;j++)
+  {
+    for(i=-plan->dist_kernel_width/2;i<=plan->dist_kernel_width/2;i++,p++)
+    {
+      *p = sqrt(i*i+j*j) * plan->scale;
+    }
+  }
+  // also compute a 3x3 kernel, used when propagating distance from goal
+  p = plan->dist_kernel_3x3;
+  for(j=-1;j<=1;j++)
+  {
+    for(i=-1;i<=1;i++,p++)
+    {
+      *p = sqrt(i*i+j*j) * plan->scale;
+    }
+  }
 }
 
 
@@ -79,11 +170,49 @@ void plan_free(plan_t *plan)
 {
   if (plan->cells)
     free(plan->cells);
-  free(plan->queue);
+  heap_free(plan->heap);
   free(plan->waypoints);
+  if(plan->dist_kernel)
+    free(plan->dist_kernel);
   free(plan);
 
   return;
+}
+
+// Initialize the plan
+void plan_init(plan_t *plan, 
+               double res, double sx, double sy, double ox, double oy)
+{
+  int i, j;
+  plan_cell_t *cell;
+
+  plan->scale = res;
+  plan->size_x = sx;
+  plan->size_y = sy;
+  plan->origin_x = ox;
+  plan->origin_y = oy;
+
+  cell = plan->cells;
+  for (j = 0; j < plan->size_y; j++)
+  {
+    for (i = 0; i < plan->size_x; i++, cell++)
+    {
+      cell->ci = i;
+      cell->cj = j;
+      cell->occ_state_dyn = cell->occ_state;
+      if(cell->occ_state >= 0)
+        cell->occ_dist_dyn = cell->occ_dist = 0.0;
+      else
+        cell->occ_dist_dyn = cell->occ_dist = plan->max_radius;
+      cell->plan_cost = PLAN_MAX_COST;
+      cell->plan_next = NULL;
+    }
+  }
+  plan->waypoint_count = 0;
+
+  plan_compute_dist_kernel(plan);
+
+  plan_set_bounds(plan, 0, 0, plan->size_x - 1, plan->size_y - 1);
 }
 
 
@@ -93,30 +222,31 @@ void plan_reset(plan_t *plan)
   int i, j;
   plan_cell_t *cell;
 
-  for (j = 0; j < plan->size_y; j++)
+  for (j = plan->min_y; j <= plan->max_y; j++)
   {
-    for (i = 0; i < plan->size_x; i++)
+    cell = plan->cells + PLAN_INDEX(plan,plan->min_x,j);
+    for (i = plan->min_x; i <= plan->max_x; i++, cell++)
     {
-      cell = plan->cells + PLAN_INDEX(plan, i, j);
-      cell->ci = i;
-      cell->cj = j;
-      cell->occ_state = 0;
-      cell->occ_dist = plan->max_radius;
-      cell->plan_cost = 1e12;
+      cell->plan_cost = PLAN_MAX_COST;
       cell->plan_next = NULL;
+      cell->mark = 0;
     }
   }
   plan->waypoint_count = 0;
-  return;
 }
 
 void
 plan_set_bounds(plan_t* plan, int min_x, int min_y, int max_x, int max_y)
 {
-  assert(min_x < plan->size_x);
-  assert(min_y < plan->size_y);
-  assert(max_x < plan->size_x);
-  assert(max_y < plan->size_y);
+  min_x = MAX(0,min_x);
+  min_x = MIN(plan->size_x-1, min_x);
+  min_y = MAX(0,min_y);
+  min_y = MIN(plan->size_y-1, min_y);
+  max_x = MAX(0,max_x);
+  max_x = MIN(plan->size_x-1, max_x);
+  max_y = MAX(0,max_y);
+  max_y = MIN(plan->size_y-1, max_y);
+
   assert(min_x <= max_x);
   assert(min_y <= max_y);
 
@@ -124,6 +254,10 @@ plan_set_bounds(plan_t* plan, int min_x, int min_y, int max_x, int max_y)
   plan->min_y = min_y;
   plan->max_x = max_x;
   plan->max_y = max_y;
+
+  //printf("new bounds: (%d,%d) -> (%d,%d)\n",
+         //plan->min_x, plan->min_y,
+         //plan->max_x, plan->max_y);
 }
 
 int
@@ -208,48 +342,48 @@ plan_set_bbox(plan_t* plan, double padding, double min_size,
 }
 
 void
-plan_update_cspace_naive(plan_t* plan)
+plan_compute_cspace(plan_t* plan)
 {
   int i, j;
-  int di, dj, dn;
-  double r;
+  int di, dj;
+  float* p;
   plan_cell_t *cell, *ncell;
 
   PLAYER_MSG0(2,"Generating C-space....");
-          
-  dn = (int) ceil(plan->max_radius / plan->scale);
 
   for (j = plan->min_y; j <= plan->max_y; j++)
   {
-    for (i = plan->min_x; i <= plan->max_x; i++)
+    cell = plan->cells + PLAN_INDEX(plan, 0, j);
+    for (i = plan->min_x; i <= plan->max_x; i++, cell++)
     {
-      cell = plan->cells + PLAN_INDEX(plan, i, j);
       if (cell->occ_state < 0)
         continue;
 
-      cell->occ_dist = FLT_MAX;
-
-      for (dj = -dn; dj <= +dn; dj++)
+      p = plan->dist_kernel;
+      for (dj = -plan->dist_kernel_width/2; 
+           dj <= plan->dist_kernel_width/2; 
+           dj++)
       {
-        for (di = -dn; di <= +dn; di++)
+        ncell = cell + -plan->dist_kernel_width/2 + dj*plan->size_x;
+        for (di = -plan->dist_kernel_width/2;
+             di <= plan->dist_kernel_width/2; 
+             di++, p++, ncell++)
         {
-          if (!PLAN_VALID_BOUNDS(plan, i + di, j + dj))            
+          if(!PLAN_VALID_BOUNDS(plan,i+di,j+dj))            
             continue;
-          ncell = plan->cells + PLAN_INDEX(plan, i + di, j + dj);
-          
-          r = plan->scale * sqrt(di * di + dj * dj);
-          if (r < ncell->occ_dist)
-            ncell->occ_dist = r;
+
+          if(*p < ncell->occ_dist)
+            ncell->occ_dist_dyn = ncell->occ_dist = *p;
         }
       }
     }
   }
 }
 
-#if 0
+#if 1
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
-void
+        void
 draw_cspace(plan_t* plan, const char* fname)
 {
   GdkPixbuf* pixbuf;
@@ -295,123 +429,116 @@ draw_cspace(plan_t* plan, const char* fname)
                                     plan->size_y,
                                     plan->size_x * 3,
                                     NULL, NULL);
-  
+
   gdk_pixbuf_save(pixbuf,fname,"png",&error,NULL);
   gdk_pixbuf_unref(pixbuf);
   free(pixels);
 }
-#endif
 
-#if 0
-void
-plan_update_cspace_dp(plan_t* plan)
+        void
+draw_path(plan_t* plan, double lx, double ly, const char* fname)
 {
+  GdkPixbuf* pixbuf;
+  GError* error = NULL;
+  guchar* pixels;
+  int p;
+  int paddr;
   int i, j;
-  int di, dj, dn;
-  double r;
-  plan_cell_t *cell, *ncell;
-  //heap_t* Q;
-  plan_cell_t** Q;
-  int qhead, qtail;
+  plan_cell_t* cell;
 
-  PLAYER_MSG0(2,"Generating C-space....");
+  pixels = (guchar*)malloc(sizeof(guchar)*plan->size_x*plan->size_y*3);
 
-  // We'll look this far away from obstacles when updating cell costs
-  dn = (int) ceil(plan->max_radius / plan->scale);
-
-  // We'll need space for, at most, dn^2 cells in our queue (which is a
-  // binary heap).
-  //Q = heap_alloc(dn*dn, NULL);
-  Q = (plan_cell_t**)malloc(sizeof(plan_cell_t*)*dn*dn);
-  assert(Q);
-
-  // Make space for the marks that we'll use.
-  if(plan->marks_size != plan->size_x*plan->size_y)
+  p=0;
+  for(j=plan->size_y-1;j>=0;j--)
   {
-    plan->marks_size = plan->size_x*plan->size_y;
-    plan->marks = (unsigned char*)realloc(plan->marks,
-                                          sizeof(unsigned char*) * 
-                                          plan->marks_size);
-  }
-  assert(plan->marks);
-  
-  // For each obstacle (or unknown cell), spread a wave out in all
-  // directions, updating occupancy distances (inverse costs) on the way.  
-  // Don't ever raise the occupancy distance of a cell.
-  for (j = 0; j < plan->size_y; j++)
-  {
-    for (i = 0; i < plan->size_x; i++)
+    for(i=0;i<plan->size_x;i++,p++)
     {
-      cell = plan->cells + PLAN_INDEX(plan, i, j);
-      if (cell->occ_state < 0)
-        continue;
-
-      //cell->occ_dist = plan->max_radius;
-      cell->occ_dist = 0.0;
-
-      // clear the marks
-      memset(plan->marks,0,sizeof(unsigned char)*plan->size_x*plan->size_y);
-
-      // Start with the current cell
-      //heap_reset(Q);
-      //heap_insert(Q, cell->occ_dist, cell);
-      qhead = 0;
-      Q[qhead] = cell;
-      qtail = 1;
-
-      //while(!heap_empty(Q))
-      while(qtail != qhead)
+      paddr = p * 3;
+      if(plan->cells[PLAN_INDEX(plan,i,j)].occ_state == 1)
       {
-        //ncell = heap_extract_max(Q);
-        ncell = Q[qhead++];
+        pixels[paddr] = 255;
+        pixels[paddr+1] = 0;
+        pixels[paddr+2] = 0;
+      }
+      else if(plan->cells[PLAN_INDEX(plan,i,j)].occ_dist < plan->max_radius)
+      {
+        pixels[paddr] = 0;
+        pixels[paddr+1] = 0;
+        pixels[paddr+2] = 255;
+      }
+      else
+      {
+        pixels[paddr] = 255;
+        pixels[paddr+1] = 255;
+        pixels[paddr+2] = 255;
+      }
+      /*
+         if((7*plan->cells[PLAN_INDEX(plan,i,j)].plan_cost) > 255)
+         {
+         pixels[paddr] = 0;
+         pixels[paddr+1] = 0;
+         pixels[paddr+2] = 255;
+         }
+         else
+         {
+         pixels[paddr] = 255 - 7*plan->cells[PLAN_INDEX(plan,i,j)].plan_cost;
+         pixels[paddr+1] = 0;
+         pixels[paddr+2] = 0;
+         }
+       */
+    }
+  }
 
-        // Mark it, so we don't come back
-        plan->marks[PLAN_INDEX(plan, ncell->ci, ncell->cj)] = 1;
+  for(i=0;i<plan->path_count;i++)
+  {
+    cell = plan->path[i];
+    
+    paddr = 3*PLAN_INDEX(plan,cell->ci,plan->size_y - cell->cj - 1);
+    pixels[paddr] = 0;
+    pixels[paddr+1] = 255;
+    pixels[paddr+2] = 0;
+  }
 
-        // Is this cell an obstacle or unknown cell (and not the initial
-        // cell?  If so, don't bother updating its cost here.
-        if((ncell != cell) && (ncell->occ_state >= 0))
-          continue;
-        
-        // How far are we from the obstacle cell we started with?
-        r = plan->scale * hypot(ncell->ci - cell->ci,
-                                ncell->cj - cell->cj);
+  for(i=0;i<plan->lpath_count;i++)
+  {
+    cell = plan->lpath[i];
+    
+    paddr = 3*PLAN_INDEX(plan,cell->ci,plan->size_y - cell->cj - 1);
+    pixels[paddr] = 255;
+    pixels[paddr+1] = 0;
+    pixels[paddr+2] = 255;
+  }
 
-        // Are we past the distance at which we care?
-        if(r > plan->max_radius)
-          continue;
-
-        // Update the occupancy distance if we're closer
-        if(r < ncell->occ_dist)
-        {
-          ncell->occ_dist = r;
-          // Also put its neighbors on the queue for processing
-          for(dj = -1; dj <= 1; dj+= 2)
-          {
-            for(di = -1; di <= 1; di+= 2)
-            {
-              if (!PLAN_VALID(plan, ncell->ci + di, ncell->cj + dj))            
-                continue;
-              // Have we already seen this cell?
-              if(plan->marks[PLAN_INDEX(plan, ncell->ci + di, ncell->cj + dj)])
-                continue;
-              // Add it to the queue
-              /*
-              heap_insert(Q, ncell->occ_dist,
-                          plan->cells + PLAN_INDEX(plan,
-                                                   ncell->ci+di,
-                                                   ncell->cj+dj));
-                                                   */
-              Q[qtail++] = plan->cells + PLAN_INDEX(plan,
-                                                    ncell->ci+di,
-                                                    ncell->cj+dj);
-            }
-          }
-        }
+  /*
+  for(p=0;p<plan->waypoint_count;p++)
+  {
+    cell = plan->waypoints[p];
+    for(j=-3;j<=3;j++)
+    {
+      cj = cell->cj + j;
+      for(i=-3;i<=3;i++)
+      {
+        ci = cell->ci + i;
+        paddr = 3*PLAN_INDEX(plan,ci,plan->size_y - cj - 1);
+        pixels[paddr] = 255;
+        pixels[paddr+1] = 0;
+        pixels[paddr+2] = 255;
       }
     }
   }
-  //heap_free(Q);
+  */
+
+  pixbuf = gdk_pixbuf_new_from_data(pixels, 
+                                    GDK_COLORSPACE_RGB,
+                                    0,8,
+                                    plan->size_x,
+                                    plan->size_y,
+                                    plan->size_x * 3,
+                                    NULL, NULL);
+  
+  gdk_pixbuf_save(pixbuf,fname,"png",&error,NULL);
+  gdk_pixbuf_unref(pixbuf);
+  free(pixels);
 }
 #endif
 
@@ -421,6 +548,7 @@ plan_update_cspace_dp(plan_t* plan)
 // If cachefile is non-NULL, then we try to read the c-space from that
 // file.  If that fails, then we construct the c-space as per normal and
 // then write it out to cachefile.
+#if 0
 void 
 plan_update_cspace(plan_t *plan, const char* cachefile)
 {
@@ -457,6 +585,7 @@ plan_update_cspace(plan_t *plan, const char* cachefile)
   draw_cspace(plan,"plan_cspace.png");
 #endif
 }
+#endif
 
 #if HAVE_OPENSSL_MD5_H && HAVE_LIBCRYPTO
 // Write the cspace occupancy distance values to a file, one per line.
