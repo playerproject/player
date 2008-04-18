@@ -33,9 +33,9 @@ main(int argc, char** argv)
   int i, j;
 
   plan_t* plan;
-  double robot_radius=0.25;
-  double safety_dist=0.2;
-  double max_radius=1.0;
+  double robot_radius=0.16;
+  double safety_dist=0.05;
+  double max_radius=0.25;
   double dist_penalty=1.0;;
   double plan_halfwidth = 5.0;
 
@@ -76,9 +76,15 @@ main(int argc, char** argv)
     }
   }
   free(mapdata);
+
+  plan->scale = res;
+  plan->size_x = sx;
+  plan->size_y = sy;
+  plan->origin_x = 0.0;
+  plan->origin_y = 0.0;
   
   // Do initialization
-  plan_init(plan, res, sx, sy, 0.0, 0.0);
+  plan_init(plan);
 
   t_c0 = get_time();
   plan_compute_cspace(plan);

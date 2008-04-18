@@ -34,13 +34,17 @@
 #define HASH_LEN (MD5_DIGEST_LENGTH / sizeof(unsigned int))
 #endif
 
+#include <sys/time.h>
+static double get_time(void);
+
 #if 0
 void draw_cspace(plan_t* plan, const char* fname);
 #endif
 
 // Create a planner
 plan_t *plan_alloc(double abs_min_radius, double des_min_radius,
-                   double max_radius, double dist_penalty)
+                   double max_radius, double dist_penalty,
+                   double hysteresis_factor)
 {
   plan_t *plan;
 
@@ -51,6 +55,7 @@ plan_t *plan_alloc(double abs_min_radius, double des_min_radius,
 
   plan->max_radius = max_radius;
   plan->dist_penalty = dist_penalty;
+  plan->hysteresis_factor = hysteresis_factor;
   
   plan->heap = heap_alloc(PLAN_DEFAULT_HEAP_SIZE, (heap_free_elt_fn_t)NULL);
   assert(plan->heap);
@@ -71,42 +76,40 @@ void
 plan_set_obstacles(plan_t* plan, double* obs, size_t num)
 {
   size_t i;
+  int j;
   int di,dj;
   float* p;
   plan_cell_t* cell, *ncell;
+  double t0,t1;
 
-  // Remove any previous obstacles
-  for(i=0;i<plan->obs_pts_num;i++)
+  t0 = get_time();
+
+  // Start with static obstacle data
+  cell = plan->cells;
+  for(j=0;j<plan->size_y*plan->size_x;j++,cell++)
   {
-    cell = plan->cells + 
-            PLAN_INDEX(plan,plan->obs_pts[2*i],plan->obs_pts[2*i+1]);
     cell->occ_state_dyn = cell->occ_state;
     cell->occ_dist_dyn = cell->occ_dist;
+    cell->mark = 0;
   }
 
-  // Do we need more room?
-  if(num > plan->obs_pts_size)
-  {
-    plan->obs_pts_size = num;
-    plan->obs_pts = (unsigned short*)realloc(plan->obs_pts, 
-                                             sizeof(unsigned short) * 2 *
-                                             plan->obs_pts_size);
-    assert(plan->obs_pts);
-  }
-
-  // Copy and expand costs around them
-  plan->obs_pts_num = num;
-  for(i=0;i<plan->obs_pts_num;i++)
+  // Expand around the dynamic obstacle pts
+  for(i=0;i<num;i++)
   {
     // Convert to grid coords
     int gx,gy;
     gx = PLAN_GXWX(plan, obs[2*i]);
     gy = PLAN_GYWY(plan, obs[2*i+1]);
-    plan->obs_pts[2*i] = gx;
-    plan->obs_pts[2*i+1] = gy;
+
+    if(!PLAN_VALID(plan,gx,gy))
+      continue;
 
     cell = plan->cells + PLAN_INDEX(plan,gx,gy);
 
+    if(cell->mark)
+      continue;
+
+    cell->mark = 1;
     cell->occ_state_dyn = 1;
     cell->occ_dist_dyn = 0.0;
 
@@ -128,6 +131,9 @@ plan_set_obstacles(plan_t* plan, double* obs, size_t num)
       }
     }
   }
+
+  t1 = get_time();
+  printf("plan_set_obstacles: %.6lf\n", t1-t0);
 }
 
 void
@@ -373,10 +379,9 @@ plan_compute_cspace(plan_t* plan)
   }
 }
 
-#if 0
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
-        void
+void
 draw_cspace(plan_t* plan, const char* fname)
 {
   GdkPixbuf* pixbuf;
@@ -394,7 +399,8 @@ draw_cspace(plan_t* plan, const char* fname)
     for(i=0;i<plan->size_x;i++,p++)
     {
       paddr = p * 3;
-      if(plan->cells[PLAN_INDEX(plan,i,j)].occ_state == 1)
+      //if(plan->cells[PLAN_INDEX(plan,i,j)].occ_state == 1)
+      if(plan->cells[PLAN_INDEX(plan,i,j)].occ_dist < plan->abs_min_radius)
       {
         pixels[paddr] = 255;
         pixels[paddr+1] = 0;
@@ -533,7 +539,6 @@ draw_path(plan_t* plan, double lx, double ly, const char* fname)
   gdk_pixbuf_unref(pixbuf);
   free(pixels);
 }
-#endif
 
 // Construct the configuration space from the occupancy grid.
 // This treats both occupied and unknown cells as bad.
@@ -709,3 +714,11 @@ plan_md5(unsigned int* digest, plan_t* plan)
   MD5_Final((unsigned char*)digest,&c);
 }
 #endif // HAVE_OPENSSL_MD5_H && HAVE_LIBCRYPTO
+
+double 
+static get_time(void)
+{
+  struct timeval curr;
+  gettimeofday(&curr,NULL);
+  return(curr.tv_sec + curr.tv_usec / 1e6);
+}

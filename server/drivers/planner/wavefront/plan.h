@@ -37,6 +37,8 @@ typedef struct _plan_cell_t
 
   // Mark used in dynamic programming
   char mark;
+  // Mark used in path hysterisis
+  char lpathmark;
 
   // The next cell in the plan
   struct _plan_cell_t *plan_next;
@@ -68,14 +70,12 @@ typedef struct
 
   // Penalty factor for cells inside the max radius
   double dist_penalty;
+  
+  // Cost multiplier for cells on the previous local path
+  double hysteresis_factor;
 
   // The grid data
   plan_cell_t *cells;
-
-  // Dynamic obstacle hitpoints
-  unsigned short* obs_pts;
-  size_t obs_pts_size;
-  size_t obs_pts_num;
 
   // Distance penalty kernel, pre-computed in plan_compute_dist_kernel();
   float* dist_kernel;
@@ -100,8 +100,11 @@ typedef struct
 
 
 // Create a planner
-plan_t *plan_alloc(double abs_min_radius, double des_min_radius,
-                   double max_radius, double dist_penalty);
+plan_t *plan_alloc(double abs_min_radius, 
+                   double des_min_radius,
+                   double max_radius, 
+                   double dist_penalty, 
+                   double hysteresis_factor);
 
 void plan_compute_dist_kernel(plan_t* plan);
 
@@ -147,6 +150,8 @@ void plan_convert_waypoint(plan_t* plan, plan_cell_t *waypoint,
 double plan_get_carrot(plan_t* plan, double* px, double* py, 
                        double lx, double ly, 
                        double maxdist, double distweight);
+
+void plan_set_obstacles(plan_t* plan, double* obs, size_t num);
 
 #if HAVE_OPENSSL_MD5_H && HAVE_LIBCRYPTO
 // Write the cspace occupancy distance values to a file, one per line.
