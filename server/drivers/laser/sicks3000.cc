@@ -36,7 +36,7 @@ The sicks3000 driver controls the SICK S 3000 safety laser scanner interpreting 
 The driver is very basic and assumes the S3000 has already been configured to continuously output
 its measured data on the RS422 data lines.
 
-It is also assumed that the laser is outputing its full 190 degree scan in a single scanning block.
+It is also assumed that the laser is outputing its full scan in a single scanning block.
 
 @par Compile-time dependencies
 
@@ -442,9 +442,9 @@ int SickS3000::ProcessLaserData()
     //printf("size %d", size);
     if (size > rx_buffer_size - 26)
     {
-	PLAYER_WARN("Requested Size of data is larger than the buffer size");
-	memmove(rx_buffer, &rx_buffer[1], --rx_count);
-      	return 0;
+      PLAYER_WARN("S3000: Requested Size of data is larger than the buffer size");
+      memmove(rx_buffer, &rx_buffer[1], --rx_count);
+      return 0;
     }
 
     // check if we have enough data yet
@@ -455,7 +455,7 @@ int SickS3000::ProcessLaserData()
     unsigned short calc_checksum = CreateCRC(&rx_buffer[4], size-2);
     if (packet_checksum != calc_checksum)
     {
-      PLAYER_WARN("Checksum's dont match, thats bad\n");
+      PLAYER_WARN1("S3000: Checksum's dont match, thats bad (data packet size %d)\n",size);
       memmove(rx_buffer, &rx_buffer[1], --rx_count);
       continue;
     }
@@ -470,13 +470,20 @@ int SickS3000::ProcessLaserData()
       {
         if (data[0] == 0xAA)
         {
-          PLAYER_WARN("We got a I/O data packet we dont know what to do with it\n");
+          PLAYER_WARN("S3000: We got a I/O data packet we dont know what to do with it\n");
         }
         else if (data[0] == 0xBB)
         {
           int data_count = (size - 22) / 2;
+          if (data_count < 0)
+          {
+            PLAYER_WARN1("S3000: bad data count (%d)\n", data_count);
+            memmove(rx_buffer, &rx_buffer[size+4], rx_count - (size+4));
+            rx_count -= (size + 4);
+            continue;
+          }
           if (!recognisedScanner)
-        	  SetScannerParams(data_count); // Set up parameters based on number of results.
+            SetScannerParams(data_count); // Set up parameters based on number of results.
           data_packet.ranges_count = data_count;
           data_packet.ranges = new float [data_count];
           for (int ii = 0; ii < data_count; ++ii)

@@ -1,3 +1,6 @@
+PLAYERDRIVER_OPTION (bumper2laser build_bumper2laser ON)
+PLAYERDRIVER_ADD_DRIVER_SIMPLE (bumper2laser build_bumper2laser bumper2laser.cc)
+
 PLAYERDRIVER_OPTION (pbslaser build_pbslaser ON)
 PLAYERDRIVER_ADD_DRIVER_SIMPLE (pbslaser build_pbslaser pbs_driver.cc)
 

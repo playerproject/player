@@ -5,3 +5,7 @@ PLAYERDRIVER_REQUIRE_PKG (postgis build_postgis libpqxx
 PLAYERDRIVER_ADD_DRIVER (postgis build_postgis
     "${postgis_includeDir}" "${postgis_libDir}" "-lgeos ${postgis_linkFlags}" "${postgis_cFlags}"
     postgis.cc dbconn.cc)
+
+PLAYERDRIVER_OPTION (vec2map build_vec2map ON)
+PLAYERDRIVER_REQUIRE_HEADER (vec2map build_vec2map geos_c.h)
+PLAYERDRIVER_ADD_DRIVER (postgis build_postgis "" "" "-lgeos" "" vec2map.cc)
