@@ -560,6 +560,11 @@ static void python_on_blackboard_event(playerc_blackboard_t *device, player_blac
     return dict;
   }
 
+  void set_entry_raw(player_blackboard_entry_t *entry)
+  {
+    playerc_blackboard_set_entry(self,entry);
+  }
+
   PyObject *set_entry(PyObject *dict)
   {
 	PyObject *key;

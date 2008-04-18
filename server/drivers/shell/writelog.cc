@@ -1028,8 +1028,13 @@ WriteLog::WriteLaser(player_msghdr_t* hdr, void *data)
                   scanpose->scan.ranges_count);
 
           for (i = 0; i < scanpose->scan.ranges_count; i++)
-            fprintf(this->file, "%.3f %2d ",
-                    scanpose->scan.ranges[i], scanpose->scan.intensity[i]);
+          {
+            fprintf(this->file, "%.3f ", scanpose->scan.ranges[i]);
+            if(i < scanpose->scan.intensity_count)
+              fprintf(this->file, "%2d ", scanpose->scan.intensity[i]);
+            else
+              fprintf(this->file, "%2d ", 0);
+          }
           return(0);
 
         default:
