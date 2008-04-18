@@ -297,6 +297,8 @@ class Wavefront : public Driver
     bool always_insert_rotational_waypoints;
     // Should map be updated on every new goal?
     int force_map_refresh;
+    // Should we do velocity control, or position control?
+    bool velocity_control;
 
     // methods for internal use
     int SetupLocalize();
@@ -388,6 +390,7 @@ Wavefront::Wavefront( ConfigFile* cf, int section)
   this->always_insert_rotational_waypoints =
           cf->ReadInt(section, "add_rotational_waypoints", 1);
   this->force_map_refresh = cf->ReadInt(section, "force_map_refresh", 0);
+  this->velocity_control = cf->ReadInt(section, "velocity_control", 0);
 }
 
 
@@ -412,8 +415,9 @@ Wavefront::Setup()
   this->new_goal = false;
 
   this->waypoint_count = 0;
-  this->waypoints = NULL;
-  this->waypoints_allocated = 0;
+  this->waypoints_allocated = 8;
+  this->waypoints = (double (*)[2])malloc(this->waypoints_allocated * 
+                                          sizeof(this->waypoints[0]));
 
   if(SetupPosition() < 0)
     return(-1);
@@ -507,14 +511,10 @@ Wavefront::ProcessMapInfo(player_map_info_t* info)
   // Got new map info pushed to us.  We'll save this info and get the new
   // map.
   this->plan->scale = info->scale;
-  plan_compute_dist_kernel(this->plan);
   this->plan->size_x = info->width;
   this->plan->size_y = info->height;
   this->plan->origin_x = info->origin.px;
   this->plan->origin_y = info->origin.py;
-  // Set the bounds to search the whole grid.
-  plan_set_bounds(this->plan,
-                  0, 0, this->plan->size_x - 1, this->plan->size_y - 1);
 
   // Now get the map data, possibly in separate tiles.
   if(this->GetMap(true) < 0)
@@ -608,6 +608,7 @@ Wavefront::PutPositionCommand(double x, double y, double a, unsigned char type)
                          (void*)&vel_cmd,sizeof(vel_cmd),NULL);
   }
 
+  this->stopped = false;
 }
 
 void
@@ -659,8 +660,6 @@ Wavefront::SetWaypoint(double wx, double wy, double wa)
   this->waypoint_odom_x = wx_odom;
   this->waypoint_odom_y = wy_odom;
   this->waypoint_odom_a = wa_odom;
-
-  this->stopped = false;
 }
 
 
@@ -676,6 +675,7 @@ void Wavefront::Main()
   double replan_timediff, replan_dist;
   bool rotate_waypoint=false;
   bool replan;
+  int rotate_dir=0;
 
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED,NULL);
 
@@ -717,7 +717,7 @@ void Wavefront::Main()
             !this->atgoal;
 
     // Did we get a new goal, or is it time to replan?
-    if(this->new_goal || replan)
+    if(this->new_goal || replan || (this->velocity_control && !this->atgoal))
     {
 #if 0
       // Should we get a new map?
@@ -768,101 +768,78 @@ void Wavefront::Main()
 #endif
 
       // compute costs to the new goal.  Try local plan first
-      if(plan_do_local(this->plan, this->localize_x, this->localize_y, 5.0) < 0)
+      if(new_goal ||
+         (this->plan->path_count == 0) ||
+         (plan_do_local(this->plan, this->localize_x, 
+                         this->localize_y, 5.0) < 0))
       {
-        puts("Wavefront: local plan failed");
+        if(!new_goal && (this->plan->path_count != 0))
+           puts("Wavefront: local plan failed");
 
-        if(plan_do_global(this->plan, this->localize_x, this->localize_x, 
+        // Create a global plan
+        if(plan_do_global(this->plan, this->localize_x, this->localize_y, 
                           this->target_x, this->target_y) < 0)
           puts("Wavefront: global plan failed");
+        else
+          this->new_goal = false;
       }
-                       
-      // extract waypoints along the path to the goal from the current position
-      plan_update_waypoints(this->plan, this->localize_x, this->localize_y);
 
-#if 0
-      if(this->plan->waypoint_count == 0)
+      if(!this->velocity_control)
       {
-        // No path.  If we only searched a bounding box last time, grow the
-        // bounds to encompass the whole map and try again.
-        if((plan->min_x > 0) || (plan->max_x < (plan->size_x - 1)) ||
-           (plan->min_y > 0) || (plan->max_y < (plan->size_y - 1)))
+        // extract waypoints along the path to the goal from the current position
+        plan_update_waypoints(this->plan, this->localize_x, this->localize_y);
+
+        if(this->plan->waypoint_count == 0)
         {
-          // Unfortunately, this computation can take a while (e.g., 1-2
-          // seconds).  So we'll stop the robot while it thinks.
-          this->StopPosition();
-
-          // Set the bounds to search the whole grid.
-          plan_set_bounds(this->plan, 0, 0,
-                          this->plan->size_x - 1,
-                          this->plan->size_y - 1);
-
-          struct timeval t0, t1;
-          gettimeofday(&t0, NULL);
-          plan_update_cspace(this->plan,this->cspace_fname);
-          gettimeofday(&t1, NULL);
-          printf("time to update: %f\n",
-               (t1.tv_sec + t1.tv_usec/1e6) -
-               (t0.tv_sec + t0.tv_usec/1e6));
-
-          // compute costs to the new goal
-          plan_update_plan(this->plan, this->target_x, this->target_y);
-
-          // compute a path to the goal from the current position
-          plan_update_waypoints(this->plan,
-                                this->localize_x,
-                                this->localize_y);
+          fprintf(stderr, "Wavefront (port %d):\n  "
+                  "No path from (%.3lf,%.3lf,%.3lf) to (%.3lf,%.3lf,%.3lf)\n",
+                  this->device_addr.robot,
+                  this->localize_x,
+                  this->localize_y,
+                  RTOD(this->localize_a),
+                  this->target_x,
+                  this->target_y,
+                  RTOD(this->target_a));
+          // Only fail here if this is our first try at making a plan;
+          // if we're replanning and don't find a path then we'll just stick
+          // with the old plan.
+          if(this->curr_waypoint < 0)
+          {
+            //this->curr_waypoint = -1;
+            this->new_goal=false;
+            this->waypoint_count = 0;
+          }
         }
+        else
+        {
+          if (this->plan->waypoint_count > this->waypoints_allocated)
+          {
+            this->waypoints = (double (*)[2])realloc(this->waypoints, sizeof(this->waypoints[0])*this->plan->waypoint_count);
+            this->waypoints_allocated = this->plan->waypoint_count;
+          }
+          this->waypoint_count = this->plan->waypoint_count;
+        }
+
+        if(this->plan->waypoint_count > 0)
+        {
+          for(int i=0;i<this->plan->waypoint_count;i++)
+          {
+            double wx, wy;
+            plan_convert_waypoint(this->plan,
+                                  this->plan->waypoints[i],
+                                  &wx, &wy);
+            this->waypoints[i][0] = wx;
+            this->waypoints[i][1] = wy;
+          }
+
+          this->curr_waypoint = 0;
+          // Why is this here?
+          this->new_goal = true;
+        }
+        last_replan_time = t;
+        last_replan_lx = this->localize_x;
+        last_replan_ly = this->localize_y;
       }
-#endif
-
-      if(this->plan->waypoint_count == 0)
-      {
-        fprintf(stderr, "Wavefront (port %d):\n  "
-                "No path from (%.3lf,%.3lf,%.3lf) to (%.3lf,%.3lf,%.3lf)\n",
-                this->device_addr.robot,
-                this->localize_x,
-                this->localize_y,
-                RTOD(this->localize_a),
-                this->target_x,
-                this->target_y,
-                RTOD(this->target_a));
-        // Only fail here if this is our first try at making a plan;
-        // if we're replanning and don't find a path then we'll just stick
-        // with the old plan.
-        if(this->curr_waypoint < 0)
-        {
-          //this->curr_waypoint = -1;
-          this->new_goal=false;
-          this->waypoint_count = 0;
-        }
-      }
-      else
-        if (this->plan->waypoint_count > this->waypoints_allocated)
-        {
-          this->waypoints = (double (*)[2])realloc(this->waypoints, sizeof(this->waypoints[0])*this->plan->waypoint_count);
-          this->waypoints_allocated = this->plan->waypoint_count;
-        }
-        this->waypoint_count = this->plan->waypoint_count;
-
-      if(this->plan->waypoint_count > 0)
-      {
-        for(int i=0;i<this->plan->waypoint_count;i++)
-        {
-          double wx, wy;
-          plan_convert_waypoint(this->plan,
-                                this->plan->waypoints[i],
-                                &wx, &wy);
-          this->waypoints[i][0] = wx;
-          this->waypoints[i][1] = wy;
-        }
-
-        this->curr_waypoint = 0;
-        this->new_goal = true;
-      }
-      last_replan_time = t;
-      last_replan_lx = this->localize_x;
-      last_replan_ly = this->localize_y;
     }
 
     if(!this->enable)
@@ -872,94 +849,190 @@ void Wavefront::Main()
       continue;
     }
 
-    bool going_for_target = (this->curr_waypoint == this->plan->waypoint_count);
-    dist = sqrt(((this->localize_x - this->target_x) *
-                 (this->localize_x - this->target_x)) +
-                ((this->localize_y - this->target_y) *
-                 (this->localize_y - this->target_y)));
-    // Note that we compare the current heading and waypoint heading in the
-    // *odometric* frame.   We do this because comparing the current
-    // heading and waypoint heading in the localization frame is unreliable
-    // when making small adjustments to achieve a desired heading (i.e., the
-    // robot gets there and VFH stops, but here we don't realize we're done
-    // because the localization heading hasn't changed sufficiently).
-    angle = fabs(this->angle_diff(this->waypoint_odom_a,this->position_a));
-    if(going_for_target && dist < this->dist_eps && angle < this->ang_eps)
+
+    if(this->velocity_control)
     {
-      // we're at the final target, so stop
-      StopPosition();
-      this->curr_waypoint = -1;
-      this->new_goal = false;
-      this->atgoal = true;
+      if(this->plan->path_count && !this->atgoal)
+      {
+        // Check doneness
+        dist = sqrt(((this->localize_x - this->target_x) *
+                     (this->localize_x - this->target_x)) +
+                    ((this->localize_y - this->target_y) *
+                     (this->localize_y - this->target_y)));
+        angle = fabs(this->angle_diff(this->target_a,this->localize_a));
+        if((dist < this->dist_eps) && (angle < this->ang_eps))
+        {
+          this->StopPosition();
+          this->new_goal = false;
+          this->curr_waypoint = -1;
+          this->atgoal = true;
+        }
+        else
+        {
+          // Compute velocities
+          double wx, wy;
+          double maxd=2.0;
+          double distweight=10.0;
+
+          if(plan_get_carrot(this->plan, &wx, &wy,
+                             this->localize_x, this->localize_y,
+                             maxd, distweight) < 0)
+          {
+            puts("Failed to find a carrot");
+            this->StopPosition();
+          }
+          else
+          {
+            // Establish fake waypoints, for client-side visualization
+            this->curr_waypoint = 0;
+            this->waypoint_count = 2;
+            this->waypoints[0][0] = this->localize_x;
+            this->waypoints[0][1] = this->localize_y;
+            this->waypoint_x = this->waypoints[1][0] = wx;
+            this->waypoint_y = this->waypoints[1][1] = wy;
+            this->waypoint_a = 0.0;
+
+            // TODO: expose these control params in the .cfg file
+            double tvmin = 0.1;
+            double tvmax = 0.5;
+            double avmin = DTOR(10.0);
+            double avmax = DTOR(45.0);
+            double amin = DTOR(5.0);
+            double amax = DTOR(20.0);
+
+            double d = sqrt((this->localize_x-wx)*(this->localize_x-wx) +
+                            (this->localize_y-wy)*(this->localize_y-wy));
+            double b = atan2(wy - this->localize_y, wx - this->localize_x);
+
+            double av,tv;
+            double a = amin + (d / maxd) * (amax-amin);
+            double ad = angle_diff(b, this->localize_a);
+
+            // Are we on top of the goal?
+            if(d < this->dist_eps)
+            {
+              if(!rotate_dir)
+              {
+                if(ad < 0)
+                  rotate_dir = -1;
+                else
+                  rotate_dir = 1;
+              }
+
+              tv = 0.0;
+              av = rotate_dir * (avmin + (fabs(ad)/M_PI) * (avmax-avmin));
+            }
+            else
+            {
+              rotate_dir = 0;
+
+              if(fabs(ad) > a)
+                tv = 0.0;
+              else
+                tv = tvmin + (d / (M_SQRT2 * maxd)) * (tvmax-tvmin);
+
+              av = avmin + (fabs(ad)/M_PI) * (avmax-avmin);
+              if(ad < 0)
+                av = -av;
+            }
+
+            this->PutPositionCommand(tv,0.0,av,0);
+          }
+        }
+      }
+      else
+        this->StopPosition();
     }
-    else if(this->curr_waypoint < 0)
+    else // !velocity_control
     {
-      // no more waypoints, so stop
-      StopPosition();
-    }
-    else
-    {
-      // are we there yet?  ignore angle, cause this is just a waypoint
-      dist = sqrt(((this->localize_x - this->waypoint_x) *
-                   (this->localize_x - this->waypoint_x)) +
-                  ((this->localize_y - this->waypoint_y) *
-                   (this->localize_y - this->waypoint_y)));
+      bool going_for_target = (this->curr_waypoint == this->plan->waypoint_count);
+      dist = sqrt(((this->localize_x - this->target_x) *
+                   (this->localize_x - this->target_x)) +
+                  ((this->localize_y - this->target_y) *
+                   (this->localize_y - this->target_y)));
       // Note that we compare the current heading and waypoint heading in the
       // *odometric* frame.   We do this because comparing the current
       // heading and waypoint heading in the localization frame is unreliable
       // when making small adjustments to achieve a desired heading (i.e., the
       // robot gets there and VFH stops, but here we don't realize we're done
       // because the localization heading hasn't changed sufficiently).
-      if(this->new_goal ||
-         (rotate_waypoint &&
-          (fabs(this->angle_diff(this->waypoint_odom_a,this->position_a))
-           < M_PI/4.0)) ||
-         (!rotate_waypoint && (dist < this->dist_eps)))
+      angle = fabs(this->angle_diff(this->waypoint_odom_a,this->position_a));
+      if(going_for_target && dist < this->dist_eps && angle < this->ang_eps)
       {
-        if(this->curr_waypoint == this->waypoint_count)
+        // we're at the final target, so stop
+        StopPosition();
+        this->curr_waypoint = -1;
+        this->new_goal = false;
+        this->atgoal = true;
+      }
+      else if(this->curr_waypoint < 0)
+      {
+        // no more waypoints, so stop
+        StopPosition();
+      }
+      else
+      {
+        // are we there yet?  ignore angle, cause this is just a waypoint
+        dist = sqrt(((this->localize_x - this->waypoint_x) *
+                     (this->localize_x - this->waypoint_x)) +
+                    ((this->localize_y - this->waypoint_y) *
+                     (this->localize_y - this->waypoint_y)));
+        // Note that we compare the current heading and waypoint heading in the
+        // *odometric* frame.   We do this because comparing the current
+        // heading and waypoint heading in the localization frame is unreliable
+        // when making small adjustments to achieve a desired heading (i.e., the
+        // robot gets there and VFH stops, but here we don't realize we're done
+        // because the localization heading hasn't changed sufficiently).
+        if(this->new_goal ||
+           (rotate_waypoint &&
+            (fabs(this->angle_diff(this->waypoint_odom_a,this->position_a))
+             < M_PI/4.0)) ||
+           (!rotate_waypoint && (dist < this->dist_eps)))
         {
-          // no more waypoints, so wait for target achievement
-
-          //puts("waiting for goal achievement");
-          usleep(CYCLE_TIME_US);
-          continue;
-        }
-        // get next waypoint
-        this->waypoint_x = this->waypoints[this->curr_waypoint][0];
-        this->waypoint_y = this->waypoints[this->curr_waypoint][1];
-        this->curr_waypoint++;
-
-        this->waypoint_a = this->target_a;
-        if(this->always_insert_rotational_waypoints ||
-           (this->curr_waypoint == 2))
-        {
-          dist = sqrt((this->waypoint_x - this->localize_x) *
-                      (this->waypoint_x - this->localize_x) +
-                      (this->waypoint_y - this->localize_y) *
-                      (this->waypoint_y - this->localize_y));
-          angle = atan2(this->waypoint_y - this->localize_y,
-                        this->waypoint_x - this->localize_x);
-          if((dist > this->dist_eps) &&
-             fabs(this->angle_diff(angle,this->localize_a)) > M_PI/4.0)
+          if(this->curr_waypoint == this->waypoint_count)
           {
-            this->waypoint_x = this->localize_x;
-            this->waypoint_y = this->localize_y;
-            this->waypoint_a = angle;
-            this->curr_waypoint--;
-            rotate_waypoint=true;
+            // no more waypoints, so wait for target achievement
+
+            //puts("waiting for goal achievement");
+            usleep(CYCLE_TIME_US);
+            continue;
+          }
+          // get next waypoint
+          this->waypoint_x = this->waypoints[this->curr_waypoint][0];
+          this->waypoint_y = this->waypoints[this->curr_waypoint][1];
+          this->curr_waypoint++;
+
+          this->waypoint_a = this->target_a;
+          if(this->always_insert_rotational_waypoints ||
+             (this->curr_waypoint == 2))
+          {
+            dist = sqrt((this->waypoint_x - this->localize_x) *
+                        (this->waypoint_x - this->localize_x) +
+                        (this->waypoint_y - this->localize_y) *
+                        (this->waypoint_y - this->localize_y));
+            angle = atan2(this->waypoint_y - this->localize_y,
+                          this->waypoint_x - this->localize_x);
+            if((dist > this->dist_eps) &&
+               fabs(this->angle_diff(angle,this->localize_a)) > M_PI/4.0)
+            {
+              this->waypoint_x = this->localize_x;
+              this->waypoint_y = this->localize_y;
+              this->waypoint_a = angle;
+              this->curr_waypoint--;
+              rotate_waypoint=true;
+            }
+            else
+              rotate_waypoint=false;
           }
           else
             rotate_waypoint=false;
+
+          this->new_goal = false;
         }
-        else
-          rotate_waypoint=false;
 
-        this->new_goal = false;
+        SetWaypoint(this->waypoint_x, this->waypoint_y, this->waypoint_a);
       }
-
-      SetWaypoint(this->waypoint_x, this->waypoint_y, this->waypoint_a);
     }
-
 
     usleep(CYCLE_TIME_US);
   }
@@ -1118,6 +1191,10 @@ Wavefront::GetMap(bool threaded)
       oj += sj;
     }
   }
+
+  plan_init(this->plan);
+  plan_compute_cspace(this->plan);
+
   return(0);
 }
 
@@ -1132,7 +1209,6 @@ Wavefront::GetMapInfo(bool threaded)
   {
     PLAYER_WARN("failed to get map info");
     this->plan->scale = 0.1;
-    plan_compute_dist_kernel(this->plan);
     this->plan->size_x = 0;
     this->plan->size_y = 0;
     this->plan->origin_x = 0.0;
@@ -1144,14 +1220,10 @@ Wavefront::GetMapInfo(bool threaded)
 
   // copy in the map info
   this->plan->scale = info->scale;
-  plan_compute_dist_kernel(this->plan);
   this->plan->size_x = info->width;
   this->plan->size_y = info->height;
   this->plan->origin_x = info->origin.px;
   this->plan->origin_y = info->origin.py;
-  // Set the bounds to search the whole grid.
-  plan_set_bounds(this->plan,
-                  0, 0, this->plan->size_x - 1, this->plan->size_y - 1);
 
   delete msg;
   return(0);
@@ -1189,9 +1261,6 @@ Wavefront::SetupMap()
   // Now get the map data, possibly in separate tiles.
   if(this->GetMap(false) < 0)
     return(-1);
-
-  //plan_update_cspace(this->plan,this->cspace_fname);
-  plan_compute_cspace(this->plan);
 
   this->have_map = true;
   this->new_map = true;
@@ -1270,9 +1339,6 @@ Wavefront::ProcessMessage(QueuePointer & resp_queue,
       if(this->GetMapInfo(true) < 0) return -1;
       // Now get the map data, possibly in separate tiles.
       if(this->GetMap(true) < 0) return -1;
-
-      //plan_update_cspace(this->plan,this->cspace_fname);
-      plan_compute_cspace(this->plan);
 
       this->have_map = true;
       this->new_map = true;

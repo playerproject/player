@@ -225,7 +225,7 @@ int PassThrough::ProcessMessage(QueuePointer & resp_queue,
          (hdr->type == PLAYER_MSGTYPE_SYNCH) ||
          (hdr->type == PLAYER_MSGTYPE_RESP_NACK)))
     {
-        PLAYER_MSG7(3,"PassThrough: Forwarding SRC->DST Interface code=%d  %d:%d:%d -> %d:%d:%d",hdr->addr.interf, hdr->addr.host,hdr->addr.robot, hdr->addr.index, dstAddr.host, dstAddr.robot, dstAddr.index);
+        PLAYER_MSG7(8,"PassThrough: Forwarding SRC->DST Interface code=%d  %d:%d:%d -> %d:%d:%d",hdr->addr.interf, hdr->addr.host,hdr->addr.robot, hdr->addr.index, dstAddr.host, dstAddr.robot, dstAddr.index);
 
         hdr->addr=dstAddr; //will send to my clients, making it seem like it comes from my DST interface
 
@@ -236,7 +236,7 @@ int PassThrough::ProcessMessage(QueuePointer & resp_queue,
     if (Device::MatchDeviceAddress(hdr->addr,dstAddr) &&
         (hdr->type == PLAYER_MSGTYPE_CMD))
     {
-        PLAYER_MSG7(3,"PassThrough: Forwarding DST->SRC Interface code=%d  %d:%d:%d -> %d:%d:%d",hdr->addr.interf, hdr->addr.host,hdr->addr.robot, hdr->addr.index, srcAddr.host, srcAddr.robot, srcAddr.index);
+        PLAYER_MSG7(8,"PassThrough: Forwarding DST->SRC Interface code=%d  %d:%d:%d -> %d:%d:%d",hdr->addr.interf, hdr->addr.host,hdr->addr.robot, hdr->addr.index, srcAddr.host, srcAddr.robot, srcAddr.index);
 
 
         hdr->addr=srcAddr;  //send to the device to which I subscribed, making it seem like it comes from my original interface
