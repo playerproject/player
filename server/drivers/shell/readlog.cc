@@ -694,6 +694,11 @@ void ReadLog::Main()
         // File is done, so just loop forever, unless we're on auto-rewind,
         // or until a client requests rewind.
         reading_configs = false;
+
+        // deactivate driver so clients subscribing to the log interface will notice
+        if(!this->autorewind && !this->rewind_requested)
+          this->enable=false;
+
         while(!this->autorewind && !this->rewind_requested)
         {
           usleep(100000);

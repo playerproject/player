@@ -459,16 +459,15 @@ int SickNAV200::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr,
 		} else
 			extent.x0 = extent.y0 = extent.x1 = extent.y1 = 0;
 
-		player_vectormap_layer_info_t* layerInfo =
-				new player_vectormap_layer_info_t;
-		layerInfo->name = strdup(layerName);
-		layerInfo->name_count = strlen(layerInfo->name)+1;
-		layerInfo->extent = extent;
+		player_vectormap_layer_info_t layerInfo;
+		layerInfo.name = layerName;
+		layerInfo.name_count = strlen(layerInfo.name)+1;
+		layerInfo.extent = extent;
 
-		static player_vectormap_info_t response;
+		player_vectormap_info_t response;
 		response.srid = 0;
 		response.layers_count = 1;
-		response.layers = layerInfo;
+		response.layers = &layerInfo;
 		response.extent = extent;
 
 		this->Publish(this->vectormap_addr, resp_queue,
@@ -480,26 +479,22 @@ int SickNAV200::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr,
 	else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
 			PLAYER_VECTORMAP_REQ_GET_LAYER_DATA, this->vectormap_addr)) {
 		char* featureName = "point";
-		player_vectormap_feature_data* feature =
-				new player_vectormap_feature_data;
-		memset(feature, 0, sizeof(feature));
-		feature->name = strdup(featureName);
-		feature->name_count = strlen(feature->name)+1;
-		feature->wkb = new uint8_t[wkbSize];
-		feature->wkb_count = wkbSize;
-		for (uint32_t i=0; i < wkbSize; ++i)
-			feature->wkb[i] = wkbData[i];
+		player_vectormap_feature_data feature;
+		memset(&feature, 0, sizeof(feature));
+		feature.name = featureName;
+		feature.name_count = strlen(feature.name)+1;
+		feature.wkb = wkbData;
+		feature.wkb_count = wkbSize;
 
-		static player_vectormap_layer_data_t response;
-		response.name = strdup(layerName);
+		player_vectormap_layer_data_t response;
+		response.name = layerName;
 		response.name_count = strlen(response.name)+1;
 		response.features_count = numReflectors > 0; // If we have no data, don't publish a feature.
-		response.features = numReflectors > 0 ? feature : NULL;
+		response.features = numReflectors > 0 ? &feature : NULL;
 
 		this->Publish(this->vectormap_addr, resp_queue,
 				PLAYER_MSGTYPE_RESP_ACK, PLAYER_VECTORMAP_REQ_GET_LAYER_DATA,
 				(void*)&response);
-
 		return (0);
 	}
 	// Write layer data

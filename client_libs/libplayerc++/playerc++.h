@@ -1318,11 +1318,18 @@ class LogProxy : public ClientProxy
     ~LogProxy();
 
     /// What kind of log device is this? Either PLAYER_LOG_TYPE_READ or
-    /// PLAYER_LOG_TYPE_WRITE. Call GetState() to fill it.
+    /// PLAYER_LOG_TYPE_WRITE. Call QueryState() to fill it.
     int GetType() const { return GetVar(mDevice->type); };
 
-    /// Is logging/playback enabled? Call GetState() to fill it.
+    /// Is logging/playback enabled? Call QueryState() to fill it.
     int GetState() const { return GetVar(mDevice->state); };
+
+    /// Query the server for type and state info.
+    void QueryState();
+
+    /// Start/stop (1/0) reading from or writing to the log file.
+    /// If the type of interface (reader/writer) is unknown, a query package is sent first.
+    void SetState(int aState);
 
     /// Start/stop (1/0) writing to the log file.
     void SetWriteState(int aState);

@@ -86,6 +86,9 @@ converting joystick positions to velocity commands.
   - The maximum absolute X and Y translational and rotational velocities to be
     used when commanding a position device. (Y is only revelant for
     holonomous robot)
+- scale_pos (float tuple)
+  - Default: [1.0 1.0 1.0]
+  - Position2d readings scale
 - timeout (float)
   - Default: 5.0
   - Time (in seconds) since receiving a new joystick event after which
@@ -115,14 +118,15 @@ driver
 )
 @endverbatim
 
-Provide a position interface, instead of a joystick interface.
+Provide a position2d interface, instead of a joystick interface.
 
 @verbatim
 driver
 (
   name "linuxjoystick"
-  provides ["position:0"]
+  provides ["position2d:0"]
   port "/dev/js0"
+  scale_pos [ 0.0001 0.0001 0.0001 ]
 )
 @endverbatim
 
@@ -274,6 +278,7 @@ class LinuxJoystick : public Driver
   private: uint16_t buttons;
   private: int axes_max[3];
   private: int axes_min[3];
+  private: double scale_pos[3];
   private: double timeout;
   private: struct timeval lastread;
 
@@ -358,6 +363,9 @@ LinuxJoystick::LinuxJoystick(ConfigFile* cf, int section) : Driver(cf, section)
   this->axes_min[0] = cf->ReadTupleInt(section, "axes_minima", 0, XAXIS_MIN);
   this->axes_min[1] = cf->ReadTupleInt(section, "axes_minima", 1, YAXIS_MIN);
   this->axes_min[2] = cf->ReadTupleInt(section, "axes_minima", 2, YAWAXIS_MIN);
+  this->scale_pos[0] = cf->ReadTupleFloat(section, "scale_pos", 0, 1.0);
+  this->scale_pos[1] = cf->ReadTupleFloat(section, "scale_pos", 1, 1.0);
+  this->scale_pos[2] = cf->ReadTupleFloat(section, "scale_pos", 2, 1.0);
 
   // Do we talk to a position device?
   if(cf->GetTupleCount(section, "requires"))
@@ -466,6 +474,9 @@ void LinuxJoystick::Main()
     // test if we are supposed to cancel
     pthread_testcancel();
 
+    // Process incoming messages
+    this->ProcessMessages();
+
     // Run and process output
     this->ReadJoy();
 
@@ -492,7 +503,6 @@ void LinuxJoystick::Main()
       }
     }
   }
-  return;
 }
 
 
@@ -588,9 +598,9 @@ void LinuxJoystick::RefreshData()
   if(this->position_addr.interf)
   {
     memset(&(this->pos_data),0,sizeof(player_position2d_data_t));
-    this->pos_data.pos.px = this->pos[0];
-    this->pos_data.pos.py = this->pos[1];
-    this->pos_data.pos.pa = this->pos[2];
+    this->pos_data.pos.px = this->pos[0] * this->scale_pos[0];
+    this->pos_data.pos.py = this->pos[1] * this->scale_pos[1];
+    this->pos_data.pos.pa = this->pos[2] * this->scale_pos[2];
     this->Publish(this->position_addr,
                   PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE,
                   (void*)&this->pos_data, sizeof(this->pos_data), NULL);

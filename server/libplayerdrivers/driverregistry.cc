@@ -143,6 +143,11 @@ void SickLMS400_Register(DriverTable* table);
 void SickNAV200_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_SICKPLS
+// PLS driver was integrated into LMS200
+void SickLMS200_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_RS4LEUZE
 void RS4LeuzeLaserDriver_Register(DriverTable* table);
 #endif
@@ -187,10 +192,6 @@ void Create_Register(DriverTable* table);
 
 #ifdef INCLUDE_GARCIA
 void GarciaDriver_Register(DriverTable* table);
-#endif
-
-#ifdef INCLUDE_SICKPLS
-void SickPLS_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_URGLASER
@@ -610,7 +611,9 @@ player_register_drivers()
 #endif
 
 #ifdef INCLUDE_SICKPLS
-  SickPLS_Register(driverTable);
+#ifndef INCLUDE_SICKLMS200
+  SickLMS200_Register(driverTable);
+#endif
 #endif
 
 #ifdef INCLUDE_PHIDGETRFID

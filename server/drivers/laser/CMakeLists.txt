@@ -12,10 +12,6 @@ PLAYERDRIVER_OPTION (sicks3000 build_sicks3000 ON)
 PLAYERDRIVER_REQUIRE_HEADER (sicks3000 build_sicks3000 linux/serial.h)
 PLAYERDRIVER_ADD_DRIVER_SIMPLE (sicks3000 build_sicks3000 sicks3000.cc)
 
-PLAYERDRIVER_OPTION (sickpls build_sickpls ON)
-PLAYERDRIVER_REQUIRE_HEADER (sickpls build_sickpls linux/serial.h)
-PLAYERDRIVER_ADD_DRIVER_SIMPLE (sickpls build_sickpls sickpls.cc)
-
 PLAYERDRIVER_OPTION (laserposeinterpolator build_laserposeinterpolator ON)
 PLAYERDRIVER_ADD_DRIVER_SIMPLE (laserposeinterpolator build_laserposeinterpolator laserposeinterpolator.cc)
 
