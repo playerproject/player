@@ -187,13 +187,14 @@ MapScale::Transform()
   scale_factor = this->source_map.scale / this->new_map.scale;
   this->new_map.width = static_cast<unsigned int> (rint(this->source_map.width * scale_factor));
   this->new_map.height = static_cast<unsigned int> (rint(this->source_map.height * scale_factor));
+  this->new_map.origin = this->source_map.origin;
 
   PLAYER_MSG3(4,"MapScale: New map is %dx%d scale %f",new_map.width,new_map.height,new_map.scale);
 
   new_pixbuf = gdk_pixbuf_scale_simple(pixbuf,
-                                                 this->new_map.width,
-                                                 this->new_map.height,
-                                                 GDK_INTERP_HYPER);
+                                       this->new_map.width,
+                                       this->new_map.height,
+                                       GDK_INTERP_HYPER);
   g_assert(new_pixbuf);
 
   new_map_pixels = gdk_pixbuf_get_pixels(new_pixbuf);

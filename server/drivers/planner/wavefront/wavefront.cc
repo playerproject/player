@@ -229,14 +229,13 @@ extern "C" { void draw_cspace(plan_t* plan, const char* fname); }
 
 // TODO: monitor localize timestamps, and slow or stop robot accordingly
 
-// time to sleep between loops (us)
-#define CYCLE_TIME_US 100000
-
 class Wavefront : public Driver
 {
   private:
     // Main function for device thread.
     virtual void Main();
+
+    void Sleep(double loopstart);
 
     // bookkeeping
     player_devaddr_t position_id;
@@ -251,7 +250,8 @@ class Wavefront : public Driver
     double dist_penalty;
     double dist_eps;
     double ang_eps;
-    const char* cspace_fname;
+    double cycletime;
+    double tvmin, tvmax, avmin, avmax, amin, amax;
 
     // the plan object
     plan_t* plan;
@@ -422,11 +422,22 @@ Wavefront::Wavefront( ConfigFile* cf, int section)
   this->replan_dist_thresh = cf->ReadLength(section,"replan_dist_thresh",2.0);
   this->replan_min_time = cf->ReadFloat(section,"replan_min_time",2.0);
   this->request_map = cf->ReadInt(section,"request_map",1);
-  this->cspace_fname = cf->ReadFilename(section,"cspace_file","player.cspace");
   this->always_insert_rotational_waypoints =
           cf->ReadInt(section, "add_rotational_waypoints", 1);
   this->force_map_refresh = cf->ReadInt(section, "force_map_refresh", 0);
+  this->cycletime = 1.0 / cf->ReadFloat(section, "update_rate", 10.0);
+
   this->velocity_control = cf->ReadInt(section, "velocity_control", 0);
+  if(this->velocity_control)
+  {
+    this->tvmin = cf->ReadTupleLength(section, "control_tv", 0, 0.1);
+    this->tvmax = cf->ReadTupleLength(section, "control_tv", 1, 0.5);
+    this->avmin = cf->ReadTupleAngle(section, "control_av", 0, DTOR(10.0));
+    this->avmax = cf->ReadTupleAngle(section, "control_av", 1, DTOR(90.0));
+    this->amin = cf->ReadTupleAngle(section, "control_a", 0, DTOR(5.0));
+    this->amax = cf->ReadTupleAngle(section, "control_a", 1, DTOR(20.0));
+  }
+
   if(this->laser_id.interf)
   {
     this->scans_size = cf->ReadInt(section, "laser_buffer_size", 10);
@@ -438,7 +449,11 @@ Wavefront::Wavefront( ConfigFile* cf, int section)
     this->scan_maxrange = cf->ReadLength(section, "laser_maxrange", 6.0);
   }
   else
+  {
     this->scans_size = 0;
+    if(this->velocity_control)
+      PLAYER_WARN("Wavefront doing direct velocity control, but without a laser for obstacle detection; this is not safe!");
+  }
 }
 
 
@@ -588,7 +603,7 @@ Wavefront::ProcessLaserScan(player_laser_data_scanpose_t* data)
   this->scans_count = MIN(this->scans_count,this->scans_size);
   this->scans_idx = (this->scans_idx + 1) % this->scans_size;
 
-  printf("%d scans\n", this->scans_count);
+  //printf("%d scans\n", this->scans_count);
 
   // run through the scans to see how much room we need to store all the
   // hitpoints
@@ -639,21 +654,14 @@ Wavefront::ProcessLaserScan(player_laser_data_scanpose_t* data)
     }
   }
 
-  printf("setting %d hit points\n", this->scan_points_count);
+  //printf("setting %d hit points\n", this->scan_points_count);
   plan_set_obstacles(plan, this->scan_points, this->scan_points_count);
 
   t1 = get_time();
-  printf("ProcessLaserScan: %.6lf\n", t1-t0);
+  //printf("ProcessLaserScan: %.6lf\n", t1-t0);
 
-#if 0
   if(this->graphics2d_id.interf)
   {
-    // Clear the canvas
-    this->graphics2d->PutMsg(this->InQueue,
-                             PLAYER_MSGTYPE_CMD,
-                             PLAYER_GRAPHICS2D_CMD_CLEAR,
-                             NULL,0,NULL);
-    
     // Draw the points
     player_graphics2d_cmd_points pts;
     assert(pts.points = (player_point_2d_t*)malloc(sizeof(player_point_2d_t)*
@@ -675,7 +683,6 @@ Wavefront::ProcessLaserScan(player_laser_data_scanpose_t* data)
                              (void*)&pts,0,NULL);
     free(pts.points);
   }
-#endif
 }
 
 void
@@ -851,6 +858,19 @@ Wavefront::SetWaypoint(double wx, double wy, double wa)
   this->waypoint_odom_a = wa_odom;
 }
 
+void
+Wavefront::Sleep(double loopstart)
+{
+  double currt,tdiff;
+  //GlobalTime->GetTimeDouble(&currt);
+  currt = get_time();
+  //printf("cycle: %.6lf\n", currt-loopstart);
+  tdiff = MAX(0.0, this->cycletime - (currt-loopstart));
+  if(tdiff == 0.0)
+    PLAYER_WARN("Wavefront missed deadline and not sleeping; check machine load");
+  usleep((unsigned int)rint(tdiff));
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
@@ -875,17 +895,19 @@ void Wavefront::Main()
 
   for(;;)
   {
+    //GlobalTime->GetTimeDouble(&t);
+    t = get_time();
+
     pthread_testcancel();
 
     ProcessMessages();
 
     if(!this->have_map && !this->new_map_available)
     {
-      usleep(CYCLE_TIME_US);
+      this->Sleep(t);
       continue;
     }
 
-    GlobalTime->GetTimeDouble(&t);
 
     if((t - last_publish_time) > 0.25)
     {
@@ -896,7 +918,7 @@ void Wavefront::Main()
     if(!this->enable)
     {
       this->StopPosition();
-      usleep(CYCLE_TIME_US);
+      this->Sleep(t);
       continue;
     }
 
@@ -962,6 +984,14 @@ void Wavefront::Main()
         this->new_map = false;
       }
 #endif
+      if(this->graphics2d_id.interf)
+      {
+        this->graphics2d->PutMsg(this->InQueue,
+                                 PLAYER_MSGTYPE_CMD,
+                                 PLAYER_GRAPHICS2D_CMD_CLEAR,
+                                 NULL,0,NULL);
+      }
+
       double t0,t1;
 
       t0 = get_time();
@@ -985,11 +1015,6 @@ void Wavefront::Main()
 
       if(this->graphics2d_id.interf && this->plan->lpath_count)
       {
-        this->graphics2d->PutMsg(this->InQueue,
-                                 PLAYER_MSGTYPE_CMD,
-                                 PLAYER_GRAPHICS2D_CMD_CLEAR,
-                                 NULL,0,NULL);
-
         player_graphics2d_cmd_polyline_t line;
         line.points_count = this->plan->lpath_count;
         line.points = (player_point_2d_t*)malloc(sizeof(player_point_2d_t)*line.points_count);
@@ -1009,8 +1034,29 @@ void Wavefront::Main()
         free(line.points);
       }
 
+      if(this->graphics2d_id.interf && this->plan->path_count)
+      {
+        player_graphics2d_cmd_polyline_t line;
+        line.points_count = this->plan->path_count;
+        line.points = (player_point_2d_t*)malloc(sizeof(player_point_2d_t)*line.points_count);
+        line.color.alpha = 0;
+        line.color.red = 255;
+        line.color.green = 0;
+        line.color.blue = 0;
+        for(int i=0;i<this->plan->path_count;i++)
+        {
+          line.points[i].px = PLAN_WXGX(this->plan,this->plan->path[i]->ci);
+          line.points[i].py = PLAN_WYGY(this->plan,this->plan->path[i]->cj);
+        }
+        this->graphics2d->PutMsg(this->InQueue,
+                                 PLAYER_MSGTYPE_CMD,
+                                 PLAYER_GRAPHICS2D_CMD_POLYLINE,
+                                 (void*)&line,0,NULL);
+        free(line.points);
+      }
+
       t1 = get_time();
-      printf("planning: %.6lf\n", t1-t0);
+      //printf("planning: %.6lf\n", t1-t0);
 
       if(!this->velocity_control)
       {
@@ -1097,19 +1143,40 @@ void Wavefront::Main()
           double maxd=2.0;
           double distweight=10.0;
 
-          printf("pose: (%.3lf,%.3lf,%.3lf)\n",
-                 this->localize_x, this->localize_y, RTOD(this->localize_a));
+          //printf("pose: (%.3lf,%.3lf,%.3lf)\n",
+                 //this->localize_x, this->localize_y, RTOD(this->localize_a));
           if(plan_get_carrot(this->plan, &wx, &wy,
                              this->localize_x, this->localize_y,
                              maxd, distweight) < 0)
           {
             puts("Failed to find a carrot");
-            draw_cspace(this->plan, "debug.png");
+            //draw_cspace(this->plan, "debug.png");
             this->StopPosition();
-            exit(-1);
+            //exit(-1);
           }
           else
           {
+            if(this->graphics2d_id.interf)
+            {
+              player_graphics2d_cmd_polyline_t line;
+              line.points_count = 2;
+              line.points = (player_point_2d_t*)malloc(sizeof(player_point_2d_t)*line.points_count);
+              line.color.alpha = 0;
+              line.color.red = 0;
+              line.color.green = 0;
+              line.color.blue = 255;
+
+              line.points[0].px = this->localize_x;
+              line.points[0].py = this->localize_y;
+              line.points[1].px = wx;
+              line.points[1].py = wy;
+              this->graphics2d->PutMsg(this->InQueue,
+                                       PLAYER_MSGTYPE_CMD,
+                                       PLAYER_GRAPHICS2D_CMD_POLYLINE,
+                                       (void*)&line,0,NULL);
+              free(line.points);
+            }
+
             // Establish fake waypoints, for client-side visualization
             this->curr_waypoint = 0;
             this->waypoint_count = 2;
@@ -1119,24 +1186,20 @@ void Wavefront::Main()
             this->waypoint_y = this->waypoints[1][1] = wy;
             this->waypoint_a = 0.0;
 
-            // TODO: expose these control params in the .cfg file
-            double tvmin = 0.1;
-            double tvmax = 0.5;
-            double avmin = DTOR(10.0);
-            double avmax = DTOR(45.0);
-            double amin = DTOR(5.0);
-            double amax = DTOR(20.0);
-
+            double goald = sqrt((this->localize_x-this->target_x)*
+                                (this->localize_x-this->target_x) +
+                                (this->localize_y-this->target_y)*
+                                (this->localize_y-this->target_y));
             double d = sqrt((this->localize_x-wx)*(this->localize_x-wx) +
                             (this->localize_y-wy)*(this->localize_y-wy));
             double b = atan2(wy - this->localize_y, wx - this->localize_x);
 
             double av,tv;
-            double a = amin + (d / maxd) * (amax-amin);
+            double a = this->amin + (d / maxd) * (this->amax-this->amin);
             double ad = angle_diff(b, this->localize_a);
 
             // Are we on top of the goal?
-            if(d < this->dist_eps)
+            if(goald < this->dist_eps)
             {
               if(!rotate_dir)
               {
@@ -1147,7 +1210,8 @@ void Wavefront::Main()
               }
 
               tv = 0.0;
-              av = rotate_dir * (avmin + (fabs(ad)/M_PI) * (avmax-avmin));
+              av = rotate_dir * (this->avmin + (fabs(ad)/M_PI) * 
+                                 (this->avmax-this->avmin));
             }
             else
             {
@@ -1156,9 +1220,12 @@ void Wavefront::Main()
               if(fabs(ad) > a)
                 tv = 0.0;
               else
-                tv = tvmin + (d / (M_SQRT2 * maxd)) * (tvmax-tvmin);
+              {
+                //tv = tvmin + (d / (M_SQRT2 * maxd)) * (tvmax-tvmin);
+                tv = this->tvmin + (d / maxd) * (this->tvmax-this->tvmin);
+              }
 
-              av = avmin + (fabs(ad)/M_PI) * (avmax-avmin);
+              av = this->avmin + (fabs(ad)/M_PI) * (this->avmax-this->avmin);
               if(ad < 0)
                 av = -av;
             }
@@ -1171,7 +1238,7 @@ void Wavefront::Main()
         this->StopPosition();
 
       t1 = get_time();
-      printf("control: %.6lf\n", t1-t0);
+      //printf("control: %.6lf\n", t1-t0);
     }
     else // !velocity_control
     {
@@ -1224,7 +1291,7 @@ void Wavefront::Main()
             // no more waypoints, so wait for target achievement
 
             //puts("waiting for goal achievement");
-            usleep(CYCLE_TIME_US);
+            this->Sleep(t);
             continue;
           }
           // get next waypoint
@@ -1264,7 +1331,7 @@ void Wavefront::Main()
       }
     }
 
-    usleep(CYCLE_TIME_US);
+    this->Sleep(t);
   }
 }
 

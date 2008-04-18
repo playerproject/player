@@ -41,8 +41,8 @@ plan_get_carrot(plan_t* plan, double* px, double* py,
     // Check whether the straight-line path is clear
     if((cost = _plan_check_path(plan, cell, ncell)) < 0.0)
     {
-      printf("no path from (%d,%d) to (%d,%d)\n",
-             cell->ci, cell->cj, ncell->ci, ncell->cj);
+      //printf("no path from (%d,%d) to (%d,%d)\n",
+             //cell->ci, cell->cj, ncell->ci, ncell->cj);
       continue;
     }
 
@@ -119,18 +119,18 @@ _plan_check_path(plan_t* plan, plan_cell_t* s, plan_cell_t* g)
   {
     if(plan->cells[PLAN_INDEX(plan,y,x)].occ_dist_dyn < plan->abs_min_radius)
       return -1;
-    else
+    else if(plan->cells[PLAN_INDEX(plan,y,x)].occ_dist_dyn < plan->max_radius)
       obscost += plan->dist_penalty * 
-              (plan->abs_min_radius - 
+              (plan->max_radius - 
                plan->cells[PLAN_INDEX(plan,y,x)].occ_dist_dyn);
   }
   else
   {
     if(plan->cells[PLAN_INDEX(plan,x,y)].occ_dist_dyn < plan->abs_min_radius)
       return -1;
-    else
+    else if(plan->cells[PLAN_INDEX(plan,x,y)].occ_dist_dyn < plan->max_radius)
       obscost += plan->dist_penalty * 
-              (plan->abs_min_radius - 
+              (plan->max_radius - 
                plan->cells[PLAN_INDEX(plan,x,y)].occ_dist_dyn);
   }
 
@@ -148,18 +148,18 @@ _plan_check_path(plan_t* plan, plan_cell_t* s, plan_cell_t* g)
     {
       if(plan->cells[PLAN_INDEX(plan,y,x)].occ_dist_dyn < plan->abs_min_radius)
         return -1;
-      else
+      else if(plan->cells[PLAN_INDEX(plan,y,x)].occ_dist_dyn < plan->max_radius)
         obscost += plan->dist_penalty * 
-                (plan->abs_min_radius - 
+                (plan->max_radius - 
                  plan->cells[PLAN_INDEX(plan,y,x)].occ_dist_dyn);
     }
     else
     {
       if(plan->cells[PLAN_INDEX(plan,x,y)].occ_dist_dyn < plan->abs_min_radius)
         return -1;
-      else
+      else if(plan->cells[PLAN_INDEX(plan,x,y)].occ_dist_dyn < plan->max_radius)
         obscost += plan->dist_penalty * 
-                (plan->abs_min_radius - 
+                (plan->max_radius - 
                  plan->cells[PLAN_INDEX(plan,x,y)].occ_dist_dyn);
     }
   }
