@@ -112,7 +112,8 @@ driver
 //#include <replace/replace.h>
 extern PlayerTime* GlobalTime;
 
-#define DEFAULT_RX_BUFFER_SIZE 4096
+// 1 second of data at 500kbaud
+#define DEFAULT_RX_BUFFER_SIZE 500*1024/8
 
 // The laser device class.
 class SickS3000 : public Driver

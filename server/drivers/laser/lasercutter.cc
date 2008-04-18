@@ -138,8 +138,9 @@ LaserCutter::LaserCutter( ConfigFile* cf, int section)
   // Settings.
   allocated_ranges = 0;
   data.ranges = NULL;
-  this->max_angle = cf->ReadAngle(section, "max_angle", M_PI/2.0);
-  this->min_angle = cf->ReadAngle(section, "min_angle", -M_PI/2.0);
+  data.intensity = NULL;
+  this->max_angle = cf->ReadAngle(section, "max_angle", M_PI_2);
+  this->min_angle = cf->ReadAngle(section, "min_angle", -M_PI_2);
 
   return;
 }
@@ -147,55 +148,60 @@ LaserCutter::LaserCutter( ConfigFile* cf, int section)
 LaserCutter::~LaserCutter()
 {
   free(data.ranges);
+  free(data.intensity);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process laser data.
-int LaserCutter::UpdateLaser(player_laser_data_t * data)
+int LaserCutter::UpdateLaser(player_laser_data_t * indata)
 {
   unsigned int i;
   double current_angle;
 
   // Construct the outgoing laser packet
-  this->data.resolution   = data->resolution;
+  this->data.resolution   = indata->resolution;
   this->data.min_angle    = (min_angle);
   this->data.max_angle    = (max_angle);
-  this->data.max_range    = data->max_range;
-  this->data.id           = data->id;
+  this->data.max_range    = indata->max_range;
+  this->data.id           = indata->id;
 
   this->data.ranges_count    = 0;
   this->data.intensity_count = 0;
 
-  current_angle = data->min_angle;
-  if (data->ranges_count+1 > allocated_ranges)
-    data->ranges = (float*)realloc(data->ranges,sizeof(data->ranges[0])*(data->ranges_count+1));
-  for (i = 0; i < data->ranges_count; i++)
+  current_angle = indata->min_angle;
+  if (indata->ranges_count+1 > allocated_ranges)
   {
-    current_angle += data->resolution;
-
+    data.ranges = (float*)realloc(data.ranges,sizeof(data.ranges[0])*(indata->ranges_count+1));
+    data.intensity = (uint8_t*)realloc(data.intensity,sizeof(data.intensity[0])*(indata->ranges_count+1));
+  }
+  for (i = 0; i < indata->ranges_count; i++)
+  {
     if ((current_angle >= min_angle) && (current_angle <= max_angle))
     {
-      this->data.ranges[this->data.ranges_count] = data->ranges[i];
+      this->data.ranges[this->data.ranges_count] = indata->ranges[i];
       this->data.ranges_count++;
     }
+    current_angle += indata->resolution;
   }
 
-  current_angle = data->min_angle;
-  for (i = 0; i < data->intensity_count; i++)
+  current_angle = indata->min_angle;
+  if (indata->intensity_count+1 > allocated_ranges)
   {
-    current_angle += data->resolution;
-
+    data.ranges = (float*)realloc(data.ranges,sizeof(data.ranges[0])*(indata->intensity_count+1));
+    data.intensity = (uint8_t*)realloc(data.intensity,sizeof(data.intensity[0])*(indata->intensity_count+1));
+  }
+  for (i = 0; i < indata->intensity_count; i++)
+  {
     if ((current_angle >= min_angle) && (current_angle <= max_angle))
     {
-      this->data.intensity[this->data.intensity_count] = data->intensity[i];
+      this->data.intensity[this->data.intensity_count] = indata->intensity[i];
       this->data.intensity_count++;
     }
+    current_angle += indata->resolution;
   }
 
-  this->Publish(this->device_addr,
-                PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN,
-                &this->data, sizeof(this->data), NULL);
+  this->Publish(this->device_addr, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN, &this->data);
 
   return 1;
 }
