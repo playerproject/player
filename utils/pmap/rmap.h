@@ -40,7 +40,7 @@ extern "C"
 #include "slap.h"
 
 /// Limits
-#define RMAP_MAX_RANGES 401
+#define RMAP_MAX_RANGES 1024
 
 
 /// @brief Data for a single scan

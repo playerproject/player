@@ -127,6 +127,10 @@ void Message::CreateMessage(const struct player_msghdr & aHeader,
         PLAYER_ERROR3 ("failed to clone message %s: %s, %d", interf_to_str (Header.addr.interf), msgtype_to_str (Header.type), Header.subtype);
       }
     }
+    else
+    {
+      PLAYER_ERROR3 ("failed to clone message %s: %s, %d", interf_to_str (Header.addr.interf), msgtype_to_str (Header.type), Header.subtype);
+    }
   }
   else
   {

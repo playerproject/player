@@ -66,7 +66,7 @@ extern "C"
 
 
 /// Limits
-#define PMAP_MAX_RANGES 401
+#define PMAP_MAX_RANGES 1024
   
   
 /// @brief Structure for neighborhood lookup table
