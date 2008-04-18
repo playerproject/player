@@ -246,11 +246,6 @@ void ConfigFile::InsertFieldValue(int index,
                                   const char* name, 
                                   const char* value)
 {
-  // AddField checks whether the field already exists
-  int field = this->AddField(-1,name,0);
-  this->AddToken(ConfigFile::TokenWord, value, 0);
-  this->AddFieldValue(field, index, this->token_count-1);
-
   // Work out what the length units are
   if(!strcmp(name, "unit_length"))
   {
@@ -260,6 +255,7 @@ void ConfigFile::InsertFieldValue(int index,
       this->unit_length = 0.01;
     else if (strcmp(value, "mm") == 0)
       this->unit_length = 0.001;
+    return;
   }
 
   // Work out what the angle units are
@@ -269,7 +265,14 @@ void ConfigFile::InsertFieldValue(int index,
       this->unit_angle = M_PI / 180;
     else if (strcmp(value, "radians") == 0)
       this->unit_angle = 1;
+    return;
   }
+
+  // AddField checks whether the field already exists
+  int field = this->AddField(-1,name,0);
+  this->AddToken(ConfigFile::TokenWord, value, 0);
+  this->AddFieldValue(field, index, this->token_count-1);
+
 }
 
 
