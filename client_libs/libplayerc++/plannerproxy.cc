@@ -86,7 +86,17 @@ PlannerProxy::Unsubscribe()
 std::ostream&
 std::operator << (std::ostream &os, const PlayerCc::PlannerProxy &c)
 {
+  player_pose2d_t p;
   os << "#Planner (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
+  os << "#xpos\typos\ttheta\t\txgoal\tygoal\tthetagoal\tvalid\tdone" << std::endl;
+
+  p = c.GetPose();
+  os << p.px << " " << p.py << " " << p.pa << " \t";
+  
+  p = c.GetGoal();
+  os << p.px << " " << p.py << " " << p.pa << " \t";
+  
+  os << c.GetPathValid() << "\t" << c.GetPathDone() << std::endl;
 
   return os;
 }
