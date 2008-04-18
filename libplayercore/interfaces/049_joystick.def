@@ -16,14 +16,10 @@ The joystick data packet, which contains the current state of the
 joystick */
 typedef struct player_joystick_data
 {
-  /** Current joystick position (unscaled) */
-  int32_t xpos;
-  /** Current joystick position (unscaled) */
-  int32_t ypos;
-  /** Scaling factors */
-  int32_t xscale;
-  /** Scaling factors */
-  int32_t yscale;
+  /** Current joystick position X, Y and Yaw (unscaled) */
+  int32_t pos[3];
+  /** Scaling factors for X, Y and Yaw */
+  int32_t scale[3];
   /** Button states (bitmask) */
   uint32_t buttons;
 } player_joystick_data_t;
