@@ -868,7 +868,7 @@ Wavefront::Sleep(double loopstart)
   tdiff = MAX(0.0, this->cycletime - (currt-loopstart));
   if(tdiff == 0.0)
     PLAYER_WARN("Wavefront missed deadline and not sleeping; check machine load");
-  usleep((unsigned int)rint(tdiff));
+  usleep((unsigned int)rint(tdiff*1e6));
 }
 
 
@@ -885,6 +885,7 @@ void Wavefront::Main()
   bool rotate_waypoint=false;
   bool replan;
   int rotate_dir=0;
+  bool printed_warning=false;
 
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED,NULL);
 
@@ -1003,14 +1004,23 @@ void Wavefront::Main()
                          this->localize_y, this->scan_maxrange) < 0))
       {
         if(!new_goal && (this->plan->path_count != 0))
-           puts("Wavefront: local plan failed");
+          puts("Wavefront: local plan failed");
 
         // Create a global plan
         if(plan_do_global(this->plan, this->localize_x, this->localize_y, 
                           this->target_x, this->target_y) < 0)
-          puts("Wavefront: global plan failed");
+        {
+          if(!printed_warning)
+          {
+            puts("Wavefront: global plan failed");
+            printed_warning = true;
+          }
+        }
         else
+        {
           this->new_goal = false;
+          printed_warning = false;
+        }
       }
 
       if(this->graphics2d_id.interf && this->plan->lpath_count)

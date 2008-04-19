@@ -249,7 +249,7 @@ _plan_update_plan(plan_t *plan, double lx, double ly, double gx, double gy)
 
   if(!cell->plan_next)
   {
-    puts("never found start");
+    //puts("never found start");
     return(-1);
   }
   else
