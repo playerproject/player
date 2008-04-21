@@ -97,36 +97,77 @@ if __name__ == '__main__':
     # we're also interested in laser scans
     elif type == 'laser':
         
-      if msgsubtype != 1:
+      if msgsubtype == 1:
+        header = 'FLASER'
+        time = lsplit[0]
+        min_angle = lsplit[8]
+        max_angle = lsplit[9]
+        if (min_angle != '-1.5708') or (max_angle != '+1.5708'):
+          print 'Sorry, CARMEN requires 180-degree FOV for laser'
+          sys.exit(-1)
+        num_readings = int(lsplit[12])
+        if (num_readings != 181) and (num_readings != 361):
+          print 'Sorry, I can only convert 1-deg and 0.5-deg resolution logs'
+          sys.exit(-1)
+        i = 0
+        scanstr = ''
+        while i < (num_readings - 1):
+          range = lsplit[13 + 2*i]
+          scanstr += range + ' '
+          i += num_readings/180
+
+
+  
+        l_x = x + offset_x*math.cos(theta)
+        l_y = y + offset_x*math.sin(theta)
+
+        outfile.write(header + ' 180 ' + scanstr +
+                      str(l_x) + ' ' + str(l_y) + ' ' + str(theta) + ' ' +
+                      str(x) + ' ' + str(y) + ' ' + str(theta) + ' ' +
+                      time + ' ' + host + ' ' + time + '\n')
+      elif msgsubtype == 2:
+        # split the pose from the scan out as an ODOM message
+        header = 'ODOM'
+        time = lsplit[0]
+        x = float(lsplit[8])
+        y = float(lsplit[9])
+        theta = float(lsplit[10])
+        tv = '0.000'
+        rv = '0.000'
+        accel = '0.000'
+        outfile.write(header + ' ' + str(x) + ' ' + str(y) + ' ' + str(theta) + ' ' + tv + ' ' + rv + ' ' + accel + ' ' + time + ' ' + host + ' ' + time + '\n')
+
+        header = 'FLASER'
+        time = lsplit[0]
+        min_angle = lsplit[11]
+        max_angle = lsplit[12]
+        if (min_angle != '-1.5708') or (max_angle != '+1.5708'):
+          print 'Sorry, CARMEN requires 180-degree FOV for laser'
+          sys.exit(-1)
+        num_readings = int(lsplit[15])
+        if (num_readings != 181) and (num_readings != 361):
+          print 'Sorry, I can only convert 1-deg and 0.5-deg resolution logs'
+          sys.exit(-1)
+        i = 0
+        scanstr = ''
+        while i < (num_readings - 1):
+          range = lsplit[16 + 2*i]
+          scanstr += range + ' '
+          i += num_readings/180
+
+
+  
+        l_x = x + offset_x*math.cos(theta)
+        l_y = y + offset_x*math.sin(theta)
+
+        outfile.write(header + ' 180 ' + scanstr +
+                      str(l_x) + ' ' + str(l_y) + ' ' + str(theta) + ' ' +
+                      str(x) + ' ' + str(y) + ' ' + str(theta) + ' ' +
+                      time + ' ' + host + ' ' + time + '\n')
+        
+      else:
         print 'Skipping laser message with subtype ' + `msgsubtype`
         continue
-      header = 'FLASER'
-      time = lsplit[0]
-      min_angle = lsplit[8]
-      max_angle = lsplit[9]
-      if (min_angle != '-1.5708') or (max_angle != '+1.5708'):
-        print 'Sorry, CARMEN requires 180-degree FOV for laser'
-        sys.exit(-1)
-      num_readings = int(lsplit[12])
-      if (num_readings != 181) and (num_readings != 361):
-        print 'Sorry, I can only convert 1-deg and 0.5-deg resolution logs'
-        sys.exit(-1)
-      i = 0
-      scanstr = ''
-      while i < (num_readings - 1):
-        range = lsplit[13 + 2*i]
-        scanstr += range + ' '
-        i += num_readings/180
-
-
-
-      l_x = x + offset_x*math.cos(theta)
-      l_y = y + offset_x*math.sin(theta)
-
-      outfile.write(header + ' 180 ' + scanstr +
-                    str(l_x) + ' ' + str(l_y) + ' ' + str(theta) + ' ' +
-                    str(x) + ' ' + str(y) + ' ' + str(theta) + ' ' +
-                    time + ' ' + host + ' ' + time + '\n')
     else:
       #print 'Ignoring line of type ' + type
       pass 
