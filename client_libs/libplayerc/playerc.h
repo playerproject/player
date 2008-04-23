@@ -1176,6 +1176,12 @@ int playerc_blackboard_subscribe_to_key(playerc_blackboard_t *device, const char
 /** @brief Unsubscribe from a key. */
 int playerc_blackboard_unsubscribe_from_key(playerc_blackboard_t *device, const char* key, const char* group);
 
+/** @brief Subscribe to a group. The current entries are sent as data messages. */
+int playerc_blackboard_subscribe_to_group(playerc_blackboard_t *device, const char* group);
+
+/** @brief Unsubscribe from a group. */
+int playerc_blackboard_unsubscribe_from_group(playerc_blackboard_t *device, const char* group);
+
 /** @brief Set an entry value. */
 int playerc_blackboard_set_entry(playerc_blackboard_t *device, player_blackboard_entry_t* entry);
 

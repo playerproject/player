@@ -329,6 +329,81 @@ int playerc_blackboard_unsubscribe_from_key(playerc_blackboard_t* device, const 
 
 }
 
+// Subscribe to a blackboard group
+int playerc_blackboard_subscribe_to_group(playerc_blackboard_t* device, const char* group)
+{
+  player_blackboard_entry_t req;
+  memset(&req, 0, sizeof(req));
+  req.key = strdup("");
+  req.key_count = strlen("") + 1;
+  
+  req.group = strdup(group);
+  req.group_count = strlen(group) + 1;
+
+  if (playerc_client_request(device->info.client, &device->info, 
+  PLAYER_BLACKBOARD_REQ_SUBSCRIBE_TO_GROUP, &req, NULL) < 0)
+  {
+  	if (req.key != NULL)
+  	{
+  		free(req.key);
+  	}
+  	if (req.group != NULL)
+  	{
+  		free(req.group);
+  	}
+    PLAYERC_ERR("failed to subscribe to blackboard group");
+    return -1;
+  }
+
+  if (req.key != NULL)
+	{
+		free(req.key);
+	}
+	if (req.group != NULL)
+	{
+		free(req.group);
+	}
+  return 0;
+}
+
+// Unsubscribe from a blackboard group
+int playerc_blackboard_unsubscribe_from_group(playerc_blackboard_t* device, const char* group)
+{
+  player_blackboard_entry_t req;
+  memset(&req, 0, sizeof(req));
+  req.key = strdup("");
+  req.key_count = strlen("") + 1;
+  
+  req.group = strdup(group);
+  req.group_count = strlen(group) + 1;
+
+  if (playerc_client_request(device->info.client, &device->info, 
+  PLAYER_BLACKBOARD_REQ_UNSUBSCRIBE_FROM_GROUP, &req, NULL) < 0)
+  {
+  	if (req.key)
+  	{
+  		free(req.key);
+  	}
+  	if (req.group)
+  	{
+  		free(req.group);
+  	}
+    PLAYERC_ERR("failed to unsubscribe to blackboard group");
+    return -1;
+  }
+
+  if (req.key)
+	{
+		free(req.key);
+	}
+	if (req.group)
+	{
+		free(req.group);
+	}
+  return 0;
+
+}
+
 // Set a key
 int playerc_blackboard_set_entry(playerc_blackboard_t *device, player_blackboard_entry_t* entry)
 {
