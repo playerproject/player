@@ -27,7 +27,7 @@
 /** @defgroup driver_yarp_image yarpimage
  * @brief Driver for connecting to a YARP server and getting an Image.
 
-The yarpimage driver connects to a YARP server using a specified port 
+The yarpimage driver connects to a YARP server using a specified port
 name, gets image data, and puts it on a Player camera interface.
 
 @par Compile-time dependencies
@@ -62,12 +62,12 @@ name, gets image data, and puts it on a Player camera interface.
 
 - image_format (integer)
   - Default: 5 (PLAYER_CAMERA_FORMAT_RGB888)
-  - Possible values: 1 (PLAYER_CAMERA_FORMAT_MONO8 - 8-bit monochrome) or 
+  - Possible values: 1 (PLAYER_CAMERA_FORMAT_MONO8 - 8-bit monochrome) or
                      5 (PLAYER_CAMERA_FORMAT_RGB888 - 24-bit color).
                      Anything else will be ignored and defaulted.
   - Format of the image to provide.
 
-@par Example 
+@par Example
 
 @verbatim
 driver
@@ -139,9 +139,9 @@ Driver* Yarp_Image_Init (ConfigFile* cf, int section)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Registers the driver in the driver table. Called from the 
+// Registers the driver in the driver table. Called from the
 // player_driver_init function that the loader looks for
-void Yarp_Image_Register (DriverTable* table)
+void yarp_image_Register (DriverTable* table)
 {
     table->AddDriver ("yarpimage", Yarp_Image_Init);
 }
@@ -233,7 +233,7 @@ int Yarp_Image::Shutdown ()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
-void Yarp_Image::Main () 
+void Yarp_Image::Main ()
 {
     memset (&cam_data, 0, sizeof (cam_data));
 

@@ -1,6 +1,6 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2004  Brian Gerkey gerkey@stanford.edu    
+ *  Copyright (C) 2004  Brian Gerkey gerkey@stanford.edu
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 /*
  * $Id$
  *
- * 
+ *
  */
 
 /** @ingroup drivers */
@@ -49,7 +49,7 @@
 
  @par Configuration file options
 
- @par Example 
+ @par Example
 
  @verbatim
  driver
@@ -125,7 +125,7 @@ player_blackboard_entry_t ToPlayerBlackBoardEntry(const BlackBoardEntry &entry)
 {
   player_blackboard_entry_t result;
   memset(&result, 0, sizeof(player_blackboard_entry_t));
-  
+
   result.type = entry.data.type;
   result.subtype = entry.data.subtype;
 
@@ -138,7 +138,7 @@ player_blackboard_entry_t ToPlayerBlackBoardEntry(const BlackBoardEntry &entry)
   result.group = new char[result.group_count];
   memcpy(result.group, entry.group.c_str(), result.group_count);
   assert(result.group_count > 0);
-  
+
   result.data_count = entry.data.data_count;
   result.data = new uint8_t[result.data_count];
   memcpy(result.data, entry.data.data, result.data_count);
@@ -146,7 +146,7 @@ player_blackboard_entry_t ToPlayerBlackBoardEntry(const BlackBoardEntry &entry)
   result.timestamp_usec = entry.data.timestamp_usec;
   return result;
 }
- 
+
 BlackBoardEntry FromPlayerBlackBoardEntry(const player_blackboard_entry_t &entry)
 {
   BlackBoardEntry result;
@@ -169,7 +169,7 @@ class LocalBB : public Driver
 {
 	public:
 		/**
-		 * @brief Default constructor. 
+		 * @brief Default constructor.
 		 * @param cf ConfigFile, the player configuration file information
 		 * @param section The section of the configuration file
 		 */
@@ -196,7 +196,7 @@ class LocalBB : public Driver
 		/** @brief Process a subscribe to key message.
 		 * Adds the response queue to the list of devices listening to that key in the map.
 		 * Retrieves the entry for the given key.
-		 * Publishes the entry. 
+		 * Publishes the entry.
 		 * @param resp_queue Player response queue.
 		 * @param hdr Message header.
 		 * @param data Message data.
@@ -225,23 +225,23 @@ class LocalBB : public Driver
 		/** @brief Add the key and queue combination to the listeners hash-map and return the entry for the key.
 		 * @param key Entry key.
 		 * @param group Second identifier.
-		 * @param resp_queue Player response queue of the subscriber. 
+		 * @param resp_queue Player response queue of the subscriber.
 		 */
 		BlackBoardEntry SubscribeKey(const string &key, const string &group, const QueuePointer &resp_queue);
 		/** @brief Remove the key and queue combination from the listeners hash-map.
 		 * @param key Entry key.
 		 * @param group Second identifier.
-		 * @param qp Player response queue of the subscriber. 
+		 * @param qp Player response queue of the subscriber.
 		 */
 		void UnsubscribeKey(const string &key, const string &group, const QueuePointer &qp);
 		/** @brief Set the entry in the entries hashmap. *
 		 * @param entry BlackBoardEntry that must be put in the hashmap.
 		 */
 		void SetEntry(const BlackBoardEntry &entry);
-		
+
 		// Helper functions
 		/** @brief Check that the message has a valid size.
-		 * @param hdr Header of the message to check. 
+		 * @param hdr Header of the message to check.
 		 */
 		bool CheckHeader(player_msghdr * hdr);
 
@@ -263,7 +263,7 @@ Driver* LocalBB_Init(ConfigFile* cf, int section)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Driver registration function
-void LocalBB_Register(DriverTable* table)
+void localbb_Register(DriverTable* table)
 {
 	table->AddDriver("localbb", LocalBB_Init);
 }
@@ -358,7 +358,7 @@ int LocalBB::ProcessSubscribeKeyMessage(QueuePointer &resp_queue, player_msghdr 
 	if (response.data)
 	{
 		delete [] response.data;
-	}	
+	}
 
 	return 0;
 }
@@ -398,7 +398,7 @@ int LocalBB::ProcessSetEntryMessage(QueuePointer &resp_queue, player_msghdr * hd
 	BlackBoardEntry entry = FromPlayerBlackBoardEntry(*request);
 
 	SetEntry(entry);
-	
+
 	// Send out update events to other listening devices
 	vector<QueuePointer> &devices = listeners[entry.group][entry.key];
 
@@ -413,7 +413,7 @@ int LocalBB::ProcessSetEntryMessage(QueuePointer &resp_queue, player_msghdr * hd
 			hdr->size,
 			NULL);
 	}
-	
+
 	// Send back an empty ack
 	this->Publish(this->device_addr,
 		resp_queue,

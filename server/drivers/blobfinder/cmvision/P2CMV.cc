@@ -102,9 +102,7 @@ Ben Grocholsky, Brad Kratochvil
 
 /** @} */
 
-#if HAVE_CONFIG_H
-  #include <config.h>
-#endif
+#include <config.h>
 
 #include <assert.h>
 #include <stdio.h>
@@ -119,7 +117,7 @@ Ben Grocholsky, Brad Kratochvil
 #include <libplayercore/playercore.h>
 #include <libplayercore/error.h>
 
-#if HAVE_JPEGLIB_H 
+#if HAVE_JPEGLIB_H
   #include <libplayerjpeg/playerjpeg.h>
 #endif
 
@@ -184,7 +182,7 @@ CMVision_Init( ConfigFile* cf, int section)
 
 // a driver registration function
 void
-CMVision_Register(DriverTable* table)
+cmvision_Register(DriverTable* table)
 {
   table->AddDriver("cmvision", CMVision_Init);
 }
@@ -323,7 +321,7 @@ CMVisionBF::ProcessImageData()
       PLAYER_ERROR("Frame error.");
     }
 
-    
+
     mData.blobs_count = 0;
     for (int ch = 0; ch < CMV_MAX_COLORS; ++ch)
     {
@@ -369,7 +367,7 @@ CMVisionBF::ProcessImageData()
     if (0 != mDebugLevel)
       TestPattern();
 
-    Publish(device_addr, 
+    Publish(device_addr,
           PLAYER_MSGTYPE_DATA, PLAYER_BLOBFINDER_DATA_BLOBS,
           reinterpret_cast<void*>(&mData));
 }
@@ -431,7 +429,7 @@ CMVisionBF::ProcessMessage(QueuePointer & resp_queue,
 
     assert(camera_data);
 
-#if !HAVE_JPEGLIB_H 
+#if !HAVE_JPEGLIB_H
     if (camera_data->compression == PLAYER_CAMERA_COMPRESS_JPEG)
     {
       PLAYER_ERROR("No support for jpeg decompression");
@@ -455,8 +453,8 @@ CMVisionBF::ProcessMessage(QueuePointer & resp_queue,
       ptr = camera_data->image;
       if (camera_data->compression == PLAYER_CAMERA_COMPRESS_JPEG)
       {
-#if HAVE_JPEGLIB_H 
-	jpeg_decompress((unsigned char*)mTmp, 
+#if HAVE_JPEGLIB_H
+	jpeg_decompress((unsigned char*)mTmp,
 			mWidth*mHeight*3,
                         camera_data->image,
                         camera_data->image_count

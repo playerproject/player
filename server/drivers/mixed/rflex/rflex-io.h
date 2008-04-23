@@ -1,7 +1,7 @@
 #ifndef RFLEX_IO_H
 #define RFLEX_IO_H
 
-#include <rflex-info.h>
+#include "rflex-info.h"
 
 #define MAX_NAME_LENGTH  256
 
@@ -18,5 +18,5 @@ int   DEVICE_connect_port( RFLEX_Device *dev );
 int   writeData( int fd, unsigned char *buf, int nChars );
 
 int   waitForAnswer( int fd, unsigned char *buf, int *len );
- 
+
 #endif

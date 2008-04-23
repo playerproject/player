@@ -1,6 +1,6 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2004  Brian Gerkey gerkey@stanford.edu    
+ *  Copyright (C) 2004  Brian Gerkey gerkey@stanford.edu
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -67,8 +67,8 @@ delivered via a sequence of configuration requests.
   - Default: "circle"
   - The shape of the robot to convolve with the map.  Should be one of:
     "circle".
- 
-@par Example 
+
+@par Example
 
 @verbatim
 driver
@@ -99,7 +99,7 @@ typedef enum
 {
   CIRCLE,
 } robot_shape_t;
-         
+
 class MapCspace : public MapTransform
 {
   private:
@@ -108,7 +108,7 @@ class MapCspace : public MapTransform
 
     // convolve the map with a circular robot to produce the cspace
     int Transform();
-    
+
 
   public:
     MapCspace(ConfigFile* cf, int section);
@@ -122,8 +122,8 @@ MapCspace_Init(ConfigFile* cf, int section)
 }
 
 // a driver registration function
-void 
-MapCspace_Register(DriverTable* table)
+void
+mapcspace_Register(DriverTable* table)
 {
   table->AddDriver("mapcspace", MapCspace_Init);
 }

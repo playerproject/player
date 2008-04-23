@@ -115,7 +115,7 @@ Driver* SonarToRanger_Init (ConfigFile* cf, int section)
 }
 
 // Register function
-void SonarToRanger_Register (DriverTable* table)
+void sonartoranger_Register (DriverTable* table)
 {
 	table->AddDriver ("sonartoranger", SonarToRanger_Init);
 }

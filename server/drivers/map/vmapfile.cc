@@ -1,6 +1,6 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2004  Brian Gerkey gerkey@stanford.edu    
+ *  Copyright (C) 2004  Brian Gerkey gerkey@stanford.edu
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -55,8 +55,8 @@ The format of the text file is...
 - filename (string)
   - Default: NULL
   - The file to read.
- 
-@par Example 
+
+@par Example
 
 @verbatim
 driver
@@ -85,7 +85,7 @@ class VMapFile : public Driver
     const char* filename;
     player_map_data_vector_t* vmap;
     size_t vmapsize;
-    
+
     // Handle map data request
     void HandleGetMapVector(void *client, void *request, int len);
 
@@ -96,8 +96,8 @@ class VMapFile : public Driver
     int Shutdown();
 
     // MessageHandler
-    int ProcessMessage(QueuePointer & resp_queue, 
-		       player_msghdr * hdr, 
+    int ProcessMessage(QueuePointer & resp_queue,
+		       player_msghdr * hdr,
 		       void * data);
 
 };
@@ -116,8 +116,8 @@ VMapFile_Init(ConfigFile* cf, int section)
 }
 
 // a driver registration function
-void 
-VMapFile_Register(DriverTable* table)
+void
+vmapfile_Register(DriverTable* table)
 {
   table->AddDriver("vmapfile", VMapFile_Init);
 }
@@ -156,7 +156,7 @@ VMapFile::Setup()
 
   // Allocate space for the biggest possible vector map; we'll realloc
   // later
-  this->vmap = 
+  this->vmap =
           (player_map_data_vector_t*)malloc(sizeof(player_map_data_vector_t));
   assert(this->vmap);
 
@@ -201,7 +201,7 @@ VMapFile::Setup()
     if(sscanf(linebuf, "%d %d %d %d", &x0, &y0, &x1, &y1) == 4)
     {
       this->vmap->segments = (player_segment_t*) realloc(
-        this->vmap->segments, 
+        this->vmap->segments,
         (this->vmap->segments_count+1)*sizeof(this->vmap->segments[0])
       );
       this->vmap->segments[this->vmap->segments_count].x0 = x0/1e3;
@@ -242,12 +242,12 @@ VMapFile::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int VMapFile::ProcessMessage(QueuePointer & resp_queue, 
-                             player_msghdr * hdr, 
+int VMapFile::ProcessMessage(QueuePointer & resp_queue,
+                             player_msghdr * hdr,
                              void * data)
 {
   // Is it a request for the map?
-  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
                            PLAYER_MAP_REQ_GET_VECTOR,
                            this->device_addr))
   {

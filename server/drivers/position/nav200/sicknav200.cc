@@ -1,9 +1,9 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
- * 
+ *
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -32,7 +32,7 @@
  * @brief SICK NAV200 laser localisation unit
 
  The sicknav200 driver interfaces to the NAV200 localiation unit and provides the current position
- output of the device. 
+ output of the device.
 
  By default, the driver will enter positioning mode and use the reflectors stored on the nav200.
  To map the visible reflectors and store them on the nav200, set the mode property to mapping.
@@ -58,7 +58,7 @@
  @par Configuration requests
 
  - PLAYER_POSITION2D_REQ_GET_GEOM
- 
+
  @par Configuration file options
 
  - pose (length tuple)
@@ -70,7 +70,7 @@
  - Default: [0.15 0.15]
  - Footprint (x,y) of the laser.
 
- @par Example 
+ @par Example
 
  @verbatim
  driver
@@ -93,9 +93,7 @@
  */
 /** @} */
 
-#if HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <assert.h>
 #include <math.h>
@@ -186,8 +184,8 @@ protected:
 
 	// number of values for slifing mean
 	IntProperty SmoothingInput;
-	
-	
+
+
 	// Name of device used to communicate with the laser
 	//char *device_name;
 
@@ -223,7 +221,7 @@ Driver* SickNAV200_Init(ConfigFile* cf, int section) {
 }
 
 // a driver registration function
-void SickNAV200_Register(DriverTable* table) {
+void sicknav200_Register(DriverTable* table) {
 	puts("Registering driver");
 	table->AddDriver("sicknav200", SickNAV200_Init);
 }
@@ -235,11 +233,11 @@ void SickNAV200_Register(DriverTable* table) {
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 SickNAV200::SickNAV200(ConfigFile* cf, int section) :
-	Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN), 
-	mode("mode", DEFAULT_SICKNAV200_MODE, false, this, cf, section), 
-	Nearest("nearest", 0, false, this, cf, section), 
-	AutoFullMapCount("autofullmapcount", 0, false, this, cf, section), 
-	StallCount(0), 
+	Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN),
+	mode("mode", DEFAULT_SICKNAV200_MODE, false, this, cf, section),
+	Nearest("nearest", 0, false, this, cf, section),
+	AutoFullMapCount("autofullmapcount", 0, false, this, cf, section),
+	StallCount(0),
 	Quality("quality", 0,true, this, cf, section),
 	SmoothingInput("smoothing_input", 4, false, this, cf, section)
 {
@@ -295,7 +293,7 @@ SickNAV200::SickNAV200(ConfigFile* cf, int section) :
 	// Must have an opaque device
 	PLAYER_MSG0(2, "reading opaque id now");
 	if (cf->ReadDeviceAddr(&this->opaque_id, section, "requires",
-		PLAYER_OPAQUE_CODE, -1, NULL) != 0) 
+		PLAYER_OPAQUE_CODE, -1, NULL) != 0)
 	{
 		PLAYER_MSG0(2, "No opaque driver specified");
 		this->SetError(-1);
@@ -510,7 +508,7 @@ int SickNAV200::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr,
 		// Does the ack need the layer data?
 		this->Publish(this->vectormap_addr, resp_queue,
 				PLAYER_MSGTYPE_RESP_ACK, PLAYER_VECTORMAP_REQ_WRITE_LAYER,
-				(void*)layerData, sizeof(player_vectormap_layer_data_t), 
+				(void*)layerData, sizeof(player_vectormap_layer_data_t),
 				NULL);
 
 		return 0;
@@ -688,7 +686,7 @@ void SickNAV200::Main() {
 					return;
 				}
 			}
-			
+
 
 			this->Publish(this->position_addr, PLAYER_MSGTYPE_DATA,
 					PLAYER_POSITION2D_DATA_STATE, (void*)&data_packet,

@@ -114,9 +114,7 @@ playerv provides teleoperation of the following kinds of devices:
 
 /** @} */
 
-#ifdef HAVE_CONFIG_H
-  #include "config.h"
-#endif
+#include "config.h"
 
 #include <signal.h>
 #include <stdio.h>
@@ -140,7 +138,7 @@ void sig_quit(int signum)
 // Print the usage string
 void print_usage()
 {
-  printf("\nPlayerViewer %s, ", VERSION);
+  printf("\nPlayerViewer %s, ", PLAYER_VERSION);
   printf("a visualization tool for the Player robot device server.\n");
   printf("Usage  : playerv [-h <hostname>] [-p <port>] [-rate <Hz>]\n");
   printf("                 [--<device>:<index>] [--<device>:<index>] ... \n");
@@ -168,7 +166,7 @@ int main(int argc, char **argv)
   struct timeval tv, tc = {0, 0};
   struct timespec st = {0,0};
 
-  printf("PlayerViewer %s\n", VERSION);
+  printf("PlayerViewer %s\n", PLAYER_VERSION);
 
   // Initialise rtk lib (after we have read the program options we
   // want).

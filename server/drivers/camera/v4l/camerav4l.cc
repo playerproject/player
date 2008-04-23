@@ -94,7 +94,7 @@ below for notes on specific camera/frame grabber combinations.
 
 - max_buffer (integer)
   - Default: -1 (do not set)
-  - Limit the maximum number of buffers to use for grabbing. This reduces latency, but also 
+  - Limit the maximum number of buffers to use for grabbing. This reduces latency, but also
   	potentially reduces throughput. Use this if you are reading slowly from the player
   	driver and dont want to get stale frames
 
@@ -162,7 +162,7 @@ it to work (the developer spat the dummy and took down his website).
 
 Update for pwc:
 The original source has been taken up by another developer and is now available
-from http://www.saillard.org/linux/pwc/. This new version also doesnt need the 
+from http://www.saillard.org/linux/pwc/. This new version also doesnt need the
 binary driver which is a bonus
 
 
@@ -277,7 +277,7 @@ Driver* CameraV4L_Init( ConfigFile* cf, int section)
 
 
 // Driver registration function
-void CameraV4L_Register(DriverTable* table)
+void camerav4l_Register(DriverTable* table)
 {
   table->AddDriver("camerav4l", CameraV4L_Init);
 }
@@ -362,7 +362,7 @@ int CameraV4L::Setup()
     PLAYER_ERROR1("unable to open %s", this->device);
     return -1;
   }
-  
+
   if (max_buffer > 0)
   	fg->max_buffer = max_buffer;
 
@@ -422,7 +422,7 @@ int CameraV4L::Setup()
     fg_set_format(this->fg, VIDEO_PALETTE_JPEG );
     this->frame = frame_new(this->width, this->height, VIDEO_PALETTE_JPEG );
     this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
-    this->depth = 24;  
+    this->depth = 24;
   }
   else
   {
@@ -637,7 +637,7 @@ void CameraV4L::RefreshData()
     } else this->publish_time = time(NULL);
   }
 
-  Publish(this->device_addr, 
+  Publish(this->device_addr,
           PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
           reinterpret_cast<void*>(&this->data));
   delete [] this->data.image;

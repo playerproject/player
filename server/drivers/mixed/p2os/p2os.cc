@@ -333,7 +333,7 @@ P2OS_Init(ConfigFile* cf, int section)
   return (Driver*)(new P2OS(cf,section));
 }
 
-void P2OS_Register(DriverTable* table)
+void p2os_Register(DriverTable* table)
 {
   table->AddDriver("p2os", P2OS_Init);
 }
@@ -1314,7 +1314,7 @@ P2OS::~P2OS (void)
   player_position2d_data_t_cleanup (&p2os_data.compass);
   player_position2d_data_t_cleanup (&p2os_data.gyro);
   player_actarray_data_t_cleanup (&p2os_data.lift);
-  player_actarray_data_t_cleanup (&p2os_data.actArray);  
+  player_actarray_data_t_cleanup (&p2os_data.actArray);
 
   if (kineCalc)
   {
@@ -1654,14 +1654,14 @@ P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
             packet.packet[3] == SERAUX2)
     {
       // This is an AUX2 serial packet
-      
+
       if(blobfinder_id.interf)
       {
         /* It is an extended SIP (blobfinder) packet, so process it */
         /* Be sure to pass data size too (packet[2])! */
         this->sippacket->ParseSERAUX( &packet.packet[2] );
         this->sippacket->FillSERAUX(&(this->p2os_data));
-        
+
         if(publish_data)
           this->BlobfinderPutData(packet.timestamp);
 
@@ -1769,7 +1769,7 @@ P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
         if(publish_data)
         this->ActarrayPutData(packet.timestamp);
       }
-      
+
       // Go for another SIP - there had better be one or things will probably go boom
       SendReceive(NULL,publish_data);
     }
@@ -1786,7 +1786,7 @@ P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
             kineCalc->SetJointRange (ii, TicksToRadians (ii, sippacket->armJoints[ii].min), TicksToRadians (ii, sippacket->armJoints[ii].max));
           // Go for another SIP - there had better be one or things will probably go boom
         }
-        
+
         SendReceive(NULL,publish_data);
       }
     }

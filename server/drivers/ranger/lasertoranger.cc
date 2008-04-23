@@ -124,7 +124,7 @@ Driver* LaserToRanger_Init (ConfigFile* cf, int section)
 }
 
 // Register function
-void LaserToRanger_Register (DriverTable* table)
+void lasertoranger_Register (DriverTable* table)
 {
 	table->AddDriver ("lasertoranger", LaserToRanger_Init);
 }

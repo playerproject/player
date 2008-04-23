@@ -144,9 +144,7 @@ $ pmap_test -g --num_samples 500 --grid_width 50 --grid_height 25 <logfile>
 @endverbatim
 
 */
-#if HAVE_CONFIG_H
-  #include "config.h"
-#endif
+#include "config.h"
 
 #include <assert.h>
 #include <math.h>

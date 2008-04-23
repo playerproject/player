@@ -173,7 +173,7 @@ Driver* LaserSafe_Init (ConfigFile* cf, int section)
 }
 
 // a driver registration function
-void LaserSafe_Register(DriverTable* table)
+void lasersafe_Register(DriverTable* table)
 {
   table->AddDriver ("lasersafe",  LaserSafe_Init);
   return;

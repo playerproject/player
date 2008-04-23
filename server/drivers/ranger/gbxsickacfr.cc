@@ -151,7 +151,7 @@ GbxSickAcfr_Init (ConfigFile* cf, int section)
     return reinterpret_cast <Driver*> (new GbxSickAcfr (cf, section));
 }
 
-void GbxSickAcfr_Register(DriverTable* table)
+void gbxsickacfr_Register(DriverTable* table)
 {
     table->AddDriver ("gbxsickacfr", GbxSickAcfr_Init);
 }

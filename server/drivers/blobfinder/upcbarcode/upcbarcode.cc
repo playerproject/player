@@ -1,7 +1,7 @@
 /*
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2000  Brian Gerkey et al
- *                      gerkey@usc.edu    
+ *                      gerkey@usc.edu
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -52,9 +52,9 @@ in a camera image (a sample barcode is shown below)
 
 @par Provides
 
-- @ref interface_blobfinder : outputs blob information on detected 
+- @ref interface_blobfinder : outputs blob information on detected
   barcodes
-- @ref interface_camera : passes through image data from underlying 
+- @ref interface_camera : passes through image data from underlying
   camera device (optional)
 
 @par Requires
@@ -132,15 +132,15 @@ class UPCBarcode : public ImageBase
     virtual int Setup();
     virtual int Shutdown();
 
-  // Look for barcodes in the image.  
+  // Look for barcodes in the image.
   private: int ProcessFrame();
 
-  // Extract a bit string from the image.  
+  // Extract a bit string from the image.
   private: int ExtractSymbols(int x, int symbol_max_count, int symbols[][2]);
 
   // Extract a code from a symbol string.
   private: int ExtractCode(int symbol_count, int symbols[][2], int *min, int *max);
-  
+
   // Write the device data (the data going back to the client).
   private: void WriteBlobfinderData();
 
@@ -150,19 +150,19 @@ class UPCBarcode : public ImageBase
 
   // Image processing
   private: double edgeThresh;
-  
+
   // Barcode tolerances
   private: int barcount;
   private: double barwidth;
   private: double guardMin, guardTol;
   private: double errFirst, errSecond;
 
- 
+
   // Images
   private: IplImage *inpImage;
   private: IplImage *outImage;
   private: CvMat outSubImages[4];
-  
+
   // Output camera stuff
   private: player_camera_data_t outCameraData;
 
@@ -180,7 +180,7 @@ Driver* UPCBarcode_Init( ConfigFile* cf, int section)
 
 
 // a driver registration function
-void UPCBarcode_Register(DriverTable* table)
+void upcbarcode_Register(DriverTable* table)
 {
   table->AddDriver("upcbarcode", UPCBarcode_Init);
 }
@@ -197,7 +197,7 @@ UPCBarcode::UPCBarcode( ConfigFile* cf, int section)
 
   // Image processing
   this->edgeThresh = cf->ReadFloat(section, "edgeThresh", 20);
-  
+
   // Default blobfinder properties.
   this->barwidth = cf->ReadLength(section, "bit_width", 0.08);
   this->barcount = cf->ReadInt(section, "bit_count", 3);
@@ -293,7 +293,7 @@ int UPCBarcode::ProcessFrame()
   }*/
 
   step_x = 16;
-  
+
   this->blobCount = 0;
   blob = NULL;
 
@@ -380,7 +380,7 @@ int UPCBarcode::ExtractSymbols(int x, int symbol_max_count, int symbols[][2])
       fn += fabs(kernel[j + 2]);
     }
     fv /= fn;
-    
+
     // Pick the transitions
     if (state == -1)
     {
@@ -418,7 +418,7 @@ int UPCBarcode::ExtractSymbols(int x, int symbol_max_count, int symbols[][2])
 
     // TESTING
     *cvPtr2D(this->outSubImages + 1, i, x) = 127 + 127 * state;;
-    
+
     //fprintf(file, "%d %d %f %f %d\n", i, this->cameraData.image[pix], fv, fn, state);
   }
 
@@ -469,7 +469,7 @@ int UPCBarcode::ExtractCode(int symbol_count, int symbols[][2], int *miny, int *
 
   best_digit = -1;
   best_miny = INT_MAX;
-      
+
   // Note that each code has seven symbols in it, not counting the
   // initial space.
   for (i = 0; i < symbol_count - 7; i++)
@@ -502,12 +502,12 @@ int UPCBarcode::ExtractCode(int symbol_count, int symbols[][2], int *miny, int *
       best_err = this->errFirst;
       best_digit = -1;
       best_miny = INT_MAX;
-      
+
       // Read the code digit (4 symbols) and compare against the known
       // digit patterns
       for (k = 0; k < (int) (sizeof(digits) / sizeof(digits[0])); k++)
       {
-        err[k] = 0;        
+        err[k] = 0;
         for (j = 0; j < 4; j++)
         {
           wm = digits[k][j];
@@ -541,14 +541,14 @@ int UPCBarcode::ExtractCode(int symbol_count, int symbols[][2], int *miny, int *
       // Stop if we found a valid digit
       if (best_digit >= 0)
         break;
-    }    
+    }
   }
 
   //if (best_digit >= 0)
   //  printf("best = %d\n", best_digit);
 
   *miny = best_miny;
-  
+
   return best_digit;
 }
 
@@ -582,7 +582,7 @@ void UPCBarcode::WriteBlobfinderData()
     data.blobs[i].bottom = ((int) (blob->by));
     data.blobs[i].range = (0);
   }
-    
+
   // Copy data to server.
   Publish(device_addr,PLAYER_MSGTYPE_DATA,PLAYER_BLOBFINDER_DATA_BLOBS,&data,sizeof(data));
   free(data.blobs);
@@ -596,7 +596,7 @@ void UPCBarcode::WriteBlobfinderData()
 /*void UPCBarcode::WriteCameraData()
 {
   size_t size;
-  
+
   if (this->camera_id.port == 0)
     return;
   if (this->outImage == NULL)
@@ -619,7 +619,7 @@ void UPCBarcode::WriteBlobfinderData()
 
   // Copy data to server
   //this->PutData(this->out_camera_id, &this->outCameraData, size, &this->cameraTime);
-  PutMsg(out_camera_id, NULL, PLAYER_MSGTYPE_DATA, 0, &this->outCameraData, size, &this->cameraTime);		
-  
+  PutMsg(out_camera_id, NULL, PLAYER_MSGTYPE_DATA, 0, &this->outCameraData, size, &this->cameraTime);
+
   return;
 }*/

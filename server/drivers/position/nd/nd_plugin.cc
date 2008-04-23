@@ -85,7 +85,7 @@ underlying "output" @ref interface_position2d device.
     progress toward the goal orientation before giving up.
 
 - translate_stuck_time (float)
-  - Default: 2.0 seconds         
+  - Default: 2.0 seconds
   - How long the robot is allowed to translate without making sufficient
     progress toward the goal position before giving up.
 
@@ -108,7 +108,7 @@ underlying "output" @ref interface_position2d device.
     validity of pose estimates.
 
 - laser_buffer (integer)
-  - Default: 10          
+  - Default: 10
   - How many recent laser scans to consider in the local navigation.
 
 
@@ -168,7 +168,7 @@ driver
 
 extern PlayerTime *GlobalTime;
 
-class ND : public Driver 
+class ND : public Driver
 {
   public:
     // Constructor
@@ -181,9 +181,9 @@ class ND : public Driver
     virtual int Setup();
     virtual int Shutdown();
 
-    // Process incoming messages from clients 
-    virtual int ProcessMessage(QueuePointer &resp_queue, 
-                               player_msghdr * hdr, 
+    // Process incoming messages from clients
+    virtual int ProcessMessage(QueuePointer &resp_queue,
+                               player_msghdr * hdr,
                                void * data);
     // Main function for device thread.
     virtual void Main();
@@ -227,7 +227,7 @@ class ND : public Driver
     double avoid_dist;
     player_position2d_geom_t robot_geom;
     double safety_dist;
-    
+
     double Threshold(double v, double v_min, double v_max);
     void SetDirection(int dir);
     int SetupOdom();
@@ -248,7 +248,7 @@ class ND : public Driver
 
     // Computes the signed minimum difference between the two angles.
     double angle_diff(double a, double b);
-    
+
     // Odometry device info
     Device *odom;
     player_devaddr_t odom_addr;
@@ -275,18 +275,18 @@ class ND : public Driver
 };
 
 // Initialization function
-Driver* 
-ND_Init(ConfigFile* cf, int section) 
+Driver*
+ND_Init(ConfigFile* cf, int section)
 {
   return ((Driver*) (new ND( cf, section)));
-} 
+}
 
 // a driver registration function
-void ND_Register(DriverTable* table)
+void nd_Register(DriverTable* table)
 {
   table->AddDriver("nd",  ND_Init);
   return;
-} 
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
@@ -305,20 +305,20 @@ ND::ND( ConfigFile* cf, int section)
   this->safety_dist = cf->ReadLength(section, "safety_dist", 0.0);
   this->rotate_stuck_time = cf->ReadFloat(section, "rotate_stuck_time", 2.0);
 
-  this->translate_stuck_time = cf->ReadFloat(section, "translate_stuck_time", 
+  this->translate_stuck_time = cf->ReadFloat(section, "translate_stuck_time",
                                              2.0);
-  this->translate_stuck_dist = cf->ReadLength(section, "translate_stuck_dist", 
+  this->translate_stuck_dist = cf->ReadLength(section, "translate_stuck_dist",
                                               0.25);
-  this->translate_stuck_angle = cf->ReadAngle(section, "translate_stuck_angle", 
+  this->translate_stuck_angle = cf->ReadAngle(section, "translate_stuck_angle",
                                                DTOR(20.0));
-  this->wait_on_stall = 
+  this->wait_on_stall =
           cf->ReadInt(section, "wait_on_stall", 0) ?  true : false;
 
   this->odom = NULL;
   if (cf->ReadDeviceAddr(&this->odom_addr, section, "requires",
                          PLAYER_POSITION2D_CODE, -1, "output") != 0)
   {
-    this->SetError(-1);    
+    this->SetError(-1);
     return;
   }
 
@@ -326,7 +326,7 @@ ND::ND( ConfigFile* cf, int section)
   if (cf->ReadDeviceAddr(&this->localize_addr, section, "requires",
                          PLAYER_POSITION2D_CODE, -1, "input") != 0)
   {
-    this->SetError(-1);    
+    this->SetError(-1);
     return;
   }
 
@@ -345,12 +345,12 @@ ND::ND( ConfigFile* cf, int section)
                      PLAYER_SONAR_CODE, -1, NULL);
   if(this->sonar_addr.interf)
   {
-    if((this->bad_sonar_count = 
+    if((this->bad_sonar_count =
         cf->GetTupleCount(section, "sonar_bad_transducers")))
     {
       this->bad_sonars = new int[bad_sonar_count];
       for(int i=0;i<this->bad_sonar_count;i++)
-        this->bad_sonars[i] = cf->ReadTupleInt(section, 
+        this->bad_sonars[i] = cf->ReadTupleInt(section,
                                                "sonar_bad_transducers",
                                                i, -1);
     }
@@ -363,12 +363,12 @@ ND::ND( ConfigFile* cf, int section)
     this->SetError(-1);
     return;
   }
-  
+
   return;
 }
 
 
-ND::~ND() 
+ND::~ND()
 {
   delete [] bad_sonars;
   return;
@@ -376,14 +376,14 @@ ND::~ND()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device (called by server thread).
-int ND::Setup() 
+int ND::Setup()
 {
   // Initialise the underlying position device.
   if (this->SetupOdom() != 0)
     return -1;
-  
+
   this->active_goal = false;
-  
+
   // Initialise the laser.
   if (this->laser_addr.interf && this->SetupLaser() != 0)
     return -1;
@@ -393,8 +393,8 @@ int ND::Setup()
   this->obstacles.longitud = 0;
   this->stall = false;
   this->turning_in_place = false;
-  this->last_odom_pose.px = 
-          this->last_odom_pose.py = 
+  this->last_odom_pose.px =
+          this->last_odom_pose.py =
           this->last_odom_pose.pa = FLT_MAX;
 
   this->waiting = false;
@@ -407,7 +407,7 @@ int ND::Setup()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device (called by server thread).
-int ND::Shutdown() 
+int ND::Shutdown()
 {
   // Stop the driver thread.
   this->StopThread();
@@ -428,7 +428,7 @@ int ND::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the underlying odom device.
-int ND::SetupOdom() 
+int ND::SetupOdom()
 {
   // Setup the output position device
   if(!(this->odom = deviceTable->GetDevice(this->odom_addr)))
@@ -476,7 +476,7 @@ int ND::SetupOdom()
          this->robot_geom.pose.px,
          this->robot_geom.pose.py,
          RTOD(this->robot_geom.pose.pyaw));
-         
+
 
   delete msg;
 
@@ -489,7 +489,7 @@ int ND::SetupOdom()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the underlying odom device.
-int ND::ShutdownOdom() 
+int ND::ShutdownOdom()
 {
   // Stop the robot before unsubscribing
   this->PutPositionCmd(0.0,0.0);
@@ -500,7 +500,7 @@ int ND::ShutdownOdom()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the laser
-int ND::SetupLaser() 
+int ND::SetupLaser()
 {
   if(!(this->laser = deviceTable->GetDevice(this->laser_addr)))
   {
@@ -517,7 +517,7 @@ int ND::SetupLaser()
   Message* msg;
 
   // Get the laser pose
-  if(!(msg = this->laser->Request(this->InQueue, 
+  if(!(msg = this->laser->Request(this->InQueue,
                                   PLAYER_MSGTYPE_REQ,
                                   PLAYER_LASER_REQ_GET_GEOM,
                                   NULL, 0, NULL,false)))
@@ -525,7 +525,7 @@ int ND::SetupLaser()
     PLAYER_ERROR("failed to get laser geometry");
     return(-1);
   }
-  
+
   // Store the laser pose
   cfg = (player_laser_geom_t*)msg->GetPayload();
   this->laser_pose = cfg->pose;
@@ -542,7 +542,7 @@ int ND::SetupLaser()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the sonar
-int ND::SetupSonar() 
+int ND::SetupSonar()
 {
   if(!(this->sonar = deviceTable->GetDevice(this->sonar_addr)))
   {
@@ -559,7 +559,7 @@ int ND::SetupSonar()
   Message* msg;
 
   // Get the sonar poses
-  if(!(msg = this->sonar->Request(this->InQueue, 
+  if(!(msg = this->sonar->Request(this->InQueue,
                                   PLAYER_MSGTYPE_REQ,
                                   PLAYER_SONAR_REQ_GET_GEOM,
                                   NULL, 0, NULL,false)))
@@ -567,7 +567,7 @@ int ND::SetupSonar()
     PLAYER_ERROR("failed to get sonar geometry");
     return(-1);
   }
-  
+
   // Store the sonar poses
   cfg = (player_sonar_geom_t*)msg->GetPayload();
   this->num_sonars = cfg->poses_count;
@@ -590,7 +590,7 @@ int ND::SetupSonar()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shut down the laser
-int ND::ShutdownLaser() 
+int ND::ShutdownLaser()
 {
   this->laser->Unsubscribe(this->InQueue);
   free(this->laser_obstacles);
@@ -599,7 +599,7 @@ int ND::ShutdownLaser()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shut down the sonar
-int ND::ShutdownSonar() 
+int ND::ShutdownSonar()
 {
   this->sonar->Unsubscribe(this->InQueue);
   delete [] sonar_poses;
@@ -657,7 +657,7 @@ ND::ProcessInputOdom(player_msghdr_t* hdr, player_position2d_data_t* data)
     this->waiting = false;
   }
 
-  // this->stall indicates that we're stuck (either ND threw an emergency 
+  // this->stall indicates that we're stuck (either ND threw an emergency
   // stop or it was failing to make progress).  Set the stall flag to let
   // whoever's listening that we've given up.
   if(this->stall)
@@ -709,18 +709,18 @@ ND::ProcessLaser(player_msghdr_t* hdr, player_laser_data_t* scan)
     y = r * sin(b);
 
     // convert to the robot's frame
-    rx = (this->laser_pose.px + 
+    rx = (this->laser_pose.px +
           x * cos(this->laser_pose.pyaw) -
           y * sin(this->laser_pose.pyaw));
-    ry = (this->laser_pose.py + 
+    ry = (this->laser_pose.py +
           x * sin(this->laser_pose.pyaw) +
           y * cos(this->laser_pose.pyaw));
 
     // convert to the odometric frame and add to the obstacle list
-    this->laser_obstacles[idx].punto[i].x = (this->odom_pose.px + 
+    this->laser_obstacles[idx].punto[i].x = (this->odom_pose.px +
                                              rx * cos(this->odom_pose.pa) -
                                              ry * sin(this->odom_pose.pa));
-    this->laser_obstacles[idx].punto[i].y = (this->odom_pose.py + 
+    this->laser_obstacles[idx].punto[i].y = (this->odom_pose.py +
                                              rx * sin(this->odom_pose.pa) +
                                              ry * cos(this->odom_pose.pa));
   }
@@ -770,18 +770,18 @@ ND::ProcessSonar(player_msghdr_t* hdr, player_sonar_data_t* scan)
     y = 0.0;
 
     // convert to the robot's frame
-    rx = (this->sonar_poses[i].px + 
+    rx = (this->sonar_poses[i].px +
           x * cos(this->sonar_poses[i].pyaw) -
           y * sin(this->sonar_poses[i].pyaw));
-    ry = (this->sonar_poses[i].py + 
+    ry = (this->sonar_poses[i].py +
           x * sin(this->sonar_poses[i].pyaw) +
           y * cos(this->sonar_poses[i].pyaw));
 
     // convert to the odometric frame and add to the obstacle list
-    this->sonar_obstacles[idx].punto[count].x = (this->odom_pose.px + 
+    this->sonar_obstacles[idx].punto[count].x = (this->odom_pose.px +
                                                  rx * cos(this->odom_pose.pa) -
                                                  ry * sin(this->odom_pose.pa));
-    this->sonar_obstacles[idx].punto[count].y = (this->odom_pose.py + 
+    this->sonar_obstacles[idx].punto[count].y = (this->odom_pose.py +
                                                  rx * sin(this->odom_pose.pa) +
                                                  ry * cos(this->odom_pose.pa));
     count++;
@@ -789,7 +789,7 @@ ND::ProcessSonar(player_msghdr_t* hdr, player_sonar_data_t* scan)
   this->sonar_obstacles[idx].longitud = count;
 }
 
-void 
+void
 ND::ProcessCommand(player_msghdr_t* hdr, player_position2d_cmd_vel_t* cmd)
 {
   if(!cmd->state)
@@ -797,8 +797,8 @@ ND::ProcessCommand(player_msghdr_t* hdr, player_position2d_cmd_vel_t* cmd)
     this->PutPositionCmd(0.0,0.0);
     this->active_goal = false;
   }
- 
-  else 
+
+  else
   {
     PLAYER_MSG2(2, "Stopped by velocity command (%.3f %.3f)",
                 cmd->vel.px, RTOD(cmd->vel.pa));
@@ -811,12 +811,12 @@ ND::ProcessCommand(player_msghdr_t* hdr, player_position2d_cmd_vel_t* cmd)
       this->dir = 1;
 }
 
-void 
+void
 ND::ProcessCommand(player_msghdr_t* hdr, player_position2d_cmd_pos_t* cmd)
 {
   PLAYER_MSG3(2, "New goal: (%.3f %.3f %.3f)",
-              cmd->pos.px, 
-              cmd->pos.py, 
+              cmd->pos.px,
+              cmd->pos.py,
               RTOD(cmd->pos.pa));
   // position control;  cache the goal and we'll process it in the main
   // loop.  also cache vel.px, which tells us whether to go forward or
@@ -853,59 +853,59 @@ ND::SetDirection(int dir)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int ND::ProcessMessage(QueuePointer &resp_queue, 
-                       player_msghdr * hdr, 
+int ND::ProcessMessage(QueuePointer &resp_queue,
+                       player_msghdr * hdr,
                        void * data)
 {
   // Is it new odometry data?
-  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 
-                           PLAYER_POSITION2D_DATA_STATE, 
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA,
+                           PLAYER_POSITION2D_DATA_STATE,
                            this->odom_addr))
   {
     this->ProcessOutputOdom(hdr, (player_position2d_data_t*)data);
 
     // In case the input and output are the same device
-    if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 
-                             PLAYER_POSITION2D_DATA_STATE, 
+    if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA,
+                             PLAYER_POSITION2D_DATA_STATE,
                              this->localize_addr))
       this->ProcessInputOdom(hdr, (player_position2d_data_t*)data);
 
     return(0);
   }
   // Is it new localization data?
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 
-                           PLAYER_POSITION2D_DATA_STATE, 
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA,
+                           PLAYER_POSITION2D_DATA_STATE,
                            this->localize_addr))
   {
     this->ProcessInputOdom(hdr, (player_position2d_data_t*)data);
     return(0);
   }
   // Is it a new laser scan?
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 
-                                PLAYER_LASER_DATA_SCAN, 
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA,
+                                PLAYER_LASER_DATA_SCAN,
                                 this->laser_addr))
   {
     this->ProcessLaser(hdr, (player_laser_data_t*)data);
     return(0);
   }
   // Is it a new sonar scan?
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 
-                                PLAYER_SONAR_DATA_RANGES, 
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA,
+                                PLAYER_SONAR_DATA_RANGES,
                                 this->sonar_addr))
   {
     this->ProcessSonar(hdr, (player_sonar_data_t*)data);
     return(0);
   }
   // Is it a new goal?
- else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 
+ else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD,
 			       PLAYER_POSITION2D_CMD_POS,
                                 this->device_addr))
   {
     this->ProcessCommand(hdr, (player_position2d_cmd_pos_t*)data);
     return 0;
   }
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 
-                                PLAYER_POSITION2D_CMD_VEL, 
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD,
+                                PLAYER_POSITION2D_CMD_VEL,
                                 this->device_addr))
   {
     this->ProcessCommand(hdr, (player_position2d_cmd_vel_t*)data);
@@ -921,8 +921,8 @@ int ND::ProcessMessage(QueuePointer &resp_queue,
     if(!(msg = this->odom->Request(this->InQueue,
                                    hdr->type,
                                    hdr->subtype,
-                                   (void*)data, 
-                                   hdr->size, 
+                                   (void*)data,
+                                   hdr->size,
                                    &hdr->timestamp)))
     {
       PLAYER_WARN1("failed to forward config request with subtype: %d\n",
@@ -973,15 +973,15 @@ ND::Main()
   // Fill in the ND's parameter structure
 
   // Rectangular geometry
-  this->NDparametros.geometryRect = 1;		      
+  this->NDparametros.geometryRect = 1;
   // Distance to the front
-  this->NDparametros.front = this->robot_geom.size.sl/2.0 + this->robot_geom.pose.px + this->safety_dist; 
+  this->NDparametros.front = this->robot_geom.size.sl/2.0 + this->robot_geom.pose.px + this->safety_dist;
   // Distance to the back
-  this->NDparametros.back = this->robot_geom.size.sl/2.0 - this->robot_geom.pose.px + this->safety_dist;  
-  // Distance to the left side 
-  this->NDparametros.left = this->robot_geom.size.sw/2.0 + this->safety_dist;  
+  this->NDparametros.back = this->robot_geom.size.sl/2.0 - this->robot_geom.pose.px + this->safety_dist;
+  // Distance to the left side
+  this->NDparametros.left = this->robot_geom.size.sw/2.0 + this->safety_dist;
 
-  this->NDparametros.R = 0.2F;			// Not used 
+  this->NDparametros.R = 0.2F;			// Not used
 
   this->NDparametros.holonomic = 0;		// Non holonomic vehicle
 
@@ -995,7 +995,7 @@ ND::Main()
   this->NDparametros.dsmin = this->NDparametros.dsmax/4.0F;
   //NDparametros.enlarge = NDparametros.dsmin/2.0F;
   this->NDparametros.enlarge = this->NDparametros.dsmin*0.2F;
-  
+
   this->NDparametros.discontinuity = this->NDparametros.left;  // Discontinuity (check whether it fits)
 
   this->NDparametros.T = 0.1F;  // Sample rate of the SICK
@@ -1114,7 +1114,7 @@ ND::Main()
           else
           {
             // no; have we run out of time?
-            double t; 
+            double t;
             GlobalTime->GetTimeDouble(&t);
             if((t - this->rotate_start_time) > this->rotate_stuck_time)
             {
@@ -1144,7 +1144,7 @@ ND::Main()
         else
         {
           // Has it been long enough?
-          double t; 
+          double t;
           GlobalTime->GetTimeDouble(&t);
           if((t - this->translate_start_time) > this->translate_stuck_time)
           {
@@ -1163,7 +1163,7 @@ ND::Main()
         // Were we asked to go backward?
         if(this->dir < 0)
         {
-          // Trick the ND by telling it that the robot is pointing the 
+          // Trick the ND by telling it that the robot is pointing the
           // opposite direction
           pose.SR1.orientacion = NORMALIZE(pose.SR1.orientacion + M_PI);
           // Also reverse the robot's geometry (it may be asymmetric
@@ -1226,7 +1226,7 @@ ND::Main()
 double
 ND::angle_diff(double a, double b)
 {
-  double d1, d2; 
+  double d1, d2;
   a = NORMALIZE(a);
   b = NORMALIZE(b);
   d1 = a-b;

@@ -112,9 +112,7 @@ driver
 // ONLY if you need something that was #define'd as a result of configure
 // (e.g., HAVE_CFMAKERAW), then #include <config.h>, like so:
 /*
-#if HAVE_CONFIG_H
-  #include <config.h>
-#endif
+#include <config.h>
 */
 #include "garcia_mixed.h"
 
@@ -155,7 +153,7 @@ GarciaDriver_Init(ConfigFile* cf, int section)
 // the driver into the given driver table, indicating which interface the
 // driver can support and how to create a driver instance.
 void
-GarciaDriver_Register(DriverTable* table)
+garciadriver_Register(DriverTable* table)
 {
   table->AddDriver("garcia", GarciaDriver_Init);
 }
@@ -575,7 +573,7 @@ GarciaDriver::RefreshData()
   mIrData.voltages_count = 0;
   mIrData.ranges_count = 6;
   mIrData.ranges = new double[mIrData.ranges_count];
-  
+
   mIrData.ranges[0] = mGarcia->getNamedValue("front-ranger-left")->getFloatVal();
   mIrData.ranges[1] = mGarcia->getNamedValue("front-ranger-right")->getFloatVal();
   mIrData.ranges[2] = mGarcia->getNamedValue("side-ranger-left")->getFloatVal();

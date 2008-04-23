@@ -129,7 +129,7 @@ Driver* ShapeTracker_Init( ConfigFile* cf, int section)
 
 
 // a driver registration function
-void ShapeTracker_Register(DriverTable* table)
+void shapetracker_Register(DriverTable* table)
 {
   table->AddDriver("shapetracker", ShapeTracker_Init);
 }

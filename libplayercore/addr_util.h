@@ -43,9 +43,7 @@
 extern "C" {
 #endif
 
-#if HAVE_CONFIG_H
-  #include <config.h>
-#endif
+#include <config.h>
 
 #include <sys/types.h>
 #if HAVE_STDINT_H

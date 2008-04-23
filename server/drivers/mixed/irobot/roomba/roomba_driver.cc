@@ -2,7 +2,7 @@
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2006 -
  *     Brian Gerkey
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@
 
 Newer versions of the iRobot Roomba vaccum robot can be controlled by an
 external computer over a serial line.  This driver supports control of
-these robots.  
+these robots.
 
 Note that the serial port on top of the Roomba operates at 5V, not the
 RS232 standard of 12V.  This means that you cannot just plug a plain
@@ -48,7 +48,7 @@ has a howto on building an appropriate serial cable.
 The roomba driver provides the following device interfaces:
 
 - @ref interface_position2d
-  - This interface returns odometry data (PLAYER_POSITION2D_DATA_STATE), 
+  - This interface returns odometry data (PLAYER_POSITION2D_DATA_STATE),
     and accepts velocity commands (PLAYER_POSITION2D_CMD_VEL).
 
 - @ref interface_power
@@ -58,9 +58,9 @@ The roomba driver provides the following device interfaces:
   - This interface returns bumper data (PLAYER_BUMPER_DATA_STATE).
 
 - @ref interface_opaque
-  - This driver supports programming song, playing songs, and setting the LEDs. 
+  - This driver supports programming song, playing songs, and setting the LEDs.
   - Play song data format in bytes: [0][song_number]
-  - Program song data format in bytes: [1][song_number][length(n)][note_1][length_note_1]...[note_n][length_note_n]. 
+  - Program song data format in bytes: [1][song_number][length(n)][note_1][length_note_1]...[note_n][length_note_n].
   - Set LEDS format in bytes: [2][dirt_dectect(0/1)][max_bool(0/1)][clean(0/1)][spot(0/1)][status(0=off,1=red,2=green,3=amber)][power_color(0-255)][power_intensity(0-255)]
 
 @par Supported configuration requests
@@ -126,8 +126,8 @@ class Roomba : public Driver
     int Shutdown();
 
     // MessageHandler
-    int ProcessMessage(QueuePointer & resp_queue, 
-		       player_msghdr * hdr, 
+    int ProcessMessage(QueuePointer & resp_queue,
+		       player_msghdr * hdr,
 		       void * data);
 
   private:
@@ -167,7 +167,7 @@ Driver* Roomba_Init(ConfigFile* cf, int section)
 }
 
 // a driver registration function
-void Roomba_Register(DriverTable* table)
+void roomba_Register(DriverTable* table)
 {
   table->AddDriver("roomba", Roomba_Init);
 }
@@ -326,7 +326,7 @@ Roomba::Main()
      posdata.pos.py = this->roomba_dev->oy;
      posdata.pos.pa = this->roomba_dev->oa;
 
-     this->Publish(this->position_addr, 
+     this->Publish(this->position_addr,
                    PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE,
                    (void*)&posdata, sizeof(posdata), NULL);
 
@@ -338,17 +338,17 @@ Roomba::Main()
      powerdata.volts = this->roomba_dev->voltage;
      powerdata.watts = this->roomba_dev->voltage * this->roomba_dev->current;
      powerdata.joules = this->roomba_dev->charge;
-     powerdata.percent = 100.0 * 
+     powerdata.percent = 100.0 *
              (this->roomba_dev->charge / this->roomba_dev->capacity);
-     powerdata.charging = 
+     powerdata.charging =
              (this->roomba_dev->charging_state == ROOMBA_CHARGING_NOT) ? 0 : 1;
      powerdata.valid = (PLAYER_POWER_MASK_VOLTS |
-                        PLAYER_POWER_MASK_WATTS | 
-                        PLAYER_POWER_MASK_JOULES | 
+                        PLAYER_POWER_MASK_WATTS |
+                        PLAYER_POWER_MASK_JOULES |
                         PLAYER_POWER_MASK_PERCENT |
                         PLAYER_POWER_MASK_CHARGING);
 
-     this->Publish(this->power_addr, 
+     this->Publish(this->power_addr,
                    PLAYER_MSGTYPE_DATA, PLAYER_POWER_DATA_STATE,
                    (void*)&powerdata, sizeof(powerdata), NULL);
 
@@ -362,7 +362,7 @@ Roomba::Main()
      bumperdata.bumpers[0] = this->roomba_dev->bumper_left;
      bumperdata.bumpers[1] = this->roomba_dev->bumper_right;
 
-     this->Publish(this->bumper_addr, 
+     this->Publish(this->bumper_addr,
                    PLAYER_MSGTYPE_DATA, PLAYER_BUMPER_DATA_STATE,
                    (void*)&bumperdata);
      delete [] bumperdata.bumpers;
@@ -433,8 +433,8 @@ Roomba::Main()
 }
 
 int
-Roomba::ProcessMessage(QueuePointer & resp_queue, 
-		       player_msghdr * hdr, 
+Roomba::ProcessMessage(QueuePointer & resp_queue,
+		       player_msghdr * hdr,
 		       void * data)
 {
   if(Message::MatchMessage(hdr,
@@ -454,11 +454,11 @@ Roomba::ProcessMessage(QueuePointer & resp_queue,
 	if (position_cmd.vel.px > 0.0) position_cmd.vel.px = 0.0;
 	position_cmd.vel.pa = 0.0;
     }
-    PLAYER_MSG2(2,"sending motor commands %f:%f", 
+    PLAYER_MSG2(2,"sending motor commands %f:%f",
                 position_cmd.vel.px,
                 position_cmd.vel.pa);
-    if(roomba_set_speeds(this->roomba_dev, 
-                         position_cmd.vel.px, 
+    if(roomba_set_speeds(this->roomba_dev,
+                         position_cmd.vel.px,
                          position_cmd.vel.pa) < 0)
     {
       PLAYER_ERROR("failed to set speeds to roomba");
@@ -547,7 +547,7 @@ Roomba::ProcessMessage(QueuePointer & resp_queue,
       poses.poses[i].pyaw = 0.0;
     }
 
-    this->Publish(this->ir_addr, resp_queue, 
+    this->Publish(this->ir_addr, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_IR_REQ_POSE,
                   (void*)&poses);
@@ -589,7 +589,7 @@ Roomba::ProcessMessage(QueuePointer & resp_queue,
         note_lengths[i] = opaque_data.data[4+i*2];
       }
 
-      roomba_set_song(this->roomba_dev, index, length, 
+      roomba_set_song(this->roomba_dev, index, length,
           notes, note_lengths);
     }
     // Set the LEDs
@@ -607,7 +607,7 @@ Roomba::ProcessMessage(QueuePointer & resp_queue,
       if (status > 3)
         status = 3;
 
-      if (roomba_set_leds(this->roomba_dev, dirt_detect, max, clean, spot, 
+      if (roomba_set_leds(this->roomba_dev, dirt_detect, max, clean, spot,
             status, power_color, power_intensity) < 0)
       {
         PLAYER_ERROR("failed to set roomba leds");

@@ -44,7 +44,7 @@
 #include <libplayercore/player.h>  // for interface constants
 #include <libplayercore/interface_util.h> // for player_interface_t type
 
-#include "interface_table.c"
+#include "interface_table.h"
 
 static player_interface_t* itable;
 static int itable_len;

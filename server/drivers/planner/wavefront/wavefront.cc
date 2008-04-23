@@ -370,7 +370,7 @@ Driver* Wavefront_Init( ConfigFile* cf, int section)
 
 
 // a driver registration function
-void Wavefront_Register(DriverTable* table)
+void wavefront_Register(DriverTable* table)
 {
   table->AddDriver("wavefront",  Wavefront_Init);
 }
@@ -764,7 +764,7 @@ Wavefront::PutPlannerData()
     data.waypoints_count = this->waypoint_count;
   }
 
-  this->Publish(this->device_addr, 
+  this->Publish(this->device_addr,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_PLANNER_DATA_STATE,
                 (void*)&data,sizeof(data),NULL);

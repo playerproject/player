@@ -49,7 +49,7 @@ The ammount of digital and analog inputs is adjusted automatically for each devi
 
 - serial (integer)
   - Default: -1
-  - This defines which phidget will be controlled if there is more than one connected to the USB bus. 
+  - This defines which phidget will be controlled if there is more than one connected to the USB bus.
     You can obtain the number with lsusb, like this:  "lsusb -v |grep iSerial".
     The default is -1 , and it will connect to the first phidget available.
 
@@ -65,8 +65,8 @@ The ammount of digital and analog inputs is adjusted automatically for each devi
   - The driver supports the "speech" interface for printing data to the LCD of the Interface kits that have it.
   - An "aio" interface gives information about the analog sensors connected to the Interface Kit.
   - The "dio" interface controls the digital inputs and outputs present.
-  
-@par Example 
+
+@par Example
 
 @verbatim
 driver
@@ -167,7 +167,7 @@ PhidgetIFK_Init(ConfigFile* cf, int section) {
 // that it can be invoked without object context.  In this function, we add
 // the driver into the given driver table, indicating which interface the
 // driver can support and how to create a driver instance.
-void PhidgetIFK_Register(DriverTable* table) {
+void phidgetifk_Register(DriverTable* table) {
     table->AddDriver("phidgetIFK", PhidgetIFK_Init);
 }
 
@@ -545,7 +545,7 @@ void PhidgetIFK::Main() {
             Publish(aio_id, PLAYER_MSGTYPE_DATA, PLAYER_AIO_DATA_STATE, (unsigned char*)&data_ai, sizeof(player_aio_data_t), NULL);
         }
         delete [] data_ai.voltages;
-        
+
         if (dio_id.interf != 0) {
             Publish(dio_id, PLAYER_MSGTYPE_DATA, PLAYER_DIO_DATA_VALUES, (unsigned char*)&data_di, sizeof(player_dio_data_t), NULL);
         }

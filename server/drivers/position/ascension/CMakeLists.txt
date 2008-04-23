@@ -1,0 +1,2 @@
+PLAYERDRIVER_OPTION (flockofbirds build_flockofbirds ON)
+PLAYERDRIVER_ADD_DRIVER_SIMPLE (flockofbirds build_flockofbirds flockofbirds.cc)

@@ -1,7 +1,7 @@
 /*
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2006 - Radu Bogdan Rusu (rusu@cs.tum.edu)
- * 
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -23,10 +23,10 @@
 /** @defgroup driver_laserptzcloud laserptzcloud
  * @brief Build a 3D point cloud from laser and ptz data
 
-The laserptztcloud driver reads laser scans from a laser device and PTZ poses 
-from a ptz device, linearly interpolates to estimate the actual pan/tilt pose 
-from which the scan was taken, then outputs messages containing the cartesian 
-3D coordinates (X,Y,Z in [m]) via a pointcloud3d interface. No additional 
+The laserptztcloud driver reads laser scans from a laser device and PTZ poses
+from a ptz device, linearly interpolates to estimate the actual pan/tilt pose
+from which the scan was taken, then outputs messages containing the cartesian
+3D coordinates (X,Y,Z in [m]) via a pointcloud3d interface. No additional
 thread is started. Based on Brian's laserposerinterpolator.
 
 @par Compile-time dependencies
@@ -48,7 +48,7 @@ thread is started. Based on Brian's laserposerinterpolator.
 
 @par Configuration file options
 
-@par Example 
+@par Example
 
 @verbatim
 driver
@@ -64,9 +64,7 @@ driver
  */
 /** @} */
 
-#if HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <math.h>
 #include <float.h>
@@ -97,8 +95,8 @@ class LaserPTZCloud : public Driver
         int Shutdown();
 
         // MessageHandler
-        int ProcessMessage (QueuePointer &resp_queue, 
-                            player_msghdr * hdr, 
+        int ProcessMessage (QueuePointer &resp_queue,
+                            player_msghdr * hdr,
                             void * data);
     private:
 
@@ -145,9 +143,9 @@ Driver* LaserPTZCloud_Init (ConfigFile* cf, int section)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-//Registers the driver in the driver table. Called from the 
+//Registers the driver in the driver table. Called from the
 // player_driver_init function that the loader looks for
-void LaserPTZCloud_Register (DriverTable* table)
+void laserptzcloud_Register (DriverTable* table)
 {
     table->AddDriver ("laserptzcloud", LaserPTZCloud_Init);
 }
@@ -156,7 +154,7 @@ void LaserPTZCloud_Register (DriverTable* table)
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 LaserPTZCloud::LaserPTZCloud (ConfigFile* cf, int section)
-    : Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, 
+    : Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
              PLAYER_POINTCLOUD3D_CODE)
 {
     // Must have an input laser
@@ -180,7 +178,7 @@ LaserPTZCloud::LaserPTZCloud (ConfigFile* cf, int section)
     this->ptz_device = NULL;
 
     // ---[ PTZ parameters ]---
-    this->ptz_pan_or_tilt = cf->ReadFloat 
+    this->ptz_pan_or_tilt = cf->ReadFloat
             (section, "ptz_pan_or_tilt", DEFAULT_PTZ_PAN_OR_TILT);
 
     // Maximum number of laser scans to buffer
@@ -194,12 +192,12 @@ LaserPTZCloud::LaserPTZCloud (ConfigFile* cf, int section)
     if (this->maxpoints > DEFAULT_MAXPOINTS)
     {
         maxpoints = MIN (maxpoints, DEFAULT_MAXPOINTS);
-        PLAYER_WARN1 ("number of points cannot exceeded MAXPOINTS (%d)", 
+        PLAYER_WARN1 ("number of points cannot exceeded MAXPOINTS (%d)",
                       DEFAULT_MAXPOINTS);
     }
 
     // Allocate memory for the buffer
-    this->scans = (player_laser_data_t*)calloc 
+    this->scans = (player_laser_data_t*)calloc
 	(this->maxnumscans, sizeof (player_laser_data_t));
     assert (this->scans);
     // Allocate memory for the laser timestamps
@@ -207,7 +205,7 @@ LaserPTZCloud::LaserPTZCloud (ConfigFile* cf, int section)
     assert (this->scantimes);
 
     // Allocate memory for the points buffer
-    this->points = (player_point_3d_t*)calloc 
+    this->points = (player_point_3d_t*)calloc
         (this->maxnumscans, sizeof (player_point_3d_t));
     return;
 }
@@ -265,13 +263,13 @@ int LaserPTZCloud::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // ProcessMessage
-int LaserPTZCloud::ProcessMessage (QueuePointer &resp_queue, 
+int LaserPTZCloud::ProcessMessage (QueuePointer &resp_queue,
                                           player_msghdr * hdr,
                                           void * data)
 {
     // Is it a laser scan?
     if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_DATA,
-	PLAYER_LASER_DATA_SCAN, 
+	PLAYER_LASER_DATA_SCAN,
         this->laser_addr))
     {
         // Buffer the scan
@@ -289,7 +287,7 @@ int LaserPTZCloud::ProcessMessage (QueuePointer &resp_queue,
         return (0);
     }
     // Is it a ptz pose?
-    else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_DATA, 
+    else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_DATA,
              PLAYER_PTZ_DATA_STATE, this->ptz_addr))
     {
         player_ptz_data_t newpose = *((player_ptz_data_t*)data);
@@ -310,7 +308,7 @@ int LaserPTZCloud::ProcessMessage (QueuePointer &resp_queue,
         	{
             	    double t0 = this->scantimes[i] - this->lastposetime;
 
-            	    float corrected_tilt = this->lastpose.tilt + t0 * 
+            	    float corrected_tilt = this->lastpose.tilt + t0 *
                         (newpose.tilt - this->lastpose.tilt) / t1;
 
             	    // Convert the vertical angle to radians
@@ -323,7 +321,7 @@ int LaserPTZCloud::ProcessMessage (QueuePointer &resp_queue,
             	    float resolution = this->scans[i].resolution;
 
             	    int ranges_count = (int)(this->scans[i].ranges_count);
-		
+
             	    // The 3D point array
             	    player_pointcloud3d_data_t cloud_data;
             	    player_pointcloud3d_element_t all_elements[ranges_count];
@@ -347,14 +345,14 @@ int LaserPTZCloud::ProcessMessage (QueuePointer &resp_queue,
                 	}
                 	angle_x += resolution;
             	    }
-		
+
             	    cloud_data.points_count = counter;
             	    cloud_data.points = (player_pointcloud3d_element_t*)calloc(sizeof(cloud_data.points[0]),cloud_data.points_count);
             	    for (int j=0; j < counter; j++)
                 	cloud_data.points[j] = all_elements[j];
-		
-            	    Publish (this->device_addr, PLAYER_MSGTYPE_DATA, 
-                         PLAYER_POINTCLOUD3D_DATA_STATE, &cloud_data, 
+
+            	    Publish (this->device_addr, PLAYER_MSGTYPE_DATA,
+                         PLAYER_POINTCLOUD3D_DATA_STATE, &cloud_data,
                          sizeof (player_pointcloud3d_data_t), NULL);
             	    free(cloud_data.points);
         	}

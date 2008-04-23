@@ -19,19 +19,19 @@
  */
 
 /////////////////////////////////////////////////////////////////////////////////////
-// Desc: RS4-Leuze range finder laser driver 
+// Desc: RS4-Leuze range finder laser driver
 // Author: Ernesto Homar Teniente Avilés
 //	   (C) Institut de Robótica Industrial
 //	   Universidad Politécnica de Catalunya
 // Date: May, 2007
 // Version: 1.5.001
-// 
+//
 //
 // Usage:
 //   (empty)
 //
 // Theory of operation:
-//   Based on the 
+//   Based on the
 //
 // Known Bugs:
 //   (empty)
@@ -70,9 +70,9 @@ Communication with the laser is via RS232.
 @par Configuration file options
 
 - port (string)
-  - Default: "/dev/ttyS1" 
+  - Default: "/dev/ttyS1"
   - Port to which the laser is connected.  If you are using a USB/232 converter,
-    this will be "dev/ttyUSBx". 
+    this will be "dev/ttyUSBx".
 
 - pose (float tuple m m rad)
   - Default: [0.0 0.0 0.0]
@@ -95,7 +95,7 @@ Communication with the laser is via RS232.
 
 - invert_data(bool)
   - Default: 1 (invert_data_on) Leuze data must be inverted in order to be used in player
-  - 0 (invert_data_off)  - Is the laser physically inverted (i.e., upside-down)?  Is so, scan data 
+  - 0 (invert_data_off)  - Is the laser physically inverted (i.e., upside-down)?  Is so, scan data
     will not be reversed accordingly.
 
 @par Example
@@ -152,7 +152,7 @@ using namespace std;
 class RS4LeuzeLaserDriver : public Driver {
 public:
 
-	// Constructor, teh constructor takes a CongifgFile parameter 
+	// Constructor, teh constructor takes a CongifgFile parameter
 	//and an integer section parameter(2);
 	RS4LeuzeLaserDriver(ConfigFile* cf, int section);
 	// Destructor
@@ -162,7 +162,7 @@ public:
 	// Implementations of virtual functions
 	int Setup();
 	int Shutdown();
-	//The drivers re-implements the ProcessMessage method to provide support for 
+	//The drivers re-implements the ProcessMessage method to provide support for
 	//handling request and commands(4)
 	// This method will be invoked on each incoming message
 	virtual int ProcessMessage(QueuePointer &resp_queue,
@@ -170,7 +170,7 @@ public:
                                void * data);
 
 private:
-	//The drivers re-implements Main, wich will be called when the dirver thread 
+	//The drivers re-implements Main, wich will be called when the dirver thread
 	//is started(5)
 	// Main function for device thread.
 	virtual void Main();
@@ -224,9 +224,9 @@ RS4LeuzeLaserDriver::RS4LeuzeLaserDriver(ConfigFile* cf, int section)
 	Conf.range_res = 0.01;
 	Conf.intensity = 0;
 
-	
-   	// serial configuration 
-		
+
+   	// serial configuration
+
 	cout << "myLaser RS4 Leuze:"<< endl;
 
 	int b = cf->ReadInt(section, "baud", 57600);
@@ -240,7 +240,7 @@ RS4LeuzeLaserDriver::RS4LeuzeLaserDriver(ConfigFile* cf, int section)
 			break;
 		case 38400:
 			BaudRate = B38400;
-			break;	
+			break;
 		case 19200:
 			BaudRate = B19200;
 			break;
@@ -290,7 +290,7 @@ RS4LeuzeLaserDriver::RS4LeuzeLaserDriver(ConfigFile* cf, int section)
 	cout << "scan points : " << ScanPoints << endl;
 
 	//invert data from teh leuze. Check if the leuze is upside-down.Normally dat must be inverted
-	//int sc = cf->ReadInt(section, "scan_points", 132);	
+	//int sc = cf->ReadInt(section, "scan_points", 132);
 	invert = cf -> ReadInt(section, "invert_data", 1);
 
 	laser_ON = 1;
@@ -303,7 +303,7 @@ RS4LeuzeLaserDriver::RS4LeuzeLaserDriver(ConfigFile* cf, int section)
 RS4LeuzeLaserDriver::~RS4LeuzeLaserDriver()
 {
 	//Reading are erased
-	delete myLaser;	
+	delete myLaser;
 	delete [] Data.ranges;
 	//delete Readings;
 }
@@ -398,7 +398,7 @@ void RS4LeuzeLaserDriver::Main()
 		float tmp;
 		cout << "Data: ";
 		for (unsigned int i = 0; i < Data.ranges_count; ++i)
-		{ 
+		{
 			tmp = myLaser->scanData.Reading[i];
 			if (invert)
 			{
@@ -414,7 +414,7 @@ void RS4LeuzeLaserDriver::Main()
 			cout << Data.ranges[i] << " ";
 		}
 			cout << endl;
-		
+
 
 		Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN,
 			&Data, sizeof(player_laser_data_t), NULL);
@@ -443,7 +443,7 @@ Driver* RS4LeuzeLaserDriver_Init(ConfigFile* cf, int section) {
 
 //Registers the driver in the driver table. Called from the
 // player_driver_init function that the loader looks for
-int RS4LeuzeLaserDriver_Register(DriverTable* table) {
+int rs4leuze_Register(DriverTable* table) {
 	table->AddDriver("rs4leuze", RS4LeuzeLaserDriver_Init);
   return 0;
 }

@@ -315,7 +315,7 @@ Driver* AdaptiveMCL_Init( ConfigFile* cf, int section)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Register the driver
-void AdaptiveMCL_Register(DriverTable* table)
+void amcl_Register(DriverTable* table)
 {
   table->AddDriver("amcl", AdaptiveMCL_Init);
   return;
@@ -1060,7 +1060,7 @@ void AdaptiveMCL::PutDataLocalize(double time)
         sizeof(player_localize_hypoth_t),&hypoth_compare);
 
   // Push data out
-  this->Publish(this->localize_addr, 
+  this->Publish(this->localize_addr,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_LOCALIZE_DATA_HYPOTHS,
                 (void*)&data);
@@ -1090,7 +1090,7 @@ void AdaptiveMCL::PutDataPosition(pf_vector_t delta, double time)
   data.pos.pa = pose.v[2];
 
   // Push data out
-  this->Publish(this->position_addr, 
+  this->Publish(this->position_addr,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_POSITION2D_DATA_STATE,
                 (void*)&data,sizeof(data),&time);

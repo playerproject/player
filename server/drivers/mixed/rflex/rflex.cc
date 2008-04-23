@@ -346,7 +346,7 @@ RFLEX_Init(ConfigFile *cf, int section)
  * returns:
  */
 void
-RFLEX_Register(DriverTable *table)
+rflex_Register(DriverTable *table)
 {
   table->AddDriver("rflex", RFLEX_Init);
 }
@@ -500,13 +500,13 @@ int RFLEX::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr,
     Lock();
     command = *reinterpret_cast<player_position2d_cmd_vel_t *> (data);
     Unlock();
- 
-    // reset command_type since we have a new 
-    // velocity command so we can get into the 
+
+    // reset command_type since we have a new
+    // velocity command so we can get into the
     // velocity control section in RFLEX::Main()
-    
+
     command_type = 0;
-    
+
     return 0;
   }
 
@@ -525,7 +525,7 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
   memset(&this->power_id, 0, sizeof(player_devaddr_t));
   memset(&this->aio_id, 0, sizeof(player_devaddr_t));
   memset(&this->dio_id, 0, sizeof(player_devaddr_t));
-  
+
   command_type = 0;
 
   this->position_subscriptions = 0;
@@ -1169,7 +1169,7 @@ RFLEX::Main()
 
   // release cpu somewhat so other threads can run.
   usleep(1000);
-  
+
   }
   pthread_exit(NULL);
 }
@@ -1351,10 +1351,10 @@ void RFLEX::update_everything(player_rflex_data_t* d)
   //this would get the battery,time, and brake state (if we cared)
   //update system (battery,time, and brake also request joystick data)
   rflex_update_system(rflex_fd,&batt,&brake);
-  
+
   // set the bits for the fields we're using
   d->power.valid = PLAYER_POWER_MASK_VOLTS | PLAYER_POWER_MASK_PERCENT;
-  
+
   d->power.volts = static_cast<float>(batt)/100.0 + rflex_configs.power_offset;
   if (d->power.volts > 24)
     d->power.percent = 100;

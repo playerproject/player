@@ -1,8 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
-#include <packet.h>
+#include "packet.h"
 #include <unistd.h>
 #include <stdlib.h> /* for exit() */
 
@@ -59,7 +59,7 @@ bool P2OSPacket::Check() {
   short chksum;
   chksum = CalcChkSum();
 
-  if ( chksum == packet[size-2] << 8 | packet[size-1]) 
+  if ( chksum == packet[size-2] << 8 | packet[size-1])
     return(true);
 
 
@@ -80,11 +80,11 @@ int P2OSPacket::CalcChkSum() {
     buffer += 2;
   }
   if (n>0) c = c^ (int)*(buffer++);
-  
+
   return(c);
 }
 
-int P2OSPacket::Receive( int fd ) 
+int P2OSPacket::Receive( int fd )
 {
   unsigned char prefix[3];
   //int skipped=0;
@@ -92,17 +92,17 @@ int P2OSPacket::Receive( int fd )
 
   memset(packet,0,sizeof(packet));
 
-  do 
+  do
   {
     memset(prefix,0,sizeof(prefix));
     //memset( prefix, 0, 3);
 
-    while(1) 
+    while(1)
     {
       cnt = 0;
-      while( cnt!=1 ) 
+      while( cnt!=1 )
       {
-        if ( (cnt+=read( fd, &prefix[2], 1 )) < 0 ) 
+        if ( (cnt+=read( fd, &prefix[2], 1 )) < 0 )
         {
           perror("Error reading packet header from robot connection: P2OSPacket():Receive():read():");
           return(1);
@@ -110,28 +110,28 @@ int P2OSPacket::Receive( int fd )
       }
 
       if (prefix[0]==0xFA && prefix[1]==0xFB) break;
-      
+
       GlobalTime->GetTimeDouble(&timestamp);
-      
+
       prefix[0]=prefix[1];
       prefix[1]=prefix[2];
       //skipped++;
     }
     //if (skipped>3) printf("Skipped %d bytes\n", skipped);
-    
+
     size = prefix[2]+3;
     memcpy( packet, prefix, 3);
 
     cnt = 0;
-    while( cnt!=prefix[2] ) 
+    while( cnt!=prefix[2] )
     {
-      if ( (cnt+=read( fd, &packet[3+cnt],  prefix[2]-cnt )) < 0 ) 
+      if ( (cnt+=read( fd, &packet[3+cnt],  prefix[2]-cnt )) < 0 )
       {
         perror("Error reading packet body from robot connection: P2OSPacket():Receive():read():");
         return(1);
-      }  
+      }
     }
-  } while (!Check());  
+  } while (!Check());
   return(0);
 }
 
@@ -143,7 +143,7 @@ int P2OSPacket::Build( unsigned char *data, unsigned char datasize ) {
   /* header */
   packet[0]=0xFA;
   packet[1]=0xFB;
-  
+
   if ( size > 198 ) {
     puts("Packet to P2OS can't be larger than 200 bytes");
     return(1);
@@ -151,7 +151,7 @@ int P2OSPacket::Build( unsigned char *data, unsigned char datasize ) {
   packet[2] = datasize + 2;
 
   memcpy( &packet[3], data, datasize );
-  
+
   chksum = CalcChkSum();
   packet[3+datasize] = chksum >> 8;
   packet[3+datasize+1] = chksum & 0xFF;
@@ -163,15 +163,15 @@ int P2OSPacket::Build( unsigned char *data, unsigned char datasize ) {
   return(0);
 }
 
-int P2OSPacket::Send( int fd) 
+int P2OSPacket::Send( int fd)
 {
   int cnt=0;
-  
+
   //printf("Send(): ");
   //PrintHex();
   while(cnt!=size)
   {
-    if((cnt += write( fd, packet, size )) < 0) 
+    if((cnt += write( fd, packet, size )) < 0)
     {
       perror("Send");
       return(1);

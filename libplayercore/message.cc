@@ -52,7 +52,7 @@
 #include <libplayercore/player.h>
 #include <libplayercore/error.h>
 #include <libplayercore/interface_util.h>
-#include <libplayerxdr/playerxdr.h>
+#include <playerxdr.h>
 
 Message::Message(const struct player_msghdr & aHeader,
                   void * data,

@@ -56,8 +56,8 @@ interface.
 @par Configuration file options
 
 - none
-      
-@par Example 
+
+@par Example
 
 @verbatim
 driver
@@ -101,7 +101,7 @@ class CameraCompress : public Driver
 
   // Main function for device thread.
   private: virtual void Main();
-  
+
   private: void ProcessImage(player_camera_data_t & rawdata);
 
   // Input camera device
@@ -130,7 +130,7 @@ Driver *CameraCompress_Init(ConfigFile *cf, int section)
   return ((Driver*) (new CameraCompress(cf, section)));
 }
 
-void CameraCompress_Register(DriverTable *table)
+void cameracompress_Register(DriverTable *table)
 {
   table->AddDriver("cameracompress", CameraCompress_Init);
 }
@@ -146,7 +146,7 @@ CameraCompress::CameraCompress( ConfigFile *cf, int section)
   if (cf->ReadDeviceAddr(&this->camera_id, section, "requires",
                        PLAYER_CAMERA_CODE, -1, NULL) != 0)
   {
-    this->SetError(-1);    
+    this->SetError(-1);
     return;
   }
   this->camera_time = 0.0;
@@ -186,9 +186,9 @@ int CameraCompress::Shutdown()
 {
   // Stop the driver thread
   StopThread();
-  
+
   camera->Unsubscribe(InQueue);
-  
+
   if (this->data.image)
   {
     delete []this->data.image;
@@ -200,19 +200,19 @@ int CameraCompress::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int CameraCompress::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, 
+int CameraCompress::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr,
                                void * data)
 {
   assert(hdr);
   assert(data);
-  
+
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, camera_id))
   {
     player_camera_data_t * recv = reinterpret_cast<player_camera_data_t * > (data);
     ProcessImage(*recv);
     return 0;
   }
- 
+
   return -1;
 }
 
@@ -237,7 +237,7 @@ void CameraCompress::ProcessImage(player_camera_data_t & rawdata)
   unsigned char * ptr, * ptr1;
   int i, l;
   unsigned char * buffer = NULL;
-  
+
 
   if ((rawdata.width <= 0) || (rawdata.height <= 0))
   {
@@ -311,7 +311,7 @@ void CameraCompress::ProcessImage(player_camera_data_t & rawdata)
   }
   if (buffer) delete []buffer;
   buffer = NULL;
-  
+
   if (this->save)
   {
     snprintf(filename, sizeof(filename), "click-%04d.jpeg",this->frameno++);

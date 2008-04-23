@@ -55,7 +55,7 @@
  *    psos1m.p
  *    psos1x.p
 */
-#include <robot_params.h>
+#include "robot_params.h"
 
 
 RobotParams_t amigo_params =

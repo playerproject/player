@@ -2,7 +2,7 @@
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2006 -
  *     Brian Gerkey
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@
 
 Newer versions of the iRobot Create vaccum robot can be controlled by an
 external computer over a serial line.  This driver supports control of
-these robots.  
+these robots.
 
 Note that the serial port on top of the Create operates at 5V, not the
 RS232 standard of 12V.  This means that you cannot just plug a plain
@@ -48,7 +48,7 @@ has a howto on building an appropriate serial cable.
 The create driver provides the following device interfaces:
 
 - @ref interface_position2d
-  - This interface returns odometry data (PLAYER_POSITION2D_DATA_STATE), 
+  - This interface returns odometry data (PLAYER_POSITION2D_DATA_STATE),
     and accepts velocity commands (PLAYER_POSITION2D_CMD_VEL).
 
 - @ref interface_power
@@ -59,9 +59,9 @@ The create driver provides the following device interfaces:
 
 - @ref interface_opaque
   - This driver supports programming song, playing songs, setting the LEDs,
-    and running demo scripts. 
+    and running demo scripts.
   - Play song data format in bytes: [0][song_number]
-  - Program song data format in bytes: [1][song_number][length(n)][note_1][length_note_1]...[note_n][length_note_n]. 
+  - Program song data format in bytes: [1][song_number][length(n)][note_1][length_note_1]...[note_n][length_note_n].
   - Set LEDS format in bytes: [2][dirt_dectect(0/1)][max_bool(0/1)][clean(0/1)][spot(0/1)][status(0=off,1=red,2=green,3=amber)][power_color(0-255)][power_intensity(0-255)]
   - Run a demo script in bytes: [3][demo number]
 
@@ -123,8 +123,8 @@ class Create : public Driver
     int Shutdown();
 
     // MessageHandler
-    int ProcessMessage(QueuePointer &resp_queue, 
-		       player_msghdr * hdr, 
+    int ProcessMessage(QueuePointer &resp_queue,
+		       player_msghdr * hdr,
 		       void * data);
 
   private:
@@ -157,7 +157,7 @@ Driver* Create_Init(ConfigFile* cf, int section)
 }
 
 // a driver registration function
-void Create_Register(DriverTable* table)
+void create_Register(DriverTable* table)
 {
   table->AddDriver("create", Create_Init);
 }
@@ -318,13 +318,13 @@ Create::Main()
      powerdata.volts = this->create_dev->voltage;
      powerdata.watts = this->create_dev->voltage * this->create_dev->current;
      powerdata.joules = this->create_dev->charge;
-     powerdata.percent = 100.0 * 
+     powerdata.percent = 100.0 *
              (this->create_dev->charge / this->create_dev->capacity);
-     powerdata.charging = 
+     powerdata.charging =
              (this->create_dev->charging_state == CREATE_CHARGING_NOT) ? 0 : 1;
      powerdata.valid = (PLAYER_POWER_MASK_VOLTS |
-                        PLAYER_POWER_MASK_WATTS | 
-                        PLAYER_POWER_MASK_JOULES | 
+                        PLAYER_POWER_MASK_WATTS |
+                        PLAYER_POWER_MASK_JOULES |
                         PLAYER_POWER_MASK_PERCENT |
                         PLAYER_POWER_MASK_CHARGING);
 
@@ -409,8 +409,8 @@ Create::Main()
 }
 
 int
-Create::ProcessMessage(QueuePointer &resp_queue, 
-		       player_msghdr * hdr, 
+Create::ProcessMessage(QueuePointer &resp_queue,
+		       player_msghdr * hdr,
 		       void * data)
 {
   if(Message::MatchMessage(hdr,
@@ -421,11 +421,11 @@ Create::ProcessMessage(QueuePointer &resp_queue,
     // get and send the latest motor command
     player_position2d_cmd_vel_t position_cmd;
     position_cmd = *(player_position2d_cmd_vel_t*)data;
-    PLAYER_MSG2(2,"sending motor commands %f:%f", 
+    PLAYER_MSG2(2,"sending motor commands %f:%f",
                 position_cmd.vel.px,
                 position_cmd.vel.pa);
-    if(create_set_speeds(this->create_dev, 
-                         position_cmd.vel.px, 
+    if(create_set_speeds(this->create_dev,
+                         position_cmd.vel.px,
                          position_cmd.vel.pa) < 0)
     {
       PLAYER_ERROR("failed to set speeds to create");
@@ -503,7 +503,7 @@ Create::ProcessMessage(QueuePointer &resp_queue,
       poses.poses[i].pyaw = 0.0;
     }
 
-    this->Publish(this->ir_addr, resp_queue, 
+    this->Publish(this->ir_addr, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_IR_REQ_POSE,
                   (void*)&poses);
@@ -541,7 +541,7 @@ Create::ProcessMessage(QueuePointer &resp_queue,
         note_lengths[i] = opaque_data.data[4+i*2];
       }
 
-      create_set_song(this->create_dev, index, length, 
+      create_set_song(this->create_dev, index, length,
           notes, note_lengths);
     }
     // Set the LEDs
@@ -558,7 +558,7 @@ Create::ProcessMessage(QueuePointer &resp_queue,
       if (status > 3)
         status = 3;
 
-      if (create_set_leds(this->create_dev, dirt_detect, max, clean, spot, 
+      if (create_set_leds(this->create_dev, dirt_detect, max, clean, spot,
             status, power_color, power_intensity) < 0)
       {
         PLAYER_ERROR("failed to set create leds");

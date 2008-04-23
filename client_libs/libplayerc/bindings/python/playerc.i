@@ -28,7 +28,7 @@
     memset(buffer, 0, blength );
 
     //result is of type playerc_rfidtag_t
-    unsigned int j;    
+    unsigned int j;
     unsigned int guid_count=$1[i].guid_count;
 
     //copy the bytes into the buffer
@@ -392,8 +392,8 @@
 
 // Include Player header so we can pick up some constants and generate
 // wrapper code for structs
-%include "../../../../libplayercore/player.h"
-%include "../../../../libplayercore/player_interfaces.h"
+%include "libplayercore/player.h"
+%include "libplayercore/player_interfaces.h"
 
 
 // Use this for regular c-bindings;
@@ -436,7 +436,7 @@ static void python_on_blackboard_event(playerc_blackboard_t *device, player_blac
 	PyDict_SetItem(dict, PyString_FromString("subtype"), PyLong_FromLong(entry.subtype));
 	PyDict_SetItem(dict, PyString_FromString("timestamp_sec"), PyLong_FromLong(entry.timestamp_sec));
 	PyDict_SetItem(dict, PyString_FromString("timestamp_usec"), PyLong_FromLong(entry.timestamp_usec));
-	
+
 	data = NULL;
     switch(entry.subtype)
     {
@@ -489,7 +489,7 @@ static void python_on_blackboard_event(playerc_blackboard_t *device, player_blac
     	{
     		PyList_Append(copy, PyList_GetItem(list, i));
     	}
-    	
+
     	Py_DECREF(list);
     	list = NULL;
     	return copy;
@@ -521,7 +521,7 @@ static void python_on_blackboard_event(playerc_blackboard_t *device, player_blac
 	PyDict_SetItem(dict, PyString_FromString("subtype"), PyLong_FromLong(entry->subtype));
 	PyDict_SetItem(dict, PyString_FromString("timestamp_sec"), PyLong_FromLong(entry->timestamp_sec));
 	PyDict_SetItem(dict, PyString_FromString("timestamp_usec"), PyLong_FromLong(entry->timestamp_usec));
-    
+
     switch(entry->subtype)
     {
     	case PLAYERC_BLACKBOARD_DATA_SUBTYPE_NONE:
@@ -549,10 +549,10 @@ static void python_on_blackboard_event(playerc_blackboard_t *device, player_blac
     	default:
     		data = Py_None;
     	break;
-    	
+
     }
-    
-    PyDict_SetItem(dict, PyString_FromString("data"), data);    
+
+    PyDict_SetItem(dict, PyString_FromString("data"), data);
     free(entry->key);
     free(entry->group);
     free(entry->data);
@@ -564,7 +564,7 @@ static void python_on_blackboard_event(playerc_blackboard_t *device, player_blac
   {
     playerc_blackboard_set_entry(self,entry);
   }
-  
+
   PyObject *set_entry(PyObject *dict)
   {
 	PyObject *key;
@@ -578,7 +578,7 @@ static void python_on_blackboard_event(playerc_blackboard_t *device, player_blac
 	int i, result;
 	double d;
 	int length;
-	
+
 	if (!PyDict_Check(dict))
 	{
 		printf("Expected a dictionary object.\n");
@@ -587,7 +587,7 @@ static void python_on_blackboard_event(playerc_blackboard_t *device, player_blac
 
     player_blackboard_entry_t entry;
     memset(&entry, 0, sizeof(entry));
-    
+
     key = PyDict_GetItem(dict, PyString_FromString("key"));
     group = PyDict_GetItem(dict, PyString_FromString("group"));
 	type = PyDict_GetItem(dict, PyString_FromString("type"));
@@ -595,49 +595,49 @@ static void python_on_blackboard_event(playerc_blackboard_t *device, player_blac
 	timestamp_sec = PyDict_GetItem(dict, PyString_FromString("timestamp_sec"));
 	timestamp_usec = PyDict_GetItem(dict, PyString_FromString("timestamp_usec"));
 	data = PyDict_GetItem(dict, PyString_FromString("data"));
-	
+
 	if (key == NULL || group == NULL || type == NULL || subtype == NULL || timestamp_sec == NULL || timestamp_usec == NULL || data == NULL)
 	{
 		printf("Dictionary object missing keys.\n");
 		return PyLong_FromLong(-1);
 	}
-	
+
 	if (!PyString_Check(key))
 	{
 		printf("key should be a string type.\n");
 		return PyLong_FromLong(-1);
 	}
-	
+
 	if (!PyString_Check(group))
 	{
 		printf("group should be a string type.\n");
 		return PyLong_FromLong(-1);
 	}
-	
+
 	if (!PyLong_Check(type))
 	{
 		printf("type should be a long type.\n");
 		return PyLong_FromLong(-1);
 	}
-	
+
 	if (!PyLong_Check(subtype))
 	{
 		printf("subtype should be a long type.\n");
 		return PyLong_FromLong(-1);
 	}
-	
+
 	if (!PyLong_Check(timestamp_sec))
 	{
 		printf("timestamp_sec should be a long type.\n");
 		return PyLong_FromLong(-1);
 	}
-	
+
 	if (!PyLong_Check(timestamp_usec))
 	{
 		printf("timestamp_usec should be a long type.\n");
 		return PyLong_FromLong(-1);
 	}
-	
+
 	entry.key = PyString_AsString(key);
 	entry.key_count = strlen(entry.key) + 1;
 	entry.group = PyString_AsString(key);
@@ -646,7 +646,7 @@ static void python_on_blackboard_event(playerc_blackboard_t *device, player_blac
 	entry.subtype = PyInt_AsLong(subtype);
 	entry.timestamp_sec = PyInt_AsLong(timestamp_sec);
 	entry.timestamp_usec = PyInt_AsLong(timestamp_usec);
-    
+
     switch (entry.subtype)
     {
     	case PLAYERC_BLACKBOARD_DATA_SUBTYPE_NONE:
@@ -718,14 +718,14 @@ static void python_on_blackboard_event(playerc_blackboard_t *device, player_blac
     	return PyLong_FromLong(-1);
     }
     free(entry.data);
-    
+
     return PyLong_FromLong(0);
   }
 }
 
 %{
 // This code overrides the default swig wrapper. We use a different callback function for the python interface.
-// It performs the same functionality, but points the callback function to the new python one. 
+// It performs the same functionality, but points the callback function to the new python one.
 playerc_blackboard_t *python_playerc_blackboard_create(playerc_client_t *client, int index)
 {
       playerc_blackboard_t *device= playerc_blackboard_create(client, index);
@@ -733,10 +733,10 @@ playerc_blackboard_t *python_playerc_blackboard_create(playerc_client_t *client,
       {
         return NULL;
       }
-      
+
       device->on_blackboard_event = playerc_blackboard_python_on_blackboard_event;
       return device;
-       
+
 }
 #undef new_playerc_blackboard
 #define new_playerc_blackboard python_playerc_blackboard_create
@@ -749,7 +749,7 @@ void python_playerc_blackboard_destroy(playerc_blackboard_t* device)
   {
   	Py_DECREF((PyObject*)device->py_private);
   }
-  free(device);     
+  free(device);
 }
 #undef del_playerc_blackboard
 #define del_playerc_blackboard python_playerc_blackboard_destroy

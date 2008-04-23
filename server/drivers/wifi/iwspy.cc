@@ -1,8 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@
  *
  * This driver works like iwspy; it uses the linux wireless extensions
  * to get signal strengths to wireless NICS.
- *  
+ *
  */
 
 /** @ingroup drivers */
@@ -61,10 +61,10 @@ to get signal strengths to wireless NICS.
   - Network interface to report on
 - nic_%d (string tuple)
   - Default: NULL
-  - Each nic_%d option is a tuple [IP MAC] of IP address and MAC address to 
+  - Each nic_%d option is a tuple [IP MAC] of IP address and MAC address to
     monitor.
- 
-@par Example 
+
+@par Example
 
 @verbatim
 driver
@@ -133,7 +133,7 @@ class Iwspy : public Driver
   {
     // IP address of the NIC
     char ip[64];
-    
+
     // MAC address of NIC
     char mac[64];
 
@@ -160,14 +160,14 @@ class Iwspy : public Driver
 ////////////////////////////////////////////////////////////////////////////////
 // Instantiate driver for given interface
 Driver * Iwspy_Init( ConfigFile *cf, int section)
-{ 
+{
   return ((Driver*)(new Iwspy( cf, section)));
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Register driver type
-void Iwspy_Register(DriverTable *table)
+void iwspy_Register(DriverTable *table)
 {
   table->AddDriver("iwspy", Iwspy_Init);
   return;
@@ -185,7 +185,7 @@ Iwspy::Iwspy( ConfigFile *cf, int section)
 
   // Ethernet interface to monitor
   this->ethx = cf->ReadString(section, "eth", "eth1");
-  
+
   // Read IP addresses to monitor
   this->nic_count = 0;
   for (i = 0; i < 8; i++)
@@ -221,7 +221,7 @@ int Iwspy::Setup()
   /* REMOVE?
   // Wait a while until the arp table is refreshed
   usleep(1000000);
-  
+
   // Get the mac addresses
   for (i = 0; i < this->nic_count; i++)
   {
@@ -230,7 +230,7 @@ int Iwspy::Setup()
     strcpy(this->nics[i].mac, mac);
   }
   */
-  
+
   // Initialize the watch list
   if (this->InitIwSpy() != 0)
     return -1;
@@ -258,14 +258,14 @@ int Iwspy::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
-void Iwspy::Main() 
-{ 
+void Iwspy::Main()
+{
   int i;
   nic_t *nic;
   double time;
   player_wifi_link_t *link;
   player_wifi_data_t data;
-  
+
   while (true)
   {
     // Test if we are supposed to terminate.
@@ -327,7 +327,7 @@ int Iwspy::InitIwSpy()
   pid_t pid;
   int argc;
   char *args[16];
-  
+
   // Fork here
   pid = fork();
 
@@ -341,9 +341,9 @@ int Iwspy::InitIwSpy()
     // Add the list of MAC addresses to be monitored.
     for (i = 0; i < this->nic_count; i++)
       args[argc++] = this->nics[i].mac;
-    
+
     args[argc++] = NULL;
-    
+
     // Run iwspy
     if (execvp("iwspy", args) != 0)
     {
@@ -419,11 +419,11 @@ void Iwspy::UpdateIwSpy()
 
     // Parse the output
     this->Parse(stdout_pipe[0]);
-    
+
     close(stdout_pipe[0]);
     close(stdout_pipe[1]);
   }
-  
+
   return;
 }
 
@@ -457,7 +457,7 @@ void Iwspy::Parse(int fd)
       line[j - i] = buffer[j];
     line[j - i] = 0;
     i = j + 1;
-    
+
     //printf("[%s]\n", line);
 
     // Get data for each registered NIC
@@ -473,7 +473,7 @@ void Iwspy::Parse(int fd)
     }
 
     //printf("mac [%s]\n", mac);
-    
+
     // Update the appropriate entry in the nic list.
     for (j = 0; j < this->nic_count; j++)
     {
@@ -561,11 +561,11 @@ int Iwspy::ArpLookup(const char *ip, char *mac)
       PLAYER_ERROR1("unable to get hardware address for [%s]", ip);
       return -1;
     }
-    
+
     close(stdout_pipe[0]);
     close(stdout_pipe[1]);
   }
-  
+
   return 0;
 }
 
@@ -576,14 +576,14 @@ int Iwspy::StartPing()
 {
   int i;
   int dummy_fd;
-  
+
   for (i = 0; i < this->nic_count; i++)
   {
     assert(i < (int) (sizeof(this->ping_pid) / sizeof(this->ping_pid[0])));
 
     // Space the pings out over 1 second
     usleep(1000000 / this->nic_count);
-    
+
     // Fork here
     this->ping_pid[i] = fork();
 
@@ -625,7 +625,7 @@ void Iwspy::StopPing()
   {
     // Kill ping
     kill(this->ping_pid[i], SIGKILL);
-    
+
     // Wait for the child to finish
     if (waitpid(this->ping_pid[i], &status, 0) < 0)
     {
