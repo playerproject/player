@@ -259,7 +259,7 @@ class LinuxJoystick : public Driver
 
   public: virtual int ProcessMessage(QueuePointer & resp_queue,
                                      player_msghdr * hdr,
-                                     void * data) {return -1;}
+                                     void * data) {return 0;}
 
   // Read the joystick
   private: void ReadJoy();
