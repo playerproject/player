@@ -1,8 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@
  * power services all need to go through a single serial port and
  * base device class.  So this code was copied from p2osdevice and
  * modified to taste.
- * 
+ *
  */
 
 #ifndef _KHEPERADEVICE_H
@@ -40,13 +40,13 @@
 
 #include <libplayercore/playercore.h>
 //#include <khepera_params.h>
-#include <khepera_serial.h>
+#include "khepera_serial.h"
 
 #define KHEPERA_CONFIG_BUFFER_SIZE 1024
 #define KHEPERA_BAUDRATE B38400
 #define KHEPERA_DEFAULT_SERIAL_PORT "/dev/ttyUSB0"
 #define KHEPERA_DEFAULT_SCALE 10
-#define KHEPERA_DEFAULT_ENCODER_RES (1.0/12.0) 
+#define KHEPERA_DEFAULT_ENCODER_RES (1.0/12.0)
 #define KHEPERA_DEFAULT_IR_CALIB_A (64.158)
 #define KHEPERA_DEFAULT_IR_CALIB_B (-0.1238)
 
@@ -76,12 +76,12 @@ typedef struct player_khepera_geom
 	player_position2d_geom_t position;
 	double encoder_res;
 } __attribute__ ((packed)) player_khepera_geom_t;
-	
 
-class Khepera : public Driver 
+
+class Khepera : public Driver
 {
 public:
-  
+
   Khepera(ConfigFile *cf, int section);
   ~Khepera();
 
@@ -90,12 +90,12 @@ public:
 
   virtual int Subscribe(player_devaddr_t addr);
   virtual int Unsubscribe(player_devaddr_t addr);
-  
+
   virtual int Setup();
   virtual int Shutdown();
-  
+
   int ResetOdometry();
-  
+
   // handle IR
   void SetIRState(int);
 
@@ -115,10 +115,10 @@ public:
   int ReadSpeed(int*, int*);
 
   int SetPos(int, int);
-  
+
   int SetPosCounter(int, int);
   int ReadPos(int *, int*);
-  
+
   //unsigned char ReadStatus(int, int *, int *);
 
 		// MessageHandler
@@ -136,7 +136,7 @@ private:
 
   int param_index;  // index in the RobotParams table for this robot
   int khepera_fd;               // khepera device file descriptor
-  
+
   struct timeval last_position; // last position update
   bool refresh_last_position;
   int last_lpos, last_rpos;
@@ -159,11 +159,11 @@ private:
   bool direct_velocity_control;
 
   // device used to communicate with reb
-  char khepera_serial_port[MAX_FILENAME_SIZE]; 
+  char khepera_serial_port[MAX_FILENAME_SIZE];
 
   //struct pollfd write_pfd, read_pfd;
 
-  
+
 };
 
 

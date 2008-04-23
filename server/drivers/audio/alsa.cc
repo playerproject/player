@@ -210,7 +210,7 @@ Driver* Alsa_Init (ConfigFile* cf, int section)
 }
 
 // Register function
-void Alsa_Register (DriverTable* table)
+void alsa_Register (DriverTable* table)
 {
 	table->AddDriver("alsa", Alsa_Init);
 }

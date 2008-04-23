@@ -29,7 +29,7 @@
 /** @defgroup driver_skyetekM1 skyetekM1
  * @brief Skyetek M1 RFID reader
 
-The skyetekM1 driver controls the SkyeTek M1/M1-mini RFID readers (13.56Mhz). 
+The skyetekM1 driver controls the SkyeTek M1/M1-mini RFID readers (13.56Mhz).
 Currently, only ISO 15693 tags are supported.
 
 @par Compile-time dependencies
@@ -55,14 +55,14 @@ Currently, only ISO 15693 tags are supported.
 
 - port (string)
   - Default: "/dev/ttyS0"
-  - Serial port to which the SkyeTek M1/M1-mini reader is attached.  If you are 
+  - Serial port to which the SkyeTek M1/M1-mini reader is attached.  If you are
     using a USB/232 or USB/422 converter, this will be "/dev/ttyUSBx".
 
 - speed (integer)
   - Default: 9600
   - Baud rate. Valid values are 9600, 19200, 38400 and 57600.
 
-@par Example 
+@par Example
 
 @verbatim
 driver
@@ -106,7 +106,7 @@ class SkyetekM1 : public Driver
 		int Shutdown ();
 
 		// This method will be invoked on each incoming message
-		virtual int ProcessMessage (QueuePointer & resp_queue, 
+		virtual int ProcessMessage (QueuePointer & resp_queue,
 					    player_msghdr * hdr,
 					    void * data);
 
@@ -115,7 +115,7 @@ class SkyetekM1 : public Driver
 		// Main function for device thread.
 		virtual void Main  ();
 		void RefreshData ();
-				
+
 		// Port file descriptor
 		int                fd;
 		// Initial serial port attributes
@@ -125,10 +125,10 @@ class SkyetekM1 : public Driver
 		player_rfid_data_t Data;
 		unsigned int allocated_tags;
 		player_rfid_data_t  Cmd;
-		
+
 		const char*        portName;
 		int                portSpeed;
-		
+
 		// 0=select just a single tag (no anticollision)
 		// 1=select all tags in the RFID field (anticollision)
 		int                selectTagMultiple;
@@ -138,7 +138,7 @@ class SkyetekM1 : public Driver
 		unsigned char VerifyCRC   (unsigned char *resp);
 		void WriteSerial (unsigned char *mdmData, unsigned char commandLen);
 		int  ReadSerial  (unsigned char *mdmData, unsigned char commandLen);
-		int  S_ReadWrite (unsigned char *mdmData, unsigned char length, 
+		int  S_ReadWrite (unsigned char *mdmData, unsigned char length,
 						  unsigned char *response);
 		void SelectTags  ();
 		unsigned char Wake  ();
@@ -155,9 +155,9 @@ Driver* SkyetekM1_Init (ConfigFile* cf, int section)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-//Registers the driver in the driver table. Called from the 
+//Registers the driver in the driver table. Called from the
 // player_driver_init function that the loader looks for
-void SkyetekM1_Register (DriverTable* table)
+void skyetekM1_Register (DriverTable* table)
 {
 	table->AddDriver ("skyetekM1", SkyetekM1_Init);
 }
@@ -166,18 +166,18 @@ void SkyetekM1_Register (DriverTable* table)
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 SkyetekM1::SkyetekM1 (ConfigFile* cf, int section)
-	: Driver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, 
+	: Driver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
 			  PLAYER_RFID_CODE), allocated_tags(0)
 {
 	this->portName  = cf->ReadString (section, "port", DEFAULT_RFID_PORT);
 	this->portSpeed = cf->ReadInt (section, "speed", DEFAULT_RFID_RATE);
-	
+
 	// Enable the anticollision mode
 	this->selectTagMultiple = 1;
-	
+
 	memset(&Data, 0, sizeof(Data));
 	memset(&Cmd, 0, sizeof(Cmd));
-	
+
 	return;
 }
 
@@ -192,7 +192,7 @@ SkyetekM1::~SkyetekM1()
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
 int SkyetekM1::Setup ()
 {
-	
+
 	// Open serial port
 	this->fd = open (this->portName, O_RDWR);
 	if (this->fd < 0)
@@ -206,14 +206,14 @@ int SkyetekM1::Setup ()
 	// Change port settings
 	struct termios options;
 	memset (&options, 0, sizeof (options));// clear the struct for new port settings
-	
+
 	// Get the current port settings
 	if (tcgetattr (this->fd, &options) != 0) {
 		PLAYER_ERROR (">> Unable to get serial port attributes !");
 		return (-1);
 	}
 	tcgetattr (this->fd, &this->initial_options);
-	
+
 	// turn off break sig, cr->nl, parity off, 8 bit strip, flow control
 	options.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
 
@@ -255,7 +255,7 @@ int SkyetekM1::Setup ()
 	// Set the baudrate to the given portSpeed
 	cfsetispeed (&options, this->portSpeed);
 	cfsetospeed (&options, this->portSpeed);
-	
+
 	// Activate the settings for the port
 	if (tcsetattr (this->fd, TCSAFLUSH, &options) < 0)
 	{
@@ -265,7 +265,7 @@ int SkyetekM1::Setup ()
 
 	// Make sure queues are empty before we begin
 	tcflush (this->fd, TCIOFLUSH);
-		
+
 	// Start the device thread
 	StartThread ();
 
@@ -283,77 +283,77 @@ int SkyetekM1::Shutdown ()
 	// Close the serial port
 	tcsetattr (this->fd, TCSANOW, &this->initial_options);
 	close (this->fd);
-	
+
 	PLAYER_MSG0 (1, "> SkyetekM1 driver shutting down... [done]");
 	return (0);
 }
 
 
-int SkyetekM1::ProcessMessage (QueuePointer & resp_queue, 
+int SkyetekM1::ProcessMessage (QueuePointer & resp_queue,
 			   player_msghdr * hdr,
 			   void * data)
-{	
+{
 	if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_RFID_REQ_POWER,
 	    device_addr))
 	{
 		// Power up/down the RFID reader (NACK for now)
- 		Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, 
+ 		Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK,
 			 hdr->subtype);
 	}
-	
-	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, 
+
+	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ,
 			 PLAYER_RFID_REQ_READTAG, device_addr))
 	{
 		// Read RFID tag data (NACK for now)
-		Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, 
+		Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK,
 			 hdr->subtype);
 	}
-	
-	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, 
+
+	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ,
 			 PLAYER_RFID_REQ_WRITETAG, device_addr))
 	{
 		// Write data to the RFID tag (NACK for now)
-		Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, 
+		Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK,
 			 hdr->subtype);
 	}
-	
-	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, 
+
+	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ,
 			 PLAYER_RFID_REQ_LOCKTAG, device_addr))
 	{
 		// Lock a RFID tag (NACK for now)
-		Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, 
+		Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK,
 			 hdr->subtype);
 	}
-	
+
 	else
 	{
 		return -1;
 	}
-	
+
 	return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
-void SkyetekM1::Main () 
+void SkyetekM1::Main ()
 {
 	// Zero data
 	memset (&this->Data, 0, sizeof (player_rfid_data_t));
-	
+
 	timespec sleepTime = {0, 0};
-	
+
 	// The main loop; interact with the device here
 	while (true)
 	{
 		// test if we are supposed to cancel
 		pthread_testcancel ();
-	
+
 		// Process any pending messages
 		ProcessMessages();
-		
+
 		// Interact with the device, and push out the resulting data.
 		this->RefreshData ();
-		
+
 		nanosleep (&sleepTime, NULL);
 	}
 }
@@ -363,20 +363,20 @@ void SkyetekM1::Main ()
 void SkyetekM1::RefreshData ()
 {
 	memset (&this->Data, 0, sizeof (player_rfid_data_t));
-	
+
 	// Get the time at which we started reading
 	// This will be a pretty good estimate of when the phenomena occured
 	struct timeval time;
 	GlobalTime->GetTime(&time);
-	
+
 	// Anticollision mode
 	SelectTags ();
 	Wake ();
 
 	// Write the RFID data
-	Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RFID_DATA_TAGS, 
+	Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RFID_DATA_TAGS,
 			 &Data, sizeof (player_rfid_data_t), NULL);
-	
+
 	return;
 }
 
@@ -388,7 +388,7 @@ void SkyetekM1::WriteSerial (unsigned char *mdmData, unsigned char commandLen)
 	wresult = write (this->fd, mdmData, commandLen);
 	if (wresult < 0)
 		PLAYER_WARN1 (">> Error while writing %d bytes !", commandLen);
-}	
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // ReadSerial function
@@ -413,9 +413,9 @@ void SkyetekM1::SelectTags ()
 	// set reader ID - empty (no RID)
 	command_buf[i++] = 0x00;             // AUTODETECT (0x00)
 
-	
+
 	command_buf[0] = i + 1;              // set message length
-	
+
 	crc_check = CRC16 (command_buf, i);
 	command_buf[i++] = crc_check >> 8;   // set CRC
 	command_buf[i++] = crc_check & 0x00FF;
@@ -425,9 +425,9 @@ void SkyetekM1::SelectTags ()
 	unsigned char temp[80];
 	temp[0] = 0x02;                  // Start of Transmission (STX = 0x02)
 	for (j = 0; j < i+1; j++)
-		temp[j+1] = command_buf[j];	
+		temp[j+1] = command_buf[j];
 	WriteSerial (temp, i + 1);
-	
+
 	// poll for reader response
 	while (response_buf[2] != 0x94)
 	{
@@ -435,14 +435,14 @@ void SkyetekM1::SelectTags ()
 		int len = 0;
 		if (response_buf[0] == 0x02)
 			len = response_buf[1];
-		
+
 		unsigned char TID[len];
 		memset (&TID, 0, sizeof (TID)); // clear the struct for new port settings
 		usleep (10000); // sleep for 10ms
 		ReadSerial (TID, len);
 		if (response_buf[2] == 0x94)
 			break;
-		
+
 		if (response_buf[0] == 0x02)
 		{
 			if (this->Data.tags_count >= this->allocated_tags)
@@ -456,7 +456,7 @@ void SkyetekM1::SelectTags ()
 				this->Data.tags[this->Data.tags_count].guid_count = 8;
 				this->Data.tags[this->Data.tags_count].guid = (char*)malloc(8);
 			}
-			
+
 			int j;
 			for (j = 0; j < 9; j++)
 				this->Data.tags[this->Data.tags_count].guid[j] = TID[j+1];
@@ -467,30 +467,30 @@ void SkyetekM1::SelectTags ()
 
 ////////////////////////////////////////////////////////////////////////////////
 // S_ReadWrite function
-int SkyetekM1::S_ReadWrite (unsigned char *mdmData, 
+int SkyetekM1::S_ReadWrite (unsigned char *mdmData,
 			unsigned char length, unsigned char *response)
 {
 	unsigned char temp[80], read_data[80];
 	bool read_done = FALSE;
 	int tmp_count = 0;
 	int i;
-	
+
 	// copy the command buffer and prepare to write
 	temp[0] = 0x02;                  // Start of Transmission (STX = 0x02)
 	for (i = 0; i < length + 1; i++)
-		temp[i+1] = mdmData[i];	
-	
+		temp[i+1] = mdmData[i];
+
 	WriteSerial (temp, length + 1);
-	
+
 	// sleep for 10ms
 	usleep (10000);
-	
+
 	while (!read_done)
-	{ 
+	{
 		tmp_count++;
-	
+
 		ReadSerial (read_data, sizeof (read_data));
-		
+
 		int m = 0;
 
 		while (m != sizeof (read_data))
@@ -498,13 +498,13 @@ int SkyetekM1::S_ReadWrite (unsigned char *mdmData,
 			response[m] = read_data[m];
 			m++;
 		}
-				
+
 		if (tmp_count > 10)
 			read_done = TRUE;
-		
+
 		if ((read_data[0] = 0x02) && (read_data[1] <= 0x50))
 			read_done = TRUE;
-		
+
 		usleep (10000);               // Sleep for 10ms
 	}
 
@@ -547,15 +547,15 @@ unsigned char SkyetekM1::VerifyCRC (unsigned char *resp)
 	unsigned int  crc_check;
 
 	int k = 0;
-	
+
 	for (k = 0; k < (int)((resp[1])-1); k++)
 	{
 		ret_crc[i] = resp[k+1];
 		i++;
-	}	
+	}
 
 	crc_check = CRC16 (ret_crc, i);
-	
+
 	if ((resp[i+1] == (crc_check >> 8)) && (resp[i+2] == (crc_check & 0x00FF)))
 		return 0;
 	else
@@ -570,12 +570,12 @@ unsigned char SkyetekM1::Sleep ()
 	unsigned char i = 0;
 	unsigned int crc_check;
 	int      s_rwStatus;
-	
+
 	// binary mode command format: msgLen|flags|command|startblock|numblocks|crc
 	command_buf[i++] = 0x07;             // set msg length
 	command_buf[i++] = 0x20;             // set flags (CRC_F)
 	command_buf[i++] = 0x42;             // WRITE_SYS (set command)
-	
+
 	command_buf[i++] = 0x04;             // OP_MODE
 	command_buf[i++] = 0x01;             // set number of blocks to write
 	command_buf[i++] = 0x00;             // set data to write
@@ -583,14 +583,14 @@ unsigned char SkyetekM1::Sleep ()
 	crc_check = CRC16 (command_buf, i);
 	command_buf[i++] = crc_check >> 8;   // set CRC
 	command_buf[i++] = crc_check & 0x00FF;
-	
+
 	// copy the command buffer and prepare to write
 	s_rwStatus = S_ReadWrite (command_buf, i, response_buf);
-	
+
 	// verify return CRC
 	if (VerifyCRC (response_buf))
 		return 0x81;                     // BAD_CRC
-	
+
 	return response_buf[2];
 }
 
@@ -603,7 +603,7 @@ unsigned char SkyetekM1::Wake ()
 	unsigned char i = 0;
 	unsigned int crc_check;
 	int      s_rwStatus;
-	
+
 	// binary mode command format: msgLen|flags|command|startblock|numblocks|crc
 	command_buf[i++] = 0x07;             // set msg length
 	command_buf[i++] = 0x20;             // set flags (CRC_F)
@@ -616,14 +616,14 @@ unsigned char SkyetekM1::Wake ()
 	crc_check = CRC16 (command_buf, i);
 	command_buf[i++] = crc_check >> 8;   // set CRC
 	command_buf[i++] = crc_check & 0x00FF;
-	
+
 	// copy the command buffer and prepare to write
 	s_rwStatus = S_ReadWrite (command_buf, i, response_buf);
-	
+
 	// verify return CRC
 	if (VerifyCRC (response_buf))
 		return 0x81;                     // BAD_CRC
-	
+
 	return response_buf[2];
 }
 

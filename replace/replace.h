@@ -7,9 +7,7 @@
 #define _REPLACE_H
 
 
-#if HAVE_CONFIG_H
-  #include <config.h>
-#endif
+#include <config.h>
 
 /* Compatibility definitions for System V `poll' interface.
    Copyright (C) 1994,96,97,98,99,2000 Free Software Foundation, Inc.

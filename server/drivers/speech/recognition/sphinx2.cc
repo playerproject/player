@@ -1,8 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -82,7 +82,7 @@
   - Dictionary file
 
 
-@par Example 
+@par Example
 
 @verbatim
 driver
@@ -134,10 +134,10 @@ extern "C" {
 
 #define SAMPLE_RATE 16000
 
-class Sphinx2 : public Driver 
+class Sphinx2 : public Driver
 {
   public:
-    // constructor 
+    // constructor
     Sphinx2( ConfigFile* cf, int section);
 
     virtual ~Sphinx2();
@@ -148,7 +148,7 @@ class Sphinx2 : public Driver
     int Shutdown();
 
 	// This method will be invoked on each incoming message
-	virtual int ProcessMessage(QueuePointer & resp_queue, 
+	virtual int ProcessMessage(QueuePointer & resp_queue,
                                player_msghdr * hdr,
                                void * data);
 
@@ -174,7 +174,7 @@ Driver* Sphinx2_Init( ConfigFile* cf, int section)
 }
 
 // a driver registration function
-void Sphinx2_Register(DriverTable* table)
+void sphinx2_Register(DriverTable* table)
 {
   table->AddDriver("sphinx2", Sphinx2_Init);
 }
@@ -277,10 +277,10 @@ int Sphinx2::Shutdown()
 }
 
 
-int Sphinx2::ProcessMessage(QueuePointer & resp_queue, 
+int Sphinx2::ProcessMessage(QueuePointer & resp_queue,
                                   player_msghdr * hdr,
                                   void * data)
-{	
+{
 	return -1;
 }
 
@@ -296,7 +296,7 @@ void Sphinx2::Main()
   short audioBuff[4096];
   player_speech_recognition_data_t data;
 
-  this->continuousModule = cont_ad_init (this->audioDev, ad_read); 
+  this->continuousModule = cont_ad_init (this->audioDev, ad_read);
 
   if (this->continuousModule == NULL)
     PLAYER_ERROR("cont_ad_init failed\n");
@@ -310,7 +310,7 @@ void Sphinx2::Main()
   uttproc_init();
 
   /* loop and read */
-  while (true) 
+  while (true)
   {
     /* test if we are supposed to cancel */
     pthread_testcancel();
@@ -348,9 +348,9 @@ void Sphinx2::Main()
     data.text[0] = '\0';
 
     /* Decode utterance until end (marked by a "long" silence, >1sec) */
-    for (;;) 
+    for (;;)
     {
-      if ((this->continuousModule->read_ts - timestamp) > 
+      if ((this->continuousModule->read_ts - timestamp) >
           DEFAULT_SAMPLES_PER_SEC)
         break;
 
@@ -364,7 +364,7 @@ void Sphinx2::Main()
       if (sampleCount == 0) {
          // No speech data available; check current timestamp with most recent
          //speech to see if more than 1 sec elapsed.  If so, end of utterance.
-        if ((this->continuousModule->read_ts - timestamp) > 
+        if ((this->continuousModule->read_ts - timestamp) >
             DEFAULT_SAMPLES_PER_SEC)
           break;
       } else {
@@ -397,7 +397,7 @@ void Sphinx2::Main()
       PLAYER_ERROR("uttproc_result failed\n");
       //continue;
     }
-    
+
     data.text = hypothesis;
     data.text_count = strlen(data.text)+1;
 

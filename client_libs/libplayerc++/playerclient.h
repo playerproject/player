@@ -44,7 +44,6 @@
 #ifndef PLAYERCLIENT_H
 #define PLAYERCLIENT_H
 
-#include "libplayerc++/playerc++config.h"
 #include "libplayerc++/utility.h"
 
 #include <string>

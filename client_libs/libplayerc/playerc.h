@@ -54,8 +54,6 @@ Geoffrey Biggs, Richard Vaughan.
 #include <netinet/in.h> // need this for struct sockaddr_in
 #include <stdio.h>
 
-#include <libplayerc/playercconfig.h>
-
 #ifdef HAVE_GEOS
 #ifndef GEOS_VERSION_MAJOR
 #include <geos_c.h>

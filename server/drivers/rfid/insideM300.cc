@@ -29,7 +29,7 @@
 /** @defgroup driver_insideM300 insideM300
  * @brief Inside M300 RFID reader
 
-The insideM300 driver controls the Inside Contactless M300/R300 2G RFID reader 
+The insideM300 driver controls the Inside Contactless M300/R300 2G RFID reader
 (13.56Mhz). Currently, only ISO 15693 tags are supported.
 
 @par Compile-time dependencies
@@ -62,7 +62,7 @@ The insideM300 driver controls the Inside Contactless M300/R300 2G RFID reader
   - Default: 9600
   - Baud rate. Valid values are 9600, 19200, 38400, 57600 and 115200.
 
-@par Example 
+@par Example
 
 @verbatim
 driver
@@ -136,7 +136,7 @@ class InsideM300 : public Driver
 		int Shutdown ();
 
 		// This method will be invoked on each incoming message
-		virtual int ProcessMessage (QueuePointer & resp_queue, 
+		virtual int ProcessMessage (QueuePointer & resp_queue,
 					    player_msghdr * hdr,
 					    void * data);
 	private:
@@ -144,7 +144,7 @@ class InsideM300 : public Driver
 		// Main function for device thread.
 		virtual void Main  ();
 		void RefreshData ();
-		
+
 		// Port file descriptor
 		int                fd;
 		// Initial serial port attributes
@@ -154,10 +154,10 @@ class InsideM300 : public Driver
 		player_rfid_data_t Data;
 		unsigned int allocated_tags;
 		player_rfid_data_t  Cmd;
-		
+
 		const char*        portName;
 		int                portSpeed;
-		
+
 		// 0=select just a single tag (no anticollision)
 		// 1=select all tags in the RFID field (anticollision)
 		int                selectTagMultiple;
@@ -169,16 +169,16 @@ class InsideM300 : public Driver
 		unsigned int  ReadStatusWord     ();
 		int           SelectTags ();
 		unsigned int  SendISOCommand     (unsigned char typeISO, int dataOutLen,
-						  unsigned char commandType, 
+						  unsigned char commandType,
 						  unsigned char p1,
 						  unsigned char p2, unsigned char p3,
-						  unsigned char *dataIn, 
+						  unsigned char *dataIn,
 						  unsigned char *dataOut);
-		unsigned int  IsoExchange (unsigned char typeISO, 
+		unsigned int  IsoExchange (unsigned char typeISO,
 	    				   unsigned char *ISOCommand,
 					   int dataInLen, unsigned char *dataIn,
 					   int dataOutLen, unsigned char *dataOut);
-		void InsideInventory (int maskLength, int chipMask, 
+		void InsideInventory (int maskLength, int chipMask,
 				  unsigned char *globalChipAnswer);
 		unsigned int ResetField ();
 };
@@ -193,9 +193,9 @@ Driver* InsideM300_Init (ConfigFile* cf, int section)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-//Registers the driver in the driver table. Called from the 
+//Registers the driver in the driver table. Called from the
 // player_driver_init function that the loader looks for
-void InsideM300_Register (DriverTable* table)
+void insideM300_Register (DriverTable* table)
 {
 	table->AddDriver ("insideM300", InsideM300_Init);
 }
@@ -204,17 +204,17 @@ void InsideM300_Register (DriverTable* table)
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 InsideM300::InsideM300 (ConfigFile* cf, int section)
-	: Driver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, 
+	: Driver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
 			  PLAYER_RFID_CODE), allocated_tags(0)
 {
 	this->portName  = cf->ReadString (section, "port", DEFAULT_RFID_PORT);
 	this->portSpeed = cf->ReadInt (section, "speed", DEFAULT_RFID_RATE);
-	
+
 	// Enable the anticollision mode
 	this->selectTagMultiple = 1;
-	
+
 	memset(&Data,0, sizeof(Data));
-	
+
 	return;
 }
 
@@ -233,7 +233,7 @@ int InsideM300::Setup ()
 	unsigned int status;
 	unsigned char chipAnswer[24];
 	unsigned char ISOCommand[4];
-	
+
 	// Open serial port
 	this->fd = open (this->portName, O_RDWR | O_NOCTTY);
 	if (this->fd < 0)
@@ -247,14 +247,14 @@ int InsideM300::Setup ()
 	// Change port settings
 	struct termios options;
 	memset (&options, 0,sizeof (options));// clear the struct for new port settings
-	
+
 	// Get the current port settings
 	if (tcgetattr (this->fd, &options) != 0) {
 		PLAYER_ERROR (">> Unable to get serial port attributes !");
 		return (-1);
 	}
 	tcgetattr (this->fd, &this->initial_options);
-	
+
 	// turn off break sig, cr->nl, parity off, 8 bit strip, flow control
 	options.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
 
@@ -300,7 +300,7 @@ int InsideM300::Setup ()
 	// Set the baudrate to the given portSpeed
 	cfsetispeed (&options, this->portSpeed);
 	cfsetospeed (&options, this->portSpeed);
-	
+
 	// Activate the settings for the port
 	if (tcsetattr (this->fd, TCSAFLUSH, &options) < 0)
 	{
@@ -317,7 +317,7 @@ int InsideM300::Setup ()
 		PLAYER_ERROR (">> Unable to synchronize with the reader !");
 		return (-1);
 	}
-	
+
 	// Get the current port settings
 	if (tcgetattr (this->fd, &options) != 0) {
 		PLAYER_ERROR (">> Unable to get serial port attributes !");
@@ -335,32 +335,32 @@ int InsideM300::Setup ()
 
 	ISOCommand[0] = 0x21;
 	// 0xF4 = SET_STATUS
-	status = SendISOCommand (ISO_IN, 0, 0xF4, 0x03, 0x5E, 0x01, ISOCommand, 
+	status = SendISOCommand (ISO_IN, 0, 0xF4, 0x03, 0x5E, 0x01, ISOCommand,
 				 chipAnswer);
 	if (status != STATUS_OK)
-		PLAYER_WARN1 (">> Error 0x%x while sending ISO command (F4035E0121) !", 
+		PLAYER_WARN1 (">> Error 0x%x while sending ISO command (F4035E0121) !",
 				  status);
-	
+
 	ISOCommand[0] = 0x31;
 	// 0xF4 = SET_STATUS
-	status = SendISOCommand (ISO_IN, 0, 0xF4, 0x03, 0x5F, 0x01, ISOCommand, 
+	status = SendISOCommand (ISO_IN, 0, 0xF4, 0x03, 0x5F, 0x01, ISOCommand,
 				 chipAnswer);
 	if (status != STATUS_OK)
-		PLAYER_WARN1 (">> Error 0x%x while sending ISO command (F4035F0131) !", 
+		PLAYER_WARN1 (">> Error 0x%x while sending ISO command (F4035F0131) !",
 				  status);
-	
+
 	ISOCommand[0] = 0x3B;
 	// 0xF4 = SET_STATUS
-	status = SendISOCommand (ISO_IN, 0, 0xF4, 0x03, 0x6B, 0x01, ISOCommand, 
+	status = SendISOCommand (ISO_IN, 0, 0xF4, 0x03, 0x6B, 0x01, ISOCommand,
 				 chipAnswer);
 	if (status != STATUS_OK)
-		PLAYER_WARN1 (">> Error 0x%x while sending ISO command (F4036B013B) !", 
+		PLAYER_WARN1 (">> Error 0x%x while sending ISO command (F4036B013B) !",
 				  status);
 
 	status = ResetField ();
 	if (status != STATUS_OK)
 		PLAYER_WARN1 (">> Error 0x%x while resetting field !", status);
-	
+
 	// Start the device thread
 	StartThread ();
 
@@ -377,79 +377,79 @@ int InsideM300::Shutdown ()
 	// Close the serial port
 	tcsetattr (this->fd, TCSANOW, &this->initial_options);
 	close (this->fd);
-	
+
 	PLAYER_MSG0 (1, "> InsideM300 driver shutting down... [done]");
 	return (0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
-void InsideM300::Main () 
+void InsideM300::Main ()
 {
 	// Zero data
 	memset (&this->Data, 0, sizeof (player_rfid_data_t));
-	
+
 	timespec sleepTime = {0, 0};
-	
+
 	// The main loop; interact with the device here
 	while (true)
 	{
 		// test if we are supposed to cancel
 		pthread_testcancel ();
-		
+
 		// Process any pending messages
 		ProcessMessages();
-		
+
 		// Interact with the device, and push out the resulting data.
 		this->RefreshData ();
-		
+
 		nanosleep (&sleepTime, NULL);
 	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // ProcessMessage function
-int InsideM300::ProcessMessage (QueuePointer & resp_queue, 
+int InsideM300::ProcessMessage (QueuePointer & resp_queue,
 				   player_msghdr * hdr,
 				   void * data)
-{	
+{
 	if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_RFID_REQ_POWER,
 		device_addr))
 	{
 		// Power up/down the RFID reader (NACK for now)
-		Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, 
+		Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK,
 			 hdr->subtype);
 	}
-	
-	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, 
+
+	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ,
 			 PLAYER_RFID_REQ_READTAG, device_addr))
 	{
 		// Read RFID tag data (NACK for now)
-		Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, 
+		Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK,
 			 hdr->subtype);
 	}
-	
-	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, 
+
+	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ,
 			 PLAYER_RFID_REQ_WRITETAG, device_addr))
 	{
 		// Write data to the RFID tag (NACK for now)
-		Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, 
+		Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK,
 			 hdr->subtype);
 	}
-	
-	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, 
+
+	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ,
 			 PLAYER_RFID_REQ_LOCKTAG, device_addr))
 	{
 		// Lock a RFID tag (NACK for now)
-		Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, 
+		Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK,
 			 hdr->subtype);
 	}
-	
+
 	else
 	{
 		return -1;
 	}
-	
+
 	return 0;
 }
 
@@ -458,19 +458,19 @@ int InsideM300::ProcessMessage (QueuePointer & resp_queue,
 void InsideM300::RefreshData ()
 {
 	memset (&this->Data, 0, sizeof (player_rfid_data_t));
-	
+
 	// Get the time at which we started reading
 	// This will be a pretty good estimate of when the phenomena occured
 	struct timeval time;
 	GlobalTime->GetTime(&time);
-	
+
 	// Anticollision mode
 	SelectTags ();
 
 	// Write the RFID data
-	Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RFID_DATA_TAGS, 
+	Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RFID_DATA_TAGS,
 			&Data, sizeof (player_rfid_data_t), NULL);
-	
+
 	return;
 }
 
@@ -482,7 +482,7 @@ void InsideM300::WriteByte (unsigned char buf)
 	wresult = write (this->fd, &buf, 1);
 	if (wresult < 0)
 		PLAYER_WARN (">> Error while writing 1 byte !");
-}	
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // ReadByte function
@@ -527,7 +527,7 @@ int InsideM300::CouplerSynchronize ()
 			(status == COMMAND_FLOW_INCORRECT)     ||
 			(status == CARD_NOT_FOUND))
 			return (0);                // synchronization succeeded
-	} 
+	}
 
 	return (-1);
 }
@@ -535,16 +535,16 @@ int InsideM300::CouplerSynchronize ()
 ////////////////////////////////////////////////////////////////////////////////
 // SendISOCommand
 unsigned int InsideM300::SendISOCommand (unsigned char typeISO, int dataOutLen,
-					 unsigned char commandType, 
+					 unsigned char commandType,
 					 unsigned char p1,
 					 unsigned char p2, unsigned char p3,
-					 unsigned char *dataIn, 
+					 unsigned char *dataIn,
 					 unsigned char *dataOut)
 {
 	unsigned char ISOCommand[5];
 	int           dataInLen = 0;
 
-	if ((typeISO == ISO_IN) || (typeISO == ISO_IN_OUT)) 
+	if ((typeISO == ISO_IN) || (typeISO == ISO_IN_OUT))
 		dataInLen = p3;
 
 	// Prepare the command
@@ -555,13 +555,13 @@ unsigned int InsideM300::SendISOCommand (unsigned char typeISO, int dataOutLen,
 	ISOCommand[CMD_P3_P]  = p3;
 
 	// Send ISO Command
-	return (IsoExchange (typeISO, ISOCommand, dataInLen, dataIn, dataOutLen, 
+	return (IsoExchange (typeISO, ISOCommand, dataInLen, dataIn, dataOutLen,
 			dataOut));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // IsoExchange
-unsigned int InsideM300::IsoExchange (unsigned char typeISO, 
+unsigned int InsideM300::IsoExchange (unsigned char typeISO,
 				    unsigned char *ISOCommand,
 				    int dataInLen, unsigned char *dataIn,
 				    int dataOutLen, unsigned char *dataOut)
@@ -639,7 +639,7 @@ unsigned int InsideM300::IsoExchange (unsigned char typeISO,
 			for (i = 0; i < dataOutLen; i++)
 				dataOut[i] = ReadByte ();   // Grab buffer data out
 			return ReadStatusWord();
-		default: 
+		default:
 			return (0);
 	}
 }
@@ -652,26 +652,26 @@ int InsideM300::SelectTags ()
 	unsigned char chipAnswer[24], globalChipAnswer[24];
 	unsigned char ISOCommand[10];
 	int           chipMask;
-	
+
 	status = ResetField ();
 	if (status != STATUS_OK)
 		PLAYER_WARN1 (">> Error 0x%x while resetting field !", status);
-	
+
 	ISOCommand[0] = 0x36; ISOCommand[1] = 0x01;
 	ISOCommand[2] = 0x00; ISOCommand[3] = 0x00;
 	// 0xC2 = TRANSMIT - Basic inventory command
-	iStatus = SendISOCommand (ISO_IN, 0, 0xC2, 0xF3, 0x0A, 0x04, ISOCommand, 
+	iStatus = SendISOCommand (ISO_IN, 0, 0xC2, 0xF3, 0x0A, 0x04, ISOCommand,
 				  chipAnswer);
-	
+
 	int tagsFound = 1;
 	while (tagsFound != 0) {
-		
+
 		ISOCommand[0] = 0x00;
 		// 0xC0 = GET_RESPONSE - get chip UID
-		status = SendISOCommand (ISO_OUT, 10, 0xC0, 0x00, 0x00, 0x0A, 
+		status = SendISOCommand (ISO_OUT, 10, 0xC0, 0x00, 0x00, 0x0A,
 					 ISOCommand, chipAnswer);
 		chipMask = chipAnswer[2];
-		
+
 		switch (iStatus) {
 			case STATUS_OK:
 			{
@@ -684,31 +684,31 @@ int InsideM300::SelectTags ()
 				this->Data.tags[this->Data.tags_count].guid_count = 8;
 				int j;
 				for (j = 0; j < 8; j++)
-					this->Data.tags[this->Data.tags_count].guid[j] = 
+					this->Data.tags[this->Data.tags_count].guid[j] =
 							chipAnswer [9-j];
 				this->Data.tags_count++;
-			
+
 				tagsFound = 0;
 				break;
 			}
 			case CARD_NOT_IDENTIFIED:
 			{
 				InsideInventory (1, chipMask, globalChipAnswer);
-			
+
 				memset (&ISOCommand, 0,sizeof (ISOCommand));
 				int k;
 				for (k = 2; k < 10; k++)
 					ISOCommand[k] = globalChipAnswer[k-2];
-			
+
 				ISOCommand[0] = 0x20; ISOCommand[1] = 0x02;
 				// 0xC2 = TRANSMIT (Note: get Chip Answer)
-				status = SendISOCommand (ISO_IN, 0, 0xC2, 0xB3, 0x00, 0x0A, 
+				status = SendISOCommand (ISO_IN, 0, 0xC2, 0xB3, 0x00, 0x0A,
 							 ISOCommand, chipAnswer);
 				memset (&ISOCommand, 0,sizeof (ISOCommand));
 				ISOCommand[0] = 0x36; ISOCommand[1] = 0x01;
 				ISOCommand[2] = 0x00; ISOCommand[3] = 0x00;
 				// 0xC2 = TRANSMIT (Note: get Chip Answer)
-				iStatus = SendISOCommand (ISO_IN, 0, 0xC2, 0xF3, 0x0A, 0x04, 
+				iStatus = SendISOCommand (ISO_IN, 0, 0xC2, 0xF3, 0x0A, 0x04,
 							  ISOCommand, chipAnswer);
 				break;
 			}
@@ -724,26 +724,26 @@ int InsideM300::SelectTags ()
 
 ////////////////////////////////////////////////////////////////////////////////
 // InsideInventory function
-void InsideM300::InsideInventory (int maskLength, int chipMask, 
+void InsideM300::InsideInventory (int maskLength, int chipMask,
 				  unsigned char *globalChipAnswer)
 {
 	unsigned int  status, iStatus;
 	unsigned char ISOCommand[5];
 	unsigned char chipAnswer[24];
 	int i;
-	
+
 	if (maskLength > 15)
 		return;
-	
+
 	ISOCommand[0] = 0x36; ISOCommand[1] = 0x01;
 	ISOCommand[2] = 0x00; ISOCommand[3] = 0x00 + maskLength;
 	ISOCommand[4] = 0x00 + chipMask;
-	
+
 	// Masked Inventory command
-	iStatus = SendISOCommand (ISO_IN, 0, 0xC2, 0xF3, 0x0A, 0x05, ISOCommand, 
+	iStatus = SendISOCommand (ISO_IN, 0, 0xC2, 0xF3, 0x0A, 0x05, ISOCommand,
 				  chipAnswer);
 	// Get UID
-	status  = SendISOCommand (ISO_OUT, 10, 0xC0, 0x00, 0x00, 0x0A, NULL, 
+	status  = SendISOCommand (ISO_OUT, 10, 0xC0, 0x00, 0x00, 0x0A, NULL,
 				  chipAnswer);
 
 	chipMask = chipAnswer[2];
@@ -754,7 +754,7 @@ void InsideM300::InsideInventory (int maskLength, int chipMask,
 		{
 			for (i = 0; i < 8; i++)
 				globalChipAnswer[i] = chipAnswer[i+2];
-			
+
 			if (this->Data.tags_count >= this->allocated_tags)
 			{
 				this->allocated_tags = this->Data.tags_count+1;
@@ -766,7 +766,7 @@ void InsideM300::InsideInventory (int maskLength, int chipMask,
 			for (j = 0; j < 8; j++)
 				this->Data.tags[this->Data.tags_count].guid[j] = chipAnswer [9-j];
 			this->Data.tags_count++;
-			
+
 			break;
 		}
 		case CARD_NOT_IDENTIFIED:

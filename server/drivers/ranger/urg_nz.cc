@@ -161,7 +161,7 @@ UrgDriver_Init (ConfigFile* cf, int section)
     return reinterpret_cast <Driver*> (new UrgDriver (cf, section));
 }
 
-void UrgDriver_Register(DriverTable* table)
+void urg_nz_Register(DriverTable* table)
 {
     table->AddDriver ("urg_nz", UrgDriver_Init);
 }

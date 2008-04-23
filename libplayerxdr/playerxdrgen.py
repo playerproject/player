@@ -518,7 +518,7 @@ if __name__ == '__main__':
 #define PLAYERXDR_MAX_MESSAGE_SIZE (4*PLAYER_MAX_MESSAGE_SIZE)
 """)
     sourcefile.write("""
-#include <libplayerxdr/%(headerfilename)s>
+#include <%(headerfilename)s>
 #include <string.h>
 
 #include <stdlib.h>

@@ -39,9 +39,7 @@
 #ifndef _GLOBALS_H
 #define _GLOBALS_H
 
-#if HAVE_CONFIG_H
-  #include <config.h>
-#endif
+#include <config.h>
 
 #include <string.h>
 #include <stdlib.h>
@@ -86,7 +84,7 @@ player_globals_init()
   deviceTable = new DeviceTable();
   driverTable = new DriverTable();
   GlobalTime = new WallclockTime();
-  strncpy(playerversion, VERSION, sizeof(playerversion));
+  strncpy(playerversion, PLAYER_VERSION, sizeof(playerversion));
   player_quit = false;
   player_quiet_startup = false;
 #if HAVE_PLAYERSD

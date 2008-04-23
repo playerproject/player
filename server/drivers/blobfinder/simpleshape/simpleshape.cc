@@ -1,7 +1,7 @@
 /*
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2000  Brian Gerkey et al
- *                      gerkey@usc.edu    
+ *                      gerkey@usc.edu
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -76,11 +76,11 @@ form of a binary image (such as the one shown below).
   - Filename of the model image file.  This should by a binary,
     grayscale image.
 
-- canny_thresh (float tuple) 
+- canny_thresh (float tuple)
   - Default: [40 20]
   - Thresholds for the Canny edge detector.
 
-- match_thresh (float tuple) 
+- match_thresh (float tuple)
   - Default: [0.50 20.0 0.20]
   - Match thresholds (?)
 
@@ -128,7 +128,7 @@ class FeatureSet
 
 
 // Info on potential shapes.
-class Shape 
+class Shape
 {
   // Id (-1) if undetermined.
   public: int id;
@@ -141,7 +141,7 @@ class Shape
 // Driver for detecting laser retro-reflectors.
 class SimpleShape : public ImageBase
 {
-  public: 
+  public:
     // Constructor
     SimpleShape( ConfigFile* cf, int section);
 
@@ -188,7 +188,7 @@ class SimpleShape : public ImageBase
   // List of potential shapes
   private: Shape shapes[256];
   private: unsigned int shapeCount;
-  
+
   private: player_devaddr_t blobfinder_addr;
   private: player_devaddr_t debugcam_addr;
 
@@ -204,7 +204,7 @@ Driver* SimpleShape_Init( ConfigFile* cf, int section)
 
 
 // a driver registration function
-void SimpleShape_Register(DriverTable* table)
+void simpleshape_Register(DriverTable* table)
 {
   table->AddDriver("simpleshape", SimpleShape_Init);
 }
@@ -253,7 +253,7 @@ SimpleShape::SimpleShape( ConfigFile* cf, int section)
 
   this->matchThresh[0] = cf->ReadTupleFloat(section, "match_thresh", 0, 0.50);
   this->matchThresh[1] = cf->ReadTupleFloat(section, "match_thresh", 1, 20.0);
-  this->matchThresh[2] = cf->ReadTupleFloat(section, "match_thresh", 2, 0.20);  
+  this->matchThresh[2] = cf->ReadTupleFloat(section, "match_thresh", 2, 0.20);
 
   this->shapeCount = 0;
 }
@@ -278,7 +278,7 @@ int SimpleShape::Setup()
 int SimpleShape::Shutdown()
 {
   ImageBase::Shutdown();
-  
+
   // Free images
   if (this->inpImage)
     cvReleaseImage(&(this->inpImage));
@@ -315,9 +315,9 @@ int SimpleShape::LoadModel()
 
   // Extract contours
   this->modelStorage = cvCreateMemStorage(0);
-  cvFindContours(work, this->modelStorage, &contour, sizeof(CvContour), 
+  cvFindContours(work, this->modelStorage, &contour, sizeof(CvContour),
                  CV_RETR_LIST, CV_CHAIN_APPROX_NONE);
-  
+
   // Find the contour with the largest area (we will use the outer
   // contour only)
   maxArea = 0;
@@ -362,7 +362,7 @@ int SimpleShape::ProcessFrame()
   width = this->stored_data.width;
   height = this->stored_data.height;
   assert(width > 0 && height > 0);
-    
+
   // Create input and output image if it doesnt exist
   size = cvSize(width, height);
   if (this->inpImage == NULL)
@@ -454,9 +454,9 @@ void SimpleShape::FindShapes()
 
   // Find contours on a binary image
   storage = cvCreateMemStorage(0);
-  cvFindContours(this->workImage, storage, &contour, sizeof(CvContour), 
+  cvFindContours(this->workImage, storage, &contour, sizeof(CvContour),
                  CV_RETR_LIST, CV_CHAIN_APPROX_NONE);
-    
+
   for(; contour != NULL; contour = contour->h_next)
   {
     rect = cvBoundingRect(contour);
@@ -474,7 +474,7 @@ void SimpleShape::FindShapes()
     if (rect.y + rect.height >= this->workImage->height - 5)
       continue;
 
-    
+
     // Draw eligable contour on the output image; useful for debugging
     if (this->debugcam)
       cvDrawContours(this->outSubImages + 2, contour, CV_RGB(255, 255, 255),
@@ -503,7 +503,7 @@ void SimpleShape::FindShapes()
       PLAYER_WARN("image contains too many shapes");
       break;
     }
-    
+
     // Add the shape to our internal list
     shape = this->shapes + this->shapeCount++;
     shape->id = -1;
@@ -530,12 +530,12 @@ void SimpleShape::ExtractFeatureSet(CvContour *contour, FeatureSet *feature)
   double aa, bb;
   double dx, dy;
   double var;
-  
+
   // Get the moments (we will use the Hu invariants)
   cvMoments(contour, &feature->moments);
 
   // Compute the compactness measure: perimeter squared divided by
-  // area.  
+  // area.
   rect = cvBoundingRect(contour);
   feature->compact = (contour->total * contour->total) / fabs(cvContourArea(contour));
 
@@ -565,7 +565,7 @@ void SimpleShape::ExtractFeatureSet(CvContour *contour, FeatureSet *feature)
   CvPoint *a, *b, *c;
   double ax, ay, bx, by, cx, cy;
   double d, n, m;
-  
+
   // Construct a string describing the polygon (used for syntactic
   // matching)
   for (i = 0; i < poly->total; i++)
@@ -583,7 +583,7 @@ void SimpleShape::ExtractFeatureSet(CvContour *contour, FeatureSet *feature)
 
     bx = -ay;
     by = +ax;
-    
+
     cx = c->x - b->x;
     cy = c->y - b->y;
     d = sqrt(cx * cx + cy * cy);
@@ -611,18 +611,18 @@ int SimpleShape::MatchFeatureSet(FeatureSet *a, FeatureSet *b)
   int i, j;
   int sim, minSim;
   int na, nb;
-  
+
   if (a->vertexCount != b->vertexCount)
     return INT_MAX;
 
   minSim = INT_MAX;
-  
+
   // Look for the lowest dissimalarity by trying all possible
   // string shifts
   for (i = 0; i < a->vertexCount; i++)
   {
     sim = 0;
-    
+
     for (j = 0; j < a->vertexCount; j++)
     {
       na = a->vertexString[j];

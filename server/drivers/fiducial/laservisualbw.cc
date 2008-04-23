@@ -40,7 +40,7 @@
 /** @{ */
 /** @defgroup driver_laservisualbw laservisualbw
  * @brief Black & white laser/visual barcode detector
- 
+
 @todo This driver has not been tested with the player 2 API.
 
 Parses a laser scan to find the retro-reflective patches (lines or
@@ -156,7 +156,7 @@ class LaserVisualBW : public Driver
     double id_time;
   };
 
-  // Process incoming messages from clients 
+  // Process incoming messages from clients
   int ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data);
 
   // Process laser data.
@@ -165,7 +165,7 @@ class LaserVisualBW : public Driver
 
   // Analyze the laser data to find fidicuials (reflectors).
   private: void FindLaserFiducials(double time, player_laser_data_t *data);
-    
+
   // Find the line of best fit for the given segment of the laser
   // scan.  Fills in the pose of the reflector relative to the laser.
   private: void FitLaserFiducial(player_laser_data_t *data, int first, int last, double pose[3]);
@@ -189,18 +189,18 @@ class LaserVisualBW : public Driver
   // Process any new camera data.
   private: int UpdateCamera(player_camera_data_t * data, double timestamp);
 
-  // Extract a bit string from the image.  
+  // Extract a bit string from the image.
   private: int ExtractSymbols(int x, unsigned int symbol_max_count, int symbols[]);
 
   // Extract a code from a symbol string.
   private: int ExtractCode(int symbol_count, int symbols[]);
-  
+
   // Write the device data (the data going back to the client).
   private: void WriteData();
 
   // Image processing
   private: double edge_thresh;
-  
+
   // Barcode tolerances
   private: int barcount;
   private: double barwidth;
@@ -242,7 +242,7 @@ class LaserVisualBW : public Driver
 
   // Dimensions of the zoomed image for the target fiducial (m).
   private: double zoomwidth, zoomheight;
-  
+
   // Local copy of the current fiducial data.
   private: player_fiducial_data_t fdata;
   int fdata_allocated;
@@ -257,7 +257,7 @@ Driver* LaserVisualBW_Init( ConfigFile* cf, int section)
 
 
 // a driver registration function
-void LaserVisualBW_Register(DriverTable* table)
+void laservisualbw_Register(DriverTable* table)
 {
   table->AddDriver("laservisualbw", LaserVisualBW_Init);
 }
@@ -272,7 +272,7 @@ LaserVisualBW::LaserVisualBW( ConfigFile* cf, int section)
   if (cf->ReadDeviceAddr(&this->laser_id, section, "requires",
                        PLAYER_LASER_CODE, -1, NULL) != 0)
   {
-    this->SetError(-1);    
+    this->SetError(-1);
     return;
   }
   this->laser = NULL;
@@ -282,7 +282,7 @@ LaserVisualBW::LaserVisualBW( ConfigFile* cf, int section)
   if (cf->ReadDeviceAddr(&this->ptz_id, section, "requires",
                        PLAYER_PTZ_CODE, -1, NULL) != 0)
   {
-    this->SetError(-1);    
+    this->SetError(-1);
     return;
   }
   this->ptz = NULL;
@@ -292,7 +292,7 @@ LaserVisualBW::LaserVisualBW( ConfigFile* cf, int section)
   if (cf->ReadDeviceAddr(&this->camera_id, section, "requires",
                        PLAYER_CAMERA_CODE, -1, NULL) != 0)
   {
-    this->SetError(-1);    
+    this->SetError(-1);
     return;
   }
   this->camera = NULL;
@@ -304,7 +304,7 @@ LaserVisualBW::LaserVisualBW( ConfigFile* cf, int section)
 
   // Image processing
   this->edge_thresh = cf->ReadFloat(section, "edge_thresh", 20);
-  
+
   // Default fiducial properties.
   this->barwidth = cf->ReadLength(section, "bit_width", 0.08);
   this->barcount = cf->ReadInt(section, "bit_count", 3);
@@ -333,7 +333,7 @@ int LaserVisualBW::Setup()
 {
   fdata_allocated = 0;
   fdata.fiducials = NULL;
-	
+
   // Subscribe to the laser.
   if (!(laser = deviceTable->GetDevice (laser_id)))
   {
@@ -369,7 +369,7 @@ int LaserVisualBW::Setup()
     PLAYER_ERROR ("unable to subscribe to camera device");
     return -1;
   }
-  
+
   return 0;
 }
 
@@ -395,7 +395,7 @@ int LaserVisualBW::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr
 {
   assert(hdr);
   assert(data);
-  
+
   if(Message::MatchMessage (hdr, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN, laser_id))
   {
     assert(hdr->size == sizeof(player_laser_data_t));
@@ -428,7 +428,7 @@ int LaserVisualBW::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr
 int LaserVisualBW::UpdateLaser(player_laser_data_t * data, double timestamp)
 {
   this->laser_time = timestamp;
-  
+
   // Find possible fiducials in this scan.
   this->FindLaserFiducials(timestamp, data);
 
@@ -452,14 +452,14 @@ void LaserVisualBW::FindLaserFiducials(double time, player_laser_data_t *data)
 
   // Empty the fiducial list.
   this->fdata.fiducials_count = 0;
-  
+
   // Initialise patch statistics.
   mn = 0.0;
   mr = 0.0;
   mb = 0.0;
   mrr = 0.0;
   mbb = 0.0;
-    
+
   // Look for a candidate patch in scan.
   for (i = 0; i < data->ranges_count; i++)
   {
@@ -493,7 +493,7 @@ void LaserVisualBW::FindLaserFiducials(double time, player_laser_data_t *data)
       db = atan2(this->barwidth / 2, mr);
       valid &= (mrr < (dr * dr));
       valid &= (mbb < (db * db));
-      
+
       if (valid)
       {
         // Do a best fit to determine the pose of the reflector.
@@ -502,7 +502,7 @@ void LaserVisualBW::FindLaserFiducials(double time, player_laser_data_t *data)
         // Match this fiducial against the ones we are already tracking.
         this->MatchLaserFiducial(time, pose);
       }
-      
+
       mn = 0.0;
       mr = 0.0;
       mb = 0.0;
@@ -560,7 +560,7 @@ void LaserVisualBW::MatchLaserFiducial(double time, double pose[3])
   double mindr;
   fiducial_t *fiducial;
   fiducial_t *minfiducial;
-  
+
   // Observations must be at least this close to the existing
   // fiducial.
   mindr = this->max_dist;
@@ -610,7 +610,7 @@ void LaserVisualBW::MatchLaserFiducial(double time, double pose[3])
     minfiducial->pose[2] = pose[2];
     minfiducial->laser_time = time;
   }
-  
+
   return;
 }
 
@@ -621,7 +621,7 @@ void LaserVisualBW::RetireLaserFiducials(double time, player_laser_data_t *data)
 {
   int i;
   fiducial_t *fiducial;
-  
+
   // Remove any old fiducials.
   for (i = 0; i < this->fiducial_count; i++)
   {
@@ -645,7 +645,7 @@ void LaserVisualBW::RetireLaserFiducials(double time, player_laser_data_t *data)
 int LaserVisualBW::UpdatePtz(player_ptz_data_t * data, double timestamp)
 {
   this->ptz_time = timestamp;
-  
+
   // Pick a fiducial to look at.
   this->SelectPtzTarget(timestamp, data);
 
@@ -676,7 +676,7 @@ void LaserVisualBW::SelectPtzTarget(double time, player_ptz_data_t *data)
   // Find one we havent looked at for while.
   this->ptz_fiducial = NULL;
   maxt = -1;
-  
+
   for (i = 0; i < this->fiducial_count; i++)
   {
     fiducial = this->fiducials + i;
@@ -694,7 +694,7 @@ void LaserVisualBW::SelectPtzTarget(double time, player_ptz_data_t *data)
     this->ptz_fiducial->ptz_select_time = time;
     this->ptz_fiducial->ptz_lockon_time = -1;
   }
-  
+
   return;
 }
 
@@ -715,7 +715,7 @@ void LaserVisualBW::ServoPtz(double time, player_ptz_data_t *data)
   // Deadband values.
   deadpan = 2;
   deadzoom = 2;
-  
+
   fiducial = this->ptz_fiducial;
   if (fiducial == NULL)
   {
@@ -747,12 +747,12 @@ void LaserVisualBW::ServoPtz(double time, player_ptz_data_t *data)
       tilt = maxtilt * sin((time - fiducial->ptz_lockon_time) /
                            this->max_ptz_attention * 2 * M_PI);
   }
-  
+
   // Compose the command packet to send to the PTZ device.
   cmd.pan = pan;
   cmd.tilt = tilt;
   cmd.zoom = zoom;
-  
+
   this->ptz->PutMsg(InQueue, PLAYER_MSGTYPE_CMD, PLAYER_PTZ_CMD_STATE, &cmd, sizeof(cmd), NULL);
 
   // Compute the dimensions of the image at the range of the target fiducial.
@@ -773,9 +773,9 @@ int LaserVisualBW::UpdateCamera(player_camera_data_t * data, double timestamp)
   int symbols[480];
 
   this->camera_time = timestamp;
-  
+
   best_id = -1;
-  
+
   // Barcode may not be centered, so look across entire image
   for (x = 0; x < this->camera_data.width; x += 16)
   {
@@ -810,7 +810,7 @@ int LaserVisualBW::UpdateCamera(player_camera_data_t * data, double timestamp)
       this->ptz_fiducial->id_time = timestamp;
     }
   }
-  
+
   return 1;
 }
 
@@ -871,7 +871,7 @@ int LaserVisualBW::ExtractSymbols(int x, unsigned int symbol_max_count, int symb
       fn += fabs(kernel[j + 2]);
     }
     fv /= fn;
-    
+
     // Pick the transitions
     if (state == -1)
     {
@@ -948,7 +948,7 @@ int LaserVisualBW::ExtractCode(int symbol_count, int symbols[])
     };
 
   best_digit = -1;
-  
+
   // Note that each code has seven symbols in it, not counting the
   // initial space.
   for (i = 0; i < symbol_count - 7; i++)
@@ -980,12 +980,12 @@ int LaserVisualBW::ExtractCode(int symbol_count, int symbols[])
 
       best_err = this->err_first;
       best_digit = -1;
-      
+
       // Read the code digit (4 symbols) and compare against the known
       // digit patterns
       for (k = 0; k < (int) (sizeof(digits) / sizeof(digits[0])); k++)
       {
-        err[k] = 0;        
+        err[k] = 0;
         for (j = 0; j < 4; j++)
         {
           wm = digits[k][j];
@@ -1018,7 +1018,7 @@ int LaserVisualBW::ExtractCode(int symbol_count, int symbols[])
       // Stop if we found a valid digit
       if (best_digit >= 0)
         break;
-    }    
+    }
   }
 
   //if (best_digit >= 0)
@@ -1047,7 +1047,7 @@ void LaserVisualBW::WriteData()
     // scan.
     if (fiducial->laser_time != this->laser_time)
       continue;
-    
+
     r = sqrt(fiducial->pose[0] * fiducial->pose[0] +
              fiducial->pose[1] * fiducial->pose[1]);
     b = atan2(fiducial->pose[1], fiducial->pose[0]);
@@ -1059,10 +1059,10 @@ void LaserVisualBW::WriteData()
     data.fiducials[data.fiducials_count].pose.pyaw = o;
     data.fiducials_count++;
   }
-  
+
   // Compute the data timestamp (from laser).
   timestamp = this->laser_time;
-  
+
   // Copy data to server.
   Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_FIDUCIAL_DATA_SCAN, (void*) &data, sizeof(data), &timestamp);
 }

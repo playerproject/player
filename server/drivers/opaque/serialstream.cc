@@ -23,11 +23,11 @@
 /** @ingroup drivers Drivers */
 /** @{ */
 /*
- * 
+ *
 The serialstream driver reads form a serial port continuously and publishes the data.
 Currently this is usable with the SickS3000 driver and the Nav200 driver. This driver does
 no interpretation of data output, merely reading it and publishing it, or, if it is sent a
-data command it will write whatever it recieves onto the serial port 
+data command it will write whatever it recieves onto the serial port
 
 @par Compile-time dependencies
 
@@ -45,7 +45,7 @@ data command it will write whatever it recieves onto the serial port
 
 - PLAYER_LASER_REQ_GET_GEOM
 - PLAYER_LASER_REQ_GET_CONFIG
-  
+
 @par Configuration file options
 
 - port (string)
@@ -61,8 +61,8 @@ data command it will write whatever it recieves onto the serial port
 - buffer_size (integer
   - The size of the buffer to be used when reading, this is the maximum that can be read in one read command
   - Default 4096
-      
-@par Example 
+
+@par Example
 
 @verbatim
 driver
@@ -85,20 +85,16 @@ driver
 
 */
 /** @} */
-  
+
 
 // ONLY if you need something that was #define'd as a result of configure
 // (e.g., HAVE_CFMAKERAW), then #include <config.h>, like so:
 /*
-#if HAVE_CONFIG_H
-  #include <config.h>
-#endif
+#include <config.h>
 */
 
 
-#if HAVE_CONFIG_H
-  #include <config.h>
-#endif
+#include <config.h>
 
 #include <assert.h>
 #include <math.h>
@@ -146,7 +142,7 @@ class SerialStream : public Driver
     // Must implement the following methods.
     virtual int Setup();
     virtual int Shutdown();
-    
+
     // This method will be invoked on each incoming message
     virtual int ProcessMessage(QueuePointer &resp_queue,
                                player_msghdr * hdr,
@@ -167,35 +163,35 @@ class SerialStream : public Driver
     // Close the terminal
     // Returns 0 on success
     virtual int CloseTerm();
-    
+
     // Set the io flags.
     // Just a little helper function that sets the parity and so on.
     void UpdateFlags();
-    
+
     // Set the terminal speed
     // Valid values are 9600, 19200, 38400, 115200
     // Returns 0 on success
     virtual int ChangeTermSpeed(int speed);
-    
+
   protected:
     //int transfer_rate; // Desired rate for operation
     int current_rate;
-    
+
     // Name of device used to communicate with the laser
     //const char *device_name;
-    
+
     uint8_t * rx_buffer;
     //unsigned int rx_buffer_size;
-    
+
     struct termios oldtio;
-    
+
     // opaque device file descriptor
-    int opaque_fd; 
-    
+    int opaque_fd;
+
     // Properties
     IntProperty buffer_size, transfer_rate;
     StringProperty port, parity;
-    
+
     // This is the data we store and send
     player_opaque_data_t mData;
 
@@ -216,7 +212,7 @@ SerialStream_Init(ConfigFile* cf, int section)
 // that it can be invoked without object context.  In this function, we add
 // the driver into the given driver table, indicating which interface the
 // driver can support and how to create a driver instance.
-void SerialStream_Register(DriverTable* table)
+void serialstream_Register(DriverTable* table)
 {
   table->AddDriver("serialstream", SerialStream_Init);
 }
@@ -236,7 +232,7 @@ SerialStream::SerialStream(ConfigFile* cf, int section)
 	  this->RegisterProperty ("port", &this->port, cf, section);
 	  this->RegisterProperty ("transfer_rate", &this->transfer_rate, cf, section);
 	  this->RegisterProperty ("parity", &this->parity, cf, section);
-	
+
 	  rx_buffer = new uint8_t[buffer_size];
 	  assert(rx_buffer);
 
@@ -276,7 +272,7 @@ int SerialStream::Shutdown()
 {
   // Stop and join the driver thread
   StopThread();
-  
+
   CloseTerm();
 
   PLAYER_MSG0(2, "Opaque Driver Shutdown");
@@ -287,7 +283,7 @@ int SerialStream::Shutdown()
 int SerialStream::ProcessMessage(QueuePointer & resp_queue,
                                  player_msghdr* hdr,
                                  void* data)
-{  
+{
 	// Process messages here.  Send a response if necessary, using Publish().
 	// If you handle the message successfully, return 0.  Otherwise,
 	// return -1, and a NACK will be sent for you, if a response is required.
@@ -299,8 +295,8 @@ int SerialStream::ProcessMessage(QueuePointer & resp_queue,
 	    PLAYER_MSG1(2, "%s", req.key);
 	    if (strcmp("transfer_rate", req.key) == 0)
 	    {
-	    	res = ChangeTermSpeed(req.value);	    
-	   
+	    	res = ChangeTermSpeed(req.value);
+
 			// Check the error code
 			if (res == 0)
 			{
@@ -352,7 +348,7 @@ int SerialStream::ProcessMessage(QueuePointer & resp_queue,
 	    {
 	      fprintf(stderr,"Error restoring file mode (%d - %s), disabling\n",errno,strerror(errno));
 	    }
-	    
+
 	    return (0);
 	}
 
@@ -396,20 +392,20 @@ int SerialStream::OpenTerm()
                     port.GetValue(), strerror(errno));
     return -1;
   }
-   
+
   // save the current io settings
   tcgetattr(opaque_fd, &oldtio);
-  
+
   // set up new settings
   UpdateFlags();
   if (ChangeTermSpeed(transfer_rate))
 	    return -1;
-  
+
   // Make sure queue is empty
   tcflush(this->opaque_fd, TCIOFLUSH);
   usleep(1000);
   tcflush(opaque_fd, TCIFLUSH);
-  
+
   return 0;
 }
 
@@ -434,7 +430,7 @@ void SerialStream::UpdateFlags()
 		newtio.c_cflag |= PARENB | PARODD;
 	else
 		PLAYER_WARN("Invalid parity. Defaulting to none.");
-	
+
 	tcsetattr(opaque_fd, TCSANOW, &newtio);
 	tcflush(opaque_fd, TCIOFLUSH);
 }
@@ -477,13 +473,13 @@ int SerialStream::ChangeTermSpeed(int speed)
     case B115200:
       if( tcgetattr( this->opaque_fd, &term ) < 0 )
         RETURN_ERROR(1, "unable to get device attributes");
-        
+
       //cfmakeraw( &term );
 	  if(cfsetispeed( &term, term_speed ) < 0 || cfsetospeed( &term, term_speed ) < 0)
 	  {
 		  RETURN_ERROR(1, "failed to set serial baud rate");
 	  }
-        
+
       if( tcsetattr( this->opaque_fd, TCSAFLUSH, &term ) < 0 )
         RETURN_ERROR(1, "unable to set device attributes");
       break;

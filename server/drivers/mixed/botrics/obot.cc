@@ -2,7 +2,7 @@
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2000-2003
  *     Brian Gerkey
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -95,15 +95,15 @@ over a normal serial port using the @ref driver_sicklms200 driver).
 
 - car_angle_p (float)
   - Default: 1.0
-  - Value to be multiplied by angular error (in rad) to produce angular 
+  - Value to be multiplied by angular error (in rad) to produce angular
     velocity command (in rad/sec) when in car-like command mode
 
 - watchdog_timeout (float, seconds)
   - Default: 1.0
   - How long since receiving the last command before the robot is stopped,
     for safety.  Set to -1.0 for no watchdog (DANGEROUS!).
-  
-@par Example 
+
+@par Example
 
 @verbatim
 driver
@@ -139,12 +139,12 @@ driver
 
 static void StopRobot(void* obotdev);
 
-class Obot : public Driver 
+class Obot : public Driver
 {
   private:
     // this function will be run in a separate thread
     virtual void Main();
-    
+
     // bookkeeping
     bool fd_blocking;
     double px, py, pa;  // integrated odometric pose (m,m,rad)
@@ -159,11 +159,11 @@ class Obot : public Driver
     // Minimum angular error required to induce servoing when in car-like
     // command mode.
     double car_angle_deadzone;
-    // Value to be multiplied by angular error (in rad) to produce angular 
+    // Value to be multiplied by angular error (in rad) to produce angular
     // velocity command (in rad/sec) when in car-like command mode
     double car_angle_p;
 
-    // How long since receiving the last command before we stop the robot, 
+    // How long since receiving the last command before we stop the robot,
     // for safety.
     double watchdog_timeout;
 
@@ -206,9 +206,9 @@ class Obot : public Driver
     void ProcessCommand(player_position2d_cmd_vel_t * cmd);
     void ProcessCarCommand(player_position2d_cmd_car_t * cmd);
 
-    // Process incoming messages from clients 
-    int ProcessMessage(QueuePointer & resp_queue, 
-                       player_msghdr * hdr, 
+    // Process incoming messages from clients
+    int ProcessMessage(QueuePointer & resp_queue,
+                       player_msghdr * hdr,
                        void * data);
 
     virtual int Setup();
@@ -223,13 +223,13 @@ Driver* Obot_Init( ConfigFile* cf, int section)
 }
 
 // a driver registration function
-void 
-Obot_Register(DriverTable* table)
+void
+obot_Register(DriverTable* table)
 {
   table->AddDriver("obot",  Obot_Init);
 }
 
-Obot::Obot( ConfigFile* cf, int section) 
+Obot::Obot( ConfigFile* cf, int section)
   : Driver(cf,section,true,PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
 {
   memset(&this->position_addr,0,sizeof(player_devaddr_t));
@@ -241,13 +241,13 @@ Obot::Obot( ConfigFile* cf, int section)
   {
     if(this->AddInterface(this->position_addr) != 0)
     {
-      this->SetError(-1);    
+      this->SetError(-1);
       return;
     }
 
-    this->robot_size.sl = cf->ReadTupleLength(section, "size", 
+    this->robot_size.sl = cf->ReadTupleLength(section, "size",
                                               0, OBOT_LENGTH);
-    this->robot_size.sw = cf->ReadTupleLength(section, "size", 
+    this->robot_size.sw = cf->ReadTupleLength(section, "size",
                                               1, OBOT_WIDTH);
     this->robot_pose.px = cf->ReadTupleLength(section, "offset",
                                               0, OBOT_POSE_X);
@@ -270,7 +270,7 @@ Obot::Obot( ConfigFile* cf, int section)
   }
 
   // Do we create a power interface?
-  if(cf->ReadDeviceAddr(&(this->power_addr), section, "provides", 
+  if(cf->ReadDeviceAddr(&(this->power_addr), section, "provides",
                       PLAYER_POWER_CODE, -1, NULL) == 0)
   {
     if(this->AddInterface(this->power_addr) != 0)
@@ -324,14 +324,14 @@ int
 Obot::OpenTerm()
 {
   struct termios term;
-  
+
   // open it.  non-blocking at first, in case there's no robot
   if((this->fd = open(serial_port, O_RDWR | O_SYNC | O_NONBLOCK, S_IRUSR | S_IWUSR )) < 0 )
   {
     PLAYER_ERROR1("open() failed: %s", strerror(errno));
     return(-1);
-  }  
- 
+  }
+
   if(tcgetattr(this->fd, &term) < 0 )
   {
     PLAYER_ERROR1("tcgetattr() failed: %s", strerror(errno));
@@ -339,11 +339,11 @@ Obot::OpenTerm()
     this->fd = -1;
     return(-1);
   }
-  
+
   cfmakeraw(&term);
   cfsetispeed(&term, B57600);
   cfsetospeed(&term, B57600);
-  
+
   if(tcsetattr(this->fd, TCSAFLUSH, &term) < 0 )
   {
     PLAYER_ERROR1("tcsetattr() failed: %s", strerror(errno));
@@ -356,7 +356,7 @@ Obot::OpenTerm()
   return(0);
 }
 
-int 
+int
 Obot::Setup()
 {
   int flags;
@@ -453,7 +453,7 @@ Obot::Shutdown()
   return(0);
 }
 
-void 
+void
 Obot::Main()
 {
   player_position2d_data_t data;
@@ -473,7 +473,7 @@ Obot::Main()
   for(;;)
   {
     pthread_testcancel();
-    
+
     this->sent_new_command = false;
     ProcessMessages();
     if(!this->sent_new_command)
@@ -509,7 +509,7 @@ Obot::Main()
         }
       }
     }
-    
+
     // Update and publish odometry info
     if(this->GetOdom(&ltics,&rtics,&lvel,&rvel) < 0)
     {
@@ -523,7 +523,7 @@ Obot::Main()
     int volt;
     if(GetBatteryVoltage(&volt) < 0)
       PLAYER_WARN("failed to get voltage");
-    
+
     GlobalTime->GetTimeDouble(&t);
     if((t - last_publish_time) > OBOT_PUBLISH_INTERVAL)
     {
@@ -537,24 +537,24 @@ Obot::Main()
       data.vel.px = (lvel_mps + rvel_mps) / 2.0;
       data.vel.pa = (rvel_mps-lvel_mps) / OBOT_AXLE_LENGTH;
       data.stall = 0;
-  
+
       //printf("publishing: %.3f %.3f %.3f\n",
              //data.pos.px,
              //data.pos.py,
              //RTOD(data.pos.pa));
-      this->Publish(this->position_addr,  
-                    PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE, 
+      this->Publish(this->position_addr,
+                    PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE,
                     (void*)&data,sizeof(data),NULL);
-      
+
       charge_data.valid = PLAYER_POWER_MASK_VOLTS | PLAYER_POWER_MASK_PERCENT;
       charge_data.volts = ((float)volt) / 1e1;
-      charge_data.percent = 1e2 * (charge_data.volts / 
+      charge_data.percent = 1e2 * (charge_data.volts /
                                    OBOT_NOMINAL_VOLTAGE);
-      this->Publish(this->power_addr,  
+      this->Publish(this->power_addr,
                     PLAYER_MSGTYPE_DATA,
                     PLAYER_POWER_DATA_STATE,
                     (void*)&charge_data, sizeof(player_power_data_t), NULL);
-  
+
       last_publish_time = t;
     }
 
@@ -567,7 +567,7 @@ Obot::Main()
 // translational velocity target.  The basic idea is to compute angular
 // velocity so as to servo (with P-control) to target angle.  Then pass the
 // two velocities to ProcessCommand() for thresholding and unit conversion.
-void 
+void
 Obot::ProcessCarCommand(player_position2d_cmd_car_t * cmd)
 {
   // Cache this command for later reuse
@@ -654,7 +654,7 @@ Obot::ProcessCommand(player_position2d_cmd_vel_t * cmd)
   final_lvel = (int)rint(command_lvel / OBOT_MPS_PER_TICK);
   final_rvel = (int)rint(command_rvel / OBOT_MPS_PER_TICK);
 
-  // TODO: do this min threshold smarter, to preserve desired travel 
+  // TODO: do this min threshold smarter, to preserve desired travel
   // direction
 
   /* to account for our bad low-level PID motor controller */
@@ -691,12 +691,12 @@ Obot::ProcessCommand(player_position2d_cmd_vel_t * cmd)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int Obot::ProcessMessage(QueuePointer & resp_queue, 
-                         player_msghdr * hdr, 
+int Obot::ProcessMessage(QueuePointer & resp_queue,
+                         player_msghdr * hdr,
                          void * data)
 {
-  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 
-                           PLAYER_POSITION2D_CMD_VEL, 
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD,
+                           PLAYER_POSITION2D_CMD_VEL,
                            this->position_addr))
   {
     // Only take the first new command (should probably take the last,
@@ -710,8 +710,8 @@ int Obot::ProcessMessage(QueuePointer & resp_queue,
     }
     return(0);
   }
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 
-                                PLAYER_POSITION2D_CMD_CAR, 
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD,
+                                PLAYER_POSITION2D_CMD_CAR,
                                 this->position_addr))
   {
     // Only take the first new command (should probably take the last,
@@ -725,12 +725,12 @@ int Obot::ProcessMessage(QueuePointer & resp_queue,
     }
     return(0);
   }
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
-                                PLAYER_POSITION2D_REQ_GET_GEOM, 
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
+                                PLAYER_POSITION2D_REQ_GET_GEOM,
                                 this->position_addr))
   {
     player_position2d_geom_t  geom;
-  	
+
     geom.pose = this->robot_pose;
     geom.size = this->robot_size;
 
@@ -741,10 +741,10 @@ int Obot::ProcessMessage(QueuePointer & resp_queue,
     return(0);
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
-                                PLAYER_POSITION2D_REQ_MOTOR_POWER, 
+                                PLAYER_POSITION2D_REQ_MOTOR_POWER,
                                 this->position_addr))
   {
-    /* motor state change request 
+    /* motor state change request
      *   1 = enable motors
      *   0 = disable motors (default)
      */
@@ -758,7 +758,7 @@ int Obot::ProcessMessage(QueuePointer & resp_queue,
     this->ChangeMotorState(power_config->state);
 
     this->Publish(this->position_addr, resp_queue,
-                  PLAYER_MSGTYPE_RESP_ACK, 
+                  PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_POSITION2D_REQ_MOTOR_POWER);
     return(0);
   }
@@ -854,7 +854,7 @@ Obot::WriteBuf(unsigned char* s, size_t len)
   static double last = 0.0;
   double t;
   GlobalTime->GetTimeDouble(&t);
-  printf("WriteBuf: %d bytes (time since last: %f)\n", 
+  printf("WriteBuf: %d bytes (time since last: %f)\n",
          len, t-last);
   last=t;
   */
@@ -884,7 +884,7 @@ Obot::WriteBuf(unsigned char* s, size_t len)
       return(-1);
     }
 
-    // TODO: re-init robot on NACK, to deal with underlying cerebellum reset 
+    // TODO: re-init robot on NACK, to deal with underlying cerebellum reset
     // problem
     switch(ack[0])
     {
@@ -920,7 +920,7 @@ Obot::WriteBuf(unsigned char* s, size_t len)
   }
 }
 
-int 
+int
 Obot::BytesToInt32(unsigned char *ptr)
 {
   unsigned char char0,char1,char2,char3;
@@ -989,7 +989,7 @@ Obot::GetOdom(int *ltics, int *rtics, int *lvel, int *rvel)
     return(-1);
   }
   //usleep(OBOT_DELAY_US);
-  
+
   // read 4 int32's, 1 error byte, and 1 checksum
   if(ReadBuf(buf, 18) < 0)
   {
@@ -1024,24 +1024,24 @@ Obot::GetOdom(int *ltics, int *rtics, int *lvel, int *rvel)
   return(0);
 }
 
-int 
-Obot::ComputeTickDiff(int from, int to) 
+int
+Obot::ComputeTickDiff(int from, int to)
 {
   int diff1, diff2;
 
   // find difference in two directions and pick shortest
-  if(to > from) 
+  if(to > from)
   {
     diff1 = to - from;
     diff2 = (-OBOT_MAX_TICS - from) + (to - OBOT_MAX_TICS);
   }
-  else 
+  else
   {
     diff1 = to - from;
     diff2 = (from - OBOT_MAX_TICS) + (-OBOT_MAX_TICS - to);
   }
 
-  if(abs(diff1) < abs(diff2)) 
+  if(abs(diff1) < abs(diff2))
     return(diff1);
   else
     return(diff2);
@@ -1072,8 +1072,8 @@ Obot::UpdateOdom(int ltics, int rtics)
     this->odom_initialized = true;
     return;
   }
-  
-  // MAJOR HACK! 
+
+  // MAJOR HACK!
   // The problem comes from one or the other encoder returning 0 ticks (always
   // the left, I think), we'll just throw out those readings.  Shouldn't have
   // too much impact.
@@ -1131,7 +1131,7 @@ Obot::UpdateOdom(int ltics, int rtics)
   this->py += d_delta * sin(this->pa);
   this->pa += a_delta;
   this->pa = NORMALIZE(this->pa);
-  
+
   //printf("obot: pose: %f,%f,%f\n", this->px,this->py, RTOD(this->pa));
 
   this->last_ltics = ltics;
@@ -1196,7 +1196,7 @@ int
 Obot::SetVelocity(int lvel, int rvel)
 {
   int retval;
-  
+
   //printf("SetVelocity: %d %d\n", lvel, rvel);
 
   if(!this->motors_swapped)
@@ -1212,7 +1212,7 @@ Obot::SetVelocity(int lvel, int rvel)
   return(0);
 }
 
-int 
+int
 Obot::ChangeMotorState(int state)
 {
   unsigned char buf[1];

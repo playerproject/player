@@ -1,9 +1,9 @@
 /*! \mainpage
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2003  
+ *  Copyright (C) 2003
  *     Brian Gerkey
- *                      
- * 
+ *
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -22,7 +22,7 @@
 
 /*! \class PBSDriver
  * \brief Class for Hokuyo PBS 03JN plug-in driver
- * \par Authors: 
+ * \par Authors:
  * Simon Kracht and Carsten Nielsen (based on sicks3000 by Toby Collett)
  * Aalborg University, Section for Automation and Control
  * \par Year:
@@ -37,9 +37,9 @@
  * - Serial port: dev/ttyS01
  * - Baud rate : 57600
  * - Pose of range finder related to the body (e.g. robot) on which it is fixed: [x,y,yaw] = [0,0,0]
- * 
+ *
  * For detailed description of PBS 03JN refer to http://www.senteksolutions.com/ or http://www.hokuyo-aut.jp/
- * 
+ *
  * \par Compile-time dependencies:
  *
  * - none
@@ -51,7 +51,7 @@
  * \par Provides:
  *
  * - interface_laser
- * 
+ *
  * \par Requires:
  *
  * - none
@@ -59,7 +59,7 @@
  * \par Configuration requests:
  * \par
  *  \b - PLAYER_LASER_REQ_GET_GEOM
- * 
+ *
  * \par Configuration file example:
  *
  * \code
@@ -108,7 +108,7 @@ class PBSDriver : public Driver
 {
 
   public:
-    
+
    // Constructor
     PBSDriver(ConfigFile* cf, int section);
     ~PBSDriver();
@@ -117,10 +117,10 @@ class PBSDriver : public Driver
     int Shutdown();
 
     // MessageHandler
-    int ProcessMessage(QueuePointer &resp_queue, 
-                       player_msghdr * hdr, 
+    int ProcessMessage(QueuePointer &resp_queue,
+                       player_msghdr * hdr,
                        void * data);
-                       
+
   private:
 
     // Main function for device thread.
@@ -128,7 +128,7 @@ class PBSDriver : public Driver
 
  	// Get the time (in ms)
 	DWORD getTickCount();
-     
+
 	bool sendDistAcq(unsigned char * pbsPackage);
 	bool sendAuthCode(unsigned char * pbsPackage);
 	bool SendAcqLinkCode(void);
@@ -144,16 +144,16 @@ class PBSDriver : public Driver
 	unsigned int combineTwoCharsToInt(unsigned char MSB, unsigned char LSB);
 	bool InitializeCom(char ComNumber[10]);
 	int Write_Buffer(unsigned char *chars, DWORD dwToWrite);
-	int Read_Single_Char(unsigned char *result);    
-    
+	int Read_Single_Char(unsigned char *result);
+
     	//Holder for  incoming byte from the serial receive routine
-	unsigned char chPBS; 
+	unsigned char chPBS;
 
 	//Coded data from PBS without header (0x02) and footer (0x03)
 	unsigned char pbsBuf[400];
 	unsigned long checksum,checksum2;
 
-	
+
 
 	// temp variables
 	unsigned char linkAuthSend[15], linkAuthSend2[17], linkAuthUn[12], linkAuthEn[10], lenAuth;
@@ -163,24 +163,24 @@ class PBSDriver : public Driver
 
 	int ifd; /* File descriptor for the port */
 
-    
+
   protected:
-  
+
 
     // PBS pose in robot cs.
     double pose[3];
     double size[2];
-    
+
     // Name of device used to communicate with the PBS
     const char *device_name;
-    
+
     // PBS device file descriptor
-    int PBS_fd;           
+    int PBS_fd;
 
 
 
 
-    
+
 
     // storage for outgoing data
     player_laser_data_t data_packet;
@@ -190,7 +190,7 @@ class PBSDriver : public Driver
 
 
 /// A factory creation function.
-/** 
+/**
     Declared outside of the class so that it can be invoked without any object context (alternatively, you can
     declare it static in the class).  In this function, we create and return
     (as a generic Driver*) a pointer to a new instance of this driver.
@@ -205,27 +205,27 @@ Driver* PBSDriver_Init(ConfigFile* cf, int section)
 
 
 /// A driver registration function.
-/** 
-    Again declared outside of the class so that it can be invoked without 
-    object context.  In this function, we add the driver into the given 
-    driver table, indicating which interface the driver can support and how 
-    to create a driver instance. 
+/**
+    Again declared outside of the class so that it can be invoked without
+    object context.  In this function, we add the driver into the given
+    driver table, indicating which interface the driver can support and how
+    to create a driver instance.
 */
-void PBSDriver_Register(DriverTable* table)
+void pbslaser_Register(DriverTable* table)
 {
   table->AddDriver("pbs03jn", PBSDriver_Init);
 }
 
 // Error macros
 #define RETURN_ERROR(erc, m) {PLAYER_ERROR(m); return erc;}
- 
+
 
 /// Constructor
 /** Retrieve options from the configuration file and do any */
 PBSDriver::PBSDriver(ConfigFile* cf, int section)
     : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LASER_CODE)
 {
-  
+
   // PBS data.
   memset(&data_packet,0,sizeof(data_packet));
   data_packet.min_angle = DTOR(-105.88);
@@ -257,8 +257,8 @@ PBSDriver::~PBSDriver()
 }
 
 /// Set up the device.
-/** 
-    Return 0 if things go well, and -1 otherwise. 
+/**
+    Return 0 if things go well, and -1 otherwise.
 */
 int PBSDriver::Setup()
 {
@@ -268,12 +268,12 @@ int PBSDriver::Setup()
 if(InitializeCom(DEFAULT_PBS_PORT))
 			{
 				printf("Serial port opened\n");
-				
+
 			}
 			else
 			{
 				printf("Serial could not be opened\n");
-				
+
 			}
 
   PLAYER_MSG0(2, "PBS ready");
@@ -295,42 +295,42 @@ int PBSDriver::Shutdown()
  // CNIE: Her mangler en lukning af comporten
 
   PLAYER_MSG0(2, "PBS shutdown");
-  
+
   return(0);
 }
 
 /// Process messages
-int PBSDriver::ProcessMessage(QueuePointer &resp_queue, 
+int PBSDriver::ProcessMessage(QueuePointer &resp_queue,
                            player_msghdr * hdr,
                            void * data)
 {
  //! Send a response if necessary, using Publish().
   //! If you handle the message successfully, return 0.  Otherwise,
   //! return -1, and a NACK will be sent for you, if a response is required.
-   
+
    // If request for range data has been received
    if (Message::MatchMessage (hdr,PLAYER_MSGTYPE_DATA,
     			  PLAYER_LASER_DATA_SCAN,
     			  this->device_addr))
     {
-    
+
        // Construct data package to be send
       player_laser_data_t data;
       data.ranges_count = NUMBER_OF_RANGE_READINGS;
       unsigned int i;
       for(i=0; i<data.ranges_count; i++)
-      { 
+      {
       	data.ranges[i] = data_packet.ranges[i];
-      } 
-      
+      }
+
       data.intensity_count = 0;
-      
+
       for(i=0; i<data.ranges_count; i++)
       {
       data.intensity[i] = 0; //CNIE: dette kunne med fordel gøres én gang i constructer
       }
       data.id = 0;
-      
+
       // Publish the data package
       this->Publish (this->device_addr, resp_queue,
     	     PLAYER_MSGTYPE_RESP_ACK,
@@ -339,7 +339,7 @@ int PBSDriver::ProcessMessage(QueuePointer &resp_queue,
     	     sizeof (data), NULL);
 
       printf("\n driver sending range data \n");
-      
+
       return (0);
     }
 
@@ -356,7 +356,7 @@ int PBSDriver::ProcessMessage(QueuePointer &resp_queue,
     geom.pose.pyaw = this->pose[2];
     geom.size.sl = this->size[0];
     geom.size.sw = this->size[1];
-    
+
     // Publish geometry data
     this->Publish(this->device_addr,
                   resp_queue,
@@ -367,7 +367,7 @@ int PBSDriver::ProcessMessage(QueuePointer &resp_queue,
     return(0);
   }
 
- 
+
   // Don't know how to handle this message.
   return(-1);
 }
@@ -376,7 +376,7 @@ int PBSDriver::ProcessMessage(QueuePointer &resp_queue,
 /// Main function for device thread
 /** Due to the communication protocol between the PBS and a PC, the main function is implemented as a state machine.
 */
-void PBSDriver::Main() 
+void PBSDriver::Main()
 {
 
 
@@ -395,30 +395,30 @@ void PBSDriver::Main()
 	DWORD SleepTime = 0; //milliseconds
 
 	// The time when a distance data package last was received
-	DWORD LastSampleTime = getTickCount(); 
+	DWORD LastSampleTime = getTickCount();
 
 	// The time when 'Link auth request' was sent
 	DWORD LinkAuthSendTime = 0;
 
-	// Timeout when listening for 'Acq. of link auth. code'-reply 
+	// Timeout when listening for 'Acq. of link auth. code'-reply
 	DWORD AcqLinkCodeTimeout = 300; //milliseconds
 
 	// Timeout when listening for 'Distance Data Acq.'-reply (which is he meas. data)
 	DWORD SendAcqDataTimeout = 300; //milliseconds
 
 	//Time between the state is changed to "Send Link auth" in the state "Request Distance Data"
-	DWORD LinkAuthSendTimeout = 2000; //milliseconds. 
+	DWORD LinkAuthSendTimeout = 2000; //milliseconds.
 
-	// Max number of retries when sending 'Link Auth.' request 
+	// Max number of retries when sending 'Link Auth.' request
 	static int LinkAuthRetriesMAX = 4;
-	
+
 	// Counter for determining the maximal number of times in a row a wrong Data package can be returned before it is considered a failure
 	static int wrongDataPackageCnt = 0;
 
 	// Counter for determining the maximal number of times a link auth can be sent before the state is changed back to AcqLinkCode
 	static int LinkAuthRetries = 0;
 
-	// Number of times a request for Acq. Link Code has be sent	
+	// Number of times a request for Acq. Link Code has be sent
 	static int AcqLinkCodeCnt = 0;
 
 	// Counter for determining the number of wrong distance data packages.
@@ -437,7 +437,7 @@ void PBSDriver::Main()
 
 	//Holder for Link Auth. Code received from PBS
 	unsigned char linkAuthCode[9];
-	
+
 
  //Condition for accepting package as data
 	#define DATAPACKAGE_RECEIVED ((pbsPackage[0] == 0xA2) && (pbsPackage[1] == 0x69))
@@ -451,26 +451,26 @@ void PBSDriver::Main()
 	#define AUTHCODE_RECEIVED ((pbsPackage[0] == 0xA0) && (pbsPackage[1] == 0x69))
 
 #define GETTIME getTickCount()-ProgStartTime
-     
-     
-     
-     
-  //! The main loop; interact with the device here 
+
+
+
+
+  //! The main loop; interact with the device here
   while(true)
   {
-             
+
     		switch(state)
 		{
 
 		case AcqLinkCode:
 			//Send a request for the Link Auth. code
-			if(SendAcqLinkCode()) 
+			if(SendAcqLinkCode())
 			{
 				printf("Acquisition of LINK auth code transmitted, %d \n",AcqLinkCodeCnt);
 				AcqLinkCodeCnt++;
-				//Now we must receive the Auth code. First we listen for new packages until timeout, 
+				//Now we must receive the Auth code. First we listen for new packages until timeout,
 				//then we check if the package received really is the auth code
-				
+
 				length = parsePackage(AcqLinkCodeTimeout, pbsPackage);
 				if(length)
 				{
@@ -484,10 +484,10 @@ void PBSDriver::Main()
 						for(i=2 ; i<=10 ; i++)
 						{
 							linkAuthCode[i-2] = pbsPackage[i];
-						} 						
+						}
 
 						// Shift state to be able to send a link Acquisition Authentication Code reply
-						
+
 						state = LinkAuth;
 						AcqLinkCodeCnt=0;
 
@@ -495,10 +495,10 @@ void PBSDriver::Main()
 					else
 					{
 						printf("%d: Package was not a auth. code, but: ",GETTIME);
-						
+
 						PrintPackage(length, pbsPackage);
 					}
-					
+
 				}
 				else
 				{
@@ -509,17 +509,17 @@ void PBSDriver::Main()
 			{
 				printf("Error when sending Acquisition of LINK auth code\n");
 			}
-			
+
 			break;
-			
+
 		case LinkAuth:
 			// Checking if Authentication Code reply has been sent
 			printf("%d: Sending Authentification Code reply %d/%d \n",GETTIME, LinkAuthRetries,LinkAuthRetriesMAX);
 			// The Link Authentication Code reply is sent
-			
+
 			if(sendAuthCode(linkAuthCode))
 			{
-				printf("Link Authentication Code reply was sent\n");				
+				printf("Link Authentication Code reply was sent\n");
 			}
 			else
 			{
@@ -549,7 +549,7 @@ void PBSDriver::Main()
 						state = AcqLinkCode;
 						LinkAuthRetries = 1;
 					}
-					
+
 				}
 				else
 				{
@@ -564,8 +564,8 @@ void PBSDriver::Main()
 					}
 					//END HACK
 					else//we have received some strange package...
-						PrintPackage(length, pbsPackage); 
-					
+						PrintPackage(length, pbsPackage);
+
 					if(LinkAuthRetries==LinkAuthRetriesMAX)
 					{
 						printf("MAX number of retries. Trying a request for the Link Auth. code\n");
@@ -576,16 +576,16 @@ void PBSDriver::Main()
 					{
 						if (state==LinkAuth)
 						{
-							printf("Trying to send a Link Auth req again...\n");							
+							printf("Trying to send a Link Auth req again...\n");
 							LinkAuthRetries++;
 						}
 						else
 						{
 							LinkAuthRetries = 0;
 						}
-						
+
 					}
-					
+
 				}
 			}
 			break;
@@ -595,10 +595,10 @@ void PBSDriver::Main()
 			SleepTime = getTickCount()-LastSampleTime;
 			if(!(SleepTime > sampletime))
 			{
-				
+
 				//printf("Sleeping in: %d\n",sampletime-SleepTime);
 				usleep((sampletime-SleepTime)*1000);
-				
+
 			}
 			DistDataReceived=false;
 			//Now we send a request for distance data
@@ -615,10 +615,10 @@ void PBSDriver::Main()
 			}
 			// Check if distance data is received until timeout occurs
 			length = parsePackage(SendAcqDataTimeout, pbsPackage);
-      			
+
       			if(length)
 			{
-				
+
 				//Check if received is data package
 				if(DATAPACKAGE_RECEIVED)
 				{
@@ -627,7 +627,7 @@ void PBSDriver::Main()
 				//	PrintPackage(length, pbsPackage);
 					lengthMm = ConvertToM(pbsPackage, pbsPackageMm, length);
       				//	PrintPackageMm(lengthMm, pbsPackageMm);
-					
+
 					//copy PBS data to data packet
       					unsigned int i;
       					for(i=0; i < lengthMm; i++)
@@ -641,21 +641,21 @@ void PBSDriver::Main()
 						data_packet.ranges[i] = data_packet.max_range;
 						}
       					}
-      					
+
       				//	Check data packet
       				//	for(i=0; i < PLAYER_LASER_MAX_SAMPLES; i++)
       				//	{
-	      			//		printf("ranges[%d]: %.3f ",i,data_packet.ranges[i]);		
+	      			//		printf("ranges[%d]: %.3f ",i,data_packet.ranges[i]);
 	      			//	}
-				
+
 					data_packet.id ++;
 				        this->Publish(this->device_addr,
 		                        PLAYER_MSGTYPE_DATA,
 		                        PLAYER_LASER_DATA_SCAN,
 		                        (void*)&data_packet, sizeof(data_packet), NULL);
-					printf("Data package published: %d \n", data_packet.id); 
-					
-					
+					printf("Data package published: %d \n", data_packet.id);
+
+
 					wrongDataPackageCnt = 0;
 					// State is maintained
 
@@ -670,7 +670,7 @@ void PBSDriver::Main()
 						state = LinkAuth;
 					}
 					wrongDataPackageCnt++;
-					
+
 				}
 			}
 			// If to many wrong packages has been received in a row, we change the state to Link Auth
@@ -695,16 +695,16 @@ void PBSDriver::Main()
 		case Error:
 			exit(0);
 			break;
-		}      
-                     
-    
-    
+		}
+
+
+
     // test if we are supposed to cancel
     pthread_testcancel();
-    
+
     // process any pending messages
     ProcessMessages();
-    
+
 
   }
 }
@@ -727,10 +727,10 @@ int PBSDriver::parsePackage(DWORD timeout, unsigned char * pbsPackage)
 	while((getTickCount()-StartTime) < timeout)
 	{
 		//read one byte
-		if(Read_Single_Char(&chPBS )) 
+		if(Read_Single_Char(&chPBS ))
 		{
 			 printf("Theres a byte: 0x%x \n",chPBS);
-			
+
 			// 0x02 is the "new package" keyword
 			if(chPBS==0x02)
 			{
@@ -739,12 +739,12 @@ int PBSDriver::parsePackage(DWORD timeout, unsigned char * pbsPackage)
 				IncommingPackage = true;
 			}
 			//0x03 is the "end of package keyword
-			else if((chPBS==0x03) && (IncommingPackage == true)) 
+			else if((chPBS==0x03) && (IncommingPackage == true))
 			{
 				printf("Decoding package of size %d\n",cnt);
 				len = decodePBS(pbsBuf, pbsPackage, cnt);
 
-				
+
 				while((Read_Single_Char(&chPBS))==1 )
 				{
 					//printf("Crap.\n");
@@ -756,19 +756,19 @@ int PBSDriver::parsePackage(DWORD timeout, unsigned char * pbsPackage)
 				//printf("RX - %.2d: " , getTickCount()-ProgStartTime);
 
 			}
-			else 
+			else
 			{
 				if (IncommingPackage == true)
 				{
-					pbsBuf[cnt] = chPBS; 
+					pbsBuf[cnt] = chPBS;
 					// Sorting of packages. We are only interested in link auth code, link auth, and Dist data
 					if ( (cnt==0) && !(chPBS==0x48) )
 					{
-						IncommingPackage = false; 
+						IncommingPackage = false;
 					}
 					cnt++;
-					
-				} 
+
+				}
 			}
 		}
 		else
@@ -788,17 +788,17 @@ void PBSDriver::PrintPackage(int length, unsigned char * pbsPackage)
 	int i;
 
 	printf(" Package: \n");
-   
+
 	// Print decoded data to screen
     for(i=0;i<length;i++)
 	{
 	    printf("0x%x ", pbsPackage[i]);
 	}
-      	
-   printf("\nTest length pbspackage: %d\n\n", length);
-   printf("\n-----------------------------------------\n");		
 
-}	
+   printf("\nTest length pbspackage: %d\n\n", length);
+   printf("\n-----------------------------------------\n");
+
+}
 
 
 /// Function for printing the decoded output of a package in milimeters
@@ -814,12 +814,12 @@ void PBSDriver::PrintPackageMm(int length, float * pbsPackageMm)
     for(i=0;i<length;i++){
 	    	printf("MM[%d]: %.3f ",i, pbsPackageMm[i]);
  }
-printf("\n-----------------------------------------\n");		
+printf("\n-----------------------------------------\n");
 
-}	
+}
 
 /// Function for acquiring distance data from PBS
-/** When distance data is needed this function is invoked. Note that the link 
+/** When distance data is needed this function is invoked. Note that the link
 to the PBS must be previously set up*/
 bool PBSDriver::sendDistAcq(unsigned char * pbsPackage){
 
@@ -828,7 +828,7 @@ bool PBSDriver::sendDistAcq(unsigned char * pbsPackage){
 
 	if(Write_Buffer(&distanceAcq[0], 8)==1)
 	{
-		
+
 		return true;
 	}
 	else
@@ -836,13 +836,13 @@ bool PBSDriver::sendDistAcq(unsigned char * pbsPackage){
 		return false;
 	}
 }
-	
+
 
 /// Function for sending the authentication code to PBS
-/** Invoked when the authentication code from PBS is received in order to set up the com link. Note that an acquisiton 
+/** Invoked when the authentication code from PBS is received in order to set up the com link. Note that an acquisiton
 of authentication code must be send previously. The code is calculated and transmitted back to the PBS*/
 bool PBSDriver::sendAuthCode(unsigned char * linkAuthCode)
-{	 
+{
 	bool status=1;
 	int i=0;
 	unsigned char temp2;
@@ -853,7 +853,7 @@ bool PBSDriver::sendAuthCode(unsigned char * linkAuthCode)
 
 	temp1 = checksum & 0x00FF;
 	temp2 = (checksum & 0xFF00) >> 8;
-	    
+
 	// Calculate the new checksum with the link auth code in it
 	linkAuthCodeEn[0] = 0xA0;
 	linkAuthCodeEn[1] = 0x5A;
@@ -867,10 +867,10 @@ bool PBSDriver::sendAuthCode(unsigned char * linkAuthCode)
 	linkAuthCodeClose[2] = 0x00;
 	linkAuthCodeClose[3] = temp1;
 	linkAuthCodeClose[4] = temp2;
-	    
+
 	checksum = crcbitbybitfast(linkAuthCodeEn,5);
 	checksum2 = crcbitbybitfast(linkAuthCodeClose,5);
-		    
+
 	// This HAS to be reversed
 	temp1 = checksum & 0x00FF;
 	temp2 = (checksum & 0xFF00) >> 8;
@@ -886,15 +886,15 @@ bool PBSDriver::sendAuthCode(unsigned char * linkAuthCode)
 
 	lenAuth = encodePBS(linkAuthCodeEn, linkAuthSend, 7);
     	lenAuth = encodePBS(linkAuthCodeClose,linkAuthCodeCloseSend,7);
-	    
+
 	linkAuthSend2[0] = 0x02;
 	for(i=0;i<=lenAuth;i++)
 	{
 		linkAuthSend2[i+1] = linkAuthSend[i];
 	}
 	linkAuthSend2[i] = 0x03;
-	    
-	linkAuthCodeCloseSend2[0]=0x02; 
+
+	linkAuthCodeCloseSend2[0]=0x02;
 	for(i=0;i<=lenAuth;i++)
 	{
 		linkAuthCodeCloseSend2[i+1] = linkAuthCodeCloseSend[i];
@@ -904,14 +904,14 @@ bool PBSDriver::sendAuthCode(unsigned char * linkAuthCode)
 
 	return status;
 }
-	
-	
+
+
 /// Function for sending acquisition of link code
 /** When sent to the PBS the PBS responds with the link code */
 bool PBSDriver::SendAcqLinkCode(void)
 {
 	// First to to send the first Acquisition of LINK auth code, this is always fixed
-	// The following line is link Acq command that the pc has to send to the PBS. 
+	// The following line is link Acq command that the pc has to send to the PBS.
   	static unsigned char linkAcqEn[8] = {0x02,0x48,0x26,0x44,0x58,0x34,0x30,0x03};
 	Write_Buffer(&linkAcqEn[0], 8);
 	return true;
@@ -937,9 +937,9 @@ DWORD PBSDriver::getTickCount() {
 /// Function for closing reflecting the lower 'bitnum' bits of crc
 /** Used for authentication code generation */
 unsigned long PBSDriver::reflect (unsigned long crc, int bitnum) {
-    
+
     unsigned long i, j=1, crcout=0;
-    
+
 	for (i=(unsigned long)1<<(bitnum-1); i; i>>=1) {
 	    if (crc & i) crcout|=j;
 	    j<<= 1;
@@ -952,41 +952,41 @@ unsigned long PBSDriver::reflect (unsigned long crc, int bitnum) {
 unsigned long PBSDriver::crcbitbybitfast(unsigned char* p, unsigned long len) {
 
 // CRC parameters (default values are for CRC-32):
-    
+
     const int order = 16;
     const unsigned long polynom = 0x1021;
     const unsigned long crcxor = 0x0000;
     const int refin = 1;
     const int refout = 1;
     unsigned long crcinit_direct = 0;
-    
-    
+
+
     unsigned long crcmask;
     unsigned long crchighbit;
     unsigned long i, j, c, bit;
     unsigned long crc = crcinit_direct;
-    
+
     crcmask = ((((unsigned long)1<<(order-1))-1)<<1)|1;
     crchighbit = (unsigned long)1<<(order-1);
-    
+
     for (i=0; i<len; i++) {
-	
+
 	c = (unsigned long)*p++;
 	if (refin) c = reflect(c, 8);
-	
+
 	for (j=0x80; j; j>>=1) {
-	    
+
 	    bit = crc & crchighbit;
 	    crc<<= 1;
 	    if (c & j) bit^= crchighbit;
 	    if (bit) crc^= polynom;
 	}
-    }	
-    
+    }
+
     if (refout) crc=reflect(crc, order);
 	crc^= crcxor;
 	crc&= crcmask;
-	
+
 	return(crc);
 }
 
@@ -998,10 +998,10 @@ unsigned long PBSDriver::crcbitbybitfast(unsigned char* p, unsigned long len) {
     int i,j,k;
     j=0;
     k=0;
-   
+
     // First we clean up the list by subtracting the 0x20
     for (i=0; i<length; i++){
-	
+
 	if (((stuff[i] & 0x40) >> 6) == 1){
 	    stuff[i] = (stuff[i] & 0xBF);
 	    stuff[i] = (stuff[i] | 0x20);
@@ -1028,7 +1028,7 @@ unsigned long PBSDriver::crcbitbybitfast(unsigned char* p, unsigned long len) {
 	    //printf("the decoded stuff for the first part %x \n",decodedstuff[k]);
 	    k=k+1;
 	}
-    
+
 	if (j == 1){
 
 	    if(i==length-1){
@@ -1041,10 +1041,10 @@ unsigned long PBSDriver::crcbitbybitfast(unsigned char* p, unsigned long len) {
 	    k=k+1;
 	}
 
-	if (j == 2){ 
+	if (j == 2){
 	    if(i==length-1){
 		decodedstuff[k] = ((stuff[i] & 0x0C) << 4) + ((stuff[i+1] & 0xFC) >> 2);
-		break;	    
+		break;
 	    }
 
 	    decodedstuff[k] = ((stuff[i] & 0x0C) << 4) + ((stuff[i+1] & 0xFC) >> 2);
@@ -1052,9 +1052,9 @@ unsigned long PBSDriver::crcbitbybitfast(unsigned char* p, unsigned long len) {
 	    k=k+1;
 	}
 
-	j=j+1;	
+	j=j+1;
 
-	if (j == 4){ 
+	if (j == 4){
 	    j = 0;
 	}
 
@@ -1077,18 +1077,18 @@ int PBSDriver::encodePBS(unsigned char *uncoded, unsigned char *encoded, int len
     length = length +1;
 
     for (i=0;i<=length;i++){
-	
+
 	if (j==0){
-	    
+
 	    if(i==length){
 		break;
 	    }
 	    encoded[k] = ((uncoded[i] & 0xFC) >> 2) + 0x20;
 	    k=k+1;
 	}
-	
+
 	if (j==1){
-	    
+
 	    if(i==length){
 		encoded[k] = ((uncoded[i-1] << 4) & 0x30) + 0x20;
 		break;
@@ -1096,18 +1096,18 @@ int PBSDriver::encodePBS(unsigned char *uncoded, unsigned char *encoded, int len
 	    encoded[k] = (((uncoded[i-1] & 0x03) << 4) + ((uncoded[i] & 0xF0) >> 4)) + 0x20;
 	    k=k+1;
 	}
-	
+
 	if (j==2){
-	    
+
 	    if(i==length){
 		encoded[k] = ((uncoded[i-1] << 2) & 0x3c) + 0x20;
 		break;
 	    }
 	    encoded[k] = (((uncoded[i-1] & 0x0F) << 2) + ((uncoded[i] & 0xC0) >> 6)) + 0x20;
 	    k=k+1;
-	    
+
 	}
-	
+
 	if (j==3){
 	    if(i==length){
 		encoded[k] = ((uncoded[i-1] & 0x3F) + 0x20);
@@ -1116,14 +1116,14 @@ int PBSDriver::encodePBS(unsigned char *uncoded, unsigned char *encoded, int len
 	    encoded[k] = (uncoded[i-1] & 0x3F) + 0x20;
 	    k=k+1;
 	}
-	
+
 	j=j+1;
-	
+
 	if (j==4){
 	    j=0;
 	    i=i-1;
-	} 
-	
+	}
+
     }
     return k;
 }
@@ -1134,10 +1134,10 @@ int PBSDriver::ConvertToM(unsigned char *pPbsDataHex, float *pPbsDataMm, int len
 int i = 0, k=1, LengthConv =0, OffsetInit = 2, OffsetEnd = 4;
 
 for(i=OffsetInit+1 ; i<length-OffsetEnd ; i = i+2){
-       pPbsDataMm[i-k-OffsetInit] = ((float)combineTwoCharsToInt(pPbsDataHex[i],pPbsDataHex[i-1]))/1000; 
+       pPbsDataMm[i-k-OffsetInit] = ((float)combineTwoCharsToInt(pPbsDataHex[i],pPbsDataHex[i-1]))/1000;
        LengthConv = i-k;
        k++;
-}   
+}
 
 printf("Data converted to mm. Length of new package is: %d shorts\n",LengthConv);
 return (LengthConv);
@@ -1152,8 +1152,8 @@ unsigned int PBSDriver::combineTwoCharsToInt(unsigned char MSB, unsigned char LS
 /// Function for setting up the com port
 bool PBSDriver::InitializeCom(char ComNumber[10])
 {
-	char *Port_Name = ComNumber; // Serial port name.    
-	
+	char *Port_Name = ComNumber; // Serial port name.
+
 	ifd = open(Port_Name, O_RDWR | O_NOCTTY | O_NDELAY);
 
 	if (ifd == -1)
@@ -1164,7 +1164,7 @@ bool PBSDriver::InitializeCom(char ComNumber[10])
 	else
 	{
 		fcntl(ifd, F_SETFL, 0);
-		
+
 		struct termios options;
 		// Get the current options for the port...
 		tcgetattr(ifd, &options);
@@ -1173,29 +1173,29 @@ bool PBSDriver::InitializeCom(char ComNumber[10])
 		cfsetospeed(&options, B57600);
 		// Enable the receiver and set local mode...
 		options.c_cflag |= CLOCAL | CREAD;
-						
+
 		options.c_cflag &= ~PARENB;
 		options.c_cflag &= ~CSTOPB;
 		options.c_cflag &= ~CSIZE;
 		options.c_cflag |= CS7;
-		
+
 		options.c_iflag = IGNPAR;
 		options.c_oflag = 0;
-		
+
 		options.c_lflag = 0;
-		
+
 		// Char read timer in with ts = 0.1s
 		options.c_cc[VTIME]    = 1;   /* inter-character timer unused */
         	options.c_cc[VMIN]     = 0;   /* blocking read until 5 chars received */
-  
-				
+
+
 		tcflush(ifd, TCIFLUSH);
 		// Set the new options for the port...
 		tcsetattr(ifd, TCSANOW, &options);
-		
+
 		return 1;
     }
-	
+
 }
 
 /// Function for writing data to the com port
@@ -1205,7 +1205,7 @@ int PBSDriver::Write_Buffer(unsigned char *chars, DWORD dwToWrite) {
 		fputs("write failed!\n", stderr);
 		return 0;
 	}
-	return 1;                                                                       	                                
+	return 1;
 }
 
 /// Function for reading data from the com port
@@ -1220,7 +1220,7 @@ int PBSDriver::Read_Single_Char(unsigned char *result) {
 			printf("SERIAL read error %d %s\n", errno, strerror(errno));
 			return 0;
 		}
-	}                    
+	}
 	return iIn;
 }
 

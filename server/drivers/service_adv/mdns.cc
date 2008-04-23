@@ -1,9 +1,9 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
- * 
+ *
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -28,8 +28,8 @@
 //                      <reed@mobilerobots.com>
 // Date: 23 June 2003
 // Updated: 1 June 2005 for architectural Player changes
-// Updated: 27 February 2006 for architectural Player changes 
-//       
+// Updated: 27 February 2006 for architectural Player changes
+//
 ///////////////////////////////////////////////////////////////////////////
 
 /** @ingroup drivers */
@@ -37,25 +37,25 @@
 /** @defgroup driver_service_adv_mdns service_adv_mdns
  * @brief Multicast DNS service discovery
 
- This driver can be used to publish information about a Player TCP service using 
+ This driver can be used to publish information about a Player TCP service using
  the proposed IETF standard for multicast DNS service discovery (MDNS-SD).
 MDNS-SD is a part of the <a href="http://www.zeroconf.org">Zeroconf</a> protocols,
 and has also been called "Rendezvous".
 
 If you use this driver, it is assumed that the standard Player 2 TCP transport
-is being used;  the MDNS-SD service type is "_player2._tcp".    In addition to any 
-"service_description" given in the configuration file (see below), any 
+is being used;  the MDNS-SD service type is "_player2._tcp".    In addition to any
+"service_description" given in the configuration file (see below), any
 loaded device drivers will be represented in the service's TXT record.
-Each device will be entered into the TXT record as: 
+Each device will be entered into the TXT record as:
 <code>device=</code><i>name</i><code>#</code><i>number</i><code>(</code><i>driver name</i><code>)</code>.
 
-The <a href="http://www.porchdogsoft.com/products/howl/">Howl</a> library is 
+The <a href="http://www.porchdogsoft.com/products/howl/">Howl</a> library is
 used for MDNS-SD and must be available for this driver to be compiled into
 the server.
 
 This driver has no client proxy. When the driver is loaded and initialized,
-the service is published, and Howl responds to queries in a background 
-thread. Clients may use Howl or any other MDNS-SD implementation to 
+the service is published, and Howl responds to queries in a background
+thread. Clients may use Howl or any other MDNS-SD implementation to
 query and find services.
 
 @par Compile-time dependencies
@@ -77,14 +77,14 @@ query and find services.
 
 @par Configuration file options
 
-- service_name (string)  
+- service_name (string)
     - A short name for the service. If omitted, a default will be chosen based on the Player port number.
 - service_description (string)
     - A longer "description" for the robot, which will be included in the service TXT record.
 - service_tags (tuple string)
     - Tags to include in the service TXT record, in addition to device names.
- 
-@par Example 
+
+@par Example
 
 @verbatim
 driver
@@ -128,7 +128,7 @@ class SrvAdv_MDNS : public  Driver {
     // Create service directory, find values, and add this service to it. return
     // false on error
     bool Prepare();
-   
+
 
 
     // called when a client (the first client?) connects. no clients ever
@@ -159,7 +159,7 @@ Driver* ServiceAdvMDNS_Init( ConfigFile* cf, int section) {
 }
 
 // a driver registration function
-void ServiceAdvMDNS_Register(DriverTable* table)
+void serviceadvmdns_Register(DriverTable* table)
 {
   table->AddDriver("service_adv_mdns",  &ServiceAdvMDNS_Init);
 }
@@ -177,7 +177,7 @@ SrvAdv_MDNS::SrvAdv_MDNS( ConfigFile* configFile, int configSection)
     //alwayson = true;      // since there is no client interface
     // this breaks player and isn't really neccesary so I commented it out
 
-    // read name and description from config file. 
+    // read name and description from config file.
     assert(configFile);
     name = configFile->ReadString(configSection, "service_name", "");
     description = configFile->ReadString(configSection, "service_description", "");
@@ -242,11 +242,11 @@ bool SrvAdv_MDNS::Prepare() {
 
     // add a description to the TXT record if given in the config file
     if(description != "") {
-        description = "description="+description; 
+        description = "description="+description;
         if(sw_text_record_add_string(txt, description.c_str()) != SW_OKAY)
             fprintf(stderr, "service_adv_mdns: Error: could not add description tag \"%s\" to text record.\n", description.c_str());
     }
-        
+
 
     // add a tag to the TXT record for each device in the device table
     for(Device* dev = deviceTable->GetFirstDevice(); dev != 0; dev = deviceTable->GetNextDevice(dev)) {
@@ -260,7 +260,7 @@ bool SrvAdv_MDNS::Prepare() {
     }
 
     for(std::set<std::string>::const_iterator i = extra_txt.begin();
-                i != extra_txt.end(); i++) 
+                i != extra_txt.end(); i++)
     {
         if(sw_text_record_add_string(txt, (*i).c_str()) != SW_OKAY)
             fprintf(stderr, "service_adv_mdns: Error: could not add device tag \"%s\" to text record.\n", (*i).c_str());
@@ -285,7 +285,7 @@ bool SrvAdv_MDNS::Prepare() {
         sw_text_record_fina(txt);
         return false;
     }
-        
+
 
     sw_text_record_fina(txt);
 

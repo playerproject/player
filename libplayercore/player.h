@@ -495,6 +495,6 @@ change dynamically and so the device will publish it periodically.
   - Normalize subtype names (PLAYER_PTZ_REQ_GEOM vs PLAYER_POSITION2D_REQ_GET_GEOM)
 */
 
-#include <libplayercore/player_interfaces.h>
+#include "player_interfaces.h"
 
 #endif /* PLAYER_H */

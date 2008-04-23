@@ -43,7 +43,7 @@ configuration space (`C-space') boundary.  That is, it shortens the
 range of each laser scan such that the resultant scan delimits the
 obstacle-free portion of the robot's configuration space.  This driver
 is particular useful for writing obstacle avoidance algorithms, since the
-robot may safely move to any point in the obstacle-free portion of the 
+robot may safely move to any point in the obstacle-free portion of the
 configuration space.
 
 Note that driver computes the configuration space for a robot of some
@@ -67,7 +67,7 @@ fixed radius; this radius may be set in the configuration file.
 @par Configuration requests
 
 - PLAYER_LASER_REQ_GET_GEOM
-  
+
 @par Configuration file options
 
 - radius (length)
@@ -76,8 +76,8 @@ fixed radius; this radius may be set in the configuration file.
 - step (integer)
   - Default: 1
   - Step size for subsampling the scan (saves CPU cycles)
-      
-@par Example 
+
+@par Example
 
 @verbatim
 driver
@@ -148,7 +148,7 @@ Driver* LaserCSpace_Init( ConfigFile* cf, int section)
 
 
 // a driver registration function
-void LaserCSpace_Register(DriverTable* table)
+void lasercspace_Register(DriverTable* table)
 {
   table->AddDriver("lasercspace", LaserCSpace_Init);
 }
@@ -162,7 +162,7 @@ LaserCSpace::LaserCSpace( ConfigFile* cf, int section)
   // Settings.
   this->radius = cf->ReadLength(section, "radius", 0.50);
   this->sample_step = cf->ReadInt(section, "step", 1);
-  
+
   return;
 }
 
@@ -171,7 +171,7 @@ LaserCSpace::LaserCSpace( ConfigFile* cf, int section)
 int LaserCSpace::UpdateLaser(player_laser_data_t * data)
 {
   unsigned int i;
-  
+
   // Construct the outgoing laser packet
   this->data.resolution = data->resolution;
   this->data.min_angle = data->min_angle;
@@ -188,7 +188,7 @@ int LaserCSpace::UpdateLaser(player_laser_data_t * data)
   for (i = 0; i < data->ranges_count; i++)
     this->data.ranges[i]  = this->FreeRange(data,i);
 
-  this->Publish(this->device_addr,  
+  this->Publish(this->device_addr,
                 PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN,
                 (void*)&this->data);
   delete [] this->data.ranges;
@@ -204,7 +204,7 @@ void LaserCSpace::Precompute(player_laser_data_t* data)
 {
   unsigned int i;
   double r, b, x, y;
-  
+
   for (i = 0; i < data->ranges_count; i++)
   {
     r = data->ranges[i];
@@ -219,13 +219,13 @@ void LaserCSpace::Precompute(player_laser_data_t* data)
   }
   return;
 }
-  
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Compute the maximum free-space range for sample n.
 double LaserCSpace::FreeRange(player_laser_data_t* data, int n)
 {
-  unsigned int i; 
+  unsigned int i;
   int step;
   double r, b, x, y;
   double r_, b_, x_, y_;
@@ -235,12 +235,12 @@ double LaserCSpace::FreeRange(player_laser_data_t* data, int n)
 
   // Step size for subsampling the scan (saves CPU cycles)
   step = this->sample_step;
-  
+
   // Range and bearing of this reading.
   r = this->lu[n][0];
   b = this->lu[n][1];
   x = this->lu[n][2];
-  y = this->lu[n][3];  
+  y = this->lu[n][3];
 
   max_r = r - this->radius;
 
@@ -252,7 +252,7 @@ double LaserCSpace::FreeRange(player_laser_data_t* data, int n)
       continue;
     b_ = this->lu[i][1];
     x_ = this->lu[i][2];
-    y_ = this->lu[i][3];  
+    y_ = this->lu[i][3];
 
     // Compute parametric point on ray that is nearest the obstacle.
     s = (x * x_ + y * y_) / (x * x + y * y);
@@ -268,10 +268,10 @@ double LaserCSpace::FreeRange(player_laser_data_t* data, int n)
     dx = nx - x_;
     dy = ny - y_;
     d = sqrt(dx * dx + dy * dy);
-    
+
     if (d > this->radius)
       continue;
-    
+
     // Compute the shortened range.
     h = nr - sqrt(this->radius * this->radius - d * d);
     if (h < max_r)

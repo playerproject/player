@@ -134,7 +134,7 @@ PassThrough_Init(ConfigFile* cf, int section) {
 }
 
 
-void PassThrough_Register(DriverTable* table) {
+void passthrough_Register(DriverTable* table) {
     table->AddDriver("passthrough", PassThrough_Init);
 }
 
@@ -219,11 +219,11 @@ int PassThrough::ProcessMessage(QueuePointer & resp_queue,
 
     PLAYER_MSG0(9,"PassThrough::ProcessMessage: Received a packet!");
 
-    if (Device::MatchDeviceAddress(hdr->addr,srcAddr) && 
-        ((hdr->type == PLAYER_MSGTYPE_DATA) || 
-         (hdr->type == PLAYER_MSGTYPE_RESP_ACK) || 
-         (hdr->type == PLAYER_MSGTYPE_SYNCH) || 
-         (hdr->type == PLAYER_MSGTYPE_RESP_NACK)))  
+    if (Device::MatchDeviceAddress(hdr->addr,srcAddr) &&
+        ((hdr->type == PLAYER_MSGTYPE_DATA) ||
+         (hdr->type == PLAYER_MSGTYPE_RESP_ACK) ||
+         (hdr->type == PLAYER_MSGTYPE_SYNCH) ||
+         (hdr->type == PLAYER_MSGTYPE_RESP_NACK)))
     {
         PLAYER_MSG7(8,"PassThrough: Forwarding SRC->DST Interface code=%d  %d:%d:%d -> %d:%d:%d",hdr->addr.interf, hdr->addr.host,hdr->addr.robot, hdr->addr.index, dstAddr.host, dstAddr.robot, dstAddr.index);
 
@@ -233,7 +233,7 @@ int PassThrough::ProcessMessage(QueuePointer & resp_queue,
         inspected=true;
     }
 
-    if (Device::MatchDeviceAddress(hdr->addr,dstAddr) && 
+    if (Device::MatchDeviceAddress(hdr->addr,dstAddr) &&
         (hdr->type == PLAYER_MSGTYPE_CMD))
     {
         PLAYER_MSG7(8,"PassThrough: Forwarding DST->SRC Interface code=%d  %d:%d:%d -> %d:%d:%d",hdr->addr.interf, hdr->addr.host,hdr->addr.robot, hdr->addr.index, srcAddr.host, srcAddr.robot, srcAddr.index);
@@ -244,7 +244,7 @@ int PassThrough::ProcessMessage(QueuePointer & resp_queue,
         srcDevice->PutMsg(this->InQueue,hdr,data);  //putMsg is the correct way to talk to this subscribed device, any answer comes to the queue of this driver
         inspected=true;
     }
-    else if (Device::MatchDeviceAddress(hdr->addr,dstAddr) && 
+    else if (Device::MatchDeviceAddress(hdr->addr,dstAddr) &&
              (hdr->type == PLAYER_MSGTYPE_REQ))
     {
       // If it's a request, do it in-place and await the reply.
@@ -266,7 +266,7 @@ int PassThrough::ProcessMessage(QueuePointer & resp_queue,
       // Got the response, so adjust the address and forward it
       player_msghdr_t newhdr = *(msg->GetHeader());
       newhdr.addr = dstAddr;
-      this->Publish(resp_queue, 
+      this->Publish(resp_queue,
                     &newhdr,
                     msg->GetPayload());
       delete msg;

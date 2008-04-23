@@ -1,0 +1,11 @@
+PLAYERDRIVER_OPTION (laserbar build_laserbar ON)
+PLAYERDRIVER_ADD_DRIVER_SIMPLE (laserbar build_laserbar laserbar.cc)
+
+PLAYERDRIVER_OPTION (laserbarcode build_laserbarcode ON)
+PLAYERDRIVER_ADD_DRIVER_SIMPLE (laserbarcode build_laserbarcode laserbarcode.cc)
+
+PLAYERDRIVER_OPTION (laservisualbarcode build_laservisualbarcode ON)
+PLAYERDRIVER_ADD_DRIVER_SIMPLE (laservisualbarcode build_laservisualbarcode laservisualbarcode.cc)
+
+PLAYERDRIVER_OPTION (laservisualbw build_laservisualbw ON)
+PLAYERDRIVER_ADD_DRIVER_SIMPLE (laservisualbw build_laservisualbw laservisualbw.cc)

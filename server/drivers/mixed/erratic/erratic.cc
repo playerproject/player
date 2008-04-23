@@ -3,7 +3,7 @@
 /**
   *  Copyright (C) 2006
   *     Videre Design
-  *  Copyright (C) 2000  
+  *  Copyright (C) 2000
   *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
   *
   *  Videre Erratic robot driver for Player
@@ -51,7 +51,7 @@ them named:
   - Returns the current battery voltage (12 V when fully charged).
 
 - @ref interface_aio
-  - Returns data from analog and digital input pins 
+  - Returns data from analog and digital input pins
 
 - @ref interface_ir
   - Returns ranges from IR sensors, assuming they're connected to the analog input pins
@@ -147,7 +147,7 @@ driver
              "sonar:0"
              "aio:0"
              "ir:0"
-             "ptz:0" 
+             "ptz:0"
              "ptz:1" ]
 
   port "/dev/erratic"
@@ -191,12 +191,12 @@ bool debug_mode = FALSE;
 /** Setting up, tearing down **/
 
 // These get the driver in where it belongs, loading
-Driver* Erratic_Init(ConfigFile* cf, int section) 
+Driver* Erratic_Init(ConfigFile* cf, int section)
 {
   return (Driver*)(new Erratic(cf,section));
 }
 
-void Erratic_Register(DriverTable* table) 
+void erratic_Register(DriverTable* table)
 {
   table->AddDriver("erratic", Erratic_Init);
 }
@@ -215,8 +215,8 @@ extern "C" {
 #endif
 
 // Constructor of the driver from configuration entry
-Erratic::Erratic(ConfigFile* cf, int section) 
-  : Driver(cf,section,true,PLAYER_MSGQUEUE_DEFAULT_MAXLEN) 
+Erratic::Erratic(ConfigFile* cf, int section)
+  : Driver(cf,section,true,PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
 {
   // zero ids, so that we'll know later which interfaces were requested
   memset(&this->position_id, 0, sizeof(player_devaddr_t));
@@ -255,7 +255,7 @@ Erratic::Erratic(ConfigFile* cf, int section)
       return;
     }
   }
-  
+
   // Do we create a aio interface?
   if(cf->ReadDeviceAddr(&(this->aio_id), section, "provides", PLAYER_AIO_CODE, -1, NULL) == 0) {
     if(this->AddInterface(this->aio_id) != 0) {
@@ -333,13 +333,13 @@ Erratic::Erratic(ConfigFile* cf, int section)
 
   this->read_fd = -1;
   this->write_fd = -1;
-  
+
   // Data mutexes and semaphores
   pthread_mutex_init(&send_queue_mutex, 0);
   pthread_cond_init(&send_queue_cond, 0);
   pthread_mutex_init(&motor_packet_mutex, 0);
-  
-  if (Connect()) 
+
+  if (Connect())
     {
       printf("Error connecting to Erratic robot\n");
       exit(1);
@@ -353,7 +353,7 @@ int Erratic::Setup() {
 }
 
 // Establishes connection and starts threads
-int Erratic::Connect() 
+int Erratic::Connect()
 {
   printf("  Erratic connection initializing (%s)...",this->psos_serial_port); fflush(stdout);
 
@@ -378,13 +378,13 @@ int Erratic::Connect()
       close(this->read_fd); close(this->write_fd);
       this->read_fd = -1; this->write_fd = -1;
       return(1);
-    } 
-    
+    }
+
     cfmakeraw(&read_term);
     //cfsetspeed(&read_term, bauds[currbaud]);
     cfsetispeed(&read_term, bauds[currbaud]);
     cfsetospeed(&read_term, bauds[currbaud]);
-      
+
     if(tcsetattr(this->read_fd, TCSAFLUSH, &read_term ) < 0) {
       perror("Erratic::Setup():tcsetattr(read channel):");
       close(this->read_fd); close(this->write_fd);
@@ -392,9 +392,9 @@ int Erratic::Connect()
       return(1);
     }
   }
-  
-  
-  // Empty buffers 
+
+
+  // Empty buffers
   if (tcflush(this->read_fd, TCIOFLUSH ) < 0) {
     perror("Erratic::Setup():tcflush():");
     close(this->read_fd); close(this->write_fd);
@@ -407,7 +407,7 @@ int Erratic::Connect()
     this->read_fd = -1; this->write_fd = -1;
     return(1);
   }
-  
+
   // will send config packets until a response is gotten
   int num_sync_attempts = 10;
   int num_patience = 200;
@@ -569,7 +569,7 @@ int Erratic::Connect()
         accel_packet->Build(accel_command, 4);
         this->Send(accel_packet);
     }
-    
+
     if(this->motor_max_rot_accel != 0) {
       accel_packet = new ErraticPacket();
       accel_command[0] = (command_e)set_max_rot_acc;
@@ -597,7 +597,7 @@ int Erratic::Connect()
         this->Send(accel_packet);
     }
   }
-  
+
   {
     ErraticPacket *packet;
     unsigned char payload[4];
@@ -689,7 +689,7 @@ int Erratic::Connect()
       this->Send(packet);
     }
   }
-  
+
   // TODO: figure out what the right behavior here is
 
   // zero position command buffer
@@ -713,16 +713,16 @@ int Erratic::Shutdown() {
 // Is theoretically able to disconnect, but we don't do that
 int Erratic::Disconnect() {
   printf("Shutting Erratic driver down\n");
-  
+
   this->StopThreads();
-  
+
   // If we're connected, send some kill commands before killing connections
   if (this->write_fd > -1) {
     unsigned char command[20],buffer[20];
     ErraticPacket packet;
 
     memset(buffer,0,20);
-  
+
     command[0] = (command_e)stop;
     packet.Build(command, 1);
     packet.Send(this->write_fd);
@@ -732,7 +732,7 @@ int Erratic::Disconnect() {
     packet.Build(command, 1);
     packet.Send(this->write_fd);
     usleep(ROBOT_CYCLETIME);
-  
+
     close(this->write_fd);
     this->write_fd = -1;
   }
@@ -745,7 +745,7 @@ int Erratic::Disconnect() {
     delete this->motor_packet;
     this->motor_packet = NULL;
   }
-  
+
   printf("Erratic has been shut down");
 
   return(0);
@@ -763,27 +763,27 @@ void Erratic::StopThreads() {
   //TODO destroy threads?
   //TODO tickle threads to cancel point
   StopThread();
-  
+
   // Cleanup mutexes
   pthread_mutex_trylock(&send_queue_mutex);
   pthread_mutex_unlock(&send_queue_mutex);
-  
+
   pthread_mutex_trylock(&motor_packet_mutex);
   pthread_mutex_unlock(&motor_packet_mutex);
 }
 
 // Subscription is overridden to add a subscription count of our own
 int Erratic::Subscribe(player_devaddr_t id) {
-  int setupResult;                     
-                                       
-  // do the subscription               
+  int setupResult;
+
+  // do the subscription
   if((setupResult = Driver::Subscribe(id)) == 0)
   {
     // also increment the appropriate subscription counters
 
     if(Device::MatchDeviceAddress(id, this->position_id))
       this->position_subscriptions++;
-    
+
     if(Device::MatchDeviceAddress(id, this->aio_id))
       this->aio_ir_subscriptions++;
 
@@ -798,10 +798,10 @@ int Erratic::Subscribe(player_devaddr_t id) {
 
     if(Device::MatchDeviceAddress(id, this->ptz2_id))
       this->ptz2_subscriptions++;
-  }                                    
-                                       
-  return(setupResult);                 
-}                                      
+  }
+
+  return(setupResult);
+}
 int Erratic::Unsubscribe(player_devaddr_t id) {
   int shutdownResult;
 
@@ -841,7 +841,7 @@ int Erratic::Unsubscribe(player_devaddr_t id) {
 /** Talking to the robot **/
 
 // Listens to the robot
-void Erratic::ReceiveThread() 
+void Erratic::ReceiveThread()
 {
   for (;;) {
     pthread_testcancel();
@@ -855,21 +855,21 @@ void Erratic::ReceiveThread()
       waited += 5;
       printf("Lost serial communication with Erratic (%d) - no data received for %i seconds\n", error_code, waited);
     }
-		
+
     if (waited)
       printf("Connection re-established\n");
-		
-		
+
+
     if (print_all_packets) {
       printf("Got: ");
       packet.PrintHex();
     }
-		
+
     // Process the packet
     //Lock();
-		
+
     int count, maxcount;
-    switch(packet.packet[3]) 
+    switch(packet.packet[3])
       {
       case (reply_e)motor:
       case (reply_e)motor+2:
@@ -890,18 +890,18 @@ void Erratic::ReceiveThread()
         {
           erratic_data.aio.voltages_count = packet.packet[4]+4;
           if(erratic_data.aio.voltages)
-            delete[] erratic_data.aio.voltages; 
+            delete[] erratic_data.aio.voltages;
           erratic_data.aio.voltages = new float[erratic_data.aio.voltages_count];
         }
-        if(erratic_data.ir.voltages_count != 
+        if(erratic_data.ir.voltages_count !=
            (unsigned int)RobotParams[this->param_idx]->NumIR)
         {
           erratic_data.ir.voltages_count = RobotParams[this->param_idx]->NumIR;
           if(erratic_data.ir.voltages)
-            delete[] erratic_data.ir.voltages; 
+            delete[] erratic_data.ir.voltages;
           erratic_data.ir.voltages = new float[erratic_data.ir.voltages_count];
         }
-	if(erratic_data.ir.ranges_count != 
+	if(erratic_data.ir.ranges_count !=
            (unsigned int)RobotParams[this->param_idx]->NumIR)
         {
           erratic_data.ir.ranges_count = RobotParams[this->param_idx]->NumIR;
@@ -910,7 +910,7 @@ void Erratic::ReceiveThread()
           erratic_data.ir.ranges = new float[erratic_data.ir.ranges_count];
         }
 	unsigned int i_voltage;
-	for (i_voltage = 0; i_voltage < erratic_data.aio.voltages_count ;i_voltage++) 
+	for (i_voltage = 0; i_voltage < erratic_data.aio.voltages_count ;i_voltage++)
 	  {
 	    erratic_data.aio.voltages[i_voltage] = (packet.packet[5+i_voltage*2]
 						    + 256*packet.packet[6+i_voltage*2]) * (1.0 / 1024.0) * CPU_VOLTAGE;
@@ -920,17 +920,17 @@ void Erratic::ReceiveThread()
 	  }
 
 	// add digital inputs, four E port bits
-	for (int i=0; i < 4; i++) 
+	for (int i=0; i < 4; i++)
 	  {
-	    erratic_data.aio.voltages[i_voltage+i] = 
+	    erratic_data.aio.voltages[i_voltage+i] =
 	      (packet.packet[5+i_voltage*2] & (0x1 << i+4)) ? 1.0 : 0.0;
-	    erratic_data.ir.voltages[i] = 
+	    erratic_data.ir.voltages[i] =
 	      (packet.packet[5+i_voltage*2] & (0x1 << i+4)) ? 1.0 : 0.0;
-	    erratic_data.ir.ranges[i] = 
+	    erratic_data.ir.ranges[i] =
 	      IRFloorRange(erratic_data.ir.voltages[i]);
 	  }
 
-					
+
 
 	PublishAIn();
 	PublishIR();
@@ -947,7 +947,7 @@ void Erratic::ReceiveThread()
             delete[] erratic_data.sonar.ranges;
           erratic_data.sonar.ranges = new float[erratic_data.sonar.ranges_count];
         }
-	for (int i = 0; i < count; i++) 
+	for (int i = 0; i < count; i++)
 	  {
 	    int ch = packet.packet[5+i*3]; // channel number
 	    if (ch >= maxcount)
@@ -975,7 +975,7 @@ void Erratic::ReceiveThread()
 	  packet.Print();
 	}
       }
-		
+
     //Unlock();
   }
 }
@@ -989,10 +989,10 @@ void* Erratic::ReceiveThreadDummy(void *driver) {
 void Erratic::SendThread() {
   for (;;) {
     pthread_testcancel();
-    
+
     // Get rights to the queue
     pthread_mutex_lock(&send_queue_mutex);
-    
+
     // If there is nothing, we wait for signal
     if (!send_queue.size())
       pthread_cond_wait(&send_queue_cond, &send_queue_mutex);
@@ -1004,7 +1004,7 @@ void Erratic::SendThread() {
       send_queue.pop();
     }
     pthread_mutex_unlock(&send_queue_mutex);
-    
+
     // Send the packet and destroy it
     if (packet) {
       if (print_all_packets) {
@@ -1072,12 +1072,12 @@ void Erratic::ToggleMotorPower(unsigned char val) {
   command[2] = val;
   command[3] = 0;
   packet->Build(command, 4);
-  
+
   Send(packet);
 }
 
 // Enable or disable analog input reporting
-void Erratic::ToggleAIn(unsigned char val) 
+void Erratic::ToggleAIn(unsigned char val)
 {
   unsigned char command[4];
   ErraticPacket *packet = new ErraticPacket();
@@ -1087,12 +1087,12 @@ void Erratic::ToggleAIn(unsigned char val)
   command[2] = val ? 1 : 0;
   command[3] = 0;
   packet->Build(command, 4);
-  
-  Send(packet);  
+
+  Send(packet);
 }
 
 // Enable or disable sonar reporting
-void Erratic::ToggleSonar(unsigned char val) 
+void Erratic::ToggleSonar(unsigned char val)
 {
   unsigned char command[4];
   ErraticPacket *packet = new ErraticPacket();
@@ -1102,18 +1102,18 @@ void Erratic::ToggleSonar(unsigned char val)
   command[2] = val ? 1 : 0;
   command[3] = 0;
   packet->Build(command, 4);
-  
-  Send(packet);  
+
+  Send(packet);
 }
 
 // This describes the IR hardware
-float Erratic::IRRangeFromVoltage(float voltage) 
+float Erratic::IRRangeFromVoltage(float voltage)
 {
   // This is for the Sharp 2Y0A02, 150 cm ranger
   return -.2475 + .1756 * voltage + .7455 / voltage - .0446 * voltage * voltage;
 }
 
-float Erratic::IRFloorRange(float value) 
+float Erratic::IRFloorRange(float value)
 {
   // floor range is 1 (floor present) or 0 (no floor)
   if (value >= 0.9)
@@ -1188,10 +1188,10 @@ void Erratic::Main() {
       //TODO reenable?
       //this->HandlePositionCommand(this->last_position_cmd);
     }
-    
+
     // Do some little nice printout
     if (print_status_summary) {
-      
+
     }
   }
 }
@@ -1282,7 +1282,7 @@ int Erratic::HandleConfig(QueuePointer &resp_queue, player_msghdr * hdr, void * 
     //**************************
 		//    printf("Reset odometry: %f %f %f\n", set_odom_req->pose.px, set_odom_req->pose.py, set_odom_req->pose.pa);
 		//    printf("Reset odometry: %d %d %d\n", motor_packet->x_offset, motor_packet->y_offset, motor_packet->angle_offset);
-    
+
 
     this->Publish(this->position_id, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_SET_ODOM);
@@ -1370,7 +1370,7 @@ int Erratic::HandleConfig(QueuePointer &resp_queue, player_msghdr * hdr, void * 
                   PLAYER_POSITION2D_REQ_VELOCITY_MODE);
     return(0);
   }
-  
+
   // Request for getting IR locations
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
                                     PLAYER_IR_REQ_POSE,
@@ -1379,7 +1379,7 @@ int Erratic::HandleConfig(QueuePointer &resp_queue, player_msghdr * hdr, void * 
     pose.poses_count = RobotParams[param_idx]->NumIR;
     for (uint16_t i = 0; i < pose.poses_count ;i++)
       pose.poses[i] = RobotParams[param_idx]->IRPose[i];
-    
+
     this->Publish(this->ir_id, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_IR_REQ_POSE,
@@ -1390,13 +1390,13 @@ int Erratic::HandleConfig(QueuePointer &resp_queue, player_msghdr * hdr, void * 
   // two types of requests...
   else if (Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
                                     PLAYER_SONAR_DATA_GEOM,
-                                    this->sonar_id)) 
+                                    this->sonar_id))
     {
       player_sonar_geom_t pose;
       pose.poses_count = RobotParams[param_idx]->NumSonars;
       for (uint16_t i = 0; i < pose.poses_count ;i++)
         pose.poses[i] = RobotParams[param_idx]->sonar_pose[i];
-    
+
       this->Publish(this->sonar_id, resp_queue,
                     PLAYER_MSGTYPE_RESP_ACK,
                     PLAYER_SONAR_DATA_GEOM,
@@ -1408,13 +1408,13 @@ int Erratic::HandleConfig(QueuePointer &resp_queue, player_msghdr * hdr, void * 
   // two types of requests...
   else if (Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
                                     PLAYER_SONAR_REQ_GET_GEOM,
-                                    this->sonar_id)) 
+                                    this->sonar_id))
     {
       player_sonar_geom_t pose;
       pose.poses_count = RobotParams[param_idx]->NumSonars;
       for (uint16_t i = 0; i < pose.poses_count ;i++)
         pose.poses[i] = RobotParams[param_idx]->sonar_pose[i];
-    
+
       this->Publish(this->sonar_id, resp_queue,
                     PLAYER_MSGTYPE_RESP_ACK,
                     PLAYER_SONAR_REQ_GET_GEOM,
@@ -1433,7 +1433,7 @@ int Erratic::HandleConfig(QueuePointer &resp_queue, player_msghdr * hdr, void * 
 // translational velocity target.
 // Erratic handles this natively
 //
-void 
+void
 Erratic::HandleCarCommand(player_position2d_cmd_car_t cmd)
 {
   int speedDemand, angleDemand;
@@ -1467,7 +1467,7 @@ Erratic::HandleCarCommand(player_position2d_cmd_car_t cmd)
       motorcommand[2] = this->motor_max_speed & 0x00FF;
       motorcommand[3] = (this->motor_max_speed & 0xFF00) >> 8;
     }
-    
+
     motorpacket = new ErraticPacket();
     motorpacket->Build(motorcommand, 4);
     Send(motorpacket);
@@ -1483,7 +1483,7 @@ Erratic::HandleCarCommand(player_position2d_cmd_car_t cmd)
   absangleDemand = (unsigned short)abs(angleDemand);
   motorcommand[2] = absangleDemand & 0x00FF;
   motorcommand[3] = (absangleDemand & 0xFF00) >> 8;
-    
+
   motorpacket = new ErraticPacket();
   motorpacket->Build(motorcommand, 4);
   Send(motorpacket);
@@ -1500,7 +1500,7 @@ int getms()
 
 
 // Handles one Player command detailing a velocity
-void Erratic::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd) 
+void Erratic::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd)
 {
   int speedDemand, turnRateDemand;
   double leftvel, rightvel;
@@ -1635,7 +1635,7 @@ void Erratic::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd)
       motorcommand[2] = this->motor_max_speed & 0x00FF;
       motorcommand[3] = (this->motor_max_speed & 0xFF00) >> 8;
     }
-    
+
     motorpacket = new ErraticPacket();
     motorpacket->Build(motorcommand, 4);
     Send(motorpacket);
@@ -1686,7 +1686,7 @@ void Erratic::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd)
 #define SERVO_MIN_COUNT 1100
 
 
-void 
+void
 Erratic::HandlePtzCommand(player_ptz_cmd_t cmd, player_devaddr_t id)
 {
   int pan, tilt, servo=0;
@@ -1706,7 +1706,7 @@ Erratic::HandlePtzCommand(player_ptz_cmd_t cmd, player_devaddr_t id)
 		{
 			packet = new ErraticPacket();
 			payload[0] = (command_e)servo_pos;
-			payload[1] = (argtype_e)argstr;	
+			payload[1] = (argtype_e)argstr;
 			payload[2] = 3;						// 3 bytes in string
 			payload[3] = 2;						// servo #2
 			payload[4] = pan&0xff;
@@ -1743,23 +1743,23 @@ Erratic::HandlePtzCommand(player_ptz_cmd_t cmd, player_devaddr_t id)
 
 // Switchboard for robot commands, called from ProcessMessage
 // Note that these don't perform a response...
-int Erratic::HandleCommand(player_msghdr * hdr, void* data) 
+int Erratic::HandleCommand(player_msghdr * hdr, void* data)
 {
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_VEL, this->position_id))
     {
       player_position2d_cmd_vel_t position_cmd = *(player_position2d_cmd_vel_t*)data;
       this->HandlePositionCommand(position_cmd);
-    } 
+    }
   else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_CAR, this->position_id))
     {
       player_position2d_cmd_car_t position_cmd = *(player_position2d_cmd_car_t*)data;
       this->HandleCarCommand(position_cmd);
-    } 
+    }
   else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_VEL_HEAD, this->position_id))
     {
       player_position2d_cmd_car_t position_cmd = *(player_position2d_cmd_car_t*)data;
       this->HandleCarCommand(position_cmd);
-    } 
+    }
   else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_PTZ_CMD_STATE, this->ptz_id))
     {
       player_ptz_cmd_t ptz_cmd = *(player_ptz_cmd_t*)data;

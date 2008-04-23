@@ -56,7 +56,7 @@ server performance.
   - Default: 10
   - Data rate (Hz); e.g., rate 20 will generate data at 20Hz.
 
-@par Example 
+@par Example
 
 @verbatim
 driver
@@ -82,7 +82,7 @@ driver
 #include <libplayercore/playercore.h>
 
 // The Dummy driver
-class Dummy: public Driver 
+class Dummy: public Driver
 {
     public:
         // Constructor
@@ -117,7 +117,7 @@ Driver* Dummy_Init(ConfigFile* cf, int section)
 
 ////////////////////////////////////////////////////////////////////////////
 // Device factory registration
-void Dummy_Register(DriverTable* table)
+void dummy_Register(DriverTable* table)
 {
     table->AddDriver("dummy", Dummy_Init);
 }
@@ -130,7 +130,7 @@ Dummy::Dummy(ConfigFile* cf, int section)
 	: Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
 {
     // Look for our default device id
-    if (cf->ReadDeviceAddr(&this->device_addr, section, "provides", 
+    if (cf->ReadDeviceAddr(&this->device_addr, section, "provides",
                         0, -1, NULL) != 0)
     {
         this->SetError(-1);
@@ -235,8 +235,8 @@ void Dummy::Main(void)
 
                 int data_len = sizeof(data) - sizeof(data.image) + w * h * 3;
 
-                Publish (device_addr, PLAYER_MSGTYPE_DATA, 
-                         PLAYER_CAMERA_DATA_STATE, (void*)&data, data_len, 
+                Publish (device_addr, PLAYER_MSGTYPE_DATA,
+                         PLAYER_CAMERA_DATA_STATE, (void*)&data, data_len,
                          NULL);
                 break;
             }
@@ -257,8 +257,8 @@ void Dummy::Main(void)
                 }
                 data.id = 1;
 
-                Publish (device_addr, PLAYER_MSGTYPE_DATA, 
-                         PLAYER_LASER_DATA_SCAN, (void*)&data, sizeof(data), 
+                Publish (device_addr, PLAYER_MSGTYPE_DATA,
+                         PLAYER_LASER_DATA_SCAN, (void*)&data, sizeof(data),
                          NULL);
                 break;
             }
@@ -272,8 +272,8 @@ void Dummy::Main(void)
                 data.vel.py = 1.0;
                 data.vel.pa = 1.0;
                 data.stall  = 0;
-                Publish (device_addr, PLAYER_MSGTYPE_DATA, 
-                         PLAYER_POSITION2D_DATA_STATE, (void*)&data, 
+                Publish (device_addr, PLAYER_MSGTYPE_DATA,
+                         PLAYER_POSITION2D_DATA_STATE, (void*)&data,
                          sizeof (data), NULL);
                 break;
             }
@@ -285,8 +285,8 @@ void Dummy::Main(void)
                 data.zoom = 1.0;
                 data.panspeed  = 1.0;
                 data.tiltspeed = 1.0;
-                Publish (device_addr, PLAYER_MSGTYPE_DATA, 
-                         PLAYER_PTZ_DATA_STATE, (void*)&data, 
+                Publish (device_addr, PLAYER_MSGTYPE_DATA,
+                         PLAYER_PTZ_DATA_STATE, (void*)&data,
                          sizeof (data), NULL);
                 break;
             }
@@ -308,8 +308,8 @@ void Dummy::Main(void)
                 data.data_packet.temperature = 500;
                 data.data_packet.battery = 489;
 
-                Publish (device_addr, PLAYER_MSGTYPE_DATA, 
-                         PLAYER_WSN_DATA_STATE, (void*)&data, 
+                Publish (device_addr, PLAYER_MSGTYPE_DATA,
+                         PLAYER_WSN_DATA_STATE, (void*)&data,
                          sizeof (data), NULL);
                 break;
             }

@@ -27,7 +27,7 @@
 /** @defgroup driver_nimu nimu
  * @brief nIMU Inertial Measurement Unit driver
 
-The nimu driver interfaces to the nIMU from MemSense. Currently supports the 
+The nimu driver interfaces to the nIMU from MemSense. Currently supports the
 I2C version communicating via the provided USB dongle.
 
 Currently only provides the raw outputs.
@@ -61,14 +61,14 @@ Currently only provides the raw outputs.
 
 - data_packet_type (integer)
   - Default: 4. Possible values: 1, 2, 3, 4.
-   (1 = 3D pose as X, Y, Z and + orientation/Euler angles as Roll, Pitch, Yaw; 
+   (1 = 3D pose as X, Y, Z and + orientation/Euler angles as Roll, Pitch, Yaw;
     2 = calibrated IMU data: accel, gyro, magnetometer;
     3 = quaternions + calibrated IMU data;
     4 = Euler angles + calibrated IMU data.)
-  - Specify the type of data packet to send (can be set using 
+  - Specify the type of data packet to send (can be set using
     PLAYER_IMU_REQ_SET_DATATYPE as well).
 
-@par Example 
+@par Example
 
 @verbatim
 driver
@@ -122,7 +122,7 @@ class PlayerNIMU : public Driver
 		float AccelRange;
 		float GyroRange;
 		float MagRange;
-		
+
         // Data
 		player_imu_data_calib_t  imu_data_calib;
 
@@ -143,9 +143,9 @@ Driver* NIMU_Init (ConfigFile* cf, int section)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Registers the driver in the driver table. Called from the 
+// Registers the driver in the driver table. Called from the
 // player_driver_init function that the loader looks for
-void NIMU_Register (DriverTable* table)
+void nimu_Register (DriverTable* table)
 {
 	table->AddDriver ("nimu", NIMU_Init);
 }
@@ -154,7 +154,7 @@ void NIMU_Register (DriverTable* table)
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 PlayerNIMU::PlayerNIMU (ConfigFile* cf, int section)
-	: Driver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, 
+	: Driver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
 			  PLAYER_IMU_CODE)
 {
     // raw values
@@ -164,7 +164,7 @@ PlayerNIMU::PlayerNIMU (ConfigFile* cf, int section)
 	GyroRange = DTOR(cf->ReadFloat(section, "gyro_range", DEFAULT_GYRO_RANGE));
 	MagRange = cf->ReadFloat(section, "mag_range", DEFAULT_MAG_RANGE);
 
-	
+
 	return;
 }
 
@@ -183,7 +183,7 @@ int PlayerNIMU::Setup ()
     // Open the device
 	if (imu.Open() < 0)
 		return -1;
-	
+
     // Start the device thread
 	StartThread ();
 
@@ -199,13 +199,13 @@ int PlayerNIMU::Shutdown ()
 
 	// close the device
 	imu.Close();
-	
+
 	return (0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
-void PlayerNIMU::Main () 
+void PlayerNIMU::Main ()
 {
 	timespec sleepTime = {0, 0};
 
@@ -223,7 +223,7 @@ void PlayerNIMU::Main ()
 
         // Refresh data
 		nimu_data data = imu.GetData();
-		
+
 		imu_data_calib.accel_x = GET_VALUE_IN_UNITS(data.AccelX,AccelRange);
 		imu_data_calib.accel_y = GET_VALUE_IN_UNITS(data.AccelY,AccelRange);
 		imu_data_calib.accel_z = GET_VALUE_IN_UNITS(data.AccelZ,AccelRange);
@@ -231,13 +231,13 @@ void PlayerNIMU::Main ()
 		imu_data_calib.gyro_x = GET_VALUE_IN_UNITS(data.GyroX,GyroRange);
 		imu_data_calib.gyro_y = GET_VALUE_IN_UNITS(data.GyroY,GyroRange);
 		imu_data_calib.gyro_z = GET_VALUE_IN_UNITS(data.GyroZ,GyroRange);
-		
+
 		imu_data_calib.magn_x = GET_VALUE_IN_UNITS(data.MagX,MagRange);
 		imu_data_calib.magn_y = GET_VALUE_IN_UNITS(data.MagY,MagRange);
 		imu_data_calib.magn_z = GET_VALUE_IN_UNITS(data.MagZ,MagRange);
-		
+
 		Publish( device_addr, PLAYER_MSGTYPE_DATA, PLAYER_IMU_DATA_CALIB, &imu_data_calib, sizeof(imu_data_calib));
-		
+
 		nanosleep (&sleepTime, NULL);
 	}
 }

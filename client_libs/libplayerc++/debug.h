@@ -45,9 +45,7 @@
 #ifndef UTIL_DEBUG_H
 #define UTIL_DEBUG_H
 
-#if HAVE_CONFIG_H
-  #include "config.h"
-#endif
+#include "config.h"
 
 #include <iostream>
 

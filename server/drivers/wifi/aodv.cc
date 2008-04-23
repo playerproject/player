@@ -1,8 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -52,8 +52,8 @@ The aodv driver reports signal strengths for AODV ah-hoc network software.
 @par Configuration file options
 
 - none
- 
-@par Example 
+
+@par Example
 
 @verbatim
 driver
@@ -100,13 +100,13 @@ class Aodv : public Driver
 
 // Instantiate driver for given interface
 Driver * Aodv_Init( ConfigFile *cf, int section)
-{ 
+{
   return ((Driver*)(new Aodv(cf, section)));
 }
 
 
 // Register driver type
-void Aodv_Register(DriverTable *table)
+void aodv_Register(DriverTable *table)
 {
   table->AddDriver("aodv", Aodv_Init);
   return;
@@ -177,7 +177,7 @@ void Aodv::Update()
 
     qual = 0;
     noise = 0;
-    
+
     printf("aodv %s : %d\n", ip, level);
 
     if (link_count > data.links_count)

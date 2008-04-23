@@ -30,8 +30,8 @@
 /** @defgroup driver_mica2 mica2
  * @brief Crossbow Mica2/Mica2Dot mote sensor node
 
-The mica2 driver controls the Crossbow Mica2/Mica2DOT mote sensor node. The 
-MTS310 and MTS510 boards are supported, as well as the M1-mini RFID reader 
+The mica2 driver controls the Crossbow Mica2/Mica2DOT mote sensor node. The
+MTS310 and MTS510 boards are supported, as well as the M1-mini RFID reader
 board.
 
 @par Compile-time dependencies
@@ -89,8 +89,8 @@ board.
   - Default: 0.
   - Filter the base node (ID 0) in case there is another application != TOSBase
     installed on it.
-  
-@par Example 
+
+@par Example
 
 @verbatim
 driver
@@ -150,7 +150,7 @@ class Mica2 : public Driver
 	virtual int Unsubscribe (player_devaddr_t id);
 
 	// This method will be invoked on each incoming message
-	virtual int ProcessMessage (QueuePointer & resp_queue, 
+	virtual int ProcessMessage (QueuePointer & resp_queue,
 				    player_msghdr * hdr,
 				    void * data);
     private:
@@ -190,27 +190,27 @@ class Mica2 : public Driver
 	// Calibration values
 	int                nodes_count;
 	NCV                ncv;
-		
+
 	// Calibration values
 	int                calibration_values[6];
 	// Calibration node ID
 	int                calibration_node_id;
-		
+
 	int ReadSerial   (unsigned char *buffer);
 	int WriteSerial  (unsigned char *buffer, int length, unsigned char ack);
 	NodeCalibrationValues FindNodeValues (unsigned int nodeID);
 	int DecodeSerial (unsigned char *buffer, int length);
-	int BuildXCommandHeader (unsigned char* buffer, int command, 
-				 int node_id, int group_id, 
-				 int device, int state, 
+	int BuildXCommandHeader (unsigned char* buffer, int command,
+				 int node_id, int group_id,
+				 int device, int state,
 				 int rate);
-	int BuildRFIDHeader (unsigned char command, unsigned char* buf, 
+	int BuildRFIDHeader (unsigned char command, unsigned char* buf,
 			     unsigned short len, int node_id, int group_id);
 	int  calcByte (int crc, int b);
 	char getDigit (char c);
 	void calcCRC  (unsigned char *packet, int length);
-		
-	void ChangeNodeState (int node_id, int group_id, unsigned char state, 
+
+	void ChangeNodeState (int node_id, int group_id, unsigned char state,
 			      int device, int enable, double rate);
 	float ConvertAccel (unsigned short raw_accel, int neg_1g, int pos_1g,
 	            	    int converted);
@@ -226,9 +226,9 @@ Driver* Mica2_Init (ConfigFile* cf, int section)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-//Registers the driver in the driver table. Called from the 
+//Registers the driver in the driver table. Called from the
 // player_driver_init function that the loader looks for
-void Mica2_Register (DriverTable* table)
+void mica2_Register (DriverTable* table)
 {
     table->AddDriver ("mica2", Mica2_Init);
 }
@@ -252,7 +252,7 @@ Mica2::Mica2 (ConfigFile* cf, int section)
     port_name   = cf->ReadString (section, "port", DEFAULT_MICA2_PORT);
     port_speed  = cf->ReadInt (section, "speed", DEFAULT_MICA2_RATE);
     nodes_count = cf->ReadInt (section, "nodes", 0);
-	
+
     for (i = 0; i < nodes_count; i++)
     {
     	char node_nr[7];
@@ -310,7 +310,7 @@ Mica2::~Mica2()
 int Mica2::Subscribe (player_devaddr_t id)
 {
     int setupResult;
-	
+
     // do the subscription
     if ((setupResult = Driver::Subscribe (id)) == 0)
     {
@@ -328,7 +328,7 @@ int Mica2::Subscribe (player_devaddr_t id)
 int Mica2::Unsubscribe (player_devaddr_t id)
 {
     int (shutdownResult);
-	
+
     // do the unsubscription
     if ((shutdownResult = Driver::Unsubscribe (id)) == 0)
     {
@@ -413,17 +413,17 @@ int Mica2::Shutdown ()
 {
     // Stop the driver thread
     StopThread ();
-	
+
     // Close the serial port
     close (fd);
-	
+
     PLAYER_MSG0 (1, "> Mica2 driver shutting down... [done]");
     return (0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
-void Mica2::Main () 
+void Mica2::Main ()
 {
     timespec sleepTime = {0, 0};
 
@@ -447,50 +447,50 @@ void Mica2::Main ()
 
 ////////////////////////////////////////////////////////////////////////////////
 // ProcessMessage function
-int Mica2::ProcessMessage (QueuePointer & resp_queue, 
+int Mica2::ProcessMessage (QueuePointer & resp_queue,
 			   player_msghdr * hdr,
 			   void * data)
-{	
+{
     assert (hdr);
     assert (data);
-	
-    if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, 
+
+    if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD,
 	PLAYER_WSN_CMD_DEVSTATE, wsn_addr))
     {
     	// Actuate various devices on the node
 	player_wsn_cmd_t *command = (player_wsn_cmd_t*)data;
 
-	ChangeNodeState (command->node_id, command->group_id, 
+	ChangeNodeState (command->node_id, command->group_id,
 			 2, command->device, command->enable, -1);
 
 	return 0;
     }
-    else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, 
+    else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ,
 	 PLAYER_WSN_REQ_POWER, wsn_addr))
     {
 	// Put the node in sleep mode (0) or wake it up (1)
-	player_wsn_power_config *powerconfig = 
+	player_wsn_power_config *powerconfig =
 			(player_wsn_power_config*)data;
-		
+
 	// Only allow 0/1 values here
 	if ((powerconfig->value != 0) && (powerconfig->value != 1))
 	{
-	    Publish (wsn_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, 
+	    Publish (wsn_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK,
 		     hdr->subtype);
 	    return -1;
 	}
-			
-	ChangeNodeState (powerconfig->node_id, powerconfig->group_id, 
+
+	ChangeNodeState (powerconfig->node_id, powerconfig->group_id,
 			 powerconfig->value, -1, -1, -1);
-		
+
 	Publish (wsn_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype);
 	return 0;
     }
-    else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, 
+    else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ,
 	 PLAYER_WSN_REQ_DATATYPE, wsn_addr))
     {
 	// Change the data type to RAW or converted metric units
-	player_wsn_datatype_config *datatype = 
+	player_wsn_datatype_config *datatype =
 			(player_wsn_datatype_config*)data;
 
 	unsigned int val = datatype->value;
@@ -503,26 +503,26 @@ int Mica2::ProcessMessage (QueuePointer & resp_queue,
 	    Publish (wsn_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, hdr->subtype);
 	return 0;
     }
-    else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, 
+    else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ,
 	 PLAYER_WSN_REQ_DATAFREQ, wsn_addr))
     {
 	// Change the data frequency rate
-	player_wsn_datafreq_config *datafreq = 
+	player_wsn_datafreq_config *datafreq =
 			(player_wsn_datafreq_config*)data;
-	ChangeNodeState (datafreq->node_id, datafreq->group_id, 
+	ChangeNodeState (datafreq->node_id, datafreq->group_id,
 			 3, -1, -1, datafreq->frequency);
 
 	Publish (wsn_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype);
 	return 0;
     }
-    else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, 
+    else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ,
 	 PLAYER_RFID_REQ_READTAG, rfid_addr))
     {
 	// to be implemented
 	Publish (rfid_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype);
 	return 0;
     }
-    else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, 
+    else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ,
 	 PLAYER_RFID_REQ_WRITETAG, rfid_addr))
     {
 	// to be implemented
@@ -533,7 +533,7 @@ int Mica2::ProcessMessage (QueuePointer & resp_queue,
     {
 	return -1;
     }
-	
+
     return 0;
 }
 
@@ -561,7 +561,7 @@ void Mica2::calcCRC (unsigned char *packet, int length)
     int crc   = 0;
     int index = 1;
     int count = length - 3;
-	
+
     while (count > 0) {
     	crc = calcByte (crc, packet[index++]);
 	count--;
@@ -584,9 +584,9 @@ char Mica2::getDigit (char c)
 }
 ////////////////////////////////////////////////////////////////////////////////
 // BuildXCommandHeader function
-int Mica2::BuildXCommandHeader (unsigned char* buffer, int command, 
-				int node_id, int group_id, 
-				int device, int state, 
+int Mica2::BuildXCommandHeader (unsigned char* buffer, int command,
+				int node_id, int group_id,
+				int device, int state,
 				int rate)
 {
     // TinyOS header
@@ -683,7 +683,7 @@ int Mica2::BuildRFIDHeader (unsigned char command, unsigned char* buffer,
     {
         ptotal = cmd_len / msg_len;
         if (cmd_len % msg_len)
-            ptotal++; 
+            ptotal++;
     }
 
     // TOS packet struct
@@ -704,7 +704,7 @@ int Mica2::BuildRFIDHeader (unsigned char command, unsigned char* buffer,
 
         msg.tos.length = datalen + 6;		// PAYLOAD_DATA_INDEX
         msg.pi = pi;
-		
+
 	ptr = ((unsigned char*)&cmd) + cmd_i;
 
         for (i = 0; i < datalen; i++)
@@ -735,40 +735,40 @@ int Mica2::BuildRFIDHeader (unsigned char command, unsigned char* buffer,
 
 ////////////////////////////////////////////////////////////////////////////////
 // ChangeNodeState function
-void Mica2::ChangeNodeState (int node_id, int group_id, unsigned char state, 
+void Mica2::ChangeNodeState (int node_id, int group_id, unsigned char state,
 			     int device, int enable, double rate)
 {
     unsigned char buffer[255];
     int index = 0;
-	
+
     // Assign defaults to {node,group}_id
     if ((group_id == -1) || (group_id == 0))
     	group_id = 0xFF;
     if (node_id == -1)
 	node_id = 0xFFFF;
-		
+
     int node_sleep = 0;
     if (rate != -1)
 	node_sleep =  static_cast<int> (1000 / rate);
 
     // Start constructing the TinyOS packet
-	// (serial start byte and ACK are handled in the WriteSerial method) 
+	// (serial start byte and ACK are handled in the WriteSerial method)
     buffer[index++] = 0xFF;                // Broadcast sequence number
-	
+
     switch (state)
     {
     	case 0:                            // sleep (XCOMMAND_SLEEP)
 	{
-	    index += BuildXCommandHeader 
+	    index += BuildXCommandHeader
 		(buffer+index, 0x11, node_id, group_id, -1, -1, -1);
 	    if (node_id == 0)             // base node?
 		base_node_status = 0;
-		
+
 	    break;
 	}
 	case 1:                            // wake up (XCOMMAND_WAKEUP)
 	{
-	    index += BuildXCommandHeader 
+	    index += BuildXCommandHeader
 		(buffer+index, 0x12, node_id, group_id, -1, -1, -1);
 	    if (node_id == 0)             // base node?
 		base_node_status = 1;
@@ -776,21 +776,21 @@ void Mica2::ChangeNodeState (int node_id, int group_id, unsigned char state,
 	}
 	case 2:                            // actuate (XCOMMAND_ACTUATE)
 	{
-	    index += BuildXCommandHeader 
+	    index += BuildXCommandHeader
 		(buffer+index, 0x40, node_id, group_id, device, enable, -1);
 	    break;
 	}
 	case 3:                            // set_rate (XCOMMAND_SET_RATE)
 	{
-	    index += BuildXCommandHeader 
+	    index += BuildXCommandHeader
 		(buffer+index, 0x20, node_id, group_id, -1, -1, node_sleep);
 	    break;
 	}
     }
-	
+
     index += 2;
     calcCRC (buffer, index);               // calculate and add CRC
-	
+
     WriteSerial (buffer, index, 0x41);		// Write with ACK
 }
 
@@ -804,7 +804,7 @@ void Mica2::RefreshData ()
     // This will be a pretty good estimate of when the phenomena occured
     struct timeval time;
     GlobalTime->GetTime (&time);
-	
+
     // In case the RFID interface is enabled, send a "select_tag" command first
     if ((provideRFID) && (this->rfid_subscriptions > 0))
         BuildRFIDHeader (0, NULL, 0, 0xFFFF, 1);
@@ -856,7 +856,7 @@ int Mica2::WriteSerial (unsigned char *buffer, int length, unsigned char ack)
     c = 0x7e;					// serial start byte
     write (fd, &c , 1);
     c = ack;					// P_PACKET_ACK or P_PACKET_NOACK
-    write (fd, &c , 1); 
+    write (fd, &c , 1);
 
     c = buffer[0];
     while (1)
@@ -883,17 +883,17 @@ int Mica2::WriteSerial (unsigned char *buffer, int length, unsigned char ack)
 NodeCalibrationValues Mica2::FindNodeValues (unsigned int nodeID)
 {
     NodeCalibrationValues n;
-	
+
     unsigned int i = 0;
-	
+
     for (i = 0; i < ncv.size (); i++)
     {
     	n = ncv.at (i);
-	
+
 	if (n.node_id == nodeID)
 	    break;
     }
-	
+
     return n;
 }
 
@@ -927,7 +927,7 @@ int Mica2::DecodeSerial (unsigned char *buffer, int length)
 	    buffer[i++] = buffer[o++];
 	}
     }
-	
+
     switch (buffer[2])
     {
 	case 0x03:
@@ -953,28 +953,28 @@ int Mica2::DecodeSerial (unsigned char *buffer, int length)
 			MTS510Data *data = (MTS510Data *)packet->data;
 			wsn_data.node_type      = packet->board_id;
 			wsn_data.node_id        = packet->node_id;
-			
+
 			wsn_data.node_parent_id = packet->parent;
-				
+
 			wsn_data.data_packet.light       = data->light;
-			int sound = (data->sound[0] + data->sound[1] + 
-				data->sound[2] + data->sound[3] + 
+			int sound = (data->sound[0] + data->sound[1] +
+				data->sound[2] + data->sound[3] +
 				data->sound[4]) / 5;
 			wsn_data.data_packet.mic         = sound;
-						
+
 			if (raw_or_converted != 0)
 			{
 			    node_values = FindNodeValues (packet->node_id);
-						
-			    wsn_data.data_packet.accel_x = ConvertAccel 
-					(data->accelX, 
-					node_values.c_values[0], 
+
+			    wsn_data.data_packet.accel_x = ConvertAccel
+					(data->accelX,
+					node_values.c_values[0],
 					node_values.c_values[1], raw_or_converted);
-			    wsn_data.data_packet.accel_y = ConvertAccel 
+			    wsn_data.data_packet.accel_y = ConvertAccel
 					(data->accelY,
 					node_values.c_values[2],
 					node_values.c_values[3], raw_or_converted);
-			} 
+			}
 			else
 			{
 			    wsn_data.data_packet.accel_x     = data->accelX;
@@ -998,45 +998,45 @@ int Mica2::DecodeSerial (unsigned char *buffer, int length)
 			wsn_data.node_type      = packet->board_id;
 			wsn_data.node_id        = packet->node_id;
 			wsn_data.node_parent_id = packet->parent;
-	
+
 			wsn_data.data_packet.mic         = data->mic;
-	
+
 			if (raw_or_converted != 0)
 			{
 			    node_values = FindNodeValues (packet->node_id);
-				
-			    wsn_data.data_packet.accel_x = ConvertAccel 
+
+			    wsn_data.data_packet.accel_x = ConvertAccel
 					(data->accelX,
 					node_values.c_values[0],
 					node_values.c_values[1], raw_or_converted);
-			    wsn_data.data_packet.accel_y = ConvertAccel 
+			    wsn_data.data_packet.accel_y = ConvertAccel
 					(data->accelY,
 					node_values.c_values[2],
 					node_values.c_values[3], raw_or_converted);
 			    // Convert battery to Volts
 			    wsn_data.data_packet.battery     =
 					(1252352 / (float)data->vref) / 1000;
-						
+
 			    // Convert temperature to degrees Celsius
 			    float thermistor = (float)data->thermistor;
 			    unsigned short rthr = (unsigned short)
 					(10000 * (1023 - thermistor) / thermistor);
-							
-			    wsn_data.data_packet.temperature = 
+
+			    wsn_data.data_packet.temperature =
 					(1 / (0.001307050f + 0.000214381f *
 					log (rthr) + 0.000000093f *
 					pow (log (rthr),3))) - 273.15;
-							
+
 			    // Convert the magnetometer data to Gauss
-			    wsn_data.data_packet.magn_x      = 
+			    wsn_data.data_packet.magn_x      =
 					(data->magX / (1.023*2.262*3.2)) / 1000;
-			    wsn_data.data_packet.magn_y      = 
+			    wsn_data.data_packet.magn_y      =
 					(data->magY / (1.023*2.262*3.2)) / 1000;
-							
+
 			    // Convert the light to mV
 			    wsn_data.data_packet.light       = (data->light *
 					wsn_data.data_packet.battery / 1023);
-			} 
+			}
 			else
 			{
 			    wsn_data.data_packet.accel_x     = data->accelX;
@@ -1059,15 +1059,15 @@ int Mica2::DecodeSerial (unsigned char *buffer, int length)
 	{   // a RFID packet
 	    if (rfid_subscriptions < 1)
 	        break;
-		
+
 	    rfidPacket = TRUE;
-			
+
 	    player_rfid_tag_t RFIDtag;
 	    memset (&RFIDtag, 0, sizeof (RFIDtag));
-			
+
 	    RFIDMsg *rmsg = (RFIDMsg *)buffer;
 	    int dataoffset;
-			
+
 	    // Get tag information if first packet
 	    if ((rmsg->ptotal == 1) && (rmsg->pi == 0))
 	    {
@@ -1075,7 +1075,7 @@ int Mica2::DecodeSerial (unsigned char *buffer, int length)
 	        response_code <<= 4;
 	        response_code &= 0xF0;
 	        response_code |= getDigit (rmsg->data[1]);
-				
+
 	        if (response_code == 0x14)		// SELECT TAG pass
 	        {
 		    unsigned char tag_type = getDigit (rmsg->data[2]);
@@ -1084,9 +1084,9 @@ int Mica2::DecodeSerial (unsigned char *buffer, int length)
 		    tag_type |= getDigit (rmsg->data[3]);
 		    RFIDtag.type = tag_type;
 		    dataoffset = 4;
-					
+
 		    RFIDtag.guid_count = 8;
-		
+
 		    int x = 0, cc = 0;
 		    int xlength = 23 - (29 - buffer[4]);
 		    for (x = dataoffset; x < xlength; x += 2)
@@ -1102,7 +1102,7 @@ int Mica2::DecodeSerial (unsigned char *buffer, int length)
 			    cc++;
 			}
 		    }
-		
+
 		    rfid_data.tags_count = 1;
 		    rfid_data.tags[0] = RFIDtag;
 		}
@@ -1115,7 +1115,7 @@ int Mica2::DecodeSerial (unsigned char *buffer, int length)
 	    break;
 	}
     }
-	
+
     if ((wsn_data.node_id == 0) && (filterbasenode == 1) && (!rfidPacket))
         return -1;
 
@@ -1134,14 +1134,14 @@ int Mica2::DecodeSerial (unsigned char *buffer, int length)
 
 ////////////////////////////////////////////////////////////////////////////////
 // ConvertAccel function - convert RAW accel. data to metric units (m/s^2)
-float Mica2::ConvertAccel (unsigned short raw_accel, 
+float Mica2::ConvertAccel (unsigned short raw_accel,
                            int neg_1g, int pos_1g, int converted)
 {
     if (neg_1g == 0)
 	neg_1g = 450;
     if (pos_1g == 0)
 	pos_1g = 550;
-	
+
     float sensitivity  = (pos_1g - neg_1g) / 2.0f;
     float offset       = (pos_1g + neg_1g) / 2.0f;
     float acceleration = (raw_accel - offset) / sensitivity;

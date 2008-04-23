@@ -68,7 +68,7 @@ Note that this driver is relatively new and not thoroughly tested.
     commanding it
 - speed (angle)
   - Default: 40 deg/sec
-  - Maximum pan/tilt speed 
+  - Maximum pan/tilt speed
 
 @par Example
 
@@ -153,7 +153,7 @@ driver
 #define AMTEC_STATE_HOME_OK   0x02
 #define AMTEC_STATE_HALTED    0x04
 
-class AmtecPowerCube:public Driver 
+class AmtecPowerCube:public Driver
 {
   private:
     // this function will be run in a separate thread
@@ -225,13 +225,13 @@ Driver* AmtecPowerCube_Init( ConfigFile* cf, int section)
 }
 
 // a driver registration function
-void 
-AmtecPowerCube_Register(DriverTable* table)
+void
+amtecpowercube_Register(DriverTable* table)
 {
   table->AddDriver("amtecpowercube",  AmtecPowerCube_Init);
 }
 
-AmtecPowerCube::AmtecPowerCube( ConfigFile* cf, int section) 
+AmtecPowerCube::AmtecPowerCube( ConfigFile* cf, int section)
         : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_PTZ_CODE)
 {
   fd = -1;
@@ -246,11 +246,11 @@ AmtecPowerCube::AmtecPowerCube( ConfigFile* cf, int section)
 
   this->serial_port = cf->ReadString(section, "port", AMTEC_DEFAULT_PORT);
   this->return_to_home = cf->ReadInt(section, "home", 0);
-  this->speed = (int)rint(RTOD(cf->ReadAngle(section, "speed", 
+  this->speed = (int)rint(RTOD(cf->ReadAngle(section, "speed",
                                              AMTEC_DEFAULT_SPEED_DEG_PER_SEC)));
 }
 
-int 
+int
 AmtecPowerCube::Reset()
 {
   unsigned char buf[AMTEC_MAX_CMDSIZE];
@@ -280,7 +280,7 @@ AmtecPowerCube::Reset()
   return(0);
 }
 
-int 
+int
 AmtecPowerCube::Home()
 {
   unsigned char buf[AMTEC_MAX_CMDSIZE];
@@ -335,7 +335,7 @@ AmtecPowerCube::Home()
   return(0);
 }
 
-int 
+int
 AmtecPowerCube::Halt()
 {
   unsigned char buf[AMTEC_MAX_CMDSIZE];
@@ -365,7 +365,7 @@ AmtecPowerCube::Halt()
   return(0);
 }
 
-int 
+int
 AmtecPowerCube::Setup()
 {
   struct termios term;
@@ -386,8 +386,8 @@ AmtecPowerCube::Setup()
   {
     PLAYER_ERROR1("open() failed: %s", strerror(errno));
     return(-1);
-  }  
- 
+  }
+
   if(tcflush(fd, TCIFLUSH ) < 0 )
   {
     PLAYER_ERROR1("tcflush() failed: %s", strerror(errno));
@@ -402,11 +402,11 @@ AmtecPowerCube::Setup()
     fd = -1;
     return(-1);
   }
-  
+
   cfmakeraw(&term);
   cfsetispeed(&term, B38400);
   cfsetospeed(&term, B38400);
-  
+
   if(tcsetattr(fd, TCSAFLUSH, &term) < 0 )
   {
     PLAYER_ERROR1("tcsetattr() failed: %s", strerror(errno));
@@ -420,7 +420,7 @@ AmtecPowerCube::Setup()
   if(GetPanTiltPos(&pan,&tilt))
   {
     printf("Couldn't connect to Amtec PowerCube most likely because the unit\n"
-                    "is not connected or is connected not to %s\n", 
+                    "is not connected or is connected not to %s\n",
                     serial_port);
     close(fd);
     fd = -1;
@@ -524,7 +524,7 @@ AmtecPowerCube::Uint16ToBytes(unsigned char *bytes, unsigned short s)
   memcpy(bytes, (void*)&s, 2);
 }
 
-int 
+int
 AmtecPowerCube::SendCommand(int id, unsigned char* cmd, size_t len)
 {
   size_t i;
@@ -684,7 +684,7 @@ AmtecPowerCube::AwaitAnswer(unsigned char* buf, size_t len)
     }
     else
     {
-      if(buf[0]==AMTEC_STX) 
+      if(buf[0]==AMTEC_STX)
         return(AwaitETX(buf,len));
       else
         continue;
@@ -699,27 +699,27 @@ AmtecPowerCube::ConvertBuffer(unsigned char* buf, size_t len)
 
   actual_len = len;
 
-  for (i=0;i<len;i++) 
+  for (i=0;i<len;i++)
   {
-    if(buf[i]==AMTEC_DLE) 
+    if(buf[i]==AMTEC_DLE)
     {
-      switch(buf[i+1]) 
+      switch(buf[i+1])
       {
         case 0x82:
           buf[i] = 0x02;
-          for(j=i+2;j<len;j++) 
+          for(j=i+2;j<len;j++)
             buf[j-1] = buf[j];
           actual_len--;
           break;
         case 0x83:
           buf[i] = 0x03;
-          for(j=i+2;j<len;j++) 
+          for(j=i+2;j<len;j++)
             buf[j-1] = buf[j];
           actual_len--;
           break;
         case 0x90:
           buf[i] = 0x10;
-          for(j=i+2;j<len;j++) 
+          for(j=i+2;j<len;j++)
             buf[j-1] = buf[j];
           actual_len--;
           break;
@@ -831,7 +831,7 @@ AmtecPowerCube::GetPanTiltPos(short* pan, short* tilt)
   }
   // reverse pan angle, to increase ccw, then normalize
   *pan = -(short)RTOD(NORMALIZE(tmp));
-  
+
   // get the tilt
   if(GetFloatParam(AMTEC_MODULE_TILT, AMTEC_PARAM_ACT_POS, &tmp) < 0)
   {
@@ -856,7 +856,7 @@ AmtecPowerCube::GetPanTiltVel(short* panspeed, short* tiltspeed)
   }
   // reverse pan angle, to increase ccw, then normalize
   *panspeed = -(short)RTOD(NORMALIZE(tmp));
-  
+
   // get the tilt
   if(GetFloatParam(AMTEC_MODULE_TILT, AMTEC_PARAM_ACT_VEL, &tmp) < 0)
   {
@@ -875,7 +875,7 @@ AmtecPowerCube::SetLimits()
   // counts up clockwise, rather than ccw.
   if(this->minpan != INT_MAX)
   {
-    if(SetFloatParam(AMTEC_MODULE_PAN, AMTEC_PARAM_MAX_POS, 
+    if(SetFloatParam(AMTEC_MODULE_PAN, AMTEC_PARAM_MAX_POS,
                      NORMALIZE(DTOR(-this->minpan))) < 0)
     {
       PLAYER_ERROR("SetFloatParam() failed");
@@ -884,7 +884,7 @@ AmtecPowerCube::SetLimits()
   }
   if(this->maxpan != INT_MAX)
   {
-    if(SetFloatParam(AMTEC_MODULE_PAN, AMTEC_PARAM_MIN_POS, 
+    if(SetFloatParam(AMTEC_MODULE_PAN, AMTEC_PARAM_MIN_POS,
                      NORMALIZE(DTOR(-this->maxpan))) < 0)
     {
       PLAYER_ERROR("SetFloatParam() failed");
@@ -893,7 +893,7 @@ AmtecPowerCube::SetLimits()
   }
   if(this->mintilt != INT_MAX)
   {
-    if(SetFloatParam(AMTEC_MODULE_TILT, AMTEC_PARAM_MIN_POS, 
+    if(SetFloatParam(AMTEC_MODULE_TILT, AMTEC_PARAM_MIN_POS,
                      NORMALIZE(DTOR(this->mintilt))) < 0)
     {
       PLAYER_ERROR("SetFloatParam() failed");
@@ -902,7 +902,7 @@ AmtecPowerCube::SetLimits()
   }
   if(this->maxtilt != INT_MAX)
   {
-    if(SetFloatParam(AMTEC_MODULE_TILT, AMTEC_PARAM_MAX_POS, 
+    if(SetFloatParam(AMTEC_MODULE_TILT, AMTEC_PARAM_MAX_POS,
                      NORMALIZE(DTOR(this->maxtilt))) < 0)
     {
       PLAYER_ERROR("SetFloatParam() failed");
@@ -921,7 +921,7 @@ AmtecPowerCube::SetPanPos(short oldpan, short pan)
   unsigned short time;
 
   newpan = DTOR(pan);
-  time = (unsigned short)rint(((double)abs(pan - oldpan) / 
+  time = (unsigned short)rint(((double)abs(pan - oldpan) /
                                (double)this->speed) * 1e3);
 
   cmd[0] = AMTEC_CMD_SET_MOTION;
@@ -944,7 +944,7 @@ AmtecPowerCube::SetTiltPos(short oldtilt, short tilt)
   unsigned short time;
 
   newtilt = DTOR(tilt);
-  time = (unsigned short)rint(((double)abs(tilt - oldtilt) / 
+  time = (unsigned short)rint(((double)abs(tilt - oldtilt) /
                                (double)this->speed) * 1e3);
 
   cmd[0] = AMTEC_CMD_SET_MOTION;
@@ -1010,7 +1010,7 @@ int AmtecPowerCube::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr
       short newpanspeed, newtiltspeed;
 	  assert(hdr->size == sizeof(player_ptz_cmd_t));
 	  player_ptz_cmd_t & command = *reinterpret_cast<player_ptz_cmd_t *> (data);
-  
+
       if(this->controlmode == PLAYER_PTZ_POSITION_CONTROL)
       {
         // reverse pan angle, to increase ccw
@@ -1099,11 +1099,11 @@ int AmtecPowerCube::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr
         return 0;
       }
 	}
-    
+
     return -1;
 }
- 
-void 
+
+void
 AmtecPowerCube::Main()
 {
   player_ptz_data_t data;
@@ -1164,11 +1164,11 @@ AmtecPowerCube::Main()
     if(state & AMTEC_STATE_ERROR)
     {
       PLAYER_ERROR1("the Amtec unit has encountered an error and will need\n"
-                    "    to be reset; bailing.   Current module state: 0x%x", 
+                    "    to be reset; bailing.   Current module state: 0x%x",
                     state);
       pthread_exit(NULL);
     }
-    
+
     usleep(AMTEC_SLEEP_TIME_USEC);
   }
 }

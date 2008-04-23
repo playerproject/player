@@ -1,7 +1,0 @@
-AM_CPPFLAGS = -I$(top_srcdir)/server @GSL_CFLAGS@
-
-noinst_LIBRARIES = @AMCL_MODELS_LIB@
-
-EXTRA_LIBRARIES = libmodels.a
-
-libmodels_a_SOURCES = odometry.h odometry.c sonar.h sonar.c laser.h laser.c wifi.h wifi.c gps.h gps.c imu.h imu.c

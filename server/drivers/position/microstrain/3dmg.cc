@@ -161,7 +161,7 @@ Driver* MicroStrain3DMG_Init( ConfigFile* cf, int section)
 }
 
 // Driver registration function
-void MicroStrain3DMG_Register(DriverTable* table)
+void microstrain_Register(DriverTable* table)
 {
   table->AddDriver("microstrain3dmg", MicroStrain3DMG_Init);
   return;

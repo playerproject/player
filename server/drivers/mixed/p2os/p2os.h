@@ -155,20 +155,20 @@ typedef struct player_p2os_data
   player_position2d_data_t compass;
   player_dio_data_t dio;
   player_aio_data_t aio;
-  
+
   //Blobfinder
   player_blobfinder_data_t blobfinder;
 
   //Gyro
   player_position2d_data_t gyro;
-  
+
   //ARMPAC
   player_actarray_data_t actArray;
   player_gripper_data_t armGripper;
 } __attribute__ ((packed)) player_p2os_data_t;
 
 // this is here because we need the above typedef's before including it.
-#include <sip.h>
+#include "sip.h"
 
 #include "kinecalc.h"
 

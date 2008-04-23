@@ -64,9 +64,7 @@ Details of keyboard control are printed out on the console.
 
 /** @} */
 
-#if HAVE_CONFIG_H
-  #include <config.h>
-#endif
+#include <config.h>
 
 #if HAVE_STRINGS_H
   #include <strings.h>
