@@ -348,6 +348,10 @@ class BlackBoardProxy : public ClientProxy
   	player_blackboard_entry_t *SubscribeToKey(const char *key, const char* group = "");
   	/** Stop receiving updates about this key. */
   	void UnsubscribeFromKey(const char *key, const char* group = "");
+  	/** Subscribe to a group. The event handler must be set to retrieve the current group entries. */
+  	void SubscribeToGroup(const char* key);
+  	/** Stop receiving updates about this group. */
+  	void UnsubscribeFromGroup(const char* group);
   	/** Set a key value */
   	void SetEntry(const player_blackboard_entry_t &entry);
   	/** Set the function pointer which will be called when an entry is updated. */

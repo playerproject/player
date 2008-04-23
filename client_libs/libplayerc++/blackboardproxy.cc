@@ -97,7 +97,7 @@ player_blackboard_entry_t *BlackBoardProxy::SubscribeToKey(const char *key, cons
 
   if (0 != playerc_blackboard_subscribe_to_key(mDevice, key, group, &pointer))
   {
-  	throw PlayerError("BlackBoardProxy::SubscribeToKey(const string& key)", "could not subscribe to key");
+  	throw PlayerError("BlackBoardProxy::SubscribeToKey(const char* key, const char* group)", "could not subscribe to key");
   }
   assert(pointer);
   
@@ -142,7 +142,26 @@ void BlackBoardProxy::UnsubscribeFromKey(const char *key, const char* group)
 	scoped_lock_t lock(mPc->mMutex);
 	if (0 != playerc_blackboard_unsubscribe_from_key(mDevice, key, group))
 	{
-		throw PlayerError("BlackBoardProxy::UnsubscribeFromKey(const string& key)", "could not unsubscribe from key");
+		throw PlayerError("BlackBoardProxy::UnsubscribeFromKey(const char* key, const char* group)", "could not unsubscribe from key");
+	}
+}
+
+void BlackBoardProxy::SubscribeToGroup(const char* group)
+{
+  scoped_lock_t lock(mPc->mMutex);
+
+  if (0 != playerc_blackboard_subscribe_to_group(mDevice, group))
+  {
+  	throw PlayerError("BlackBoardProxy::SubscribeToGroup(const char* group)", "could not subscribe to group");
+  }
+}
+
+void BlackBoardProxy::UnsubscribeFromGroup(const char* group)
+{
+	scoped_lock_t lock(mPc->mMutex);
+	if (0 != playerc_blackboard_unsubscribe_from_group(mDevice, group))
+	{
+		throw PlayerError("BlackBoardProxy::UnsubscribeFromGroup(const char* group)", "could not unsubscribe from group");
 	}
 }
 

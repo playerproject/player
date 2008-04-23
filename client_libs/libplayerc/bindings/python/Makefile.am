@@ -35,8 +35,8 @@ srcbuilddirs.py:
 
 # Use distutils to build module
 pythonbuild: playerc_oo.i ../../playerc.h srcbuilddirs.py
-	if test ! -s $(builddir)/setup.py; then cp $(srcdir)/setup.py $(builddir)/setup.py; fi
-	python $(builddir)/setup.py build
+	if test ! -s setup.py; then cp $(srcdir)/setup.py setup.py; fi
+	python setup.py build
 
 # For distcheck builds, clean up the files we created in the build tree
 # This generates warnings, so I'm relying on the top-level Makefile.am override.
@@ -54,8 +54,8 @@ install-data-hook: $(PYTHONINSTALL)
 
 # use distutils to install
 pythoninstall:
-	if test ! -s $(builddir)/setup.py; then cp $(srcdir)/setup.py $(builddir)/setup.py; fi
-	python $(builddir)/setup.py install --prefix=$(DESTDIR)/$(prefix)
+	if test ! -s setup.py; then cp $(srcdir)/setup.py setup.py; fi
+	python setup.py install --prefix=$(DESTDIR)/$(prefix)
 
 # seems that distutils doesn't support 'uninstall', oh well
 uninstall-local:
