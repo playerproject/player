@@ -1,6 +1,6 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2004  Brian Gerkey gerkey@stanford.edu    
+ *  Copyright (C) 2004  Brian Gerkey gerkey@stanford.edu
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -54,7 +54,7 @@
   - Default: 0.01
   - Value (in meters) returned by laser whenever bumper detects collision
 
-@par Example 
+@par Example
 
 @verbatim
 driver
@@ -96,7 +96,7 @@ extern PlayerTime * GlobalTime;
 
 class Bumper2Laser : public Driver
 {
-  public:    
+  public:
     // Constructor; need that
     Bumper2Laser(ConfigFile * cf, int section);
 
@@ -107,7 +107,7 @@ class Bumper2Laser : public Driver
     virtual int Shutdown();
 
     // This method will be invoked on each incoming message
-    virtual int ProcessMessage(QueuePointer & resp_queue, 
+    virtual int ProcessMessage(QueuePointer & resp_queue,
                                player_msghdr * hdr,
                                void * data);
 
@@ -140,7 +140,7 @@ class Bumper2Laser : public Driver
     // Start and end scan angles (for restricted scan).  These are in
     // units of 0.01 degrees.
     int min_angle, max_angle;
-    
+
     // Start and end scan segments (for restricted scan).  These are
     // the values used by the laser.
     int scan_min_segment, scan_max_segment;
@@ -150,9 +150,9 @@ class Bumper2Laser : public Driver
 
     // Turn intensity data on/off
     bool intensity;
-    
+
     float occupied_value;
-    
+
     int scan_id;
 };
 
@@ -196,11 +196,11 @@ Bumper2Laser::Bumper2Laser(ConfigFile * cf, int section)
   this->size[1] = 0.15;
   this->scan_width = 180;
   this->scan_res = cf->ReadInt(section, "resolution", 50);
-  if((this->scan_res != 25) && 
-     (this->scan_res != 50) && 
+  if((this->scan_res != 25) &&
+     (this->scan_res != 50) &&
      (this->scan_res != 100))
   {
-    PLAYER_ERROR1("Invalid angular resolution %d. Defaulting to 50 (0.5 degree)", 
+    PLAYER_ERROR1("Invalid angular resolution %d. Defaulting to 50 (0.5 degree)",
                   this->scan_res);
     this->scan_res = 50;
   }
@@ -230,7 +230,7 @@ int Bumper2Laser::Setup()
 {
   // We have not yet received any data
   this->bumper_data_valid = false;
-  
+
   // Retrieve the handle to the bumper device.
   this->bumper_dev = deviceTable->GetDevice(this->bumper_addr);
   if (!(this->bumper_dev))
@@ -258,7 +258,7 @@ int Bumper2Laser::Shutdown()
 {
   // Stop and join the driver thread
   StopThread();
-    
+
   // Unsubscribe from the bumper
   this->bumper_dev->Unsubscribe(this->InQueue);
 
@@ -267,7 +267,7 @@ int Bumper2Laser::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
-void Bumper2Laser::Main() 
+void Bumper2Laser::Main()
 {
   struct timespec tspec;
   double time;
@@ -299,8 +299,8 @@ void Bumper2Laser::Main()
 
     // Prepare packet
     this->laser_data.min_angle = DTOR((this->scan_min_segment * this->scan_res) / 1e2 - this->scan_width / 2.0);
-    this->laser_data.max_angle = DTOR((this->scan_max_segment * 
-                                       this->scan_res) / 1e2  - 
+    this->laser_data.max_angle = DTOR((this->scan_max_segment *
+                                       this->scan_res) / 1e2  -
                                        this->scan_width / 2.0);
     if(this->range_res == 1) this->laser_data.max_range = 8.0;
     else if(this->range_res == 10) this->laser_data.max_range = 80.0;
@@ -311,7 +311,7 @@ void Bumper2Laser::Main()
       this->laser_data.max_range = 8.0;
     }
     this->laser_data.resolution = DTOR(this->scan_res / 1e2);
-    old_count = this->laser_data.ranges_count; 
+    old_count = this->laser_data.ranges_count;
     this->laser_data.ranges_count = this->scan_max_segment - this->scan_min_segment + 1;
     this->laser_data.intensity_count = this->laser_data.ranges_count;
     if (old_count < (this->laser_data.ranges_count))
@@ -353,11 +353,11 @@ int Bumper2Laser::ProcessMessage(QueuePointer & resp_queue,
   // Process messages here.  Send a response if necessary, using Publish().
   // If you handle the message successfully, return 0.  Otherwise,
   // return -1, and a NACK will be sent for you, if a response is required.
-  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
-                           PLAYER_LASER_REQ_SET_CONFIG, 
+  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
+                           PLAYER_LASER_REQ_SET_CONFIG,
                            this->laser_addr))
   {
-    player_laser_config_t * config = 
+    player_laser_config_t * config =
             reinterpret_cast<player_laser_config_t *> (data);
     this->intensity = config->intensity;
     this->scan_res =  (int)rint(RTOD(config->resolution)*100);
@@ -459,7 +459,7 @@ Driver * Bumper2Laser_Init(ConfigFile * cf, int section)
 // that it can be invoked without object context.  In this function, we add
 // the driver into the given driver table, indicating which interface the
 // driver can support and how to create a driver instance.
-void Bumper2Laser_Register(DriverTable * table)
+void bumper2laser_Register(DriverTable * table)
 {
   table->AddDriver("bumper2laser", Bumper2Laser_Init);
 }
