@@ -3,8 +3,8 @@ CMAKE_MINIMUM_REQUIRED (VERSION 2.4 FATAL_ERROR)
 # Set the project name (helps Visual Studio, mainly)
 PROJECT (Player)
 # Set the package version
-SET (PLAYER_VERSION 2.1.0 CACHE STRING "Player distribution version")
-SET (PLAYER_API_VERSION 2.1 CACHE STRING "Player API version")
+SET (PLAYER_VERSION 2.2.0 CACHE STRING "Player distribution version")
+SET (PLAYER_API_VERSION 2.2 CACHE STRING "Player API version")
 MESSAGE (STATUS "${PROJECT_NAME} version ${PLAYER_VERSION}")
 
 # Set where to find our internal CMake scripts
