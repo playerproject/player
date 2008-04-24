@@ -9,13 +9,16 @@ License (GPL).  The Player homepage is:
 
 Installation
 ------------
-Read INSTALL for generic instructions.  For most people, the following
+Read INSTALL for more detailed instructions.  For most people, the following
 sequence will suffice:
 
-  TEMP instructions till updated properly
   $ mkdir build
-  $ cd build
-  $ cmake ..
+  $ cd build/
+  $ cmake ../
   $ make install
+
+To configure the build, do:
+
+  $ ccmake ../
 
                     - brian gerkey (gerkey@ai.sri.com)
