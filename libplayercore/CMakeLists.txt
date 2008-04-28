@@ -6,6 +6,19 @@ IF (NOT PYTHONINTERP_FOUND)
     MESSAGE (FATAL_ERROR "No Python interpreter found. Cannot continue.")
 ENDIF (NOT PYTHONINTERP_FOUND)
 
+# Auto-generate playerconfig.h.  This should be improved
+SET (playerconfig.h "${CMAKE_CURRENT_BINARY_DIR}/playerconfig.h")
+IF (HAVE_STDINT_H)
+  FILE (WRITE ${playerconfig.h}
+"#include <sys/types.h>
+#include <stdint.h>
+")
+ELSE (HAVE_STDINT_H)
+  FILE (WRITE ${playerconfig.h}
+"#include <sys/types.h>
+")
+ENDIF (HAVE_STDINT_H)
+
 SET (player_interfaces_h "${CMAKE_CURRENT_BINARY_DIR}/player_interfaces.h")
 SET (interface_table_h "${CMAKE_CURRENT_BINARY_DIR}/interface_table.h")
 PROCESS_INTERFACES ("" ${CMAKE_CURRENT_SOURCE_DIR}/interfaces ${player_interfaces_h})
@@ -63,5 +76,5 @@ PLAYER_MAKE_PKGCONFIG ("playerutils" "Player utilities library - part of the Pla
 
 PLAYER_INSTALL_HEADERS (playercore
     addr_util.h configfile.h device.h devicetable.h driver.h drivertable.h error.h globals.h
-    interface_util.h message.h playercommon.h playerconfig.h playercore.h player.h
+    interface_util.h message.h playercommon.h ${playerconfig.h} playercore.h player.h
     ${player_interfaces_h} playertime.h plugins.h property.h wallclocktime.h)

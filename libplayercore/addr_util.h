@@ -43,12 +43,7 @@
 extern "C" {
 #endif
 
-#include <config.h>
-
-#include <sys/types.h>
-#if HAVE_STDINT_H
-  #include <stdint.h>
-#endif
+#include <libplayercore/playerconfig.h>
 
 void packedaddr_to_dottedip(char* dest, size_t len, uint32_t addr);
 int hostname_to_packedaddr(uint32_t* dest, const char* hostname);

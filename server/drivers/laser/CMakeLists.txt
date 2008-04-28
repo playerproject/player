@@ -28,8 +28,12 @@ PLAYERDRIVER_OPTION (lasercutter build_lasercutter ON)
 PLAYERDRIVER_ADD_DRIVER_SIMPLE (lasercutter build_lasercutter lasercutter.cc lasertransform.cc)
 
 PLAYERDRIVER_OPTION (urglaser build_urglaser ON)
-PLAYERDRIVER_REQUIRE_HEADER (urglaser build_urglaser linux/serial.h)
+#PLAYERDRIVER_REQUIRE_HEADER (urglaser build_urglaser linux/serial.h)
 PLAYERDRIVER_ADD_DRIVER_SIMPLE (urglaser build_urglaser urg_laser.cc urglaserdriver.cc)
+# Also build and install standalone non-Player lib
+PLAYER_ADD_LIBRARY (urglaser_standalone urg_laser.cc)
+PLAYER_INSTALL_HEADERS (standalone_drivers urg_laser.h)
+
 
 PLAYERDRIVER_OPTION (rs4leuze build_rs4leuze ON)
 PLAYERDRIVER_ADD_DRIVER_SIMPLE (rs4leuze build_rs4leuze RS4LeuzeLaserDriver.cc RS4Leuze_laser.cc)
