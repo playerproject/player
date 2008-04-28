@@ -1,6 +1,6 @@
 PLAYERDRIVER_OPTION (camera1394 build_camera1394 ON)
 # PLAYERDRIVER_REQUIRE_LIB (camera1394 build_camera1394 raw1394 main "")
-SET (c1394CFlags "-DDC1394_DMA_SETUP_CAPTURE_ARGS=0")
+SET (c1394CFlags "-DDC1394_DMA_SETUP_CAPTURE_ARGS=0 -I${PROJECT_SOURCE_DIR}/server/drivers/blobfinder/cmvision")
 IF (build_camera1394)
     SET (c1394Sources camera1394.cc ${PROJECT_SOURCE_DIR}/server/drivers/blobfinder/cmvision/conversions.c)
 
@@ -18,6 +18,9 @@ IF (build_camera1394)
         SET (c1394LinkFlags "-lraw1394 -ldc1394_control")
         PLAYERDRIVER_REQUIRE_HEADER (camera1394 build_camera1394 libraw1394/raw1394.h)
         PLAYERDRIVER_REQUIRE_HEADER (camera1394 build_camera1394 libdc1394/dc1394_control.h)
+        IF (HAVE_HDR_LIBRAW1394_RAW1394_H)
+          SET (c1394CFlags "${c1394CFlags} -DHAVE_LIBRAW1394")
+        ENDIF (HAVE_HDR_LIBRAW1394_RAW1394_H)
         SET (testArgsSource ${CMAKE_CURRENT_BINARY_DIR}/CMakeTmp/test_args.c)
         FILE (WRITE ${testArgsSource}
             "#include \"libdc1394/dc1394_control.h\"\nint main () {dc1394_dma_setup_capture (NULL, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL); return 0;}")
