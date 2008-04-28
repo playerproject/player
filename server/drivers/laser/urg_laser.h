@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <libplayercore/playercore.h>
 
 #define MAX_READINGS 1128
 
@@ -7,6 +6,24 @@ typedef struct urg_laser_readings
 {
   unsigned short Readings[MAX_READINGS];
 } urg_laser_readings_t;
+
+typedef struct urg_laser_config
+{
+  /** Start and end angles for the laser scan [rad].*/
+  float min_angle;
+  /** Start and end angles for the laser scan [rad].*/
+  float max_angle;
+  /** Scan resolution [rad].  */
+  float resolution;
+  /** Maximum range [m] */
+  float max_range;
+  /** Range Resolution [m] */
+  float range_res;
+  /** Enable reflection intensity data. */
+  unsigned char  intensity;
+  /** Scanning frequency [Hz] */
+  float scanning_frequency;
+} urg_laser_config_t;
 
 class urg_laser
 {
@@ -26,7 +43,7 @@ class urg_laser
 	int GetReadings     (urg_laser_readings_t * readings, int min_i, int max_i);
 	int GetIDInfo       ();
 	float GetMaxRange   ();
-	int GetSensorConfig (player_laser_config_t *cfg);
+	int GetSensorConfig (urg_laser_config_t *cfg);
         int GetSCIPVersion() { return(this->SCIP_Version); }
         int GetNumRanges() { return(this->num_ranges); }
 
