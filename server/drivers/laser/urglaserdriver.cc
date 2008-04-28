@@ -221,7 +221,16 @@ int
     this->SetError(1);
     return -1;
   }
-  Laser.GetSensorConfig (&Conf);
+  urg_laser_config_t ucfg;
+  Laser.GetSensorConfig (&ucfg);
+
+  Conf.min_angle = ucfg.min_angle;
+  Conf.max_angle = ucfg.max_angle;
+  Conf.resolution = ucfg.resolution;
+  Conf.max_range = ucfg.max_range;
+  Conf.range_res = ucfg.range_res;
+  Conf.intensity = ucfg.intensity;
+  Conf.scanning_frequency = ucfg.scanning_frequency;
 
   int half_idx = Laser.GetNumRanges() / 2;
 

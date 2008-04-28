@@ -6,10 +6,21 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <termios.h>
+#include <math.h>
 
 #include <replace/replace.h>
 
 #include "urg_laser.h"
+
+// Convert radians to degrees
+#ifndef RTOD
+#define RTOD(r) ((r) * 180 / M_PI)
+#endif
+
+// Convert degrees to radians
+#ifndef DTOR
+#define DTOR(d) ((d) * M_PI / 180)
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 // Reads characters (and throws them away) until the nth occurence of char c.
@@ -145,7 +156,7 @@ int
 
 ///////////////////////////////////////////////////////////////////////////////
 int
-  urg_laser::GetSensorConfig (player_laser_config_t *cfg)
+  urg_laser::GetSensorConfig (urg_laser_config_t *cfg)
 {
   // TODO: look into getting intensity data
   cfg->intensity = 0;
@@ -611,6 +622,7 @@ bool
 int 
   urg_laser::GetReadings (urg_laser_readings_t * readings, int min_i, int max_i)
 {
+  int numreadings = -1;
   unsigned char Buffer[16];
   //memset (Buffer, 0, 11);
   assert (readings);
@@ -647,7 +659,10 @@ int
       ReadUntil (file, Buffer, 2, -1);
   
       if (Buffer[0] == '\n' && Buffer[1] == '\n')
+      {
+        numreadings = i;
         break;
+      }
       
       else if (Buffer[0] == '\n')
       {
@@ -698,7 +713,10 @@ int
       //printf ("[%d of %d] 0x%x 0x%x 0x%x\n", i, MAX_READINGS, Buffer[0], Buffer[1], Buffer [2]);
         
       if ((Buffer[1] == '\n') && (Buffer[2] == '\n'))
+      {
+        numreadings = i;
         break;
+      }
       else if (Buffer[2] == '\n')
       {
         if (ReadUntil(file, &Buffer[1], 2, -1) < 0)
@@ -769,7 +787,10 @@ int
       //printf ("[%d of %d] 0x%x 0x%x 0x%x\n", i, MAX_READINGS, Buffer[0], Buffer[1], Buffer [2]);
         
       if ((Buffer[1] == '\n') && (Buffer[2] == '\n'))
+      {
+        numreadings = i;
         break;
+      }
       else if (Buffer[2] == '\n')
       {
         if (ReadUntil(file, &Buffer[1], 2, -1) < 0)
@@ -810,7 +831,7 @@ int
     }
   }
 
-  return (0);
+  return (numreadings);
 }
 
 //////////////////////////////////////////////////////////////////////////////
