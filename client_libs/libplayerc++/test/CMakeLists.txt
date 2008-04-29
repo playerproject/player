@@ -1,4 +1,5 @@
 IF (BUILD_PLAYERCC)
+  IF (BUILD_PLAYERCC_BOOST)
     OPTION (BUILD_CC_TESTS "Build the C++ client library tests" ON)
 
     IF (BUILD_CC_TESTS)
@@ -27,4 +28,5 @@ IF (BUILD_PLAYERCC)
         ADD_EXECUTABLE (playerc++_test ${testsSrcs})
         TARGET_LINK_LIBRARIES (playerc++_test playerc playerc++ playerxdr playererror ${PLAYERC_EXTRA_LINK_LIBRARIES} ${PLAYERCC_EXTRA_LINK_LIBRARIES})
     ENDIF (BUILD_CC_TESTS)
+  ENDIF (BUILD_PLAYERCC_BOOST)
 ENDIF (BUILD_PLAYERCC)
