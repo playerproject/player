@@ -1,0 +1,7 @@
+#cmakedefine HAVE_STDINT_H 1
+
+#include <sys/types.h>
+
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
+#endif
