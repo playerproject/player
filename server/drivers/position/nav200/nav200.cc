@@ -722,6 +722,7 @@ int Nav200::ReadFromNav200(int timeout_usec)
         return 1;
       }
     }
+    usleep(1000);
   }
   sn200->InQueue->ClearFilter();
   return 0;

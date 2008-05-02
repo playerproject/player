@@ -118,6 +118,10 @@ extern PlayerTime* GlobalTime;
 
 #define DEFAULT_SICKNAV200_MODE "positioning"
 
+/// Time to delay before we send the next position request, acceleration performance is best
+/// When a request with velocity is sent half way through the next cycle.
+const double DEFAULT_NAV_REQUEST_DELAY_USECS = 0.06; 
+
 // The laser device class.
 class SickNAV200 : public Driver {
 public:
@@ -154,6 +158,8 @@ private:
 	// Build the well known binary view of the reflector positions.
 	void BuildWKB();
 
+	player_pose2d_t GetNavVelocityInWRF();
+	
 protected:
 
 	// Laser pose in robot cs.
@@ -187,10 +193,6 @@ protected:
 	// number of values for slifing mean
 	IntProperty SmoothingInput;
 	
-	
-	// Name of device used to communicate with the laser
-	//char *device_name;
-
 	// storage for outgoing data
 	player_position2d_data_t data_packet;
 
@@ -215,6 +217,19 @@ protected:
 	player_devaddr_t position_addr;
 	// Vector map interface
 	player_devaddr_t vectormap_addr;
+	
+	// delay before position update request in seconds
+	DoubleProperty NavUpdateRequestDelay;
+	// time stamping for coordinating position request timing
+	struct timeval last_nav_position_time;
+	struct timeval last_nav_request_time;
+	struct timeval last_velocity_update_time;
+	
+	/// optional log file to store some timing metrics in, useful for performance analysis of the system.
+	StringProperty TimingLogFilename;
+	FILE * TimingLogFile;
+	
+	
 };
 
 // a factory creation function
@@ -241,7 +256,10 @@ SickNAV200::SickNAV200(ConfigFile* cf, int section) :
 	AutoFullMapCount("autofullmapcount", 0, false, this, cf, section), 
 	StallCount(0), 
 	Quality("quality", 0,true, this, cf, section),
-	SmoothingInput("smoothing_input", 4, false, this, cf, section)
+	SmoothingInput("smoothing_input", 4, false, this, cf, section),
+	NavUpdateRequestDelay("update_request_delay",DEFAULT_NAV_REQUEST_DELAY_USECS,false,this,cf,section),
+	TimingLogFilename("timing_log","",true,this,cf,section),
+	TimingLogFile(NULL)
 {
 	// Create position interface
 	if (cf->ReadDeviceAddr(&(this->position_addr), section, "provides",
@@ -314,7 +332,7 @@ SickNAV200::SickNAV200(ConfigFile* cf, int section) :
 	memset(&this->reflector_map_id, 0, sizeof(this->reflector_map_id));
 	cf->ReadDeviceAddr(&this->reflector_map_id, section, "requires",
 			PLAYER_VECTORMAP_CODE, -1, NULL);
-
+	
 	return;
 }
 
@@ -380,6 +398,17 @@ int SickNAV200::Setup() {
 	StallCount = 0;
 	PLAYER_MSG0(2, "NAV200 ready");
 
+	// intialise logging if requested
+	if (strcmp(TimingLogFilename,""))
+	{
+		TimingLogFile = fopen(TimingLogFilename,"a");
+		if (!TimingLogFile)
+		{
+			PLAYER_ERROR2("Failed to open NAV200 timing log file for appending: %s (%s)",errno,strerror(errno));
+		}
+	}
+	
+	
 	// Start the device thread
 	StartThread();
 
@@ -394,6 +423,12 @@ int SickNAV200::Shutdown() {
 
 	opaque->Unsubscribe(InQueue);
 
+	if (TimingLogFile)
+	{
+		fclose(TimingLogFile);
+		TimingLogFile = NULL;
+	}
+	
 	PLAYER_MSG0(2, "laser shutdown");
 
 	return (0);
@@ -416,6 +451,8 @@ int SickNAV200::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr,
 		player_position2d_data_t * recv =
 				reinterpret_cast<player_position2d_data_t * > (data);
 		speed = recv->vel;
+		gettimeofday(&last_velocity_update_time,NULL);
+
 		return 0;
 	}
 
@@ -561,6 +598,23 @@ int SickNAV200::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr,
 	return (-1);
 }
 
+int usec_diff(struct timeval & then, struct timeval & now)
+{
+	return (now.tv_sec-then.tv_sec)*1000000 + (now.tv_usec-then.tv_usec);
+}
+
+int usec_elapsed(struct timeval & then)
+{
+	struct timeval now;
+	gettimeofday(&now, NULL);
+	return usec_diff(then,now);
+}	
+
+double time_double(struct timeval & t)
+{
+	return static_cast<double> (t.tv_sec) + static_cast<double> (t.tv_usec)/1e6;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
 void SickNAV200::Main() {
@@ -591,6 +645,9 @@ void SickNAV200::Main() {
 		FetchIfNeeded();
 		mode.SetValue("positioning");
 	}
+	
+	// intialise our update timestamp
+	gettimeofday(&last_nav_position_time,NULL);
 
 	LaserPos Reading;
 	for (;;) {
@@ -600,54 +657,28 @@ void SickNAV200::Main() {
 		// process any pending messages
 		ProcessMessages();
 
-		double vehicleVelX = 0;
-		double vehicleVelY = 0;
-		double angularVelocity = 0;
 		bool gotReading;
-		if (velocity) {
-			// RCF = robot coordinate frame
-			// NCF = Nav coordinate frame
-			// WCF = world coordinate frame
-
-			double hyp = sqrt(pose[0]*pose[0] + pose[1]*pose[1]);
-			double theta = atan2(pose[1], pose[0]);
-			// calculate the local nav velocities, in RCF
-			double nav_tangential_vel_RCF = hyp * speed.pa;
-			// calculate nav velocities in RCF
-			player_pose2d_t nav_vel_RCF = speed;
-			// rotational components
-			nav_vel_RCF.px += nav_tangential_vel_RCF*sin(-theta);
-			nav_vel_RCF.py += nav_tangential_vel_RCF*cos(-theta);
-
-			// now transform to NCF, basic rotation by angle offset
-			player_pose2d_t nav_vel_NCF = nav_vel_RCF;
-			nav_vel_NCF.px = nav_vel_RCF.px * cos(pose[2]) - nav_vel_RCF.py
-					* sin(pose[2]);
-			nav_vel_NCF.py = nav_vel_RCF.px * sin(pose[2]) + nav_vel_RCF.py
-					* cos(pose[2]);
-
-			// finally transform to WRF, again just rotation
-			player_pose2d_t nav_vel_WCF = nav_vel_NCF;
-			nav_vel_WCF.px = nav_vel_NCF.px * cos(navAngle) - nav_vel_NCF.py
-					* sin(navAngle);
-			nav_vel_WCF.py = nav_vel_NCF.px * sin(navAngle) + nav_vel_NCF.py
-					* cos(navAngle);
-
-			//fprintf(stderr,"RCF: %f %f %f\n", nav_vel_RCF.px, nav_vel_RCF.py, nav_vel_RCF.pa);
-			//fprintf(stderr,"NCF: %f %f %f\n", nav_vel_NCF.px, nav_vel_NCF.py, nav_vel_NCF.pa);
-
-			while (nav_vel_WCF.pa > M_PI)
-				nav_vel_WCF.pa -= M_2_PI;
-			while (nav_vel_WCF.pa < -M_PI)
-				nav_vel_WCF.pa += M_2_PI;
-
-			short pa_in_bdeg = static_cast<short> (nav_vel_WCF.pa * 32768.0
-					/ M_PI);
+		
+		// if less than our update delay has passed then wait until next time through 
+		if (usec_elapsed(last_nav_position_time) < NavUpdateRequestDelay * 1e6)
+		{
+			usleep(1000);
+			continue;
+		}
+		
+		if (velocity) 
+		{
+			player_pose2d_t nav_vel_WCF = GetNavVelocityInWRF();
+			short pa_in_bdeg = static_cast<short> (nav_vel_WCF.pa * 32768.0 / M_PI);
 			//fprintf(stderr,"WCF: %f %f %f %04x\n", nav_vel_WCF.px, nav_vel_WCF.py, nav_vel_WCF.pa, pa_in_bdeg);
-
+			gettimeofday(&last_nav_request_time,NULL);
 			gotReading = Laser.GetPositionSpeedVelocityAbsolute(short(nav_vel_WCF.px * 1000), short(nav_vel_WCF.py * 1000), pa_in_bdeg, Reading);
-		} else
+		}
+		else 
+		{
+			gettimeofday(&last_nav_request_time,NULL);
 			gotReading = Laser.GetPositionAuto(Reading);
+		}
 
 		// get update and publish result
 		if (gotReading) {
@@ -666,9 +697,30 @@ void SickNAV200::Main() {
 			data_packet.pos.pa = newAngle;
 			data_packet.pos.px = newX;
 			data_packet.pos.py = newY;
-			data_packet.vel.pa = angularVelocity;
-			data_packet.vel.px = vehicleVelX;
-			data_packet.vel.py = vehicleVelY;
+			data_packet.vel.pa = speed.pa;
+			data_packet.vel.px = speed.px;
+			data_packet.vel.py = speed.py;
+
+			// update our last request timestamp
+			struct timeval previous_update = last_nav_position_time;
+			gettimeofday(&last_nav_position_time,NULL);
+			if (TimingLogFile)
+			{
+				// Log the following data:
+				// TIMESTAMP, UPDATE_PERIOD, REQUEST_DELTA, POSE, NAV_POSE, QUALITY, VELOCITY_DELTA, VELOCITY
+				fprintf(TimingLogFile, "%f %f %f %f %f %f %d %d %d %d %f %f %f %f\n",
+						time_double(last_nav_position_time), 
+						-static_cast<double> (usec_diff(last_nav_position_time, previous_update))/1e6,
+						-static_cast<double> (usec_diff(last_nav_position_time, last_nav_request_time))/1e6,
+						data_packet.pos.px,data_packet.pos.py,data_packet.pos.pa,
+						Reading.pos.x,Reading.pos.y,Reading.orientation,Reading.quality,
+						-static_cast<double> (usec_diff(last_nav_position_time, last_velocity_update_time))/1e6,
+						speed.px,speed.py,speed.pa
+				);
+				fflush(TimingLogFile);
+			}
+			
+			
 			//printf("Got reading: quality %d\n", Reading.quality);
 			if (Reading.quality==0xFF || Reading.quality==0xFE
 					|| Reading.quality==0x00) {
@@ -973,3 +1025,45 @@ void SickNAV200::BuildWKB() {
 		*reinterpret_cast<double*>(pointData + 13) = y;
 	}
 }
+
+player_pose2d_t SickNAV200::GetNavVelocityInWRF()
+{
+	// RCF = robot coordinate frame
+	// NCF = Nav coordinate frame
+	// WCF = world coordinate frame
+
+	double hyp = sqrt(pose[0]*pose[0] + pose[1]*pose[1]);
+	double theta = atan2(pose[1], pose[0]);
+	// calculate the local nav velocities, in RCF
+	double nav_tangential_vel_RCF = hyp * speed.pa;
+	// calculate nav velocities in RCF
+	player_pose2d_t nav_vel_RCF = speed;
+	// rotational components
+	nav_vel_RCF.px += nav_tangential_vel_RCF*sin(-theta);
+	nav_vel_RCF.py += nav_tangential_vel_RCF*cos(-theta);
+
+	// now transform to NCF, basic rotation by angle offset
+	player_pose2d_t nav_vel_NCF = nav_vel_RCF;
+	nav_vel_NCF.px = nav_vel_RCF.px * cos(pose[2]) - nav_vel_RCF.py
+			* sin(pose[2]);
+	nav_vel_NCF.py = nav_vel_RCF.px * sin(pose[2]) + nav_vel_RCF.py
+			* cos(pose[2]);
+
+	// finally transform to WRF, again just rotation
+	player_pose2d_t nav_vel_WCF = nav_vel_NCF;
+	nav_vel_WCF.px = nav_vel_NCF.px * cos(navAngle) - nav_vel_NCF.py
+			* sin(navAngle);
+	nav_vel_WCF.py = nav_vel_NCF.px * sin(navAngle) + nav_vel_NCF.py
+			* cos(navAngle);
+
+	//fprintf(stderr,"RCF: %f %f %f\n", nav_vel_RCF.px, nav_vel_RCF.py, nav_vel_RCF.pa);
+	//fprintf(stderr,"NCF: %f %f %f\n", nav_vel_NCF.px, nav_vel_NCF.py, nav_vel_NCF.pa);
+
+	while (nav_vel_WCF.pa > M_PI)
+		nav_vel_WCF.pa -= M_2_PI;
+	while (nav_vel_WCF.pa < -M_PI)
+		nav_vel_WCF.pa += M_2_PI;
+	
+	return nav_vel_WCF;
+}
+
