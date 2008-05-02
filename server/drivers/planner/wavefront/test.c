@@ -59,7 +59,7 @@ main(int argc, char** argv)
   assert((plan = plan_alloc(robot_radius+safety_dist,
 			    robot_radius+safety_dist,
 			    max_radius,
-			    dist_penalty)));
+			    dist_penalty,0.5)));
 
   // allocate space for map cells
   assert(plan->cells == NULL);
@@ -187,8 +187,8 @@ read_map_from_image(int* size_x, int* size_y, char** mapdata,
   rowstride = gdk_pixbuf_get_rowstride(pixbuf);
   bps = gdk_pixbuf_get_bits_per_sample(pixbuf)/8;
   n_channels = gdk_pixbuf_get_n_channels(pixbuf);
-  if(gdk_pixbuf_get_has_alpha(pixbuf))
-    n_channels++;
+  //if(gdk_pixbuf_get_has_alpha(pixbuf))
+    //n_channels++;
 
   // Read data
   pixels = gdk_pixbuf_get_pixels(pixbuf);

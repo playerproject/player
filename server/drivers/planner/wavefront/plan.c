@@ -6,7 +6,7 @@
  * CVS: $Id$
 **************************************************************************/
 
-#include <config.h>
+//#include <config.h>
 
 // This header MUST come before <openssl/md5.h>
 #include <sys/types.h>
