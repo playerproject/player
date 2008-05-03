@@ -38,10 +38,10 @@ INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR} ${PROJECT_BINAR
 
 # If on Windows, only build the client libraries. (this won't actually work yet cause libplayerc needs some stuff from core)
 ADD_SUBDIRECTORY (client_libs)
+ADD_SUBDIRECTORY (libplayercore)
+ADD_SUBDIRECTORY (libplayerxdr)
 IF (NOT PLAYER_OS_WIN)
-    ADD_SUBDIRECTORY (libplayercore)
     ADD_SUBDIRECTORY (config)           # Example config files
-    ADD_SUBDIRECTORY (libplayerxdr)
     ADD_SUBDIRECTORY (libplayerjpeg)
     ADD_SUBDIRECTORY (libplayertcp)
     ADD_SUBDIRECTORY (libplayersd)
