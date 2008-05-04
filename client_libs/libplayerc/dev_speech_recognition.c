@@ -54,7 +54,7 @@ void playerc_speech_recognition_putmsg(playerc_speechrecognition_t *device, play
     device->rawText[data->text_count-1] = '\0';
 
     device->wordCount = 1;
-    printf("data->text %s\n",data->text);
+    fprintf(stderr,"data->text %s\n",data->text);
 
     for (ii = 0; ii < data->text_count; ++ii)
     {

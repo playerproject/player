@@ -685,7 +685,7 @@ int playerc_client_read_nonblock_withproxy(playerc_client_t *client, void ** pro
       default:
         playerxdr_cleanup_message(client->data, header.addr.interf, header.type, header.subtype);
         PLAYERC_WARN1 ("unexpected message type [%s]", msgtype_to_str(header.type));
-        printf("address: %u:%u:%s:%u\nsize: %u",
+        PLAYERC_WARN5 ("address: %u:%u:%s:%u\nsize: %u",
                header.addr.host,
                header.addr.robot,
                interf_to_str(header.addr.interf),

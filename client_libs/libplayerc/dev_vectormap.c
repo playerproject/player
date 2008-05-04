@@ -205,11 +205,6 @@ int playerc_vectormap_write_layer(playerc_vectormap_t *device, const player_vect
 GEOSGeom playerc_vectormap_get_feature_data(playerc_vectormap_t *device, unsigned layer_index, unsigned feature_index)
 {
 #ifdef HAVE_GEOS
-  /*int i;
-  printf("%p %d\n", device->layers[layer_index]->features[feature_index].wkb, device->layers[layer_index]->features[feature_index].wkb_count);
-  for(i = 0; i < device->layers[layer_index]->features[feature_index].wkb_count; i++)
-    printf("%02x", device->layers[layer_index]->features[feature_index].wkb[i]);
-  printf("\n");*/
   if (device->geom)
   {
     GEOSGeom_destroy(device->geom);
