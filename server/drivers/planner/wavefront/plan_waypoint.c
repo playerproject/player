@@ -129,7 +129,7 @@ int plan_test_reachable(plan_t *plan, plan_cell_t *cell_a, plan_cell_t *cell_b)
       lastj = (int)floor(j);
       if(!PLAN_VALID(plan,lasti,lastj))
       {
-        PLAYER_WARN("stepped off the map!");
+        //PLAYER_WARN("stepped off the map!");
         return(0);
       }
       if(plan->cells[PLAN_INDEX(plan,lasti,lastj)].occ_dist <

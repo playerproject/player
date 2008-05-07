@@ -350,7 +350,7 @@ plan_compute_cspace(plan_t* plan)
   float* p;
   plan_cell_t *cell, *ncell;
 
-  PLAYER_MSG0(2,"Generating C-space....");
+  puts("Generating C-space....");
 
   for (j = plan->min_y; j <= plan->max_y; j++)
   {
@@ -381,6 +381,7 @@ plan_compute_cspace(plan_t* plan)
   }
 }
 
+#if 0
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
 void
@@ -541,6 +542,7 @@ draw_path(plan_t* plan, double lx, double ly, const char* fname)
   gdk_pixbuf_unref(pixbuf);
   free(pixels);
 }
+#endif
 
 // Construct the configuration space from the occupancy grid.
 // This treats both occupied and unknown cells as bad.
@@ -585,7 +587,6 @@ plan_update_cspace(plan_t *plan, const char* cachefile)
   draw_cspace(plan,"plan_cspace.png");
 #endif
 }
-#endif
 
 #if HAVE_OPENSSL_MD5_H && HAVE_LIBCRYPTO
 // Write the cspace occupancy distance values to a file, one per line.
@@ -716,6 +717,8 @@ plan_md5(unsigned int* digest, plan_t* plan)
   MD5_Final((unsigned char*)digest,&c);
 }
 #endif // HAVE_OPENSSL_MD5_H && HAVE_LIBCRYPTO
+
+#endif // if 0
 
 double 
 static get_time(void)
