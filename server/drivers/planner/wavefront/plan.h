@@ -150,6 +150,19 @@ void plan_convert_waypoint(plan_t* plan, plan_cell_t *waypoint,
 double plan_get_carrot(plan_t* plan, double* px, double* py, 
                        double lx, double ly, 
                        double maxdist, double distweight);
+int plan_compute_diffdrive_cmds(plan_t* plan, double* vx, double *va,
+                                int* rotate_dir,
+                                double lx, double ly, double la,
+                                double gx, double gy, double ga,
+                                double goal_d, double goal_a,
+                                double maxd, double dweight, 
+                                double tvmin, double tvmax, 
+                                double avmin, double avmax, 
+                                double amin, double amax);
+int plan_check_done(plan_t* plan, 
+                    double lx, double ly, double la,
+                    double gx, double gy, double ga,
+                    double goal_d, double goal_a);
 
 void plan_set_obstacles(plan_t* plan, double* obs, size_t num);
 

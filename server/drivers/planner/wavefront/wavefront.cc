@@ -225,7 +225,7 @@ driver
 
 #include <sys/time.h>
 static double get_time(void);
-extern "C" { void draw_cspace(plan_t* plan, const char* fname); }
+//extern "C" { void draw_cspace(plan_t* plan, const char* fname); }
 
 // TODO: monitor localize timestamps, and slow or stop robot accordingly
 
@@ -1542,7 +1542,7 @@ Wavefront::GetMap(bool threaded)
 
   plan_init(this->plan);
   plan_compute_cspace(this->plan);
-  draw_cspace(this->plan,"cspace.png");
+  //draw_cspace(this->plan,"cspace.png");
 
   return(0);
 }
