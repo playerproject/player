@@ -1,9 +1,84 @@
 #include <stdlib.h>
+#include <math.h>
 #include <assert.h>
 
 #include "plan.h"
 
-double _plan_check_path(plan_t* plan, plan_cell_t* s, plan_cell_t* g);
+static double _plan_check_path(plan_t* plan, plan_cell_t* s, plan_cell_t* g);
+static double _angle_diff(double a, double b);
+
+int
+plan_check_done(plan_t* plan, 
+                double lx, double ly, double la,
+                double gx, double gy, double ga,
+                double goal_d, double goal_a)
+{
+  double dt, da;
+  dt = sqrt((gx-lx)*(gx-ly) + (gy-ly)*(gy-ly));
+  da = fabs(_angle_diff(ga,la));
+
+  if((dt < goal_d) && (da < goal_a))
+    return(1);
+  else
+    return(0);
+}
+
+int
+plan_compute_diffdrive_cmds(plan_t* plan, double* vx, double *va,
+                            int* rotate_dir,
+                            double lx, double ly, double la,
+                            double gx, double gy, double ga,
+                            double goal_d, double goal_a,
+                            double maxd, double dweight, 
+                            double tvmin, double tvmax, 
+                            double avmin, double avmax, 
+                            double amin, double amax)
+{
+  double cx, cy;
+  double d,b,av,tv,a,ad;
+  
+  // Are we at the goal?
+  if(plan_check_done(plan,lx,ly,la,gx,gy,ga,goal_d,goal_a))
+  {
+    *vx = 0.0;
+    *va = 0.0;
+    return(0);
+  }
+
+  // Are we on top of the goal?
+  d = sqrt((gx-lx)*(gx-lx)+(gy-ly)*(gy-ly));
+  if(d < goal_d)
+  {
+    ad = _angle_diff(ga,la);
+    if(!*rotate_dir)
+    {
+      if(ad < 0)
+        *rotate_dir = -1;
+      else
+        *rotate_dir = 1;
+    }
+    *vx = 0.0;
+    *va = *rotate_dir * (avmin + (fabs(ad)/M_PI) * (avmax-avmin));
+    return(0);
+  }
+
+  // We're away from the goal; compute velocities
+  if(plan_get_carrot(plan, &cx, &cy, lx, ly, maxd, dweight) < 0.0)
+    return(-1);
+
+  d = sqrt((lx-cx)*(lx-cx) + (ly-cy)*(ly-cy));
+  b = atan2(cy - ly, cx - lx);
+  a = amin + (d / maxd) * (amax-amin);
+  ad = _angle_diff(b, la);
+
+  if(fabs(ad) > a)
+    *vx = 0.0;
+  else
+    tv = tvmin + (d / maxd) * (tvmax-tvmin);
+  av = avmin + (fabs(ad)/M_PI) * (avmax-avmin);
+  if(ad < 0)
+    av = -av;
+}
 
 double
 plan_get_carrot(plan_t* plan, double* px, double* py, 
@@ -64,7 +139,7 @@ plan_get_carrot(plan_t* plan, double* px, double* py,
   return(bestcost);
 }
 
-double
+static double
 _plan_check_path(plan_t* plan, plan_cell_t* s, plan_cell_t* g)
 {
   // Bresenham raytracing
@@ -167,4 +242,20 @@ _plan_check_path(plan_t* plan, plan_cell_t* s, plan_cell_t* g)
   return(obscost);
 }
 
+#define ANG_NORM(a) atan2(cos((a)),sin((a)))
+static double
+_angle_diff(double a, double b)
+{
+  double d1, d2;
+  a = ANG_NORM(a);
+  b = ANG_NORM(b);
+  d1 = a-b;
+  d2 = 2*M_PI - fabs(d1);
+  if(d1 > 0)
+    d2 *= -1.0;
+  if(fabs(d1) < fabs(d2))
+    return(d1);
+  else
+    return(d2);
+}
 
