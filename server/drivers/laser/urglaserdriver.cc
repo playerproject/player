@@ -349,7 +349,7 @@ void
     // TODO: check this value
     Data.max_range    = Conf.max_range;
     Data.resolution   = Conf.resolution;
-    Data.ranges_count = (max_i - min_i) + 1;
+    Data.ranges_count = (max_i - min_i);
     Data.ranges = new float [Data.ranges_count];
     // TODO: look into getting intensity data
     Data.intensity_count = 0;
