@@ -707,6 +707,8 @@ int Erratic::Connect()
 // Called by player when the driver is supposed to disconnect
 int Erratic::Shutdown() {
   // We don't care, we'll never disconnect
+  // Oh, yes, you will!
+  this->Disconnect();
   return 0;
 }
 
