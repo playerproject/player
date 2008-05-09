@@ -1,0 +1,11 @@
+PROJECT (playerplugin_examples)
+
+# Include this CMake module to get most of the settings needed to build
+SET (CMAKE_MODULE_PATH @CMAKE_INSTALL_PREFIX@/share/cmake/Modules)
+INCLUDE (UsePlayerPlugin)
+INCLUDE (UsePlayerC)
+
+PLAYER_ADD_PLUGIN_INTERFACE (eginterf 128_example.def "" "" "" "" eginterf_client.c)
+# Note the use of files generated during the PLAYER_ADD_PLUGIN_INTERFACE step
+PLAYER_ADD_PLUGIN_DRIVER (eginterf_driver "" "" "" "" eginterf_driver.cc eginterf_interface.h eginterf_xdr.h)
+PLAYER_ADD_PLAYERC_CLIENT (example_client "" "" "" "" example_client.c eginterf_interface.h)

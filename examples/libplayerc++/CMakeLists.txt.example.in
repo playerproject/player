@@ -1,0 +1,32 @@
+PROJECT (playerc++_examples)
+
+# Include this CMake module to get most of the settings needed to build
+SET (CMAKE_MODULE_PATH @CMAKE_INSTALL_PREFIX@/share/cmake/Modules)
+INCLUDE (UsePlayerC++)
+
+PLAYER_ADD_PLAYERCPP_CLIENT (camera "" "" "" "" camera.cc)
+PLAYER_ADD_PLAYERCPP_CLIENT (example0 "" "" "" "" example0.cc)
+PLAYER_ADD_PLAYERCPP_CLIENT (example4 "" "" "" "" example4.cc)
+PLAYER_ADD_PLAYERCPP_CLIENT (grip "" "" "" "" grip.cc)
+PLAYER_ADD_PLAYERCPP_CLIENT (clientgraphics "" "" "" "" clientgraphics.cc)
+PLAYER_ADD_PLAYERCPP_CLIENT (clientgraphics3d "" "" "" "" clientgraphics3d.cc)
+PLAYER_ADD_PLAYERCPP_CLIENT (laserobstacleavoid "" "" "" "" laserobstacleavoid.cc)
+PLAYER_ADD_PLAYERCPP_CLIENT (ptz "" "" "" "" ptz.cc)
+PLAYER_ADD_PLAYERCPP_CLIENT (randomwalk "" "" "" "" randomwalk.cc)
+PLAYER_ADD_PLAYERCPP_CLIENT (sonarobstacleavoid "" "" "" "" sonarobstacleavoid.cc)
+PLAYER_ADD_PLAYERCPP_CLIENT (speed "" "" "" "" speech.cc)
+PLAYER_ADD_PLAYERCPP_CLIENT (wallfollow "" "" "" "" wallfollow.cc)
+
+SET (HAVE_BOOST_THREADS @USE_BOOST_THREADS@)
+SET (HAVE_BOOST_SIGNALS @USE_BOOST_SIGNALS@)
+
+IF (HAVE_BOOST_THREADS OR HAVE_BOOST_SIGNALS)
+    PLAYER_ADD_PLAYERCPP_CLIENT (example1 "" "" "" "" example1.cc)
+    PLAYER_ADD_PLAYERCPP_CLIENT (example3 "" "" "" "" example3.cc)
+    PLAYER_ADD_PLAYERCPP_CLIENT (goto "" "" "" "-DHAVE_BOOST_THREAD -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT -DHAVE_BOOST_SIGNALS" goto.cc)
+    PLAYER_ADD_PLAYERCPP_CLIENT (speech_cpp_client "" "" "" "" speech_cpp_client.cc)
+ENDIF (HAVE_BOOST_THREADS OR HAVE_BOOST_SIGNALS)
+
+IF (HAVE_BOOST_SIGNALS)
+    PLAYER_ADD_PLAYERCPP_CLIENT (example2 "" "" "" "" example2.cc)
+ENDIF (HAVE_BOOST_SIGNALS)

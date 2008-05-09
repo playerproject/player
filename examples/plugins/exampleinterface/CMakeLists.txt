@@ -31,3 +31,11 @@ ADD_LIBRARY (eginterfdriver SHARED ${example_interface_h} ${example_xdr_h} egint
 TARGET_LINK_LIBRARIES (eginterfdriver playercore)
 ADD_EXECUTABLE (example_client example_client.c ${example_interface_h})
 TARGET_LINK_LIBRARIES (example_client playerc playerxdr playererror ${PLAYERC_EXTRA_LINK_LIBRARIES} eginterf)
+
+SET (exampleCMakeLists_in ${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt.example.in)
+SET (exampleCMakeLists ${CMAKE_CURRENT_BINARY_DIR}/CMakeLists.txt.example)
+SET (exampleDestDir share/${PROJECT_NAME_LOWER}/examples/plugins/exampleinterface)
+CONFIGURE_FILE (${exampleCMakeLists_in} ${exampleCMakeLists} @ONLY)
+INSTALL (FILES ${exampleCMakeLists} DESTINATION ${exampleDestDir} RENAME CMakeLists.txt)
+INSTALL (FILES 128_example.def eginterf_client.c eginterf_client.h eginterf_driver.cc example.cfg example_client.c README
+    DESTINATION ${exampleDestDir})
