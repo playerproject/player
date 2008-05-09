@@ -1,6 +1,12 @@
 IF (BUILD_PLAYERCC)
     INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/client_libs)
 
+    SET (exampleSrcs args.h camera.cc example0.cc example4.cc grip.cc clientgraphics.cc
+                     clientgraphics3d.cc laserobstacleavoid.cc ptz.cc randomwalk.cc
+                     sonarobstacleavoid.cc speech.cc wallfollow.cc)
+    SET (exampleBoostSrcs example1.cc example3.cc goto.cc speech_cpp_client.cc)
+    SET (exampleBoostSigSrcs example2.cc)
+
     ADD_DEFINITIONS (${PLAYERCC_DEFINITIONS})
     MACRO (PLAYERCPP_ADD_EXAMPLE _name)
         ADD_EXECUTABLE (${_name} ${ARGN})
@@ -20,18 +26,28 @@ IF (BUILD_PLAYERCC)
     PLAYERCPP_ADD_EXAMPLE (speech speech.cc)
     PLAYERCPP_ADD_EXAMPLE (wallfollow wallfollow.cc)
 
+    INSTALL (FILES ${exampleSrcs} DESTINATION share/${PROJECT_NAME_LOWER}/examples/libplayerc++)
+
     IF (BUILD_PLAYERCC_BOOST)
       IF (USE_BOOST_THREADS OR USE_BOOST_SIGNALS)
           PLAYERCPP_ADD_EXAMPLE (example1 example1.cc)
           PLAYERCPP_ADD_EXAMPLE (example3 example3.cc)
           PLAYERCPP_ADD_EXAMPLE (goto goto.cc)
           PLAYERCPP_ADD_EXAMPLE (speech_cpp_client speech_cpp_client.cc)
+          INSTALL (FILES ${exampleBoostSrcs} DESTINATION share/${PROJECT_NAME_LOWER}/examples/libplayerc++)
       ENDIF (USE_BOOST_THREADS OR USE_BOOST_SIGNALS)
-  
+
       IF (USE_BOOST_SIGNALS)
           PLAYERCPP_ADD_EXAMPLE (example2 example2.cc)
+          INSTALL (FILES ${exampleBoostSigSrcs} DESTINATION share/${PROJECT_NAME_LOWER}/examples/libplayerc++)
       ENDIF (USE_BOOST_SIGNALS)
     ENDIF (BUILD_PLAYERCC_BOOST)
+
+    # Install the example CMakeLists.txt
+    SET (exampleCMakeLists_in ${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt.example.in)
+    SET (exampleCMakeLists ${CMAKE_CURRENT_BINARY_DIR}/CMakeLists.txt.example)
+    CONFIGURE_FILE (${exampleCMakeLists_in} ${exampleCMakeLists} @ONLY)
+    INSTALL (FILES ${exampleCMakeLists} DESTINATION share/${PROJECT_NAME_LOWER}/examples/libplayerc++ RENAME CMakeLists.txt)
 ELSE (BUILD_PLAYERCC)
-    MESSAGE (STATUS "playerprint will not be built - playerc++ client library is disabled")
+    MESSAGE (STATUS "playerc++ examples will not be built - playerc++ client library is disabled")
 ENDIF (BUILD_PLAYERCC)

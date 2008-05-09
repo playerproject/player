@@ -15,6 +15,9 @@
 #include <math.h>
 #include <string>
 
+#include <boost/signal.hpp>
+#include <boost/bind.hpp>
+
 #define USAGE \
   "USAGE: goto [-x <x>] [-y <y>] [-h <host>] [-p <port>] [-m]\n" \
   "       -x <x>: set the X coordinate of the target to <x>\n"\

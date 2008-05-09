@@ -2,6 +2,7 @@ CMAKE_MINIMUM_REQUIRED (VERSION 2.4 FATAL_ERROR)
 
 # Set the project name (helps Visual Studio, mainly)
 PROJECT (Player)
+STRING (TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
 # Set the package version
 SET (PLAYER_VERSION 2.2.0 CACHE STRING "Player distribution version")
 SET (PLAYER_API_VERSION 2.2 CACHE STRING "Player API version")
@@ -21,7 +22,7 @@ INCLUDE (${PLAYER_CMAKE_DIR}/internal/SetupDirectories.cmake)
 INCLUDE (${PLAYER_CMAKE_DIR}/internal/UninstallTarget.cmake)
 
 # Some options to control the build
-OPTION (PLAYER_BUILT_TESTS "Enables compilation of the test suites" ON)
+OPTION (PLAYER_BUILD_TESTS "Enables compilation of the test suites" ON)
 
 # Look for various needed things
 INCLUDE (${PLAYER_CMAKE_DIR}/internal/SearchForStuff.cmake)
@@ -52,6 +53,7 @@ IF (NOT PLAYER_OS_WIN)
     ADD_SUBDIRECTORY (utils)
     ADD_SUBDIRECTORY (doc)
 ENDIF (NOT PLAYER_OS_WIN)
+ADD_SUBDIRECTORY (cmake)
 MESSAGE (STATUS "")
 
 SET (PLAYER_EXTRA_LINK_LIBRARIES "" CACHE INTERNAL "Libs to link to" FORCE)

@@ -1,0 +1,11 @@
+PROJECT (playerc_examples)
+
+# Include this CMake module to get most of the settings needed to build
+SET (CMAKE_MODULE_PATH @CMAKE_INSTALL_PREFIX@/share/cmake/Modules)
+INCLUDE (UsePlayerC)
+
+PLAYER_ADD_PLAYERC_CLIENT (simple "" "" "" "" simple.c)
+
+PLAYER_ADD_PLAYERC_CLIENT (vmap "" "" "" "" vmap.c)
+
+PLAYER_ADD_PLAYERC_CLIENT (speech_c_client "" "" "" "" speech_c_client.c)

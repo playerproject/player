@@ -36,4 +36,4 @@ SET (sampleConfigFiles  amigobot.cfg
                         writelog.cfg
                         wsn.cfg)
 
-INSTALL (FILES ${sampleConfigFiles} DESTINATION "share/player/config")
+INSTALL (FILES ${sampleConfigFiles} DESTINATION "share/${PROJECT_NAME_LOWER}/config")

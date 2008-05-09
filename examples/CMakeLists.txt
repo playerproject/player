@@ -1,3 +1,4 @@
+MESSAGE (STATUS "===== Examples =====")
 OPTION (BUILD_EXAMPLES "Build the libplayerc, libplayerc++ and plugin examples" ON)
 
 IF (BUILD_EXAMPLES)
@@ -5,3 +6,4 @@ IF (BUILD_EXAMPLES)
     ADD_SUBDIRECTORY (libplayerc)
     ADD_SUBDIRECTORY (libplayerc++)
 ENDIF (BUILD_EXAMPLES)
+MESSAGE (STATUS "")

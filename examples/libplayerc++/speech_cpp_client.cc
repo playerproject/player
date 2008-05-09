@@ -1,6 +1,8 @@
 #include <libplayerc++/playerc++.h>
 #include <iostream>
 #include <unistd.h>
+#include <boost/signal.hpp>
+#include <boost/bind.hpp>
 
 using namespace PlayerCc;
 
