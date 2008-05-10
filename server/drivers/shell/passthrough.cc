@@ -51,6 +51,8 @@ driver.
 The passthrough driver is also able to change its remote address at runtime. To do
 this set the connect property to 0, and then change as needed the remote_host, remote_port
 and remote_index properties. When you set connect to 1, it will connect to the new address.
+Setting connect to -1 will trigger a disconnect followed by a connect allowing for seamless
+transfer to a new remote device.
 
 Subscribed clients will have all requests nack'd while the driver is disconnected.
 
@@ -301,8 +303,24 @@ int PassThrough::ProcessMessage(QueuePointer & resp_queue,
             return -1;
         if (strcmp("remote_index", req.key) == 0) 
             return -1;
-        if (strcmp("connect", req.key) == 0) 
+        if (strcmp("connect", req.key) == 0)
+        {
+            if (req.value == 0) // disconnect
+            {
+            	DisconnectRemote();
+            }
+            else if (req.value == 1) // connect
+            {
+            	ConnectRemote();
+            }
+            else if (req.value == -1) // reconnect (with new address if its changed)
+            {
+            	DisconnectRemote();
+            	ConnectRemote();
+            }
+        	
             return -1;
+        }
     }
     
     // silence warning etc while we are not connected
@@ -396,13 +414,6 @@ void PassThrough::Main() {
     {
         InQueue->Wait();
         ProcessMessages();
-        if (Connect != Connected)
-        {
-            if (Connect)
-                ConnectRemote();
-            else
-            	DisconnectRemote();
-        }
     }
 }
 
