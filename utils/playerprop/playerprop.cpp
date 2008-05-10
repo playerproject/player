@@ -121,6 +121,12 @@ int main (int argc, char *argv[])
 	case PLAYER_FIDUCIAL_CODE:
 		deviceProxy = (ClientProxy*) new FiducialProxy (&client, devIndex);
 		break;
+	case PLAYER_GRAPHICS2D_CODE:
+		deviceProxy = (ClientProxy*) new Graphics2dProxy (&client, devIndex);
+		break;
+	case PLAYER_GRAPHICS3D_CODE:
+		deviceProxy = (ClientProxy*) new Graphics3dProxy (&client, devIndex);
+		break;
 	case PLAYER_GRIPPER_CODE:
 		deviceProxy = (ClientProxy*) new GripperProxy (&client, devIndex);
 		break;

@@ -580,7 +580,7 @@ int SickNAV200::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr,
 			return 0;
 		}
 	}
-	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SET_STRPROP_REQ)) {
+	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SET_INTPROP_REQ)) {
 		player_intprop_req_t &req =
 				*reinterpret_cast<player_intprop_req_t*> (data);
 		if (strcmp("nearest", req.key) == 0) {

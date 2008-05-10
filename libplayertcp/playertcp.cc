@@ -282,9 +282,12 @@ PlayerTCP::AddClient(struct sockaddr_in* cliaddr,
   PLAYER_MSG3(1, "accepted TCP client %d on port %d, fd %d",
               j, this->clients[j].port, this->clients[j].fd);
 
+  assert (this->clients[j].queue != NULL);
+
   if(!have_lock)
     Unlock();
 
+  assert (this->clients[j].queue != NULL);
   return(this->clients[j].queue);
 }
 
@@ -456,7 +459,6 @@ PlayerTCP::Read(int timeout, bool have_lock)
     }
   }
 
-
   this->DeleteClients();
   if(!have_lock)
     Unlock();
@@ -479,6 +481,8 @@ PlayerTCP::DeleteClients()
       num_deleted++;
     }
   }
+  /* removed this block of code as it does nothing as the loop above has already killed them all
+   * is this what was intended here?
   // Delete those connections that generated errors in this iteration
   for(int i=0; i<this->num_clients; i++)
   {
@@ -487,7 +491,7 @@ PlayerTCP::DeleteClients()
       this->Close(i);
       num_deleted++;
     }
-  }
+  }*/
 
   this->num_clients -= num_deleted;
 
@@ -737,6 +741,13 @@ PlayerTCP::WriteClient(int cli)
 int
 PlayerTCP::Write(bool have_lock)
 {
+  if (have_lock)
+  {
+    int ret = pthread_mutex_trylock(&clients_mutex);
+    assert (ret == EBUSY);
+  }
+	
+	
   if(!have_lock)
     Lock();
 
@@ -748,7 +759,6 @@ PlayerTCP::Write(bool have_lock)
       this->clients[i].del = 1;
     }
   }
-
 
   this->DeleteClients();
   if(!have_lock)
@@ -771,6 +781,7 @@ PlayerTCP::ReadClient(QueuePointer q)
 int
 PlayerTCP::ReadClient(int cli)
 {
+	assert(pthread_mutex_trylock(&clients_mutex) == EBUSY);
   int numread;
   playertcp_conn_t* client;
 

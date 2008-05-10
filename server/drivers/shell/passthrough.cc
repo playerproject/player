@@ -48,6 +48,12 @@ If a device is moved around to a different computer, the clients don't have to
 be reconfigured, since the change is done only in the server running the passthrough
 driver.
 
+The passthrough driver is also able to change its remote address at runtime. To do
+this set the connect property to 0, and then change as needed the remote_host, remote_port
+and remote_index properties. When you set connect to 1, it will connect to the new address.
+
+Subscribed clients will have all requests nack'd while the driver is disconnected.
+
 @par Compile-time dependencies
 
 - none
@@ -114,6 +120,9 @@ public:
     virtual int Setup();
     virtual int Shutdown();
 
+    int ConnectRemote();
+    int DisconnectRemote();
+    
     virtual int ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, void * data);
 
 private:
@@ -125,6 +134,15 @@ private:
     player_devaddr_t srcAddr;
     //the device that this server connects to to get data
     Device *srcDevice;
+    
+    // properties
+    StringProperty RemoteHost;
+    IntProperty RemotePort;
+    IntProperty RemoteIndex;
+    
+    IntProperty Connect;
+    int Connected;
+    
 
 };
 
@@ -140,7 +158,13 @@ void PassThrough_Register(DriverTable* table) {
 
 
 PassThrough::PassThrough(ConfigFile* cf, int section)
-        : Driver(cf, section) {
+        : Driver(cf, section),
+        RemoteHost("remote_host","",false,this,cf,section),
+        RemotePort("remote_port",-1,false,this,cf,section),
+        RemoteIndex("remote_index",-1,false,this,cf,section),
+        Connect("connect",1,false,this,cf,section),
+        Connected(0)
+{
     memset(&srcAddr, 0, sizeof(player_devaddr_t));
     memset(&dstAddr, 0, sizeof(player_devaddr_t));
 
@@ -175,20 +199,13 @@ int PassThrough::Setup() {
 
     PLAYER_MSG0(1,"PassThrough driver ready");
 
-
-    srcDevice=deviceTable->GetDevice(srcAddr);
-
-    if (!srcDevice) {
-        PLAYER_ERROR3("Could not locate device [%d:%s:%d] for forwarding",
-                      srcDevice->addr.robot,::lookup_interface_name(0, srcDevice->addr.interf),
-                      srcDevice->addr.index);
-        return -1;
+    if (Connect)
+    {
+        int ret = ConnectRemote();
+        if (ret)
+            return ret;
+        
     }
-    if (srcDevice->Subscribe(this->InQueue) != 0) {
-        PLAYER_ERROR("unable to subscribe to device");
-        return -1;
-    }
-
 
     StartThread();
 
@@ -202,13 +219,65 @@ int PassThrough::Shutdown() {
 
     StopThread();
 
-    //Our clients disconnected, so let's disconnect from our SRC interface
-    srcDevice->Unsubscribe(this->InQueue);
-
+    DisconnectRemote();
+    
     PLAYER_MSG0(1,"PassThrough driver has been shutdown");
 
     return(0);
 }
+
+int PassThrough::ConnectRemote()
+{
+    if (Connected)
+        return 0;
+    
+    if (RemoteHost.GetValue()[0] != '\0')
+    {
+        PLAYER_MSG1(3,"Overriding remote hostname to %s", RemoteHost.GetValue());
+        // assume it's a string containing a hostname or IP address
+        if(hostname_to_packedaddr(&srcAddr.host, RemoteHost.GetValue()) < 0)
+        {
+          PLAYER_ERROR1("name lookup failed for host \"%s\"", RemoteHost.GetValue());
+          return -1;
+        }
+    }
+    if (RemotePort != -1)
+    {
+        PLAYER_MSG1(3,"Overriding remote robot to %d", RemotePort.GetValue());
+        srcAddr.robot = RemotePort;
+    }
+    if (RemoteIndex != -1)
+    {
+        PLAYER_MSG1(3,"Overriding remote index to %d", RemoteIndex.GetValue());
+        srcAddr.index = RemoteIndex;
+    }
+    srcDevice=deviceTable->GetDevice(srcAddr);
+
+    if (!srcDevice) {
+        PLAYER_ERROR3("Could not locate device [%d:%s:%d] for forwarding",
+                      srcDevice->addr.robot,::lookup_interface_name(0, srcDevice->addr.interf),
+                      srcDevice->addr.index);
+        return -1;
+    }
+    if (srcDevice->Subscribe(this->InQueue) != 0) {
+        PLAYER_ERROR("unable to subscribe to device");
+        return -1;
+    }
+    Connected = 1;
+    return 0;
+}
+
+int PassThrough::DisconnectRemote()
+{
+    if (Connected == 0)
+        return 0;
+    //Our clients disconnected, so let's disconnect from our SRC interface
+    srcDevice->Unsubscribe(this->InQueue);
+    
+    Connected = 0;
+    return 0;
+}
+
 
 int PassThrough::ProcessMessage(QueuePointer & resp_queue,
                                 player_msghdr * hdr,
@@ -217,8 +286,38 @@ int PassThrough::ProcessMessage(QueuePointer & resp_queue,
 
     bool inspected(false);
 
-    PLAYER_MSG0(9,"PassThrough::ProcessMessage: Received a packet!");
+    // let our properties through
+    if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SET_STRPROP_REQ)) 
+    {
+        player_strprop_req_t req = *reinterpret_cast<player_strprop_req_t*> (data);
+        if (strcmp("remote_host", req.key) == 0) 
+            return -1;
+    }
+    
+    if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SET_INTPROP_REQ)) 
+    {
+        player_intprop_req_t req = *reinterpret_cast<player_intprop_req_t*> (data);
+        if (strcmp("remote_port", req.key) == 0) 
+            return -1;
+        if (strcmp("remote_index", req.key) == 0) 
+            return -1;
+        if (strcmp("connect", req.key) == 0) 
+            return -1;
+    }
+    
+    // silence warning etc while we are not connected
+    if (!Connected)
+    {
+        if (hdr->type == PLAYER_MSGTYPE_REQ)
+        {
+            Publish(dstAddr,resp_queue,PLAYER_MSGTYPE_RESP_NACK,hdr->subtype);
+        }
+        return 0;
+    }
+        
 
+    PLAYER_MSG0(9,"PassThrough::ProcessMessage: Received a packet!");
+    
     if (Device::MatchDeviceAddress(hdr->addr,srcAddr) && 
         ((hdr->type == PLAYER_MSGTYPE_DATA) || 
          (hdr->type == PLAYER_MSGTYPE_RESP_ACK) || 
@@ -273,7 +372,6 @@ int PassThrough::ProcessMessage(QueuePointer & resp_queue,
       inspected=true;
     }
 
-
     //Check if a packet went thorugh, without being forwarded
     if (!inspected) {
         static bool reported(false);
@@ -294,12 +392,17 @@ int PassThrough::ProcessMessage(QueuePointer & resp_queue,
 
 void PassThrough::Main() {
     //The forwarding is done in the ProcessMessage method. Called once per each message by ProcessMessages()
-    while (true) {
-        pthread_testcancel();
-
+    while (true) 
+    {
+        InQueue->Wait();
         ProcessMessages();
-
-        usleep(100);
+        if (Connect != Connected)
+        {
+            if (Connect)
+                ConnectRemote();
+            else
+            	DisconnectRemote();
+        }
     }
 }
 
