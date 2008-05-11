@@ -329,7 +329,6 @@ Driver* MrIcp_Init(ConfigFile* cf, int section) // Create and return a new insta
 
 void mricp_Register(DriverTable* table)
 {
-	puts("Driver added to table"); fflush(stdout);
   	table->AddDriver("mricp", MrIcp_Init);
 }
 
