@@ -8,7 +8,7 @@ IF (XMMS)
         OUTPUT_VARIABLE xmmsLibs)
     ADD_LIBRARY (playerxmms STATIC playerxmms.c)
     TARGET_LINK_LIBRARIES (playerxmms playerc playerxdr playererror ${PLAYERC_EXTRA_LINK_LIBRARIES})
-    SET_SOURCE_FILES_PROPERTIES (${playerxmms} PROPERTIES
+    SET_SOURCE_FILES_PROPERTIES (playerxmms.c PROPERTIES
         COMPILE_FLAGS "${xmmsCFlags}")
     SET_TARGET_PROPERTIES (playerxmms PROPERTIES
         LINK_FLAGS "${xmmsLibs}")
