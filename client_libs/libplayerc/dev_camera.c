@@ -199,7 +199,7 @@ void playerc_camera_save(playerc_camera_t *device, const char *filename)
     }
     else
     {
-      printf("unsupported image format");
+      fprintf(stderr,"unsupported image format");
       break;
     }
   }
