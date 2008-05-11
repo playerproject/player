@@ -13,8 +13,8 @@ const uint32_t LIGHTCOUNT = 5;
 
 // Basic test for an dio device.
 int test_blinkenlight(playerc_client_t *client, int index) {
-    int t;
-    void *rdevice;
+    //int t;
+    //void *rdevice;
     playerc_blinkenlight_t *device;
 
     printf("device [blinkenlight] index [%d]\n", index);
