@@ -418,25 +418,32 @@ double get_range (int index)
 {
 static void python_on_blackboard_event(playerc_blackboard_t *device, player_blackboard_entry_t entry)
 {
-	PyObject *data;
-	PyObject *dict;
 	char * str;
 	int i;
 	double d;
+	PyObject *data, *entry_dict, *group_dict, *groups, *list;
+	groups = (PyObject *)PyTuple_GetItem(device->py_private,0);
+	assert(groups);
 
-	if (device->py_private == NULL)
+	group_dict = (PyObject*) PyDict_GetItemString(groups, entry.group);
+	if (!group_dict)
 	{
-		device->py_private = PyList_New(0);
+		return;
+	}
+	
+	// find our key in the group, if it exists
+	entry_dict = (PyObject*) PyDict_GetItemString(group_dict, entry.key);
+	if (!entry_dict)
+	{
+		return;
 	}
 
-	dict = PyDict_New();
-	PyDict_SetItem(dict, PyString_FromString("key"), PyString_FromString(entry.key));
-	PyDict_SetItem(dict, PyString_FromString("group"), PyString_FromString(entry.group));
-	PyDict_SetItem(dict, PyString_FromString("type"), PyLong_FromLong(entry.type));
-	PyDict_SetItem(dict, PyString_FromString("subtype"), PyLong_FromLong(entry.subtype));
-	PyDict_SetItem(dict, PyString_FromString("timestamp_sec"), PyLong_FromLong(entry.timestamp_sec));
-	PyDict_SetItem(dict, PyString_FromString("timestamp_usec"), PyLong_FromLong(entry.timestamp_usec));
-
+	PyDict_SetItemString(entry_dict, "type", PyLong_FromLong(entry.type));
+	PyDict_SetItemString(entry_dict, "subtype", PyLong_FromLong(entry.subtype));
+	PyDict_SetItemString(entry_dict, "timestamp_sec", PyLong_FromLong(entry.timestamp_sec));
+	PyDict_SetItemString(entry_dict, "timestamp_usec", PyLong_FromLong(entry.timestamp_usec));
+	list = (PyObject*)PyTuple_GetItem(device->py_private,1);
+	assert(list);
 	data = NULL;
     switch(entry.subtype)
     {
@@ -468,60 +475,148 @@ static void python_on_blackboard_event(playerc_blackboard_t *device, player_blac
     }
 
 	assert(data != NULL);
-    PyDict_SetItem(dict, PyString_FromString("data"), data);
-    PyList_Append(device->py_private, dict);
+	PyDict_SetItemString(entry_dict, "data", data);
+	
+	if (PyLong_AsLong(PyTuple_GetItem(device->py_private,2)) > 0)
+	{
+		list = (PyObject*)PyTuple_GetItem(device->py_private,1);
+		assert(list);
+		PyList_Append(list, PyDict_Copy(entry_dict));
+	}
 }
 
-	// Will always return a list object. Returns a list of dictionary objects containing the event data.
-    PyObject *get_events()
-    {
-    	PyObject *list, *copy;
-    	int i;
+// Will always return a list object. Returns a list of dictionary objects containing the event data.
+PyObject *get_events()
+{
+  PyObject *list, *copy;
+  int i, j;
+  assert(self->py_private);
 
-    	if (self->py_private == NULL)
-    	{
-    		return Py_BuildValue("[]");
-    	}
-
-    	list = (PyObject*)self->py_private;
-    	copy = PyList_New(0);
-    	for (i = 0; i < PyList_Size(list); i++)
-    	{
-    		PyList_Append(copy, PyList_GetItem(list, i));
-    	}
-
-    	Py_DECREF(list);
-    	list = NULL;
-    	return copy;
-    }
-
-  PyObject * subscribe_to_key(const char *key, const char *group)
+  list = (PyObject*)PyTuple_GetItem(self->py_private,1);
+  copy = PyList_New(0);
+  j = PyList_Size(list);
+  for (i = 0; i < j; i++)
   {
+    PyList_Append(copy, PyList_GetItem(list, 0));
+    PySequence_DelItem(list,0);
+  }
+  return copy;
+}
+
+void set_queue_events(PyObject *boolean)
+{
+  if(!PyBool_Check(boolean))
+  {
+    PyErr_SetString(PyExc_RuntimeError, "Expected a bool object.");
+    return;
+  }
+  if (boolean==Py_False)
+  {
+    PyTuple_SetItem(self->py_private,2,PyLong_FromLong(0));
+  }
+  else
+  {
+    PyTuple_SetItem(self->py_private,2,PyLong_FromLong(1));
+  }
+}
+
+void unsubscribe_from_key_py(const char *key, const char *group)
+{
+	long refcount;
+	PyObject *group_dict, *entry_dict, *groups;
+
+	groups = (PyObject *)PyTuple_GetItem(self->py_private,0);
+	assert(groups);
+
+	group_dict = (PyObject*) PyDict_GetItemString(groups, group);
+	if (!group_dict)
+	{
+		PyErr_SetString(PyExc_RuntimeError, "Group does not exist");
+		return;
+	}
+	
+	// find our key in the group, if it exists
+	entry_dict = (PyObject*) PyDict_GetItemString(group_dict, key);
+	if (!entry_dict)
+	{
+		PyErr_SetString(PyExc_RuntimeError, "Key does not exist");
+		return;
+	}
+	refcount = PyLong_AsLong(PyDict_GetItemString(entry_dict, "___refcount"));
+	if(refcount==0)
+	{
+		PyErr_SetString(PyExc_RuntimeError, "No subscription to key to unsubscribe from.");
+		return;
+	}
+	if(refcount==1)
+	{
+		playerc_blackboard_unsubscribe_from_key(self, key, group);
+	}
+	PyDict_SetItemString(entry_dict, "___refcount", PyLong_FromLong(refcount-1));
+}
+
+PyObject * subscribe_to_key_py(const char *key, const char *group)
+{
 	char *str;
-	int i;
+	int i, result, refcount;
 	double d;
-	PyObject *data, *dict;
+	PyObject *data, *entry_dict, *group_dict, *groups;
 	player_blackboard_entry_t *entry;
 
+	groups = (PyObject *)PyTuple_GetItem(self->py_private,0);
+	assert(groups);
+	// grab our group dict, if it doesnt exist create a new one
+	group_dict = (PyObject*) PyDict_GetItemString(groups, group);
+	if (!group_dict)
+	{
+		group_dict = PyDict_New();
+		assert (group_dict);
+		result = PyDict_SetItemString(groups,group,group_dict);
+		if (result != 0)
+		{
+			PyErr_SetString(PyExc_RuntimeError, "Failed to set group key");
+			return Py_None;
+		}
+	}
+	// find our key in the group, if it exists, create it if not
+	entry_dict = (PyObject*) PyDict_GetItemString(group_dict, key);
+	if (!entry_dict)
+	{
+		entry_dict = PyDict_New();
+		assert (entry_dict);
+		PyDict_SetItemString(entry_dict, "key", PyString_FromString(key));
+		PyDict_SetItemString(entry_dict, "group", PyString_FromString(group));
+		PyDict_SetItemString(entry_dict, "___refcount", PyLong_FromLong(1));
+	}
+	else
+	{
+		// key already exists, so increment our ref count and return current value
+		refcount = PyLong_AsLong(PyDict_GetItemString(entry_dict, "___refcount"));
+		if(refcount>=1000)
+		{
+			PyErr_SetString(PyExc_RuntimeError, "Reached over 1000 subscriptions");
+		}
+		if(refcount!=0)
+		{
+			PyDict_SetItemString(entry_dict, "___refcount", PyLong_FromLong(refcount+1));
+			Py_INCREF(entry_dict);
+			return entry_dict;
+		}
+	}
 	assert(self);
-	int result = playerc_blackboard_subscribe_to_key(self, key, group, &entry);
+	result = playerc_blackboard_subscribe_to_key(self, key, group, &entry);
 	if (result != 0)
 	{
-		return NULL;
+		PyErr_SetString(PyExc_RuntimeError, "Failed to subscribe to key");
+		return Py_None;
 	}
-
 	assert(entry);
 	assert(entry->key);
 	assert(entry->key_count > 0);
-
-	dict = PyDict_New();
-	PyDict_SetItem(dict, PyString_FromString("key"), PyString_FromString(entry->key));
-	PyDict_SetItem(dict, PyString_FromString("group"), PyString_FromString(entry->group));
-	PyDict_SetItem(dict, PyString_FromString("type"), PyLong_FromLong(entry->type));
-	PyDict_SetItem(dict, PyString_FromString("subtype"), PyLong_FromLong(entry->subtype));
-	PyDict_SetItem(dict, PyString_FromString("timestamp_sec"), PyLong_FromLong(entry->timestamp_sec));
-	PyDict_SetItem(dict, PyString_FromString("timestamp_usec"), PyLong_FromLong(entry->timestamp_usec));
-
+	PyDict_SetItemString(entry_dict, "type", PyLong_FromLong(entry->type));
+	PyDict_SetItemString(entry_dict, "subtype", PyLong_FromLong(entry->subtype));
+	PyDict_SetItemString(entry_dict, "timestamp_sec", PyLong_FromLong(entry->timestamp_sec));
+	PyDict_SetItemString(entry_dict, "timestamp_usec", PyLong_FromLong(entry->timestamp_usec));
     switch(entry->subtype)
     {
     	case PLAYERC_BLACKBOARD_DATA_SUBTYPE_NONE:
@@ -551,15 +646,48 @@ static void python_on_blackboard_event(playerc_blackboard_t *device, player_blac
     	break;
 
     }
-
-    PyDict_SetItem(dict, PyString_FromString("data"), data);
+    PyDict_SetItemString(entry_dict, "data", data);
+	result = PyDict_SetItemString(group_dict,key,entry_dict);
+	if (result != 0)
+	{
+		PyErr_SetString(PyExc_RuntimeError, "Failed to create key dictionary entry");
+		return Py_None;
+	}
     free(entry->key);
     free(entry->group);
     free(entry->data);
     free(entry);
-    return dict;
+    Py_INCREF(entry_dict);
+    return entry_dict;
   }
 
+PyObject * subscribe_to_key(const char *key, const char *group)
+{
+	return playerc_blackboard_subscribe_to_key_py( self, key, group);
+}
+
+PyObject * get_value(const char *key, const char *group)
+{
+	PyObject *group_dict, *entry_dict, *groups;
+	int refcount;
+	
+	groups = (PyObject *)PyTuple_GetItem(self->py_private,0);
+	assert(groups);
+
+	group_dict = (PyObject*) PyDict_GetItemString(groups, group);
+	if (!group_dict)
+		return playerc_blackboard_subscribe_to_key_py( self, key, group);
+	// find our key in the group, if it exists
+	entry_dict = (PyObject*) PyDict_GetItemString(group_dict, key);
+	if (!entry_dict)
+		return playerc_blackboard_subscribe_to_key_py( self, key, group);
+	refcount = PyLong_AsLong(PyDict_GetItemString(entry_dict, "___refcount"));
+	if(refcount==0)
+		return playerc_blackboard_subscribe_to_key_py( self, key, group);
+	Py_INCREF(entry_dict);
+	return entry_dict;
+}
+  
   void set_entry_raw(player_blackboard_entry_t *entry)
   {
     playerc_blackboard_set_entry(self,entry);
@@ -581,7 +709,7 @@ static void python_on_blackboard_event(playerc_blackboard_t *device, player_blac
 
 	if (!PyDict_Check(dict))
 	{
-		printf("Expected a dictionary object.\n");
+		PyErr_SetString(PyExc_RuntimeError, "Expected a dictionary object.");
 		return PyLong_FromLong(-1);
 	}
 
@@ -598,43 +726,43 @@ static void python_on_blackboard_event(playerc_blackboard_t *device, player_blac
 
 	if (key == NULL || group == NULL || type == NULL || subtype == NULL || timestamp_sec == NULL || timestamp_usec == NULL || data == NULL)
 	{
-		printf("Dictionary object missing keys.\n");
+		PyErr_SetString(PyExc_RuntimeError, "Dictionary object missing keys.");
 		return PyLong_FromLong(-1);
 	}
 
 	if (!PyString_Check(key))
 	{
-		printf("key should be a string type.\n");
+		PyErr_SetString(PyExc_RuntimeError, "key should be a string type.");
 		return PyLong_FromLong(-1);
 	}
 
 	if (!PyString_Check(group))
 	{
-		printf("group should be a string type.\n");
+		PyErr_SetString(PyExc_RuntimeError, "group should be a string type.");
 		return PyLong_FromLong(-1);
 	}
 
 	if (!PyLong_Check(type))
 	{
-		printf("type should be a long type.\n");
+		PyErr_SetString(PyExc_RuntimeError, "type should be a long type.");
 		return PyLong_FromLong(-1);
 	}
 
 	if (!PyLong_Check(subtype))
 	{
-		printf("subtype should be a long type.\n");
+		PyErr_SetString(PyExc_RuntimeError, "subtype should be a long type.");
 		return PyLong_FromLong(-1);
 	}
 
 	if (!PyLong_Check(timestamp_sec))
 	{
-		printf("timestamp_sec should be a long type.\n");
+		PyErr_SetString(PyExc_RuntimeError, "timestamp_sec should be a long type.");
 		return PyLong_FromLong(-1);
 	}
 
 	if (!PyLong_Check(timestamp_usec))
 	{
-		printf("timestamp_usec should be a long type.\n");
+		PyErr_SetString(PyExc_RuntimeError, "timestamp_usec should be a long type");
 		return PyLong_FromLong(-1);
 	}
 
@@ -656,12 +784,11 @@ static void python_on_blackboard_event(playerc_blackboard_t *device, player_blac
     	case PLAYERC_BLACKBOARD_DATA_SUBTYPE_STRING:
     		if (!PyString_Check(data))
     		{
-    			printf("data should be a string type.\n");
+    			PyErr_SetString(PyExc_RuntimeError, "data should be a string type.");
     			return PyLong_FromLong(-1);
     		}
     		str = NULL;
     		str = PyString_AsString(data);
-    		printf("str=%s\n", str);
     		length = strlen(str) + 1;
     		entry.data = malloc(length);
     		assert(entry.data);
@@ -671,7 +798,7 @@ static void python_on_blackboard_event(playerc_blackboard_t *device, player_blac
     	case PLAYERC_BLACKBOARD_DATA_SUBTYPE_INT:
     		if (!PyLong_Check(data))
     		{
-    			printf("data should be a long type.\n");
+    			PyErr_SetString(PyExc_RuntimeError, "data should be a long type.");
     			return PyLong_FromLong(-1);
     		}
     		i = 0;
@@ -685,7 +812,7 @@ static void python_on_blackboard_event(playerc_blackboard_t *device, player_blac
     	case PLAYERC_BLACKBOARD_DATA_SUBTYPE_DOUBLE:
     		if (!PyLong_Check(data))
     		{
-    			printf("data should be a long type.\n");
+    			PyErr_SetString(PyExc_RuntimeError, "data should be a long type.");
     			return PyLong_FromLong(-1);
     		}
     		d = 0.0;
@@ -701,17 +828,6 @@ static void python_on_blackboard_event(playerc_blackboard_t *device, player_blac
     		entry.data_count = 0;
     	break;
     }
-
-	printf("entry:\n");
-	printf("key:%s\n", entry.key);
-	printf("key_count:%d\n", entry.key_count);
-	printf("group:%s\n", entry.group);
-	printf("data:%s\n", (char*)entry.data);
-	printf("data_count:%d\n", entry.data_count);
-	printf("timestamp_sec:%d\n", entry.timestamp_sec);
-	printf("timestamp_usec:%d\n", entry.timestamp_usec);
-	printf("type:%d\n", entry.type);
-	printf("subtype:%d\n", entry.subtype);
     result = playerc_blackboard_set_entry(self, &entry);
     if (result != 0)
     {
@@ -728,14 +844,17 @@ static void python_on_blackboard_event(playerc_blackboard_t *device, player_blac
 // It performs the same functionality, but points the callback function to the new python one.
 playerc_blackboard_t *python_playerc_blackboard_create(playerc_client_t *client, int index)
 {
-      playerc_blackboard_t *device= playerc_blackboard_create(client, index);
-      if (device == NULL)
-      {
-        return NULL;
-      }
-
-      device->on_blackboard_event = playerc_blackboard_python_on_blackboard_event;
-      return device;
+  playerc_blackboard_t *device= playerc_blackboard_create(client, index);
+  if (device == NULL)
+  {
+    PyErr_SetString(PyExc_RuntimeError, "Failed to create blackboard");
+    return NULL;
+  }
+  
+  device->py_private = Py_BuildValue("({},[],i)",0); // tuple of a dict and a list to store our keys and events in
+  
+  device->on_blackboard_event = playerc_blackboard_python_on_blackboard_event;
+  return device;
 
 }
 #undef new_playerc_blackboard

@@ -675,7 +675,13 @@ int playerc_client_read_nonblock_withproxy(playerc_client_t *client, void ** pro
           client->data_received = 1;
           if (result == NULL)
           {
-          	PLAYERC_WARN ("Failed to dispatch data message");
+          	PLAYERC_WARN1 ("Failed to dispatch data message: subtype %d", header.subtype);
+            printf("address: %u:%u:%s:%u\nsize: %u",
+                   header.addr.host,
+                   header.addr.robot,
+                   interf_to_str(header.addr.interf),
+                   header.addr.index,
+                   header.size);
             return -1;
           }
           break;
