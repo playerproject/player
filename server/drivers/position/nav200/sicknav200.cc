@@ -190,6 +190,9 @@ protected:
 	// the current quality report
 	IntProperty Quality;
 
+	// the threshold for quality. Treat anything less than this threshold as a stall
+	IntProperty QualityThreshold;
+	
 	// number of values for slifing mean
 	IntProperty SmoothingInput;
 	
@@ -256,6 +259,7 @@ SickNAV200::SickNAV200(ConfigFile* cf, int section) :
 	AutoFullMapCount("autofullmapcount", 0, false, this, cf, section), 
 	StallCount(0), 
 	Quality("quality", 0,true, this, cf, section),
+	QualityThreshold("quality_threshold", 0,true, this, cf, section),
 	SmoothingInput("smoothing_input", 4, false, this, cf, section),
 	NavUpdateRequestDelay("update_request_delay",DEFAULT_NAV_REQUEST_DELAY_USECS,false,this,cf,section),
 	TimingLogFilename("timing_log","",true,this,cf,section),
@@ -723,7 +727,7 @@ void SickNAV200::Main() {
 			
 			//printf("Got reading: quality %d\n", Reading.quality);
 			if (Reading.quality==0xFF || Reading.quality==0xFE
-					|| Reading.quality==0x00) {
+					|| Reading.quality<=QualityThreshold) {
 				data_packet.stall = 1;
 				StallCount = StallCount + 1;
 				Quality = 0;
