@@ -316,9 +316,9 @@ int
   else 			// SCIP_Version = 3 (TOP-URG)
   {
     // HACK: should ask the device, but for now just hardcode it:
-    cfg->min_angle = DTOR(-135.0);
-    cfg->max_angle = DTOR(135.0);
-    cfg->resolution = DTOR(270.0/1128.0);
+    cfg->min_angle = DTOR(-141.0);
+    cfg->max_angle = DTOR(141.0);
+    cfg->resolution = DTOR(282.0/1128.0);
     cfg->max_range = 30.0;
 
     printf ("> I: TOP-URG specifications: [min_angle, max_angle, resolution, max_range] = [%f, %f, %f, %f]\n",
