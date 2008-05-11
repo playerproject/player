@@ -133,7 +133,7 @@ int playerc_localize_set_pose(playerc_localize_t *device, double pose[3], double
                             PLAYER_LOCALIZE_REQ_SET_POSE,
                             &req, NULL) < 0)
   {
-    printf("%s\n", playerc_error_str());
+    PLAYERC_WARN1("%s\n", playerc_error_str());
     return -1;
   }
 
