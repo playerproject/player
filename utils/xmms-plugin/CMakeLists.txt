@@ -3,9 +3,11 @@ FIND_PROGRAM (XMMS NAMES xmms-config)
 IF (XMMS)
     INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/client_libs)
     EXECUTE_PROCESS (COMMAND xmms-config --cflags
-        OUTPUT_VARIABLE xmmsCFlags)
+        OUTPUT_VARIABLE xmmsCFlags
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
     EXECUTE_PROCESS (COMMAND xmms-config --libs
-        OUTPUT_VARIABLE xmmsLibs)
+        OUTPUT_VARIABLE xmmsLibs
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
     ADD_LIBRARY (playerxmms STATIC playerxmms.c)
     TARGET_LINK_LIBRARIES (playerxmms playerc playerxdr playererror ${PLAYERC_EXTRA_LINK_LIBRARIES})
     SET_SOURCE_FILES_PROPERTIES (playerxmms.c PROPERTIES
