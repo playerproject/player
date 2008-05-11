@@ -323,7 +323,7 @@ void TCPStream::Main()
 
     if (connected)
     {
-    	// Reads the data from the serial port and then publishes it
+    	// Reads the data from the tcp server and then publishes it
     	ReadData();
     }
     else
@@ -333,7 +333,7 @@ void TCPStream::Main()
     }
 
     // Sleep (you might, for example, block on a read() instead)
-    usleep(100000);
+    usleep(1000);
   }
 }
 
