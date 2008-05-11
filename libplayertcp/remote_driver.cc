@@ -373,11 +373,13 @@ TCPRemoteDriver::Update()
   if(this->ptcp->thread == pthread_self())
   {
     //this->ptcp->Read(0,true);
+    this->ptcp->Lock();
     this->ptcp->ReadClient(this->queue);
+    this->ptcp->Unlock();
   }
   this->ProcessMessages();
   if(this->ptcp->thread == pthread_self())
-    this->ptcp->Write(true);
+    this->ptcp->Write(false);
 }
 
 int 
