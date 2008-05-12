@@ -4,8 +4,8 @@ PROJECT (playerc_examples)
 SET (CMAKE_MODULE_PATH @CMAKE_INSTALL_PREFIX@/share/cmake/Modules)
 INCLUDE (UsePlayerC)
 
-PLAYER_ADD_PLAYERC_CLIENT (simple "" "" "" "" simple.c)
+PLAYER_ADD_PLAYERC_CLIENT (simple SOURCES simple.c)
 
-PLAYER_ADD_PLAYERC_CLIENT (vmap "" "" "" "" vmap.c)
+PLAYER_ADD_PLAYERC_CLIENT (vmap SOURCES vmap.c)
 
-PLAYER_ADD_PLAYERC_CLIENT (speech_c_client "" "" "" "" speech_c_client.c)
+PLAYER_ADD_PLAYERC_CLIENT (speech_c_client SOURCES speech_c_client.c)

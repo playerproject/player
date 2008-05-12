@@ -1,5 +1,6 @@
 SET (playerModules UsePlayerC.cmake
-                   UsePlayerPlugin.cmake)
+                   UsePlayerPlugin.cmake
+                   PlayerUtils.cmake)
 INSTALL (FILES ${playerModules} DESTINATION share/cmake/Modules/)
 
 IF (BUILD_PLAYERCC)

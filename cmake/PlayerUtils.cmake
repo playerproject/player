@@ -135,3 +135,49 @@ MACRO (CHECK_PACKAGE_EXISTS _package _result _includeDir _libDir _linkFlags _cFl
         SET (${_result} TRUE)
     ENDIF (${_includeDir} OR ${_libDir} OR ${_linkFlags} OR ${_cFlags})
 ENDMACRO (CHECK_PACKAGE_EXISTS)
+
+
+###############################################################################
+# Macro to turn a list into a string (why doesn't CMake have this built-in?)
+MACRO (LIST_TO_STRING _string _list)
+    SET (${_string})
+    FOREACH (_item ${_list})
+        SET (${_string} "${${_string}} ${_item}")
+    ENDFOREACH (_item)
+ENDMACRO (LIST_TO_STRING)
+
+
+###############################################################################
+# This macro processes a list of arguments into separate lists based on
+# keywords found in the argument stream. For example:
+# BUILDBLAG (miscArg INCLUDEDIRS /usr/include LIBDIRS /usr/local/lib
+#            LINKFLAGS -lthatawesomelib CFLAGS -DUSEAWESOMELIB SOURCES blag.c)
+# Any other args found at the start of the stream will go into the variable
+# specified in _otherArgs. Typically, you would take arguments to your macro
+# as normal, then pass ${ARGN} to this macro to parse the dynamic-length
+# arguments (so if ${_otherArgs} comes back non-empty, you've ignored something
+# or the user has passed in some arguments without a keyword).
+MACRO (PLAYER_PROCESS_ARGUMENTS _sourcesArgs _includeDirsArgs _libDirsArgs _linkFlagsArgs _cFlagsArgs _otherArgs)
+    SET (${_sourcesArgs})
+    SET (${_includeDirsArgs})
+    SET (${_libDirsArgs})
+    SET (${_linkFlagsArgs})
+    SET (${_cFlagsArgs})
+    SET (${_otherArgs})
+    SET (_currentDest ${_otherArgs})
+    FOREACH (_arg ${ARGN})
+        IF (_arg STREQUAL "SOURCES")
+            SET (_currentDest ${_sourcesArgs})
+        ELSEIF (_arg STREQUAL "INCLUDEDIRS")
+            SET (_currentDest ${_includeDirsArgs})
+        ELSEIF (_arg STREQUAL "LIBDIRS")
+            SET (_currentDest ${_libDirsArgs})
+        ELSEIF (_arg STREQUAL "LINKFLAGS")
+            SET (_currentDest ${_linkFlagsArgs})
+        ELSEIF (_arg STREQUAL "CFLAGS")
+            SET (_currentDest ${_cFlagsArgs})
+        ELSE (_arg STREQUAL "SOURCES")
+            LIST (APPEND ${_currentDest} ${_arg})
+        ENDIF (_arg STREQUAL "SOURCES")
+    ENDFOREACH (_arg)
+ENDMACRO (PLAYER_PROCESS_ARGUMENTS)

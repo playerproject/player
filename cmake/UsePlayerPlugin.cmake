@@ -1,4 +1,5 @@
 CMAKE_MINIMUM_REQUIRED (VERSION 2.4 FATAL_ERROR)
+INCLUDE (PlayerUtils)
 
 INCLUDE (UsePkgConfig)
 PKGCONFIG (playerc PLUGIN_PLAYERC_INC_DIR PLUGIN_PLAYERC_LINK_DIR PLUGIN_PLAYERC_LINK_FLAGS PLUGIN_PLAYERC_CFLAGS)
@@ -38,15 +39,22 @@ ENDMACRO (PROCESS_XDR)
 
 
 ###############################################################################
-# Macro to build a plugin driver. Pass all source files as extra arguments.
+# Macro to build a plugin driver.
 # _driverName: The name of the driver library to create
-# _includeDirs, _libDirs, _linkFlags, _cFlags: extra include directories, lib
-# directories, global link flags and global compile flags necessary to compile
-# the driver.
-MACRO (PLAYER_ADD_PLUGIN_DRIVER _driverName _includeDirs _libDirs _linkFlags _cFLags)
-    IF (NOT ${ARGC} GREATER 5)
-        MESSAGE (FATAL_ERROR "No sources specified to PLAYER_ADD_PLUGIN_DRIVER. Did you remember to include blank strings for unused arguments?")
-    ENDIF (NOT ${ARGC} GREATER 5)
+# Pass source files, flags, etc. as extra args preceded by keywords as follows:
+# SOURCES <source file list>
+# INCLUDEDIRS <include directories list>
+# LIBDIRS <library directories list>
+# LINKFLAGS <link flags list>
+# CFLAGS <compile flags list>
+# See the examples directory (typically, ${prefix}/share/player/examples) for
+# example CMakeLists.txt files.
+MACRO (PLAYER_ADD_PLUGIN_DRIVER _driverName)
+    PLAYER_PROCESS_ARGUMENTS (_srcs _includeDirs _libDirs _linkFlags _cFlags _junk ${ARGN})
+    IF (_junk)
+        MESSAGE (STATUS "WARNING: unkeyworded arguments found in PLAYER_ADD_PLUGIN_DRIVER: ${_junk}")
+    ENDIF (_junk)
+    LIST_TO_STRING (_cFlags "${_cFlags}")
 
     IF (_includeDirs OR PLAYERCORE_INC_DIR)
         INCLUDE_DIRECTORIES (${_includeDirs} ${PLAYERC_INC_DIR})
@@ -55,7 +63,7 @@ MACRO (PLAYER_ADD_PLUGIN_DRIVER _driverName _includeDirs _libDirs _linkFlags _cF
         LINK_DIRECTORIES (${_libDirs} ${PLAYERC_LINK_DIR})
     ENDIF (_libDirs OR PLAYERCORE_LINK_DIR)
 
-    ADD_LIBRARY (${_driverName} SHARED ${ARGN})
+    ADD_LIBRARY (${_driverName} SHARED ${_srcs})
     SET_TARGET_PROPERTIES (${_driverName} PROPERTIES
         LINK_FLAGS ${PLAYERCORE_LINK_FLAGS} ${_linkFlags}
         INSTALL_RPATH ${PLAYERCORE_LIBDIR}
@@ -65,7 +73,7 @@ MACRO (PLAYER_ADD_PLUGIN_DRIVER _driverName _includeDirs _libDirs _linkFlags _cF
     # (this allows the user to specify individual cflags for each source file
     # without the global ones overriding them).
     IF (PLAYERCORE_CFLAGS OR _cFLags)
-        FOREACH (_file ${ARGN})
+        FOREACH (_file ${_srcs})
             GET_SOURCE_FILE_PROPERTY (_fileCFlags ${_file} COMPILE_FLAGS)
             IF (_fileCFlags STREQUAL NOTFOUND)
                 SET (_newCFlags "${PLAYERCORE_CFLAGS} ${_cFlags}")
@@ -80,23 +88,31 @@ ENDMACRO (PLAYER_ADD_PLUGIN_DRIVER)
 
 
 ###############################################################################
-# Macro to build a plugin interface. Pass all source files as extra arguments.
-# This macro will create generated sources prefixed with the
+# Macro to build a plugin interface.
+# This macro will create generated sources prefixed with the interface name
 # _interfName: The name of the interface library (not the interface itself!)
 #              to create
 # _interfDef: The interface definition file
-# _includeDirs, _libDirs, _linkFlags, _cFlags: extra include directories, lib
-# directories, global link flags and global compile flags necessary to compile
-# the driver.
+#
+# Pass source files, flags, etc. as extra args preceded by keywords as follows:
+# SOURCES <source file list>
+# INCLUDEDIRS <include directories list>
+# LIBDIRS <library directories list>
+# LINKFLAGS <link flags list>
+# CFLAGS <compile flags list>
+# See the examples directory (typically, ${prefix}/share/player/examples) for
+# example CMakeLists.txt files.
 INCLUDE (FindPythonInterp)
-MACRO (PLAYER_ADD_PLUGIN_INTERFACE _interfName _interfDef _includeDirs _libDirs _linkFlags _cFLags)
+MACRO (PLAYER_ADD_PLUGIN_INTERFACE _interfName _interfDef)
     IF (NOT PYTHONINTERP_FOUND)
         MESSAGE (FATAL_ERROR "No Python interpreter found. Cannot continue.")
     ENDIF (NOT PYTHONINTERP_FOUND)
 
-    IF (NOT ${ARGC} GREATER 6)
-        MESSAGE (FATAL_ERROR "No sources specified to PLAYER_ADD_PLUGIN_INTERFACE. Did you remember to include blank strings for unused arguments?")
-    ENDIF (NOT ${ARGC} GREATER 6)
+    PLAYER_PROCESS_ARGUMENTS (_srcs _includeDirs _libDirs _linkFlags _cFlags _junk ${ARGN})
+    IF (_junk)
+        MESSAGE (STATUS "WARNING: unkeyworded arguments found in PLAYER_ADD_PLUGIN_DRIVER: ${_junk}")
+    ENDIF (_junk)
+    LIST_TO_STRING (_cFlags "${_cFlags}")
 
     IF (_includeDirs OR PLUGIN_PLAYERC_INC_DIR)
         INCLUDE_DIRECTORIES (${_includeDirs} ${PLUGIN_PLAYERC_INC_DIR} ${CMAKE_CURRENT_BINARY_DIR})
@@ -116,7 +132,7 @@ MACRO (PLAYER_ADD_PLUGIN_INTERFACE _interfName _interfDef _includeDirs _libDirs 
     PROCESS_XDR (${interface_h} ${xdr_h} ${xdr_c})
     SET_SOURCE_FILES_PROPERTIES (${xdr_c} PROPERTIES COMPILE_FLAGS ${PLUGIN_PLAYERC_CFLAGS})
 
-    ADD_LIBRARY (${_interfName} SHARED ${interface_h} ${functiontable_c} ${xdr_h} ${xdr_c} ${ARGN})
+    ADD_LIBRARY (${_interfName} SHARED ${interface_h} ${functiontable_c} ${xdr_h} ${xdr_c} ${_srcs})
     SET_TARGET_PROPERTIES (${_interfName} PROPERTIES
         LINK_FLAGS ${PLUGIN_PLAYERC_LINK_FLAGS} ${_linkFlags}
         INSTALL_RPATH ${PLAYERCORE_LIBDIR}
@@ -126,7 +142,7 @@ MACRO (PLAYER_ADD_PLUGIN_INTERFACE _interfName _interfDef _includeDirs _libDirs 
     # (this allows the user to specify individual cflags for each source file
     # without the global ones overriding them).
     IF (PLAYERCORE_CFLAGS OR _cFLags)
-        FOREACH (_file ${ARGN})
+        FOREACH (_file ${_srcs})
             GET_SOURCE_FILE_PROPERTY (_fileCFlags ${_file} COMPILE_FLAGS)
             IF (_fileCFlags STREQUAL NOTFOUND)
                 SET (_newCFlags "${PLUGIN_PLAYERC_CFLAGS} ${_cFlags}")

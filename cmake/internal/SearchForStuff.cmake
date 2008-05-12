@@ -1,4 +1,4 @@
-INCLUDE (${PLAYER_CMAKE_DIR}/internal/Utils.cmake)
+INCLUDE (${PLAYER_CMAKE_DIR}/PlayerUtils.cmake)
 
 INCLUDE (CheckFunctionExists)
 INCLUDE (CheckIncludeFiles)
