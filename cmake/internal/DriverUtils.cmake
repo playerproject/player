@@ -7,7 +7,7 @@
 # cross-directory bugs between those files, which is risky when we're having driver authors
 # maintain their own.
 
-INCLUDE (${PLAYER_CMAKE_DIR}/internal/Utils.cmake)
+INCLUDE (${PLAYER_CMAKE_DIR}/PlayerUtils.cmake)
 
 SET (PLAYER_BUILT_DRIVERS_DESC "List of drivers that will be built")
 SET (PLAYER_BUILT_DRIVEREXTRAS_DESC "List of extra components for playerdrivers that will be built")

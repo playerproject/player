@@ -5,5 +5,5 @@ SET (CMAKE_MODULE_PATH @CMAKE_INSTALL_PREFIX@/share/cmake/Modules)
 INCLUDE (UsePlayerPlugin)
 INCLUDE (UsePlayerC)
 
-PLAYER_ADD_PLUGIN_DRIVER (opaquedriver "" "" "" "" opaquedriver.cc)
-PLAYER_ADD_PLAYERC_CLIENT (opaque "" "" "" "" opaque.c)
+PLAYER_ADD_PLUGIN_DRIVER (opaquedriver SOURCES opaquedriver.cc)
+PLAYER_ADD_PLAYERC_CLIENT (opaque SOURCES opaque.c)

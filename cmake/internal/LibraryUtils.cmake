@@ -1,5 +1,5 @@
 # Useful macros for building the Player libraries
-INCLUDE (${PLAYER_CMAKE_DIR}/internal/Utils.cmake)
+INCLUDE (${PLAYER_CMAKE_DIR}/PlayerUtils.cmake)
 
 ###############################################################################
 # PLAYER_ADD_LIBRARY (_name)

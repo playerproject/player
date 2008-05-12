@@ -1,4 +1,4 @@
-INCLUDE (${PLAYER_CMAKE_DIR}/internal/Utils.cmake)
+INCLUDE (${PLAYER_CMAKE_DIR}/PlayerUtils.cmake)
 
 CHECK_PACKAGE_EXISTS (gsl haveGSL gslIncludeDir gslLibDir gslLinkFlags gslCFlags)
 # The GSL pkg-config gives an almost-empty cflags, containing only a new line.
