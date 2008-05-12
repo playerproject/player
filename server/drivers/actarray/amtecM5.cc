@@ -28,15 +28,6 @@
  * For precise timing, use a recent Linux kernel (2.6.19 should have the hrtimers code inside)
  */
 
-// ONLY if you need something that was #define'd as a result of configure
-// (e.g., HAVE_CFMAKERAW), then #include <config.h>, like so:
-/*
-#include <config.h>
-*/
-
-//#include <unistd.h>
-//#include <string.h>
-
 #include <libplayercore/playercore.h>
 
 #include <algorithm>
@@ -45,13 +36,9 @@
 #include <vector>
 #include <set>
 
-// These flags are needed by Device.h
-// They should probably be moved to -D flags on the compile of this program
-// As they are, they assume a Linux system
-#define __LINUX__
-#define UNIX
-#define LINUX
-
+//Device.h needs some definitions choosing the operating system, it has only been tested
+// on Linux systems, so the default flags are __LINUX__ , UNIX , and LINUX
+//Currently, they are set explicitely in the CMakeLists.txt file
 #include "Device.h"
 
 const float initSpeed=0.2; //Rads/s
@@ -70,6 +57,7 @@ const float initAccel=0.2; //rads/s/s
 
 
 using namespace std;
+const unsigned int PLAYER_ACTARRAY_NUM_ACTUATORS=16;
 
 
 //This function returns the difference in mS between two timeval structures
@@ -302,7 +290,7 @@ AmtecM5::AmtecM5(ConfigFile* cf, int section)
 	highpriority = cf->ReadInt(section, "highpriority", 0);
 
 	actuators = NULL;
-	acuatorsGeom = NULL;
+	actuatorsGeom = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
