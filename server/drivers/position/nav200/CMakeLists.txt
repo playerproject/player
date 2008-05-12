@@ -1,6 +1,6 @@
 SET (sicknav200Srcs sicknav200.cc nav200.cc)
 PLAYERDRIVER_OPTION (sicknav200 build_sicknav200 ON)
-PLAYERDRIVER_ADD_DRIVER_SIMPLE (sicknav200 build_sicknav200 ${sicknav200Srcs})
+PLAYERDRIVER_ADD_DRIVER (sicknav200 build_sicknav200 SOURCES ${sicknav200Srcs})
 
 ADD_EXECUTABLE (test_program_init test_program_init.cpp ${sicknav200Srcs})
 TARGET_LINK_LIBRARIES (test_program_init playercore playererror playerutils playerxdr ${PLAYER_EXTRA_LINK_LIBRARIES})

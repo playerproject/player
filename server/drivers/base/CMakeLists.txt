@@ -1,1 +1,1 @@
-PLAYERDRIVER_ADD_EXTRA (base "" "" "" "" imagebase.cc)
+PLAYERDRIVER_ADD_EXTRA (base SOURCES imagebase.cc)

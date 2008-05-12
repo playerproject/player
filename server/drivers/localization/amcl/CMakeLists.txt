@@ -29,4 +29,4 @@ ELSE (INCLUDE_RTKGUI)
     SET (cFlags)
 ENDIF (INCLUDE_RTKGUI)
 
-PLAYERDRIVER_ADD_DRIVER (amcl build_amcl "" "" "${linkFlags}" "${cFlags}" ${amclSrcs})
+PLAYERDRIVER_ADD_DRIVER (amcl build_amcl LINKFLAGS "${linkFlags}" CFLAGS "${cFlags}" SOURCES ${amclSrcs})

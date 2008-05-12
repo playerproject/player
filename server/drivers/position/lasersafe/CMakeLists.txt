@@ -1,2 +1,2 @@
 PLAYERDRIVER_OPTION (lasersafe build_lasersafe ON)
-PLAYERDRIVER_ADD_DRIVER_SIMPLE (lasersafe build_lasersafe lasersafe.cc)
+PLAYERDRIVER_ADD_DRIVER (lasersafe build_lasersafe SOURCES lasersafe.cc)

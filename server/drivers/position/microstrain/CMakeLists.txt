@@ -1,2 +1,2 @@
 PLAYERDRIVER_OPTION (microstrain build_microstrain ON)
-PLAYERDRIVER_ADD_DRIVER_SIMPLE (microstrain build_microstrain 3dmg.cc)
+PLAYERDRIVER_ADD_DRIVER (microstrain build_microstrain SOURCES 3dmg.cc)

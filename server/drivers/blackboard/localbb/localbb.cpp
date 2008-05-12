@@ -69,7 +69,7 @@
 #include <stdlib.h>
 #include <libplayercore/playercore.h>
 #include <libplayercore/error.h>
-#include <libplayerc++/playererror.h>
+// #include <libplayerc++/playererror.h>
 #include <vector>
 #include <map>
 #include <strings.h>
@@ -227,7 +227,7 @@ class LocalBB : public Driver
 		 * @param resp_queue Player response queue.
 		 * @param hdr Message header.
 		 * @param data Message data.
-		 * @return 0 for success, -1 on error. 
+		 * @return 0 for success, -1 on error.
 		 */
 		int ProcessSubscribeGroupMessage(QueuePointer &resp_queue, player_msghdr * hdr, void * data);
 		/** @brief Process an unsubscribe from group message.
@@ -250,7 +250,7 @@ class LocalBB : public Driver
 		 * @param key Entry key.
 		 * @param group Second identifier.
 		 * @param qp Player response queue of the unsubscriber.
-		 * @return Blackboard entry containing the value of the key and group. 
+		 * @return Blackboard entry containing the value of the key and group.
 		 */
 		void UnsubscribeKey(const string &key, const string &group, const QueuePointer &qp);
 		/** @brief Add a group to the group listeners hash-map and return all entries of that group
@@ -265,7 +265,7 @@ class LocalBB : public Driver
 		 * @param qp Player response queue of the unsubscriber
 		 */
 		void UnsubscribeGroup(const string &group, const QueuePointer &qp);
-		
+
 		/** @brief Set the entry in the entries hashmap. *
 		 * @param entry BlackBoardEntry that must be put in the hashmap.
 		 */
@@ -362,7 +362,7 @@ int LocalBB::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, void 
 	}
 	else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_BLACKBOARD_REQ_UNSUBSCRIBE_FROM_GROUP, this->device_addr))
 	{
-		return ProcessUnsubscribeGroupMessage(resp_queue, hdr, data);	
+		return ProcessUnsubscribeGroupMessage(resp_queue, hdr, data);
 	}
 	// Don't know how to handle this message
 	return -1;
@@ -471,9 +471,9 @@ int LocalBB::ProcessSubscribeGroupMessage(QueuePointer &resp_queue, player_msghd
 		if (response.data)
 		{
 			delete [] response.data;
-		}	
+		}
 	}
-	
+
 	// Then send an empty ack
 	this->Publish(
 		this->device_addr,
@@ -551,7 +551,7 @@ int LocalBB::ProcessSetEntryMessage(QueuePointer &resp_queue, player_msghdr * hd
 			hdr->size,
 			NULL);
 	}
-	
+
 	// Send back an empty ack
 	this->Publish(this->device_addr,
 		resp_queue,
@@ -600,7 +600,7 @@ vector<BlackBoardEntry> LocalBB::SubscribeGroup(const string &group, const Queue
 {
 	group_listeners[group].push_back(qp);
 	vector<BlackBoardEntry> group_entries;
-	
+
 	// Add all entries for a group to the group_entries vector
 	//map<group, map<key, entry> >
 	map<string, BlackBoardEntry> entry_map = entries[group];
@@ -616,7 +616,7 @@ vector<BlackBoardEntry> LocalBB::SubscribeGroup(const string &group, const Queue
 void LocalBB::UnsubscribeGroup(const string &group, const QueuePointer &qp)
 {
 	vector<QueuePointer> &devices = group_listeners[group];
-	
+
 	for (vector<QueuePointer>::iterator itr = devices.begin(); itr != devices.end(); itr++)
 	{
 		if ((*itr) == qp)

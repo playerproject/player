@@ -21,39 +21,48 @@ SET (PLAYER_NOT_BUILT_REASONS_DESC "Map of reasons drivers are not being built")
 SET (PLAYERDRIVER_DEFINES_DESC "List of defines for driver_config.h")
 
 ###############################################################################
-# PLAYERDRIVER_ADD_DRIVER (_name _cumulativeVar _includeDir _libDir _linkFlags _cFlags)
+# PLAYERDRIVER_ADD_DRIVER (_name _cumulativeVar)
 # Add a driver to the list of drivers to be built or not built.
 # Only call this once you have determined the final value of cumulativeVar.
-# includeDir, libDir, linkFlags, and cFlags must be passed by reference.
-# Don't forget to pass in the source files.
-MACRO (PLAYERDRIVER_ADD_DRIVER _name _cumulativeVar _includeDir _libDir _linkFlags _cFlags)
+# Pass source files, flags, etc. as extra args preceded by keywords as follows:
+# SOURCES <source file list>
+# INCLUDEDIRS <include directories list>
+# LIBDIRS <library directories list>
+# LINKFLAGS <link flags list>
+# CFLAGS <compile flags list>
+MACRO (PLAYERDRIVER_ADD_DRIVER _name _cumulativeVar)
     IF (${_cumulativeVar})
+        PLAYER_PROCESS_ARGUMENTS (_srcs _includeDirs _libDirs _linkFlags _cFlags _junk ${ARGN})
+        IF (_junk)
+            MESSAGE (STATUS "WARNING: Unkeyworded arguments found in PLAYERDRIVER_ADD_DRIVER: ${_junk}")
+        ENDIF (_junk)
+        LIST_TO_STRING (_cFlags "${_cFlags}")
+        IF (NOT _srcs)
+            MESSAGE (STATUS "WARNING: No sources given for driver ${_name}")
+        ENDIF (NOT _srcs)
         # Add this driver's list of sources to the list of sources for libplayerdrivers
-        PLAYERDRIVER_ADD_TO_BUILT (${_name} "${_includeDir}" "${_libDir}" "${_linkFlags}" "${_cFlags}" ${ARGN})
+        PLAYERDRIVER_ADD_TO_BUILT (${_name} "${_includeDir}" "${_libDir}" "${_linkFlags}" "${_cFlags}" ${_srcs})
     ENDIF (${_cumulativeVar})
 ENDMACRO (PLAYERDRIVER_ADD_DRIVER)
 
 
 ###############################################################################
-# PLAYERDRIVER_ADD_DRIVER_SIMPLE (_name _cumulativeVar)
-# Convenience wrapper for PLAYERDRIVER_ADD_DRIVER that doesn't require specifying
-# directories and flags.
-MACRO (PLAYERDRIVER_ADD_DRIVER_SIMPLE _name _cumulativeVar)
-    IF (${_cumulativeVar})
-        # Add this driver's list of sources to the list of sources for libplayerdrivers
-        PLAYERDRIVER_ADD_TO_BUILT (${_name} "" "" "" "" ${ARGN})
-    ENDIF (${_cumulativeVar})
-ENDMACRO (PLAYERDRIVER_ADD_DRIVER_SIMPLE)
-
-
-###############################################################################
-# PLAYERDRIVER_ADD_EXTRA (_name _includeDir _libDir _linkFlags _cFlags)
+# PLAYERDRIVER_ADD_EXTRA (_name)
 # Add some extra code to compile and link into playerdrivers.
-# includeDir, libDir, linkFlags, and cFlags must be passed by reference.
-# Don't forget to pass in the source files.
-MACRO (PLAYERDRIVER_ADD_EXTRA _name _includeDir _libDir _linkFlags _cFlags)
+# Pass source files, flags, etc. as extra args preceded by keywords as follows:
+# SOURCES <source file list>
+# INCLUDEDIRS <include directories list>
+# LIBDIRS <library directories list>
+# LINKFLAGS <link flags list>
+# CFLAGS <compile flags list>
+MACRO (PLAYERDRIVER_ADD_EXTRA _name)
+    PLAYER_PROCESS_ARGUMENTS (_srcs _includeDirs _libDirs _linkFlags _cFlags _junk ${ARGN})
+    IF (_junk)
+        MESSAGE (STATUS "WARNING: Unkeyworded arguments found in PLAYERDRIVER_ADD_EXTRA: ${_junk}")
+    ENDIF (_junk)
+    LIST_TO_STRING (_cFlags "${_cFlags}")
     # Add the list of sources to the list of sources for libplayerdrivers, and add various flags
-    PLAYERDRIVER_ADD_EXTRA_TO_BUILT (${_name} "${_includeDir}" "${_libDir}" "${_linkFlags}" "${_cFlags}" ${ARGN})
+    PLAYERDRIVER_ADD_EXTRA_TO_BUILT (${_name} "${_includeDir}" "${_libDir}" "${_linkFlags}" "${_cFlags}" ${_srcs})
 ENDMACRO (PLAYERDRIVER_ADD_EXTRA)
 
 

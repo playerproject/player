@@ -1,2 +1,2 @@
 PLAYERDRIVER_OPTION (laserptzcloud build_laserptzcloud ON)
-PLAYERDRIVER_ADD_DRIVER_SIMPLE (laserptzcloud build_laserptzcloud laserptzcloud.cc)
+PLAYERDRIVER_ADD_DRIVER (laserptzcloud build_laserptzcloud SOURCES laserptzcloud.cc)
