@@ -18,4 +18,3 @@ PLAYERDRIVER_REJECT_OS (amtecm5 build_amtecm5 PLAYER_OS_WIN)
 PLAYERDRIVER_ADD_DRIVER (amtecm5 build_amtecm5
     INCLUDEDIRS "${amtecExtraIncludeDirs}" LIBDIRS "${AMTECM5_DIR}/lib"
     LINKFLAGS "${amtecExtraLibs}" CFLAGS "${amtecCFlags}" SOURCES amtecM5.cc)
-
