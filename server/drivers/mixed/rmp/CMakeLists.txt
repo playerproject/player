@@ -11,4 +11,6 @@ ELSE (NOT "${CANLIB_DIR}" STREQUAL "")
     SET (segwayrmpExtraLibs "-L${CANLIB_DIR}/lib -lcanlib")
 ENDIF (NOT "${CANLIB_DIR}" STREQUAL "")
 PLAYERDRIVER_REQUIRE_HEADER (segwayrmpifk build_segwayrmpifk ${segwayrmpReqHeader})
-PLAYERDRIVER_ADD_DRIVER (segwayrmpifk build_segwayrmpifk "" "" ${segwayrmpExtraLibs} "${segwayrmpExtraFlags}" segwayrmp.cc canio_kvaser.cc)
+PLAYERDRIVER_ADD_DRIVER (segwayrmpifk build_segwayrmpifk
+    LINKFLAGS ${segwayrmpExtraLibs} CFLAGS "${segwayrmpExtraFlags}"
+    SOURCES segwayrmp.cc canio_kvaser.cc)

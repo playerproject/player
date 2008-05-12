@@ -1,5 +1,5 @@
 PLAYERDRIVER_OPTION (serialstream build_serialstream ON)
-PLAYERDRIVER_ADD_DRIVER_SIMPLE (serialstream build_serialstream serialstream.cc)
+PLAYERDRIVER_ADD_DRIVER (serialstream build_serialstream SOURCES serialstream.cc)
 
 PLAYERDRIVER_OPTION (tcpstream build_tcpstream ON)
-PLAYERDRIVER_ADD_DRIVER_SIMPLE (tcpstream build_tcpstream tcpstream.cc)
+PLAYERDRIVER_ADD_DRIVER (tcpstream build_tcpstream SOURCES tcpstream.cc)

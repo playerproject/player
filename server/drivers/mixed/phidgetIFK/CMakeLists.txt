@@ -11,4 +11,6 @@ ELSE (NOT "${PHIDGETIFK_DIR}" STREQUAL "")
     SET (phidgetExtraLibs "-L${PHIDGETIFK_DIR}/lib -lphidget21")
 ENDIF (NOT "${PHIDGETIFK_DIR}" STREQUAL "")
 PLAYERDRIVER_REQUIRE_HEADER (phidgetifk build_phidgetifk ${phidgetReqHeader})
-PLAYERDRIVER_ADD_DRIVER (phidgetifk build_phidgetifk "" "" ${phidgetExtraLibs} "${phidgetExtraFlags}" phidgetIFK.cc)
+PLAYERDRIVER_ADD_DRIVER (phidgetifk build_phidgetifk
+    LINKFLAGS ${phidgetExtraLibs} CFLAGS "${phidgetExtraFlags}"
+    SOURCES phidgetIFK.cc)

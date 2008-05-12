@@ -1,4 +1,4 @@
 PLAYERDRIVER_OPTION (linuxjoystick build_linuxjoystick ON)
 PLAYERDRIVER_REQUIRE_OS (linuxjoystick build_linuxjoystick PLAYER_OS_LINUX)
 PLAYERDRIVER_REQUIRE_HEADER (linuxjoystick build_linuxjoystick linux/joystick.h)
-PLAYERDRIVER_ADD_DRIVER_SIMPLE (linuxjoystick build_linuxjoystick linuxjoy.cc)
+PLAYERDRIVER_ADD_DRIVER (linuxjoystick build_linuxjoystick SOURCES linuxjoy.cc)
