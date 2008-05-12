@@ -29,10 +29,11 @@ int main(int argc, const char **argv)
 		return -1;
 	}
 
+	// Load the plugin interface
 	if (playerc_add_xdr_ftable (player_plugininterf_gettable (), 0) < 0)
 		printf ("Could not add xdr functions\n");
 
-	// Create and subscribe to a position2d device.
+	// Create and subscribe to a device using the interface.
 	device = eginterf_create(client, 0);
 	if (eginterf_subscribe(device, PLAYER_OPEN_MODE) != 0)
 	{

@@ -21,17 +21,17 @@ EXECUTE_PROCESS (COMMAND ${PKGCONFIG_EXECUTABLE} --variable=libdir playerc++
 # This is slightly different from the one used by the Player build system itself.
 # It takes a single file instead of a directory. It also expects playerinterfacegen.py
 # to have been installed in the system path (as it should have been with Player).
-MACRO (PROCESS_INTERFACES _options _file _outputFile)
+MACRO (PROCESS_INTERFACES _file _outputFile)
     ADD_CUSTOM_COMMAND (OUTPUT ${_outputFile}
-        COMMAND playerinterfacegen.py ${_options} ${_file} > ${_outputFile}
+        COMMAND playerinterfacegen.py ${ARGN} ${_file} > ${_outputFile}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        DEPENDS ${_file} ${ARGN}
+        DEPENDS ${_file}
     )
 ENDMACRO (PROCESS_INTERFACES)
 
 MACRO (PROCESS_XDR _interfaceH _xdrH _xdrC)
     ADD_CUSTOM_COMMAND (OUTPUT ${_xdrH} ${_xdrC}
-        COMMAND playerxdrgen.py ${_interfaceH} ${_xdrH} ${_xdrC}
+        COMMAND playerxdrgen.py ${_interfaceH} ${_xdrC} ${_xdrH}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         DEPENDS ${_interfaceH})
 ENDMACRO (PROCESS_XDR)
@@ -98,26 +98,28 @@ MACRO (PLAYER_ADD_PLUGIN_INTERFACE _interfName _interfDef _includeDirs _libDirs 
         MESSAGE (FATAL_ERROR "No sources specified to PLAYER_ADD_PLUGIN_INTERFACE. Did you remember to include blank strings for unused arguments?")
     ENDIF (NOT ${ARGC} GREATER 6)
 
-    IF (_includeDirs OR PLAYERC_INC_DIR)
-        INCLUDE_DIRECTORIES (${_includeDirs} ${PLAYERC_INC_DIR} ${CMAKE_CURRENT_BINARY_DIR})
-    ENDIF (_includeDirs OR PLAYERC_INC_DIR)
-    IF (_libDirs OR PLAYERC_LINK_DIR)
-        LINK_DIRECTORIES (${_libDirs} ${PLAYERC_LINK_DIR})
-    ENDIF (_libDirs OR PLAYERC_LINK_DIR)
+    IF (_includeDirs OR PLUGIN_PLAYERC_INC_DIR)
+        INCLUDE_DIRECTORIES (${_includeDirs} ${PLUGIN_PLAYERC_INC_DIR} ${CMAKE_CURRENT_BINARY_DIR})
+    ENDIF (_includeDirs OR PLUGIN_PLAYERC_INC_DIR)
+    IF (_libDirs OR PLUGIN_PLAYERC_LINK_DIR)
+        LINK_DIRECTORIES (${_libDirs} ${PLUGIN_PLAYERC_LINK_DIR})
+    ENDIF (_libDirs OR PLUGIN_PLAYERC_LINK_DIR)
 
     # Have to generate some source files
     SET (interface_h ${CMAKE_CURRENT_BINARY_DIR}/${_interfName}_interface.h)
-    PROCESS_INTERFACES ("--plugin" ${_interfDef} ${interface_h})
+    PROCESS_INTERFACES (${_interfDef} ${interface_h} --plugin)
     SET (functiontable_c ${CMAKE_CURRENT_BINARY_DIR}/${_interfName}_functiontable.c)
-    PROCESS_INTERFACES ("--plugin --functiontable" ${_interfDef} ${functiontable_c})
+    PROCESS_INTERFACES (${_interfDef} ${functiontable_c} --plugin --functiontable)
+    SET_SOURCE_FILES_PROPERTIES (${functiontable_c} PROPERTIES COMPILE_FLAGS ${PLUGIN_PLAYERC_CFLAGS})
     SET (xdr_h ${CMAKE_CURRENT_BINARY_DIR}/${_interfName}_xdr.h)
     SET (xdr_c ${CMAKE_CURRENT_BINARY_DIR}/${_interfName}_xdr.c)
     PROCESS_XDR (${interface_h} ${xdr_h} ${xdr_c})
+    SET_SOURCE_FILES_PROPERTIES (${xdr_c} PROPERTIES COMPILE_FLAGS ${PLUGIN_PLAYERC_CFLAGS})
 
     ADD_LIBRARY (${_interfName} SHARED ${interface_h} ${functiontable_c} ${xdr_h} ${xdr_c} ${ARGN})
     SET_TARGET_PROPERTIES (${_interfName} PROPERTIES
-        LINK_FLAGS ${PLAYERC_LINK_FLAGS} ${_linkFlags}
-        INSTALL_RPATH ${PLAYERC_LIBDIR}
+        LINK_FLAGS ${PLUGIN_PLAYERC_LINK_FLAGS} ${_linkFlags}
+        INSTALL_RPATH ${PLAYERCORE_LIBDIR}
         BUILD_WITH_INSTALL_RPATH TRUE)
 
     # Get the current cflags for each source file, and add the global ones
