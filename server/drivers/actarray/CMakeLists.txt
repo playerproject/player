@@ -1,12 +1,19 @@
 PLAYERDRIVER_OPTION (amtecm5 build_amtecm5 ON)
 SET (AMTECM5_DIR "" CACHE STRING "Directory containing the Amtec M5 libraries")
 MARK_AS_ADVANCED (AMTECM5_DIR)
+
 IF (NOT "${AMTECM5_DIR}" STREQUAL "")
     SET (amtecExtraIncludeDirs ${AMTECM5_DIR}/include ${AMTECM5_DIR}/Device)
-    SET (amtecExtraLibs "${AMTECM5_DIR}/lib/device.a ${AMTECM5_DIR}/lib/ntcan.a ${AMTECM5_DIR}/lib/util.a")
-ELSE (NOT "${AMTECM5_DIR}" STREQUAL "")
-    SET (amtecExtraLibs "device.a ntcan.a util.a")
 ENDIF (NOT "${AMTECM5_DIR}" STREQUAL "")
-PLAYERDRIVER_REQUIRE_HEADER (amtecm5 build_amtecm5 Device.h ${extraIncludeDirs})
+SET (amtecExtraLibs "-ldevice -lntcan -lutil")
+SET (amtecCFlags "-D__LINUX__ -DUNIX -DLINUX")
+
+SET (CMAKE_REQUIRED_INCLUDES "${amtecExtraIncludeDirs}")
+SET (CMAKE_REQUIRED_DEFINITIONS "${amtecCFlags}")
+PLAYERDRIVER_REQUIRE_HEADER_CPP (amtecm5 build_amtecm5 Device.h)
+SET (CMAKE_REQUIRED_INCLUDES)
+SET (CMAKE_REQUIRED_DEFINITIONS)
+
 PLAYERDRIVER_REJECT_OS (amtecm5 build_amtecm5 PLAYER_OS_WIN)
-PLAYERDRIVER_ADD_DRIVER (amtecm5 build_amtecm5 "" "" ${amtecExtraLibs} "-D__LINUX__ -DUNIX -DLINUX" amtecM5.cc)
+PLAYERDRIVER_ADD_DRIVER (amtecm5 build_amtecm5 "${amtecExtraIncludeDirs}" "${AMTECM5_DIR}/lib" "${amtecExtraLibs}" "${amtecCFlags}" amtecM5.cc)
+

@@ -225,6 +225,39 @@ ENDMACRO (PLAYERDRIVER_REQUIRE_HEADER)
 
 
 ###############################################################################
+# PLAYERDRIVER_REQUIRE_HEADER_CPP (_name _cumulativeVar _header)
+# Check if a required C++ header file is available. (CMake will try to compile
+#  a small program using c++ with an include<_header> line)
+#
+# See the CheckIncludeFileCXX.cmake module for extra variables that may modify
+# how this macro runs.
+#
+# _name:            Driver name.
+# _cumulativeVar:   The option used in the calling CMakeLists.txt to check if
+#                   the driver has been enabled.
+# _header:          Name of the header file to look for.
+INCLUDE (CheckIncludeFileCXX)
+MACRO (PLAYERDRIVER_REQUIRE_HEADER_CPP _name _cumulativeVar _header)
+    STRING (TOUPPER ${_header} headerUpper)
+    STRING (REGEX REPLACE "[./\\]" "_" headerUpper "${headerUpper}")
+    SET (resultVar "HAVE_HDR_${headerUpper}")
+    CHECK_INCLUDE_FILE_CXX("${_header}" ${resultVar})
+    # If not found, disable this driver
+    # Dereference cumulativeVar only once because IF will dereference the variable name stored inside itself
+    IF (${_cumulativeVar} AND ${resultVar})
+        # Driver will be built and header found - add a #define
+        # Append to a list instead of setting an option so we can auto-generate driver_config.h
+        APPEND_TO_CACHED_LIST (PLAYERDRIVER_HAVE_DEFINES ${PLAYERDRIVER_HAVE_DEFINES_DESC} "HAVE_HDR_${headerUpper}")
+    ELSEIF (${_cumulativeVar})
+        # Case where cumulativeVar is set but header wasn't found - don't build
+        SET (${_cumulativeVar} FALSE)
+        PLAYERDRIVER_ADD_TO_NOT_BUILT (${_name} "Could not find header ${_header}")
+        PLAYERDRIVER_ADD_DRIVEROPTION (${_name} OFF TRUE)
+    ENDIF (${_cumulativeVar} AND ${resultVar})
+ENDMACRO (PLAYERDRIVER_REQUIRE_HEADER_CPP)
+
+
+###############################################################################
 # PLAYERDRIVER_REQUIRE_FUNCTION (_name _cumulativeVar _function)
 # Check if a required function is available.
 #
