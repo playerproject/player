@@ -1,6 +1,7 @@
 #include "nav200.h"
 
 
+
 Nav200::Nav200()
 {
 }
@@ -585,6 +586,14 @@ int Nav200::WriteCommand(char mode, char function, int dataLength, uint8_t * dat
   player_opaque_data_t mData;
   mData.data_count = length;
   mData.data = buffer;
+  
+  // before we send a command to the NAV200, flush and data coming in from the remote file
+  if (!sn200->InQueue->Empty())
+  {
+    PLAYER_WARN("Queue was not empty on NAV200, flushing");
+    while (sn200->InQueue->Pop());
+  }
+  
   opaque->PutMsg(sn200->InQueue, PLAYER_MSGTYPE_CMD, PLAYER_OPAQUE_CMD_DATA, reinterpret_cast<void*>(&mData), 0, NULL);
   
 /*  if((length && (write(fd, buffer, length)) < length))
@@ -626,12 +635,6 @@ int Nav200::ReadFromNav200(int timeout_usec)
   
   for (;;)
   {
-    gettimeofday(&now,NULL);
-    if ((now.tv_sec - start.tv_sec) * 1e6 + now.tv_usec - start.tv_usec > timeout_usec)
-    {
-      fprintf(stderr,"Timed out waiting for packet %d uSecs passed\n",static_cast<int>((now.tv_sec - start.tv_sec) * 1e6 + now.tv_usec - start.tv_usec));
-      return -1;
-    }
     //puts("waiting for data");
     sn200->ProcessMessages();
     
@@ -721,6 +724,12 @@ int Nav200::ReadFromNav200(int timeout_usec)
 
         return 1;
       }
+    }
+    gettimeofday(&now,NULL);
+    if ((now.tv_sec - start.tv_sec) * 1e6 + now.tv_usec - start.tv_usec > timeout_usec)
+    {
+      fprintf(stderr,"Timed out waiting for packet %d uSecs passed\n",static_cast<int>((now.tv_sec - start.tv_sec) * 1e6 + now.tv_usec - start.tv_usec));
+      return -1;
     }
     usleep(1000);
   }
