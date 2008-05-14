@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <math.h>
 #include <assert.h>
 
@@ -35,7 +36,9 @@ plan_compute_diffdrive_cmds(plan_t* plan, double* vx, double *va,
                             double amin, double amax)
 {
   double cx, cy;
-  double d,b,av,tv,a,ad;
+  double d,b,a,ad;
+  
+  puts("*******plan_compute_diffdrive_cmds************");
   
   // Are we at the goal?
   if(plan_check_done(plan,lx,ly,la,gx,gy,ga,goal_d,goal_a))
@@ -59,25 +62,34 @@ plan_compute_diffdrive_cmds(plan_t* plan, double* vx, double *va,
     }
     *vx = 0.0;
     *va = *rotate_dir * (avmin + (fabs(ad)/M_PI) * (avmax-avmin));
+    printf("on top; vx:%.3f va: %.3f\n", *vx, *va);
     return(0);
   }
 
   // We're away from the goal; compute velocities
   if(plan_get_carrot(plan, &cx, &cy, lx, ly, maxd, dweight) < 0.0)
+  {
+    puts("no carrot");
     return(-1);
+  }
 
   d = sqrt((lx-cx)*(lx-cx) + (ly-cy)*(ly-cy));
   b = atan2(cy - ly, cx - lx);
   a = amin + (d / maxd) * (amax-amin);
-  ad = _angle_diff(b, la);
+  printf("a: %.3f\n", a*180.0/M_PI);
+  ad = _angle_diff(b,la);
+  printf("ad: %.3f\n", ad*180.0/M_PI);
 
   if(fabs(ad) > a)
     *vx = 0.0;
   else
-    tv = tvmin + (d / maxd) * (tvmax-tvmin);
-  av = avmin + (fabs(ad)/M_PI) * (avmax-avmin);
+    *vx = tvmin + (d / maxd) * (tvmax-tvmin);
+  *va = avmin + (fabs(ad)/M_PI) * (avmax-avmin);
   if(ad < 0)
-    av = -av;
+    *va = -*va;
+
+  printf("away; vx:%.3f va: %.3f\n", *vx, *va);
+  return(0);
 }
 
 double
@@ -242,7 +254,7 @@ _plan_check_path(plan_t* plan, plan_cell_t* s, plan_cell_t* g)
   return(obscost);
 }
 
-#define ANG_NORM(a) atan2(cos((a)),sin((a)))
+#define ANG_NORM(a) atan2(sin((a)),cos((a)))
 static double
 _angle_diff(double a, double b)
 {
