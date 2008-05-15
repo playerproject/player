@@ -176,7 +176,8 @@ AMCLLaser::SetupMap(void)
   player_map_info_t* info = (player_map_info_t*)msg->GetPayload();
   
   // copy in the map info
-  this->map->origin_x = this->map->origin_y = 0.0;
+  this->map->origin_x = info->origin.px + (info->scale * info->width) / 2.0;
+  this->map->origin_y = info->origin.py + (info->scale * info->height) / 2.0;
   this->map->scale = info->scale;
   this->map->size_x = info->width;
   this->map->size_y = info->height;
