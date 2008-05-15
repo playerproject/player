@@ -38,7 +38,7 @@ class AMCLLaserData : public AMCLSensorData
 {
   public:
     AMCLLaserData () {ranges=NULL;};
-    ~AMCLLaserData() {delete [] ranges;};
+    virtual ~AMCLLaserData() {delete [] ranges;};
   // Laser range data (range, bearing tuples)
   public: int range_count;
   public: double range_max;
