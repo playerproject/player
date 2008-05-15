@@ -1,15 +1,27 @@
+Building
+--------
 
-Here's a very simple example of how to write a driver that supports
-multiple interfaces (also builds as a loadable object).  For details
-on how to handle configuration requests, get commands, push out data,
-etc., consult the User Manual.
+The example can be built by making a directory (anywhere on your system where
+you have write permissions will do), changing to that directory and executing
+CMake with the example's source directory as an argument. For example, if you
+have installed Player into /usr/local, you could do the following:
 
-To build this example, edit the Makefile according to where you've got
-the Player installed and then type 'make'.
+$ cd ~
+$ mkdir multidriver
+$ cd multidriver
+$ ccmake /usr/local/share/player/examples/plugins/multidriver/
 
-To try it, run:
+Use the configure option (press 'c' in the Linux ncurses-based UI, for example)
+until the generate option becomes available, then use that (press 'g' in the
+ncurses UI). Then use the standard method of compiling for your environment to
+compile (on Linux, this will probably be GNU Makefiles, so type 'make').
 
-  $ player multi.cfg
+Running
+-------
 
-  Andrew Howard
-  ahoward@usc.edu
+The example creates a shared library (libexampledriver.so on Unix-based
+systems), which is loaded by the server using the multi.cfg configuration file.
+Copy this to the directory where you built the example and execute the Player
+server:
+
+$ player multi.cfg

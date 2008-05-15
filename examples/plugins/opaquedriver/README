@@ -7,9 +7,9 @@ CMake with the example's source directory as an argument. For example, if you
 have installed Player into /usr/local, you could do the following:
 
 $ cd ~
-$ mkdir exampleinterface
-$ cd exampleinterface
-$ ccmake /usr/local/share/player/examples/plugins/exampleinterface/
+$ mkdir opaque_example
+$ cd opaque_example
+$ ccmake /usr/local/share/player/examples/plugins/opaque_example/
 
 Use the configure option (press 'c' in the Linux ncurses-based UI, for example)
 until the generate option becomes available, then use that (press 'g' in the
@@ -19,19 +19,15 @@ compile (on Linux, this will probably be GNU Makefiles, so type 'make').
 Running
 -------
 
-This example creates three objects: an interface plugin, a driver plugin for
-the new interface, and a client program that uses the new interface in
-conjunction with the plugin driver.
-
-The interface plugin and driver plugin are loaded by the example.cfg
+This example creates a plugin driver shared library (libopaquedriver.so on
+Unix-based systems), which is loaded by the server using the opaque.cfg
 configuration file. Copy this to the directory where you built the example and
-execute Player:
+execute the Player server:
 
-$ player example.cfg
+$ player opaque.cfg
 
-In a separate terminal, execute the client program:
+The example also creates a client to match the driver, called "opaque". This
+client will connect to the Player server, subscribe to the plugin driver and
+test the interface. Execute it in a separate terminal from the server:
 
-$ ./example_client
-
-You should see commands, data and requests moving between the client and the
-driver.
+$ ./opaque
