@@ -15,7 +15,7 @@ plan_check_done(plan_t* plan,
                 double goal_d, double goal_a)
 {
   double dt, da;
-  dt = sqrt((gx-lx)*(gx-ly) + (gy-ly)*(gy-ly));
+  dt = sqrt((gx-lx)*(gx-lx) + (gy-ly)*(gy-ly));
   da = fabs(_angle_diff(ga,la));
 
   if((dt < goal_d) && (da < goal_a))
@@ -50,6 +50,7 @@ plan_compute_diffdrive_cmds(plan_t* plan, double* vx, double *va,
 
   // Are we on top of the goal?
   d = sqrt((gx-lx)*(gx-lx)+(gy-ly)*(gy-ly));
+  printf("d: %.3f\n", d);
   if(d < goal_d)
   {
     ad = _angle_diff(ga,la);
