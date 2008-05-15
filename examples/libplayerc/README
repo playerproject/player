@@ -1,0 +1,31 @@
+Building
+--------
+
+The examples can be built by making a directory (anywhere on your system where
+you have write permissions will do), changing to that directory and executing
+CMake with the examples' source directory as an argument. For example, if you
+have installed Player into /usr/local, you could do the following:
+
+$ cd ~
+$ mkdir libplayerc_example
+$ cd libplayerc_example
+$ ccmake /usr/local/share/player/examples/libplayerc
+
+Use the configure option (press 'c' in the Linux ncurses-based UI, for example)
+until the generate option becomes available, then use that (press 'g' in the
+ncurses UI). Then use the standard method of compiling for your environment to
+compile (on Linux, this will probably be GNU Makefiles, so type 'make').
+
+Running
+-------
+
+The examples each require that a Player server providing the necessary devices
+is running. These are:
+
+simple:             position2d
+vmap:               laser
+service_discovery:  vectormap
+speed_c_client:     speech
+
+For simple and vmap, the simple.cfg configuration sample provided with stage
+will suffice.

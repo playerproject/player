@@ -1,0 +1,45 @@
+Building
+--------
+
+The examples can be built by making a directory (anywhere on your system where
+you have write permissions will do), changing to that directory and executing
+CMake with the examples' source directory as an argument. For example, if you
+have installed Player into /usr/local, you could do the following:
+
+$ cd ~
+$ mkdir libplayerc++_example
+$ cd libplayerc++_example
+$ ccmake /usr/local/share/player/examples/libplayerc++
+
+Use the configure option (press 'c' in the Linux ncurses-based UI, for example)
+until the generate option becomes available, then use that (press 'g' in the
+ncurses UI). Then use the standard method of compiling for your environment to
+compile (on Linux, this will probably be GNU Makefiles, so type 'make').
+
+Running
+-------
+
+The examples each require that a Player server providing the necessary devices
+is running. These are:
+
+camera:             camera
+clientgraphics:     graphics2d
+clientgraphics3d:   graphics3d
+example0:           position2d, sonar
+example1:           camera
+example2:           camera
+example3:           camera
+example4:           ir, position2d
+goto:               position2d, sonar
+grip:               gripper
+laserobstacleavoid: laser, position2d
+ptz:                camera, ptz
+randomwalk:         laser or sonar, position2d
+sonarobstacleavoid: position2d, sonar
+speech:             speech
+speech_cpp_client:  speech
+wallfollow:         laser, position2d
+
+For example0, goto, laserobstacleavoid, randomwalk, sonarobstacleavoid and
+wallfollow, the simple.cfg configuration sample provided with Stage will
+suffice.
