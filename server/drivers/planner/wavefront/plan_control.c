@@ -38,7 +38,7 @@ plan_compute_diffdrive_cmds(plan_t* plan, double* vx, double *va,
   double cx, cy;
   double d,b,a,ad;
   
-  puts("*******plan_compute_diffdrive_cmds************");
+  //puts("*******plan_compute_diffdrive_cmds************");
   
   // Are we at the goal?
   if(plan_check_done(plan,lx,ly,la,gx,gy,ga,goal_d,goal_a))
@@ -50,7 +50,7 @@ plan_compute_diffdrive_cmds(plan_t* plan, double* vx, double *va,
 
   // Are we on top of the goal?
   d = sqrt((gx-lx)*(gx-lx)+(gy-ly)*(gy-ly));
-  printf("d: %.3f\n", d);
+  //printf("d: %.3f\n", d);
   if(d < goal_d)
   {
     ad = _angle_diff(ga,la);
@@ -63,23 +63,23 @@ plan_compute_diffdrive_cmds(plan_t* plan, double* vx, double *va,
     }
     *vx = 0.0;
     *va = *rotate_dir * (avmin + (fabs(ad)/M_PI) * (avmax-avmin));
-    printf("on top; vx:%.3f va: %.3f\n", *vx, *va);
+    //printf("on top; vx:%.3f va: %.3f\n", *vx, *va);
     return(0);
   }
 
   // We're away from the goal; compute velocities
   if(plan_get_carrot(plan, &cx, &cy, lx, ly, maxd, dweight) < 0.0)
   {
-    puts("no carrot");
+    //puts("no carrot");
     return(-1);
   }
 
   d = sqrt((lx-cx)*(lx-cx) + (ly-cy)*(ly-cy));
   b = atan2(cy - ly, cx - lx);
   a = amin + (d / maxd) * (amax-amin);
-  printf("a: %.3f\n", a*180.0/M_PI);
+  //printf("a: %.3f\n", a*180.0/M_PI);
   ad = _angle_diff(b,la);
-  printf("ad: %.3f\n", ad*180.0/M_PI);
+  //printf("ad: %.3f\n", ad*180.0/M_PI);
 
   if(fabs(ad) > a)
     *vx = 0.0;
@@ -89,7 +89,7 @@ plan_compute_diffdrive_cmds(plan_t* plan, double* vx, double *va,
   if(ad < 0)
     *va = -*va;
 
-  printf("away; vx:%.3f va: %.3f\n", *vx, *va);
+  //printf("away; vx:%.3f va: %.3f\n", *vx, *va);
   return(0);
 }
 
