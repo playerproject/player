@@ -586,13 +586,26 @@ int Nav200::WriteCommand(char mode, char function, int dataLength, uint8_t * dat
   player_opaque_data_t mData;
   mData.data_count = length;
   mData.data = buffer;
+
+  // before we send a command to the NAV200, flush and data coming in from the remote file
+  sn200->InQueue->SetFilter(opaque_id.host, opaque_id.robot, opaque_id.interf, opaque_id.index, PLAYER_MSGTYPE_DATA, PLAYER_OPAQUE_DATA_STATE);
+  
+  //puts("waiting for data");
+  sn200->ProcessMessages();
   
   // before we send a command to the NAV200, flush and data coming in from the remote file
-  if (!sn200->InQueue->Empty())
+  if (bytesReceived)
   {
-    PLAYER_WARN("Queue was not empty on NAV200, flushing");
-    while (sn200->InQueue->Pop());
+
+    do
+    {
+        PLAYER_WARN1("Buffer was not empty on NAV200 (%d), flushing",bytesReceived);
+        bytesReceived = 0;
+    	usleep(100000);
+    	sn200->ProcessMessages();
+    } while (bytesReceived != 0);
   }
+  sn200->InQueue->ClearFilter();
   
   opaque->PutMsg(sn200->InQueue, PLAYER_MSGTYPE_CMD, PLAYER_OPAQUE_CMD_DATA, reinterpret_cast<void*>(&mData), 0, NULL);
   
@@ -729,6 +742,7 @@ int Nav200::ReadFromNav200(int timeout_usec)
     if ((now.tv_sec - start.tv_sec) * 1e6 + now.tv_usec - start.tv_usec > timeout_usec)
     {
       fprintf(stderr,"Timed out waiting for packet %d uSecs passed\n",static_cast<int>((now.tv_sec - start.tv_sec) * 1e6 + now.tv_usec - start.tv_usec));
+      sn200->InQueue->ClearFilter();
       return -1;
     }
     usleep(1000);
