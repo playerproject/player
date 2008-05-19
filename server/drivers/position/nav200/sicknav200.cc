@@ -141,6 +141,10 @@ private:
 	// Main function for device thread.
 	virtual void Main();
 
+	int Initialise();
+	bool Initialised;
+	
+	
 	// Get device to map reflectors.
 	void UpdateMap();
 	// Get the reflector positions from the device.
@@ -254,6 +258,7 @@ void SickNAV200_Register(DriverTable* table) {
 // Constructor
 SickNAV200::SickNAV200(ConfigFile* cf, int section) :
 	Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN), 
+	Initialised(false),
 	mode("mode", DEFAULT_SICKNAV200_MODE, false, this, cf, section), 
 	Nearest("nearest", 0, false, this, cf, section), 
 	AutoFullMapCount("autofullmapcount", 0, false, this, cf, section), 
@@ -348,7 +353,7 @@ SickNAV200::~SickNAV200() {
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device
 int SickNAV200::Setup() {
-	PLAYER_MSG0(2, "NAV200 initialising");
+	PLAYER_MSG0(2, "NAV200 Setup");
 
 	// Subscribe to the opaque device.
 	if (Device::MatchDeviceAddress(this->opaque_id, this->position_addr)
@@ -393,14 +398,6 @@ int SickNAV200::Setup() {
 			return (-1);
 		}
 	}
-
-	// Open the terminal
-	Laser.Initialise(this, opaque, opaque_id);
-	PLAYER_MSG0(2, "Laser initialised");
-
-	// reset our stall count
-	StallCount = 0;
-	PLAYER_MSG0(2, "NAV200 ready");
 
 	// intialise logging if requested
 	if (strcmp(TimingLogFilename,""))
@@ -619,27 +616,37 @@ double time_double(struct timeval & t)
 	return static_cast<double> (t.tv_sec) + static_cast<double> (t.tv_usec)/1e6;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// Main function for device thread
-void SickNAV200::Main() {
+int SickNAV200::Initialise() 
+{
+	PLAYER_MSG0(2, "Nav200: Initialising connection to device");
+	if (Initialised)
+		return 0;
+
+	// Open the terminal
+	Laser.Initialise(this, opaque, opaque_id);
+
+	// reset our stall count
+	StallCount = 0;
+	
 	if (!Laser.EnterStandby()) {
 		PLAYER_ERROR("unable to enter standby mode\n");
+		return -1;
 	}
 	if (!Laser.SetReflectorRadius(0, 45)) {
 		PLAYER_ERROR("unable to set reflector radius\n");
-		return;
+		return -1;
 	}
 	if (!Laser.EnterPositioningInput(SmoothingInput)) {
 		PLAYER_ERROR("unable to enter position mode\n");
-		return;
+		return -1;
 	}
 	if (!Laser.SelectNearest(Nearest)) {
 		PLAYER_ERROR("unable to set nearest reflector count\n");
-		return;
+		return -1;
 	}
 	if (!Laser.SetActionRadii(min_radius, max_radius)) {
 		PLAYER_ERROR("failed to set action radii\n");
-		return;
+		return -1;
 	}
 
 	BuildWKB(); // Build an empty WKB.
@@ -652,14 +659,43 @@ void SickNAV200::Main() {
 	
 	// intialise our update timestamp
 	gettimeofday(&last_nav_position_time,NULL);
+	
+	PLAYER_MSG0(2, "NAV200 ready");
+
+	Initialised = true;
+	return 0;
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Main function for device thread
+void SickNAV200::Main() {
 
 	LaserPos Reading;
 	for (;;) {
 		// test if we are supposed to cancel
 		pthread_testcancel();
 
+		// we keep publishing data even if we are stalled, or disconnected
+		// this lets clients know we are at least still trying.
+		this->Publish(this->position_addr, PLAYER_MSGTYPE_DATA,
+				PLAYER_POSITION2D_DATA_STATE, (void*)&data_packet,
+				sizeof(data_packet), NULL);
+
 		// process any pending messages
 		ProcessMessages();
+	
+		if (!Initialised)
+		{
+			Initialise();
+			if (!Initialised)
+			{
+				usleep(200000); // sleep for slightly longer than the nominal nav update (135ms)
+				data_packet.stall =1;
+				continue;
+			}
+		}
+
 
 		bool gotReading;
 		
@@ -740,21 +776,18 @@ void SickNAV200::Main() {
 			{
 				PLAYER_WARN1("Stalled for %d readings, performing full update\n", StallCount);
 				if (!Laser.EnterPositioningInput(SmoothingInput)) {
-					PLAYER_ERROR("unable to enter position mode\n");
-					return;
+					PLAYER_ERROR("NAV200: ERROR on attempt to enter position mode, setting intialised false\n");
+					Initialised = false;
+					data_packet.stall =1;
+					continue;
 				}
 			}
 			
-
-			this->Publish(this->position_addr, PLAYER_MSGTYPE_DATA,
-					PLAYER_POSITION2D_DATA_STATE, (void*)&data_packet,
-					sizeof(data_packet), NULL);
 		} else {
 			PLAYER_WARN("Failed to get reading from laser scanner\n");
-			sleep(1);
-			// May have been disconnected. Attempt to return to positioning mode.
-			if (fetchOnStart)
-				FetchIfNeeded();
+			Initialised = false;
+			data_packet.stall = 1;
+			continue;
 		}
 	}
 }
