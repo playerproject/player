@@ -162,7 +162,7 @@ _plan_update_plan(plan_t *plan, double lx, double ly, double gx, double gy)
   // Initialize the start cell
   li = PLAN_GXWX(plan, lx);
   lj = PLAN_GYWY(plan, ly);
-  
+
   //printf("planning from %d,%d to %d,%d\n", li,lj,gi,gj);
 
   if(!PLAN_VALID_BOUNDS(plan, gi, gj))
@@ -186,6 +186,11 @@ _plan_update_plan(plan_t *plan, double lx, double ly, double gx, double gy)
 
   cell = plan->cells + PLAN_INDEX(plan, gi, gj);
   cell->plan_cost = 0;
+
+  // Are we done?
+  if((li == gi) && (lj == gj))
+    return(0);
+  
   plan_push(plan, cell);
 
   while (1)
