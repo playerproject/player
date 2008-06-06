@@ -269,6 +269,9 @@ class ClientProxy
 #ifdef HAVE_BOOST_SIGNALS
         scoped_lock_t lock(mPc->mMutex);
         aSubscriber.disconnect();
+#else
+       // This line is here to prevent compiler warnings of "unused varaibles"
+       aSubscriber = aSubscriber;
 #endif
       }
 

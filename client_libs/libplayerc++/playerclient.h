@@ -76,7 +76,7 @@
         mutex() {};
         class scoped_lock
         {
-          public: scoped_lock(mutex m) {};
+          public: scoped_lock(mutex /*m*/) {};
         };
     };
   }
