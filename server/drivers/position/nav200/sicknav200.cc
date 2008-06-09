@@ -93,7 +93,9 @@
  */
 /** @} */
 
+#if HAVE_CONFIG_H
 #include <config.h>
+#endif
 
 #include <assert.h>
 #include <math.h>
@@ -118,7 +120,7 @@ extern PlayerTime* GlobalTime;
 
 /// Time to delay before we send the next position request, acceleration performance is best
 /// When a request with velocity is sent half way through the next cycle.
-const double DEFAULT_NAV_REQUEST_DELAY_USECS = 0.06; 
+const double DEFAULT_NAV_REQUEST_DELAY_USECS = 0.06;
 
 // The laser device class.
 class SickNAV200 : public Driver {
@@ -139,6 +141,10 @@ private:
 	// Main function for device thread.
 	virtual void Main();
 
+	int Initialise();
+	bool Initialised;
+
+
 	// Get device to map reflectors.
 	void UpdateMap();
 	// Get the reflector positions from the device.
@@ -157,7 +163,7 @@ private:
 	void BuildWKB();
 
 	player_pose2d_t GetNavVelocityInWRF();
-	
+
 protected:
 
 	// Laser pose in robot cs.
@@ -188,9 +194,12 @@ protected:
 	// the current quality report
 	IntProperty Quality;
 
+	// the threshold for quality. Treat anything less than this threshold as a stall
+	IntProperty QualityThreshold;
+
 	// number of values for slifing mean
 	IntProperty SmoothingInput;
-	
+
 	// storage for outgoing data
 	player_position2d_data_t data_packet;
 
@@ -215,19 +224,19 @@ protected:
 	player_devaddr_t position_addr;
 	// Vector map interface
 	player_devaddr_t vectormap_addr;
-	
+
 	// delay before position update request in seconds
 	DoubleProperty NavUpdateRequestDelay;
 	// time stamping for coordinating position request timing
 	struct timeval last_nav_position_time;
 	struct timeval last_nav_request_time;
 	struct timeval last_velocity_update_time;
-	
+
 	/// optional log file to store some timing metrics in, useful for performance analysis of the system.
 	StringProperty TimingLogFilename;
 	FILE * TimingLogFile;
-	
-	
+
+
 };
 
 // a factory creation function
@@ -249,11 +258,13 @@ void sicknav200_Register(DriverTable* table) {
 // Constructor
 SickNAV200::SickNAV200(ConfigFile* cf, int section) :
 	Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN),
+	Initialised(false),
 	mode("mode", DEFAULT_SICKNAV200_MODE, false, this, cf, section),
 	Nearest("nearest", 0, false, this, cf, section),
 	AutoFullMapCount("autofullmapcount", 0, false, this, cf, section),
 	StallCount(0),
 	Quality("quality", 0,true, this, cf, section),
+	QualityThreshold("quality_threshold", 0,true, this, cf, section),
 	SmoothingInput("smoothing_input", 4, false, this, cf, section),
 	NavUpdateRequestDelay("update_request_delay",DEFAULT_NAV_REQUEST_DELAY_USECS,false,this,cf,section),
 	TimingLogFilename("timing_log","",true,this,cf,section),
@@ -330,7 +341,7 @@ SickNAV200::SickNAV200(ConfigFile* cf, int section) :
 	memset(&this->reflector_map_id, 0, sizeof(this->reflector_map_id));
 	cf->ReadDeviceAddr(&this->reflector_map_id, section, "requires",
 			PLAYER_VECTORMAP_CODE, -1, NULL);
-	
+
 	return;
 }
 
@@ -342,7 +353,7 @@ SickNAV200::~SickNAV200() {
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device
 int SickNAV200::Setup() {
-	PLAYER_MSG0(2, "NAV200 initialising");
+	PLAYER_MSG0(2, "NAV200 Setup");
 
 	// Subscribe to the opaque device.
 	if (Device::MatchDeviceAddress(this->opaque_id, this->position_addr)
@@ -388,14 +399,6 @@ int SickNAV200::Setup() {
 		}
 	}
 
-	// Open the terminal
-	Laser.Initialise(this, opaque, opaque_id);
-	PLAYER_MSG0(2, "Laser initialised");
-
-	// reset our stall count
-	StallCount = 0;
-	PLAYER_MSG0(2, "NAV200 ready");
-
 	// intialise logging if requested
 	if (strcmp(TimingLogFilename,""))
 	{
@@ -405,8 +408,8 @@ int SickNAV200::Setup() {
 			PLAYER_ERROR2("Failed to open NAV200 timing log file for appending: %s (%s)",errno,strerror(errno));
 		}
 	}
-	
-	
+
+
 	// Start the device thread
 	StartThread();
 
@@ -426,7 +429,7 @@ int SickNAV200::Shutdown() {
 		fclose(TimingLogFile);
 		TimingLogFile = NULL;
 	}
-	
+
 	PLAYER_MSG0(2, "laser shutdown");
 
 	return (0);
@@ -606,34 +609,44 @@ int usec_elapsed(struct timeval & then)
 	struct timeval now;
 	gettimeofday(&now, NULL);
 	return usec_diff(then,now);
-}	
+}
 
 double time_double(struct timeval & t)
 {
 	return static_cast<double> (t.tv_sec) + static_cast<double> (t.tv_usec)/1e6;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// Main function for device thread
-void SickNAV200::Main() {
+int SickNAV200::Initialise()
+{
+	PLAYER_MSG0(2, "Nav200: Initialising connection to device");
+	if (Initialised)
+		return 0;
+
+	// Open the terminal
+	Laser.Initialise(this, opaque, opaque_id);
+
+	// reset our stall count
+	StallCount = 0;
+
 	if (!Laser.EnterStandby()) {
 		PLAYER_ERROR("unable to enter standby mode\n");
+		return -1;
 	}
 	if (!Laser.SetReflectorRadius(0, 45)) {
 		PLAYER_ERROR("unable to set reflector radius\n");
-		return;
+		return -1;
 	}
 	if (!Laser.EnterPositioningInput(SmoothingInput)) {
 		PLAYER_ERROR("unable to enter position mode\n");
-		return;
+		return -1;
 	}
 	if (!Laser.SelectNearest(Nearest)) {
 		PLAYER_ERROR("unable to set nearest reflector count\n");
-		return;
+		return -1;
 	}
 	if (!Laser.SetActionRadii(min_radius, max_radius)) {
 		PLAYER_ERROR("failed to set action radii\n");
-		return;
+		return -1;
 	}
 
 	BuildWKB(); // Build an empty WKB.
@@ -643,28 +656,57 @@ void SickNAV200::Main() {
 		FetchIfNeeded();
 		mode.SetValue("positioning");
 	}
-	
+
 	// intialise our update timestamp
 	gettimeofday(&last_nav_position_time,NULL);
+
+	PLAYER_MSG0(2, "NAV200 ready");
+
+	Initialised = true;
+	return 0;
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Main function for device thread
+void SickNAV200::Main() {
 
 	LaserPos Reading;
 	for (;;) {
 		// test if we are supposed to cancel
 		pthread_testcancel();
 
+		// we keep publishing data even if we are stalled, or disconnected
+		// this lets clients know we are at least still trying.
+		this->Publish(this->position_addr, PLAYER_MSGTYPE_DATA,
+				PLAYER_POSITION2D_DATA_STATE, (void*)&data_packet,
+				sizeof(data_packet), NULL);
+
 		// process any pending messages
 		ProcessMessages();
 
+		if (!Initialised)
+		{
+			Initialise();
+			if (!Initialised)
+			{
+				usleep(200000); // sleep for slightly longer than the nominal nav update (135ms)
+				data_packet.stall =1;
+				continue;
+			}
+		}
+
+
 		bool gotReading;
-		
-		// if less than our update delay has passed then wait until next time through 
+
+		// if less than our update delay has passed then wait until next time through
 		if (usec_elapsed(last_nav_position_time) < NavUpdateRequestDelay * 1e6)
 		{
 			usleep(1000);
 			continue;
 		}
-		
-		if (velocity) 
+
+		if (velocity)
 		{
 			player_pose2d_t nav_vel_WCF = GetNavVelocityInWRF();
 			short pa_in_bdeg = static_cast<short> (nav_vel_WCF.pa * 32768.0 / M_PI);
@@ -672,7 +714,7 @@ void SickNAV200::Main() {
 			gettimeofday(&last_nav_request_time,NULL);
 			gotReading = Laser.GetPositionSpeedVelocityAbsolute(short(nav_vel_WCF.px * 1000), short(nav_vel_WCF.py * 1000), pa_in_bdeg, Reading);
 		}
-		else 
+		else
 		{
 			gettimeofday(&last_nav_request_time,NULL);
 			gotReading = Laser.GetPositionAuto(Reading);
@@ -707,7 +749,7 @@ void SickNAV200::Main() {
 				// Log the following data:
 				// TIMESTAMP, UPDATE_PERIOD, REQUEST_DELTA, POSE, NAV_POSE, QUALITY, VELOCITY_DELTA, VELOCITY
 				fprintf(TimingLogFile, "%f %f %f %f %f %f %d %d %d %d %f %f %f %f\n",
-						time_double(last_nav_position_time), 
+						time_double(last_nav_position_time),
 						-static_cast<double> (usec_diff(last_nav_position_time, previous_update))/1e6,
 						-static_cast<double> (usec_diff(last_nav_position_time, last_nav_request_time))/1e6,
 						data_packet.pos.px,data_packet.pos.py,data_packet.pos.pa,
@@ -717,11 +759,11 @@ void SickNAV200::Main() {
 				);
 				fflush(TimingLogFile);
 			}
-			
-			
+
+
 			//printf("Got reading: quality %d\n", Reading.quality);
 			if (Reading.quality==0xFF || Reading.quality==0xFE
-					|| Reading.quality==0x00) {
+					|| Reading.quality<=QualityThreshold) {
 				data_packet.stall = 1;
 				StallCount = StallCount + 1;
 				Quality = 0;
@@ -734,21 +776,18 @@ void SickNAV200::Main() {
 			{
 				PLAYER_WARN1("Stalled for %d readings, performing full update\n", StallCount);
 				if (!Laser.EnterPositioningInput(SmoothingInput)) {
-					PLAYER_ERROR("unable to enter position mode\n");
-					return;
+					PLAYER_ERROR("NAV200: ERROR on attempt to enter position mode, setting intialised false\n");
+					Initialised = false;
+					data_packet.stall =1;
+					continue;
 				}
 			}
 
-
-			this->Publish(this->position_addr, PLAYER_MSGTYPE_DATA,
-					PLAYER_POSITION2D_DATA_STATE, (void*)&data_packet,
-					sizeof(data_packet), NULL);
 		} else {
 			PLAYER_WARN("Failed to get reading from laser scanner\n");
-			sleep(1);
-			// May have been disconnected. Attempt to return to positioning mode.
-			if (fetchOnStart)
-				FetchIfNeeded();
+			Initialised = false;
+			data_packet.stall = 1;
+			continue;
 		}
 	}
 }
@@ -1061,7 +1100,7 @@ player_pose2d_t SickNAV200::GetNavVelocityInWRF()
 		nav_vel_WCF.pa -= M_2_PI;
 	while (nav_vel_WCF.pa < -M_PI)
 		nav_vel_WCF.pa += M_2_PI;
-	
+
 	return nav_vel_WCF;
 }
 
