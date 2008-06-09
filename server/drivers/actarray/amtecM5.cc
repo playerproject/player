@@ -304,7 +304,7 @@ AmtecM5::AmtecM5(ConfigFile* cf, int section)
 	highpriority = cf->ReadInt(section, "highpriority", 0);
 
 	actuators = NULL;
-	acuatorsGeom = NULL;
+	actuatorsGeom = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
