@@ -106,6 +106,7 @@ class AMCLSensorData
 {
   // Pointer to sensor that generated the data
   public: AMCLSensor *sensor;
+          virtual ~AMCLSensorData() {}
 
   // Data timestamp
   public: double time;
