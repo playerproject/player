@@ -45,7 +45,7 @@
 #ifndef UTIL_DEBUG_H
 #define UTIL_DEBUG_H
 
-#include "config.h"
+#include <playerconfig.h>
 
 #include <iostream>
 

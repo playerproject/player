@@ -1,0 +1,7 @@
+#cmakedefine HAVE_BOOST_THREAD
+#cmakedefine HAVE_BOOST_SIGNALS
+
+#if defined (HAVE_BOOST_THREAD)
+#define _POSIX_PTHREAD_SEMANTICS
+#define _REENTRANT
+#endif

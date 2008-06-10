@@ -45,6 +45,7 @@
 #define PLAYERCLIENT_H
 
 #include "libplayerc++/utility.h"
+#include "libplayerc++/playerc++config.h"
 
 #include <string>
 #include <list>
@@ -184,7 +185,7 @@ class PlayerClient
     /// @brief Set the timeout for client requests
     void SetRequestTimeout(uint32_t seconds) { playerc_client_set_request_timeout(this->mClient,seconds); }
 
-    
+
     /// @brief Set connection retry limit, which is the number of times
     /// that we'll try to reconnect to the server after a socket error.
     /// Set to -1 for inifinite retry.
@@ -277,7 +278,7 @@ class PlayerClient
 
     /// Get the name for a given interface code
     std::string LookupName(int aCode) const;
-    
+
     /// Get count of the number of discarded messages on the server since the last call to this method
     uint32_t GetOverflowCount();
 };

@@ -3,7 +3,7 @@ IF (BUILD_PLAYERCC)
     OPTION (BUILD_CC_TESTS "Build the C++ client library tests" ON)
 
     IF (BUILD_CC_TESTS)
-        INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/client_libs)
+        INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/client_libs ${PROJECT_BINARY_DIR}/client_libs)
         SET (testsSrcs  test.cc
                         test.h
                         test_camera.cc
