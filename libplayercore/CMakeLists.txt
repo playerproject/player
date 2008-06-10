@@ -6,11 +6,6 @@ IF (NOT PYTHONINTERP_FOUND)
     MESSAGE (FATAL_ERROR "No Python interpreter found. Cannot continue.")
 ENDIF (NOT PYTHONINTERP_FOUND)
 
-# Auto-generate playerconfig.h.
-SET (playerconfig_h_in "${CMAKE_CURRENT_SOURCE_DIR}/playerconfig.h.in")
-SET (playerconfig_h "${CMAKE_CURRENT_BINARY_DIR}/playerconfig.h")
-CONFIGURE_FILE (${playerconfig_h_in} ${playerconfig_h})
-
 SET (player_interfaces_h "${CMAKE_CURRENT_BINARY_DIR}/player_interfaces.h")
 SET (interface_table_h "${CMAKE_CURRENT_BINARY_DIR}/interface_table.h")
 PROCESS_INTERFACES ("" ${CMAKE_CURRENT_SOURCE_DIR}/interfaces ${player_interfaces_h})

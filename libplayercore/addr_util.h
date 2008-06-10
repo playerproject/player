@@ -2,7 +2,7 @@
  *  Player - One Hell of a Robot Server
  *  Copyright (C) <insert dates here>
  *     <insert author's name(s) here>
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -43,7 +43,7 @@
 extern "C" {
 #endif
 
-#include <libplayercore/playerconfig.h>
+#include <playerconfig.h>
 
 void packedaddr_to_dottedip(char* dest, size_t len, uint32_t addr);
 int hostname_to_packedaddr(uint32_t* dest, const char* hostname);
