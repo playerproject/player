@@ -2,7 +2,7 @@
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2006 -
  *     Brian Gerkey
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -37,7 +37,7 @@
 #endif
 
 #include <libplayercore/playercommon.h>
-#include <libplayercore/playerconfig.h>
+#include <playerconfig.h>
 #include <replace/replace.h>
 //#include <sys/poll.h>
 
@@ -82,7 +82,7 @@ create_open(create_comm_t* r, unsigned char fullcontrol)
   fflush(stdout);
 
   // Open it.  non-blocking at first, in case there's no create
-  if((r->fd = open(r->serial_port, 
+  if((r->fd = open(r->serial_port,
                     O_RDWR | O_NONBLOCK, S_IRUSR | S_IWUSR )) < 0 )
   {
     perror("create_open():open():");
@@ -103,11 +103,11 @@ create_open(create_comm_t* r, unsigned char fullcontrol)
     r->fd = -1;
     return(-1);
   }
-  
+
   cfmakeraw(&term);
   cfsetispeed(&term, B57600);
   cfsetospeed(&term, B57600);
-  
+
   if(tcsetattr(r->fd, TCSAFLUSH, &term) < 0 )
   {
     perror("create_open():tcsetattr():");
@@ -135,7 +135,7 @@ create_open(create_comm_t* r, unsigned char fullcontrol)
 
   r->oa = r->ox = r->oy = 0;
 
-  // We know the robot is there; switch to blocking 
+  // We know the robot is there; switch to blocking
   // ok, we got data, so now set NONBLOCK, and continue
   if((flags = fcntl(r->fd, F_GETFL)) < 0)
   {
@@ -173,7 +173,7 @@ create_init(create_comm_t* r, unsigned char fullcontrol)
   r->mode = CREATE_MODE_PASSIVE;
 
   usleep(CREATE_DELAY_MODECHANGE_MS * 1e3);
-  
+
   if (fullcontrol)
   {
     cmdbuf[0] = CREATE_OPCODE_FULL;
@@ -250,8 +250,8 @@ create_set_speeds(create_comm_t* r, double tv, double rv)
   {
     // General case: convert rv to turn radius
     rad_mm = (int16_t)rint(tv_mm / rv);
-    // The robot seems to turn very slowly with the above 
-    rad_mm /= 2; 
+    // The robot seems to turn very slowly with the above
+    rad_mm /= 2;
     //printf("real rad_mm: %d\n", rad_mm);
     rad_mm = MAX(rad_mm, -CREATE_RADIUS_MAX_MM);
     rad_mm = MIN(rad_mm, CREATE_RADIUS_MAX_MM);
@@ -443,7 +443,7 @@ create_print(create_comm_t* r)
   printf("position: %.3lf %.3lf %.3lf\n", r->ox, r->oy, r->oa);
   printf("bumpers: l:%d r:%d\n", r->bumper_left, r->bumper_right);
   printf("wall: %d virtual wall: %d\n", r->wall, r->virtual_wall);
-  printf("wheeldrops: c:%d l:%d r:%d\n", 
+  printf("wheeldrops: c:%d l:%d r:%d\n",
          r->wheeldrop_caster, r->wheeldrop_left, r->wheeldrop_right);
   printf("cliff: l:%d fl:%d fr:%d r:%d\n",
          r->cliff_left, r->cliff_frontleft, r->cliff_frontright, r->cliff_right);
@@ -455,7 +455,7 @@ create_print(create_comm_t* r)
   printf("buttons: p:%d s:%d c:%d m:%d\n",
          r->button_power, r->button_spot, r->button_clean, r->button_max);
   printf("charging state: %d\n", r->charging_state);
-  printf("battery: voltage:%.3lf current:%.3lf temp:%.3lf charge:%.3lf capacity:%.3f\n", 
+  printf("battery: voltage:%.3lf current:%.3lf temp:%.3lf charge:%.3lf capacity:%.3f\n",
          r->voltage, r->current, r->temperature, r->charge, r->capacity);
 
 }
@@ -485,7 +485,7 @@ int create_set_song(create_comm_t* r, unsigned char songNumber, unsigned char so
     return(0);
 }
 
-int 
+int
 create_play_song(create_comm_t *r, unsigned char songNumber)
 {
   unsigned char cmdbuf[2];
