@@ -150,50 +150,48 @@ ENDMACRO (PLAYERDRIVER_REJECT_OS)
 
 
 ###############################################################################
-# PLAYERDRIVER_REQUIRE_PKG (_name _cumulativeVar _package _includeDir _libDir _linkFlags _cFlags [version])
+# PLAYERDRIVER_REQUIRE_PKG (_name _cumulativeVar _package _includeDir _libDir _linkFlags _cFlags [_version])
 # Check if a required package is available.
-# If a minimum version is required, supply it as an optional argument. For example, ">=1.2".
+# If a minimum version is required, supply it as an optional argument with no spaces. For example,
+# ">=0.9.6".
 #
 # _name:            Driver name.
 # _cumulativeVar:   The option used in the calling CMakeLists.txt to check if
 #                   the driver has been enabled.
-# _package:         Name of the package config file to look for.
-INCLUDE (UsePkgConfig)
+# _package:         Name (and possibly version) of the package to look for.
+INCLUDE (FindPkgConfig)
 MACRO (PLAYERDRIVER_REQUIRE_PKG _name _cumulativeVar _package _includeDir _libDir _linkFlags _cFlags)
+    IF (NOT PKG_CONFIG_FOUND)
+        MESSAGE (FATAL_ERROR "Could not find pkg-config.")
+    ENDIF (NOT PKG_CONFIG_FOUND)
+
     IF (${ARGC} GREATER 7)
-        SET (minVersionReq ${ARG7})
+        SET (_minVersion ${ARG7})
     ENDIF (${ARGC} GREATER 7)
+
     # Look for the package using pkg-config
-    PKGCONFIG (${_package} ${_includeDir} ${_libDir} ${_linkFlags} ${_cFlags})
-    SET (foundPackage FALSE)    # Make sure foundPackage isn't TRUE from a previous use of this macro
-    IF (${_includeDir} OR ${_libDir} OR ${_linkFlags} OR ${_cFlags})
-        SET (foundPackage TRUE)
-    ENDIF (${_includeDir} OR ${_libDir} OR ${_linkFlags} OR ${_cFlags})
-    # Check if the version is acceptable (if one was supplied)
-    IF (foundPackage AND minVersionReq)
-        # The UsePkgConfig module doesn't support versions, so have to do it ourselves. Joy.
-        EXECUTE_PROCESS (COMMAND pkg-config --exists --print-errors "${_package} ${minVersionReq}"
-            ERROR_VARIABLE haveMinVersionReq
-            ERROR_STRIP_TRAILING_WHITESPACE)
-        IF (NOT "x${haveMinVersionReq}" EQUAL "x")
-            SET (foundPackage FALSE)
-        ENDIF (NOT "x${haveMinVersionReq}" EQUAL "x")
-    ENDIF (foundPackage AND minVersionReq)
+    SET (_pkgVar "${_package}_PKG")
+    pkg_check_modules (${_pkgVar} ${_package}${_minVersion})
+
     # If not found, disable this driver
-    # Derefernce cumulativeVar only once because IF will dereference the variable name stored inside itself
-    IF (${_cumulativeVar} AND foundPackage)
+    # Dereference cumulativeVar only once because IF will dereference the variable name stored inside itself
+    IF (${_cumulativeVar} AND ${_pkgVar}_FOUND)
         # Driver will be built and package found - add a #define
         STRING (TOUPPER ${_package} packageNameUpper)
         # Append to a list instead of setting an option so we can auto-generate driver_config.h
         APPEND_TO_CACHED_LIST (PLAYERDRIVER_HAVE_DEFINES ${PLAYERDRIVER_HAVE_DEFINES_DESC} "HAVE_PKG_${_packageNameUpper}")
+        # Set the values
+        SET (${_includeDir} ${${_pkgVar}_INCLUDE_DIRS})
+        SET (${_libDir} ${${_pkgVar}_LIBRARY_DIRS})
+        LIST_TO_STRING (${_cFlags} "${${_pkgVar}_CFLAGS}")
+        LIST_TO_STRING (${_linkFlags} "${${_pkgVar}_LDFLAGS}")
     ELSEIF (${_cumulativeVar})
         # Case where cumulativeVar is set but package wasn't found - don't build
         SET (${_cumulativeVar} FALSE)
         PLAYERDRIVER_ADD_TO_NOT_BUILT (${_name} "Could not find package ${_package}")
         PLAYERDRIVER_ADD_DRIVEROPTION (${_name} OFF TRUE)
-    ENDIF (${_cumulativeVar} AND foundPackage)
+    ENDIF (${_cumulativeVar} AND ${_pkgVar}_FOUND)
 ENDMACRO (PLAYERDRIVER_REQUIRE_PKG)
-
 
 ###############################################################################
 # PLAYERDRIVER_REQUIRE_HEADER (_name _cumulativeVar _header)
