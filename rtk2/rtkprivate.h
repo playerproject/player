@@ -3,7 +3,7 @@
 #ifndef RTKPRIVATE_H
 #define RTKPRIVATE_H
 
-#include <config.h>
+#include <playerconfig.h>
 
 #if HAVE_STDINT_H
   #include <stdint.h>
