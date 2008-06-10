@@ -1,17 +1,17 @@
 CMAKE_MINIMUM_REQUIRED (VERSION 2.4 FATAL_ERROR)
 INCLUDE (PlayerUtils)
 
-INCLUDE (UsePkgConfig)
-PKGCONFIG (playerc PLAYERC_INC_DIR PLAYERC_LINK_DIR PLAYERC_LINK_FLAGS PLAYERC_CFLAGS)
-IF (NOT PLAYERC_CFLAGS)
-    MESSAGE (FATAL_ERROR "playerc pkg-config not found")
-ENDIF (NOT PLAYERC_CFLAGS)
-
-# Get the lib dir from pkg-config to use as the rpath
-FIND_PROGRAM (PKGCONFIG_EXECUTABLE NAMES pkg-config PATHS /usr/local/bin)
-EXECUTE_PROCESS (COMMAND ${PKGCONFIG_EXECUTABLE} --variable=libdir playerc
-    OUTPUT_VARIABLE PLAYERC_LIBDIR
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
+INCLUDE (FindPkgConfig)
+IF (NOT PKG_CONFIG_FOUND)
+    MESSAGE (FATAL_ERROR "Could not find pkg-config.")
+ELSE (NOT PKG_CONFIG_FOUND)
+    pkg_check_modules (PLAYERC playerc)
+    IF (NOT PLAYERC_FOUND)
+        MESSAGE (FATAL_ERROR "Could not find playerc with pkg-config.")
+    ENDIF (NOT PLAYERC_FOUND)
+ENDIF (NOT PKG_CONFIG_FOUND)
+LIST_TO_STRING (PLAYERC_CFLAGS_STR "${PLAYERC_CFLAGS}")
+LIST_TO_STRING (PLAYERC_LDFLAGS_STR "${PLAYERC_LDFLAGS}")
 
 
 ##############################################################################
@@ -32,32 +32,32 @@ MACRO (PLAYER_ADD_PLAYERC_CLIENT _clientName)
     ENDIF (_junk)
     LIST_TO_STRING (_cFlags "${_cFlags}")
 
-    IF (_includeDirs OR PLAYERC_INC_DIR)
-        INCLUDE_DIRECTORIES (${_includeDirs} ${PLAYERC_INC_DIR})
-    ENDIF (_includeDirs OR PLAYERC_INC_DIR)
-    IF (_libDirs OR PLAYERC_LINK_DIR)
-        LINK_DIRECTORIES (${_libDirs} ${PLAYERC_LINK_DIR})
-    ENDIF (_libDirs OR PLAYERC_LINK_DIR)
+    IF (_includeDirs OR PLAYERC_INCLUDE_DIRS)
+        INCLUDE_DIRECTORIES (${_includeDirs} ${PLAYERC_INCLUDE_DIRS})
+    ENDIF (_includeDirs OR PLAYERC_INCLUDE_DIRS)
+    IF (_libDirs OR PLAYERC_LIBRARY_DIRS)
+        LINK_DIRECTORIES (${_libDirs} ${PLAYERC_LIBRARY_DIRS})
+    ENDIF (_libDirs OR PLAYERC_LIBRARY_DIRS)
 
     ADD_EXECUTABLE (${_clientName} ${_srcs})
     SET_TARGET_PROPERTIES (${_clientName} PROPERTIES
-        LINK_FLAGS ${PLAYERC_LINK_FLAGS} ${_linkFlags}
+        LINK_FLAGS ${PLAYERC_LDFLAGS_STR} ${_linkFlags}
         INSTALL_RPATH ${PLAYERC_LIBDIR}
         BUILD_WITH_INSTALL_RPATH TRUE)
 
     # Get the current cflags for each source file, and add the global ones
     # (this allows the user to specify individual cflags for each source file
     # without the global ones overriding them).
-    IF (PLAYERC_CFLAGS OR _cFLags)
+    IF (PLAYERC_CFLAGS_STR OR _cFLags)
         FOREACH (_file ${_srcs})
             GET_SOURCE_FILE_PROPERTY (_fileCFlags ${_file} COMPILE_FLAGS)
             IF (_fileCFlags STREQUAL NOTFOUND)
-                SET (_newCFlags "${PLAYERC_CFLAGS} ${_cFlags}")
+                SET (_newCFlags "${PLAYERC_CFLAGS_STR} ${_cFlags}")
             ELSE (_fileCFlags STREQUAL NOTFOUND)
-                SET (_newCFlags "${_fileCFlags} ${PLAYERC_CFLAGS} ${_cFlags}")
+                SET (_newCFlags "${_fileCFlags} ${PLAYERC_CFLAGS_STR} ${_cFlags}")
             ENDIF (_fileCFlags STREQUAL NOTFOUND)
             SET_SOURCE_FILES_PROPERTIES (${_file} PROPERTIES
                 COMPILE_FLAGS ${_newCFlags})
         ENDFOREACH (_file)
-    ENDIF (PLAYERC_CFLAGS OR _cFLags)
+    ENDIF (PLAYERC_CFLAGS_STR OR _cFLags)
 ENDMACRO (PLAYER_ADD_PLAYERC_CLIENT)

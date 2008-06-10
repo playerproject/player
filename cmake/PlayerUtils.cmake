@@ -126,18 +126,6 @@ ENDMACRO (APPEND_TO_CACHED_STRING)
 
 
 ###############################################################################
-# Macro to look for a pkg-config package
-INCLUDE (UsePkgConfig)
-MACRO (CHECK_PACKAGE_EXISTS _package _result _includeDir _libDir _linkFlags _cFlags)
-    PKGCONFIG (${_package} ${_includeDir} ${_libDir} ${_linkFlags} ${_cFlags})
-    SET (${_result} FALSE)
-    IF (${_includeDir} OR ${_libDir} OR ${_linkFlags} OR ${_cFlags})
-        SET (${_result} TRUE)
-    ENDIF (${_includeDir} OR ${_libDir} OR ${_linkFlags} OR ${_cFlags})
-ENDMACRO (CHECK_PACKAGE_EXISTS)
-
-
-###############################################################################
 # Macro to turn a list into a string (why doesn't CMake have this built-in?)
 MACRO (LIST_TO_STRING _string _list)
     SET (${_string})

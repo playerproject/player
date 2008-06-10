@@ -1,23 +1,30 @@
 CMAKE_MINIMUM_REQUIRED (VERSION 2.4 FATAL_ERROR)
 INCLUDE (PlayerUtils)
 
-INCLUDE (UsePkgConfig)
-PKGCONFIG (playerc PLUGIN_PLAYERC_INC_DIR PLUGIN_PLAYERC_LINK_DIR PLUGIN_PLAYERC_LINK_FLAGS PLUGIN_PLAYERC_CFLAGS)
-IF (NOT PLUGIN_PLAYERC_CFLAGS)
-    MESSAGE (FATAL_ERROR "playerc pkg-config not found")
-ENDIF (NOT PLUGIN_PLAYERC_CFLAGS)
+INCLUDE (FindPkgConfig)
+IF (NOT PKG_CONFIG_FOUND)
+    MESSAGE (FATAL_ERROR "Could not find pkg-config.")
+ELSE (NOT PKG_CONFIG_FOUND)
+    pkg_check_modules (PLUGIN_PLAYERC playerc)
+    IF (NOT PLUGIN_PLAYERC_FOUND)
+        MESSAGE (FATAL_ERROR "Could not find playerc with pkg-config.")
+    ENDIF (NOT PLUGIN_PLAYERC_FOUND)
+ENDIF (NOT PKG_CONFIG_FOUND)
+LIST_TO_STRING (PLUGIN_PLAYERC_CFLAGS_STR "${PLUGIN_PLAYERC_CFLAGS}")
+LIST_TO_STRING (PLUGIN_PLAYERC_LDFLAGS_STR "${PLUGIN_PLAYERC_LDFLAGS}")
 
-INCLUDE (UsePkgConfig)
-PKGCONFIG (playercore PLAYERCORE_INC_DIR PLAYERCORE_LINK_DIR PLAYERCORE_LINK_FLAGS PLAYERCORE_CFLAGS)
-IF (NOT PLAYERCORE_CFLAGS)
-    MESSAGE (FATAL_ERROR "playercore pkg-config not found")
-ENDIF (NOT PLAYERCORE_CFLAGS)
+INCLUDE (FindPkgConfig)
+IF (NOT PKG_CONFIG_FOUND)
+    MESSAGE (FATAL_ERROR "Could not find pkg-config.")
+ELSE (NOT PKG_CONFIG_FOUND)
+    pkg_check_modules (PLAYERCORE playercore)
+    IF (NOT PLAYERCORE_FOUND)
+        MESSAGE (FATAL_ERROR "Could not find playercore with pkg-config.")
+    ENDIF (NOT PLAYERCORE_FOUND)
+ENDIF (NOT PKG_CONFIG_FOUND)
+LIST_TO_STRING (PLAYERCORE_CFLAGS_STR "${PLAYERCORE_CFLAGS}")
+LIST_TO_STRING (PLAYERCORE_LDFLAGS_STR "${PLAYERCORE_LDFLAGS}")
 
-# Get the lib dir from pkg-config to use as the rpath
-FIND_PROGRAM (PKGCONFIG_EXECUTABLE NAMES pkg-config PATHS /usr/local/bin)
-EXECUTE_PROCESS (COMMAND ${PKGCONFIG_EXECUTABLE} --variable=libdir playerc++
-    OUTPUT_VARIABLE PLAYERCORE_LIBDIR
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 # This is slightly different from the one used by the Player build system itself.
 # It takes a single file instead of a directory. It also expects playerinterfacegen.py
@@ -56,34 +63,34 @@ MACRO (PLAYER_ADD_PLUGIN_DRIVER _driverName)
     ENDIF (_junk)
     LIST_TO_STRING (_cFlags "${_cFlags}")
 
-    IF (_includeDirs OR PLAYERCORE_INC_DIR)
-        INCLUDE_DIRECTORIES (${_includeDirs} ${PLAYERC_INC_DIR})
-    ENDIF (_includeDirs OR PLAYERCORE_INC_DIR)
-    IF (_libDirs OR PLAYERCORE_LINK_DIR)
-        LINK_DIRECTORIES (${_libDirs} ${PLAYERC_LINK_DIR})
-    ENDIF (_libDirs OR PLAYERCORE_LINK_DIR)
+    IF (_includeDirs OR PLAYERCORE_INCLUDE_DIRS)
+        INCLUDE_DIRECTORIES (${_includeDirs} ${PLAYERCORE_INCLUDE_DIRS})
+    ENDIF (_includeDirs OR PLAYERCORE_INCLUDE_DIRS)
+    IF (_libDirs OR PLAYERCORE_LIBRARY_DIRS)
+        LINK_DIRECTORIES (${_libDirs} ${PLAYERCORE_LIBRARY_DIRS})
+    ENDIF (_libDirs OR PLAYERCORE_LIBRARY_DIRS)
 
     ADD_LIBRARY (${_driverName} SHARED ${_srcs})
     SET_TARGET_PROPERTIES (${_driverName} PROPERTIES
-        LINK_FLAGS ${PLAYERCORE_LINK_FLAGS} ${_linkFlags}
+        LINK_FLAGS ${PLAYERCORE_LDFLAGS_STR} ${_linkFlags}
         INSTALL_RPATH ${PLAYERCORE_LIBDIR}
         BUILD_WITH_INSTALL_RPATH TRUE)
 
     # Get the current cflags for each source file, and add the global ones
     # (this allows the user to specify individual cflags for each source file
     # without the global ones overriding them).
-    IF (PLAYERCORE_CFLAGS OR _cFLags)
+    IF (PLAYERCORE_CFLAGS_STR OR _cFLags)
         FOREACH (_file ${_srcs})
             GET_SOURCE_FILE_PROPERTY (_fileCFlags ${_file} COMPILE_FLAGS)
             IF (_fileCFlags STREQUAL NOTFOUND)
-                SET (_newCFlags "${PLAYERCORE_CFLAGS} ${_cFlags}")
+                SET (_newCFlags "${PLAYERCORE_CFLAGS_STR} ${_cFlags}")
             ELSE (_fileCFlags STREQUAL NOTFOUND)
-                SET (_newCFlags "${_fileCFlags} ${PLAYERCORE_CFLAGS} ${_cFlags}")
+                SET (_newCFlags "${_fileCFlags} ${PLAYERCORE_CFLAGS_STR} ${_cFlags}")
             ENDIF (_fileCFlags STREQUAL NOTFOUND)
             SET_SOURCE_FILES_PROPERTIES (${_file} PROPERTIES
                 COMPILE_FLAGS ${_newCFlags})
         ENDFOREACH (_file)
-    ENDIF (PLAYERCORE_CFLAGS OR _cFLags)
+    ENDIF (PLAYERCORE_CFLAGS_STR OR _cFLags)
 ENDMACRO (PLAYER_ADD_PLUGIN_DRIVER)
 
 
@@ -110,47 +117,49 @@ MACRO (PLAYER_ADD_PLUGIN_INTERFACE _interfName _interfDef)
 
     PLAYER_PROCESS_ARGUMENTS (_srcs _includeDirs _libDirs _linkFlags _cFlags _junk ${ARGN})
     IF (_junk)
-        MESSAGE (STATUS "WARNING: unkeyworded arguments found in PLAYER_ADD_PLUGIN_DRIVER: ${_junk}")
+        MESSAGE (STATUS
+                "WARNING: unkeyworded arguments found in PLAYER_ADD_PLUGIN_INTERFACE: ${_junk}")
     ENDIF (_junk)
     LIST_TO_STRING (_cFlags "${_cFlags}")
 
     IF (_includeDirs OR PLUGIN_PLAYERC_INC_DIR)
         INCLUDE_DIRECTORIES (${_includeDirs} ${PLUGIN_PLAYERC_INC_DIR} ${CMAKE_CURRENT_BINARY_DIR})
     ENDIF (_includeDirs OR PLUGIN_PLAYERC_INC_DIR)
-    IF (_libDirs OR PLUGIN_PLAYERC_LINK_DIR)
-        LINK_DIRECTORIES (${_libDirs} ${PLUGIN_PLAYERC_LINK_DIR})
-    ENDIF (_libDirs OR PLUGIN_PLAYERC_LINK_DIR)
+    IF (_libDirs OR PLUGIN_PLAYERC_LIBRARY_DIRS)
+        LINK_DIRECTORIES (${_libDirs} ${PLUGIN_PLAYERC_LIBRARY_DIRS})
+    ENDIF (_libDirs OR PLUGIN_PLAYERC_LIBRARY_DIRS)
 
     # Have to generate some source files
     SET (interface_h ${CMAKE_CURRENT_BINARY_DIR}/${_interfName}_interface.h)
     PROCESS_INTERFACES (${_interfDef} ${interface_h} --plugin)
     SET (functiontable_c ${CMAKE_CURRENT_BINARY_DIR}/${_interfName}_functiontable.c)
     PROCESS_INTERFACES (${_interfDef} ${functiontable_c} --plugin --functiontable)
-    SET_SOURCE_FILES_PROPERTIES (${functiontable_c} PROPERTIES COMPILE_FLAGS ${PLUGIN_PLAYERC_CFLAGS})
+    SET_SOURCE_FILES_PROPERTIES (${functiontable_c} PROPERTIES
+                                COMPILE_FLAGS ${PLUGIN_PLAYERC_CFLAGS_STR})
     SET (xdr_h ${CMAKE_CURRENT_BINARY_DIR}/${_interfName}_xdr.h)
     SET (xdr_c ${CMAKE_CURRENT_BINARY_DIR}/${_interfName}_xdr.c)
     PROCESS_XDR (${interface_h} ${xdr_h} ${xdr_c})
-    SET_SOURCE_FILES_PROPERTIES (${xdr_c} PROPERTIES COMPILE_FLAGS ${PLUGIN_PLAYERC_CFLAGS})
+    SET_SOURCE_FILES_PROPERTIES (${xdr_c} PROPERTIES COMPILE_FLAGS ${PLUGIN_PLAYERC_CFLAGS_STR})
 
     ADD_LIBRARY (${_interfName} SHARED ${interface_h} ${functiontable_c} ${xdr_h} ${xdr_c} ${_srcs})
     SET_TARGET_PROPERTIES (${_interfName} PROPERTIES
-        LINK_FLAGS ${PLUGIN_PLAYERC_LINK_FLAGS} ${_linkFlags}
-        INSTALL_RPATH ${PLAYERCORE_LIBDIR}
+        LINK_FLAGS ${PLUGIN_PLAYERC_LDFLAGS_STR} ${_linkFlags}
+        INSTALL_RPATH ${PLUGIN_PLAYERC_LIBDIR}
         BUILD_WITH_INSTALL_RPATH TRUE)
 
     # Get the current cflags for each source file, and add the global ones
     # (this allows the user to specify individual cflags for each source file
     # without the global ones overriding them).
-    IF (PLAYERCORE_CFLAGS OR _cFLags)
+    IF (PLUGIN_PLAYERC_CFLAGS_STR OR _cFLags)
         FOREACH (_file ${_srcs})
             GET_SOURCE_FILE_PROPERTY (_fileCFlags ${_file} COMPILE_FLAGS)
             IF (_fileCFlags STREQUAL NOTFOUND)
-                SET (_newCFlags "${PLUGIN_PLAYERC_CFLAGS} ${_cFlags}")
+                SET (_newCFlags "${PLUGIN_PLAYERC_CFLAGS_STR} ${_cFlags}")
             ELSE (_fileCFlags STREQUAL NOTFOUND)
-                SET (_newCFlags "${_fileCFlags} ${PLUGIN_PLAYERC_CFLAGS} ${_cFlags}")
+                SET (_newCFlags "${_fileCFlags} ${PLUGIN_PLAYERC_CFLAGS_STR} ${_cFlags}")
             ENDIF (_fileCFlags STREQUAL NOTFOUND)
             SET_SOURCE_FILES_PROPERTIES (${_file} PROPERTIES
                 COMPILE_FLAGS ${_newCFlags})
         ENDFOREACH (_file)
-    ENDIF (PLAYERCORE_CFLAGS OR _cFLags)
+    ENDIF (PLUGIN_PLAYERC_CFLAGS_STR OR _cFLags)
 ENDMACRO (PLAYER_ADD_PLUGIN_INTERFACE)
