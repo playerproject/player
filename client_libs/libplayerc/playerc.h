@@ -467,8 +467,8 @@ typedef struct _playerc_client_t
 
   /** How many messages were lost on the server due to overflows, incremented by player, cleared by user. */
   uint32_t overflow_count;
-  
-  
+
+
   /** @internal Socket descriptor */
   int sock;
 
@@ -483,7 +483,7 @@ typedef struct _playerc_client_t
    * received any data in this round? */
   int data_received;
 
-  
+
   /** List of available (but not necessarily subscribed) devices.
       This list is filled in by playerc_client_get_devlist(). */
   playerc_device_info_t devinfos[PLAYER_MAX_DEVICES];
@@ -681,7 +681,7 @@ If an error is returned then no data will have been stored in rep_data.
 */
 int playerc_client_request(playerc_client_t *client,
                            struct _playerc_device_t *device, uint8_t reqtype,
-                           void *req_data, void **rep_data);
+                           const void *req_data, void **rep_data);
 
 /** @brief Wait for response from server (blocking).
 
@@ -1210,7 +1210,7 @@ typedef struct
 {
   /** Device info; must be at the start of all device structures. */
   playerc_device_t info;
-  
+
   uint32_t enabled;
   double duty_cycle;
   double period;
@@ -1231,18 +1231,18 @@ int playerc_blinkenlight_subscribe(playerc_blinkenlight_t *device, int access);
 int playerc_blinkenlight_unsubscribe(playerc_blinkenlight_t *device);
 
 /** Enable/disable power to the blinkenlight device. */
-int playerc_blinkenlight_enable( playerc_blinkenlight_t *device, 
+int playerc_blinkenlight_enable( playerc_blinkenlight_t *device,
 				 uint32_t enable );
 
 /** Set the output color for the blinkenlight device. */
-int playerc_blinkenlight_color( playerc_blinkenlight_t *device, 
+int playerc_blinkenlight_color( playerc_blinkenlight_t *device,
 				uint32_t id,
 				uint8_t red,
 				uint8_t green,
 				uint8_t blue );
 /** Make the light blink, setting the period in seconds and the
     mark/space ratiom (0.0 to 1.0). */
-int playerc_blinkenlight_blink( playerc_blinkenlight_t *device, 
+int playerc_blinkenlight_blink( playerc_blinkenlight_t *device,
 				uint32_t id,
 				float period,
 				float duty_cycle );
@@ -1689,12 +1689,12 @@ int playerc_graphics3d_draw(playerc_graphics3d_t *device,
 int playerc_graphics3d_clear(playerc_graphics3d_t *device );
 
 /** @brief Translate the drawing coordinate system in 3d */
-int playerc_graphics3d_translate(playerc_graphics3d_t *device, 
+int playerc_graphics3d_translate(playerc_graphics3d_t *device,
 				 double x, double y, double z );
 
 
 /** @brief Rotate the drawing coordinate system by [a] radians about the vector described by [x,y,z] */
-int playerc_graphics3d_rotate( playerc_graphics3d_t *device, 
+int playerc_graphics3d_rotate( playerc_graphics3d_t *device,
 			       double a, double x, double y, double z );
 /** @} */
 
@@ -2412,11 +2412,11 @@ int playerc_opaque_unsubscribe(playerc_opaque_t *device);
 /** @brief Send a generic command */
 int playerc_opaque_cmd(playerc_opaque_t *device, player_opaque_data_t *data);
 
-/** @brief Send a generic request 
- * 
+/** @brief Send a generic request
+ *
  * If a non null value is passed for reply memory for the response will be allocated
  * and its pointer stored in reply. The caller is responsible for freeing this memory
- * 
+ *
  * If an error is returned no memory will have been allocated*/
 int playerc_opaque_req(playerc_opaque_t *device, player_opaque_data_t *request, player_opaque_data_t **reply);
 

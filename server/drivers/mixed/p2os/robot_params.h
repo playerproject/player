@@ -85,7 +85,7 @@ typedef struct
 typedef struct
 {
   double AngleConvFactor; //
-  char* Class;
+  const char* Class;
   double DiffConvFactor; //
   double DistConvFactor; //
   int FrontBumpers; //
@@ -95,8 +95,8 @@ typedef struct
   int IRNum; //
   int IRUnit; //
   int LaserFlipped; //
-  char* LaserIgnore;
-  char* LaserPort;
+  const char* LaserIgnore;
+  const char* LaserPort;
   int LaserPossessed; //
   int LaserPowerControlled; //
   int LaserTh; //
@@ -121,7 +121,7 @@ typedef struct
   int SettableAccsDecs; //
   int SettableVelMaxes; //
   int SonarNum; //
-  char* Subclass;
+  const char* Subclass;
   int SwitchToBaudRate; //
   int TableSensingIR; //
   int TransAccel; //

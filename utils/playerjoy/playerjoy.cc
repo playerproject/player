@@ -190,7 +190,7 @@ private:
   struct timeval lastcommand;
 
 public:
-  Client(char* host, int port ); // constructor
+  Client(const char* host, int port ); // constructor
 
   void Read( void ); // get data from Player
   void Update( struct controller* cont ); // send commands to Player
@@ -462,7 +462,7 @@ keyboard_handler(void* arg)
 }
 #endif
 
-Client::Client(char* host, int port )
+Client::Client(const char* host, int port )
 {
   printf( "Connecting to Player at %s:%d - ", host, port );
   fflush( stdout );

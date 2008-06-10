@@ -45,8 +45,8 @@
 
 	- gzip (boolean)
 		- default: 0 (disable)
-		- compress the log file 
-		
+		- compress the log file
+
 	@par Configuration file options
 	- file (string)
 	- Default: "output.xml"
@@ -58,13 +58,13 @@
 	- PLAYER_LOG_GET_STATE
 	- PLAYER_LOG_SET_FILENAME (not yet implemented)
 
-	@par Example 
+	@par Example
 
 	@verbatim
 	driver
 	(
 	name "readlog"
-	filename  "jwing.log" 
+	filename  "jwing.log"
 	speed 1
 	provides ["log:0" "laser:0" "laser:1" "position2d:0"]
 	autoplay 1
@@ -88,9 +88,9 @@
 /** @} */
 #include <stdio.h>
 #include <errno.h>
-#include <fcntl.h>  
-#include <string.h> 
-#include <stdlib.h> 
+#include <fcntl.h>
+#include <string.h>
+#include <stdlib.h>
 #include <pthread.h>
 #include <libplayercore/playercore.h>
 #include <unistd.h>
@@ -102,44 +102,44 @@
 
 #include <list>
 #define ID_MAX_SIZE 1024
-#define DRIVER_NAME "kartowriter" 
+#define DRIVER_NAME "kartowriter"
 #define DEFAULT_UID "http://unknown"
 #define MAX_HOSTNAME 256
 
 using namespace std;
 
-class LogDevice 
+class LogDevice
 	{
 private:
 
 public:
 	Device* pDevice;
 	char* pUid;
-	player_devaddr_t addr; 
+	player_devaddr_t addr;
 
-	// constructor 
-	LogDevice(const player_devaddr_t& playerAddr); 
+	// constructor
+	LogDevice(const player_devaddr_t& playerAddr);
 	//destructor
 	virtual ~LogDevice();
 	//prints the Device unique ID
-	char* getUID();
+	const char* getUID();
 };
 
-LogDevice::LogDevice(const player_devaddr_t& playerAddr) : pDevice(NULL), pUid(NULL), addr(playerAddr) 
+LogDevice::LogDevice(const player_devaddr_t& playerAddr) : pDevice(NULL), pUid(NULL), addr(playerAddr)
 	{
-	pUid = getUID();
+	pUid = strdup(getUID());
 	}
-	
+
 LogDevice::~LogDevice() {
 	free(pUid);
 }
 
 
 //
-// Main Class 
+// Main Class
 //
 
-class KartoLogger : public Driver 
+class KartoLogger : public Driver
 {
 private:
 
@@ -151,10 +151,10 @@ private:
 	bool debug; // Debug flag to print more message
 	bool enableLogger; // Enabling flag
 	bool compress; // Compress flag  (use gzip at the end or not)
-	player_pose2d_t currentPose; 
-	
+	player_pose2d_t currentPose;
+
 	// When we start logging
-	double startTime; 
+	double startTime;
 
 	// Side effect set and unset the file descriptor kartoFile.
 	int OpenLog();
@@ -168,12 +168,12 @@ private:
 	void WriteSonarScan(player_msghdr_t* hdr, player_sonar_data_t* scan);
 
 	// Print the geometry (and all specific info) of any LogDevices
-	int WriteGeometry(LogDevice* pDev); 
+	int WriteGeometry(LogDevice* pDev);
 	void ComputeQuaternion(double heading, double attitude, double bank ,double* x,double* y, double* z, double* w);
 
 public:
 
-	// constructor 
+	// constructor
 	KartoLogger( ConfigFile* pCf, int section);
 
 	virtual ~KartoLogger();
@@ -182,7 +182,7 @@ public:
 	int Setup();
 	int Shutdown();
 
-	char* getUID(player_devaddr_t dev);
+	const char* getUID(player_devaddr_t dev);
 	virtual int Unsubscribe(Device* pId);
 
 	// MessageHandler
@@ -198,11 +198,11 @@ void KartoLogger::Main()
 		pthread_testcancel();
 
 		this->ProcessMessages();
-			if(!this->enableLogger) 
+			if(!this->enableLogger)
 				{
 					break;
-				}			
-	}		
+				}
+	}
 	printf("exiting...\n");
 }
 
@@ -213,11 +213,11 @@ int KartoLogger::Unsubscribe(Device* pDevice)
 {
 		if (pDevice != NULL)
 			{
-			return pDevice->Unsubscribe(this->InQueue); 
+			return pDevice->Unsubscribe(this->InQueue);
 		}
-		else 
+		else
 		{
-			return -1;	
+			return -1;
 		}
 }
 
@@ -241,7 +241,7 @@ int KartoLogger::Unsubscribe(Device* pDevice)
 // /** Request/reply subtype: set filename to write */
 // #define PLAYER_LOG_REQ_SET_FILENAME     5
 // see libplayercore/player.h
-// Warning !!! 
+// Warning !!!
 // If player code changes this code need to be
 // updated.
 // Since the logger is registred to many devices
@@ -252,10 +252,10 @@ int KartoLogger::Unsubscribe(Device* pDevice)
 // WritePosition, WriteLaserScan, WriteSonarScan
 //
 // Logic:
-//   First we check for the type of message 
+//   First we check for the type of message
 //   If there a REQuest type, we check for the correct size.
 //     Then we change the value (enablingLogger) and send ACK
-//   If it's a data message (LAYER_MSGTYPE_DATA), 
+//   If it's a data message (LAYER_MSGTYPE_DATA),
 //     Call the right Write function depending of the type.
 //
 // Return values:
@@ -307,7 +307,7 @@ int KartoLogger::ProcessMessage(QueuePointer &pQueue, player_msghdr* pHdr, void*
 		player_log_get_state_t playerState;
 
 		playerState.type = PLAYER_LOG_TYPE_WRITE;
-		if(this->enableLogger) 
+		if(this->enableLogger)
 			{
 			playerState.state = 1;
 			}
@@ -326,7 +326,7 @@ int KartoLogger::ProcessMessage(QueuePointer &pQueue, player_msghdr* pHdr, void*
 	else if(pHdr->type == PLAYER_MSGTYPE_DATA)
 	{
 	// If logging is stopped, then don't log
-		if(!this->enableLogger) 
+		if(!this->enableLogger)
 			{
 				return 0;
 			}
@@ -337,10 +337,10 @@ int KartoLogger::ProcessMessage(QueuePointer &pQueue, player_msghdr* pHdr, void*
 			case PLAYER_LASER_CODE:
 				if (pHdr->subtype == PLAYER_LASER_DATA_SCANPOSE) {
 					this->WriteLaserScanPose(pHdr, (player_laser_data_scanpose_t*)pData);
-				} 
+				}
 				else {
 					this->WriteLaserScan(pHdr, (player_laser_data_t*)pData);
-					}	
+					}
 				break;
 			case PLAYER_POSITION2D_CODE:
 				this->WritePosition(pHdr, (player_position2d_data_t*)pData);
@@ -379,7 +379,7 @@ int KartoLogger::OpenLog() {
 	this->kartoFile = fopen(this->kartoFilename, "w+");
 	if(this->kartoFile == NULL)
 	{
-		PLAYER_ERROR2("unable to open [%s]: %s\n", this->kartoFilename, strerror(errno));    
+		PLAYER_ERROR2("unable to open [%s]: %s\n", this->kartoFilename, strerror(errno));
 		return -1;
 	}
 	time_t	t;
@@ -387,7 +387,7 @@ int KartoLogger::OpenLog() {
 	GlobalTime->GetTimeDouble(&(this->startTime));
 	fprintf(this->kartoFile,"<?xml version='1.0' encoding='utf-8'?>\n<!DOCTYPE KartoLogger SYSTEM \"http://karto.ai.sri.com/dtd/KartoLogger.dtd\" >\n<KartoLogger version=\"1.0\">\n<UTCTime>\n\t%s</UTCTime>\n",ctime(&t));
 	return 0;
-} 
+}
 
 
 //
@@ -399,22 +399,22 @@ int KartoLogger::CloseLog() {
 		fprintf(this->kartoFile,"</DeviceStates>\n</KartoLogger>\n");
 		fflush(this->kartoFile);
 		fclose(this->kartoFile);
-		if (this->compress) 
+		if (this->compress)
 			printf("Sorry gzip compression is not yet implemented\n");
 		this->kartoFile = NULL;
 	}
 	return 0;
-} 
+}
 
 //
 //KartoLogger::Setup Initialize KartoLogger using the KartoLoggerInit function
-// return code is 0 everything is fine, -1 error 
+// return code is 0 everything is fine, -1 error
 //
 int	KartoLogger::Setup()
 {
-	int ret; 
-	ret = OpenLog(); 
-	if(ret != 0) 
+	int ret;
+	ret = OpenLog();
+	if(ret != 0)
 		{
 			return ret;
 		}
@@ -442,7 +442,7 @@ int	KartoLogger::Setup()
 
 //
 // KartoLogger::Destructor
-// 
+//
 KartoLogger::~KartoLogger()
 {
 	Shutdown();
@@ -451,10 +451,10 @@ KartoLogger::~KartoLogger()
 //
 // KartoLogger:KartoLogger constructor
 // TODO:initialize all variables
-KartoLogger::KartoLogger( ConfigFile* cf, int section) : Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,PLAYER_LOG_CODE ), 
-                                                         kartoFile(NULL), debug(false),enableLogger(false), 
+KartoLogger::KartoLogger( ConfigFile* cf, int section) : Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,PLAYER_LOG_CODE ),
+                                                         kartoFile(NULL), debug(false),enableLogger(false),
 		                                                     compress(false), startTime(0.0)
-{ 
+{
 	player_devaddr_t addr;
 
 	for (int i = 0; i < cf->GetTupleCount(section, "requires"); i++)
@@ -469,7 +469,7 @@ KartoLogger::KartoLogger( ConfigFile* cf, int section) : Driver(cf, section, fal
 		{
 			devices.push_front(pDev);
 		}
-		else 
+		else
 		{
 			PLAYER_ERROR("Can't create LogDevice (out of memory)");
 		}
@@ -489,7 +489,7 @@ KartoLogger::KartoLogger( ConfigFile* cf, int section) : Driver(cf, section, fal
 		this->compress = true;
 	else
 		this->compress = false;
-	
+
 }
 
 //
@@ -501,7 +501,7 @@ Driver* KartoLogger_Init( ConfigFile* cf, int section)
 	Driver* pDriver = (Driver*)(new KartoLogger(cf, section));
 	assert(pDriver != NULL);
 	return pDriver;
-		
+
 }
 
 
@@ -525,7 +525,7 @@ int KartoLogger::WriteGeometry(LogDevice* pDev) {
 			PLAYER_MSGTYPE_REQ,
 			PLAYER_LASER_REQ_GET_GEOM,
 			NULL, 0, NULL, false)))
-		{ 
+		{
 			PLAYER_ERROR("failed to get laser geometry");
 			return -1;
 		}
@@ -540,7 +540,7 @@ int KartoLogger::WriteGeometry(LogDevice* pDev) {
 		break;
 		case PLAYER_SONAR_CODE:
 		// Get the sonar poses
-		if(!(pMsg = pDev->pDevice->Request(this->InQueue, 
+		if(!(pMsg = pDev->pDevice->Request(this->InQueue,
 			PLAYER_MSGTYPE_REQ,
 			PLAYER_SONAR_REQ_GET_GEOM,
 			NULL, 0, NULL,false)))
@@ -566,16 +566,16 @@ int KartoLogger::WriteGeometry(LogDevice* pDev) {
 //
 // KartoLogger:getUID
 // No need to check for buffer overflow on the sprintf since hostname is max 256, dev.robot is uint32, dev.index is uint16
-char* KartoLogger::getUID(player_devaddr_t dev) {
+const char* KartoLogger::getUID(player_devaddr_t dev) {
 	char* id = (char*)malloc(ID_MAX_SIZE);
-	if (id == NULL) 
+	if (id == NULL)
 		{
 			return DEFAULT_UID;
 		}
 	char hostname[MAX_HOSTNAME];
 	packedaddr_to_dottedip(hostname,MAX_HOSTNAME,dev.host);
 	switch (dev.interf) {
-		case PLAYER_LASER_CODE: 
+		case PLAYER_LASER_CODE:
 			sprintf(id,"%s:%d:laser:%d",hostname,dev.robot,dev.index);
 			break;
 		case PLAYER_SONAR_CODE:
@@ -593,16 +593,16 @@ char* KartoLogger::getUID(player_devaddr_t dev) {
 //
 // KartoLogger:getUID()
 // No need to check for buffer overflow on the sprintf since hostname is max 256, addr->robot is uint32, addr->index is uint16
-char* LogDevice::getUID() {	
-	if (this->pUid != NULL) 	
-		{	
+const char* LogDevice::getUID() {
+	if (this->pUid != NULL)
+		{
 				return (this->pUid);
 		}
 		char* id = (char*)malloc(ID_MAX_SIZE);
-		if (id == NULL) 
+		if (id == NULL)
 			{
 				return DEFAULT_UID;
-			}	
+			}
 		char hostname[MAX_HOSTNAME];
 		packedaddr_to_dottedip(hostname,MAX_HOSTNAME,this->addr.host);
 		switch (this->addr.interf) {
@@ -624,12 +624,12 @@ char* LogDevice::getUID() {
 //
 // KartoLogger:
 //
-void 
+void
 	KartoLogger::WriteLaserScan(player_msghdr_t* pHdr, player_laser_data_t* pScan)
 {
 	double t;
 	double x,y,z,w;
-	ComputeQuaternion(this->currentPose.pa,0,0,&x,&y,&z,&w); 
+	ComputeQuaternion(this->currentPose.pa,0,0,&x,&y,&z,&w);
 	GlobalTime->GetTimeDouble(&t);
 	t = t - this->startTime;
 	if (debug) {
@@ -646,7 +646,7 @@ void
 	fprintf(this->kartoFile,"\t\t</DistanceMeasurements>\n");
   if (debug) {
 		fprintf(this->kartoFile,"\t<Pose>\n\t\t<Position>\n\t\t<X>%.3f</X>\n\t\t<Y>0.0</Y>\n\t\t<Z>%.3f</Z>\n\t\t</Position>\n\t\t<Orientation>\n\t\t<X>%f</X>\n\t\t<Y>%f</Y>\n\t\t<Z>%f</Z>\n\t\t<W>%f</W>\n\t\t</Orientation>\n\t</Pose>\n",this->currentPose.py,this->currentPose.px,x,y,z,w);
-		fprintf(this->kartoFile,"</LocalizedRangeScan>\n");	
+		fprintf(this->kartoFile,"</LocalizedRangeScan>\n");
 	}
 	else {
 		fprintf(this->kartoFile,"</RangeScan>\n");
@@ -658,7 +658,7 @@ void
 //
 // KartoLogger::WriteLaserScanPose
 //
-void 
+void
 KartoLogger::WriteLaserScanPose(player_msghdr_t* pHdr, player_laser_data_scanpose_t* pScan)
 {
 	double t;

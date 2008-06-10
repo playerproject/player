@@ -1,8 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -156,8 +156,8 @@ driver
 #include <libplayercore/playercore.h>
 
 #define ACTS_NUM_CHANNELS 32
-#define ACTS_HEADER_SIZE_1_0 2*ACTS_NUM_CHANNELS  
-#define ACTS_HEADER_SIZE_1_2 4*ACTS_NUM_CHANNELS  
+#define ACTS_HEADER_SIZE_1_0 2*ACTS_NUM_CHANNELS
+#define ACTS_HEADER_SIZE_1_2 4*ACTS_NUM_CHANNELS
 #define ACTS_BLOB_SIZE_1_0 10
 #define ACTS_BLOB_SIZE_1_2 16
 #define ACTS_MAX_BLOBS_PER_CHANNEL 10
@@ -179,7 +179,7 @@ typedef enum
 /* default is to use older ACTS (until we change our robots) */
 #define DEFAULT_ACTS_VERSION ACTS_VERSION_1_0
 #define DEFAULT_ACTS_CONFIGFILE "/usr/local/acts/actsconfig"
-/* default is to give no path for the binary; in this case, use execvp() 
+/* default is to give no path for the binary; in this case, use execvp()
  * and user's PATH */
 #define DEFAULT_ACTS_PATH ""
 #define DEFAULT_ACTS_WIDTH 160
@@ -204,7 +204,7 @@ typedef struct acts_header_elt
 
   /** Number of blobs for this channel. */
   uint16_t num;
-  
+
 } acts_header_elt_t;
 
 
@@ -223,7 +223,7 @@ typedef struct acts_blob_elt
 
   /** Bounding box for the blob (image coords). */
   uint16_t left, right, top, bottom;
-  
+
 } acts_blob_elt_t;
 
 
@@ -238,27 +238,27 @@ typedef struct acts_data
 
   /** The list of blobs. */
   acts_blob_elt_t blobs[ACTS_MAX_BLOBS];
-  
+
 } acts_data_t;
 
 
 
-class Acts:public Driver 
+class Acts:public Driver
 {
   private:
     int debuglevel;             // debuglevel 0=none, 1=basic, 2=everything
     int pid;      // ACTS's pid so we can kill it later
 
-    
+
     // returns the enum representation of the given version string, or
     // ACTS_VERSION_UNKNOWN on failure to match.
-    acts_version_t version_string_to_enum(char* versionstr);
-    
+    acts_version_t version_string_to_enum(const char* versionstr);
+
     // writes the string representation of the given version number into
     // versionstr, up to len.
     // returns  0 on success
     //         -1 on failure to match.
-    int version_enum_to_string(acts_version_t versionnum, char* versionstr, 
+    int version_enum_to_string(acts_version_t versionnum, char* versionstr,
                                int len);
 
     // stuff that will be used on the cmdline to start ACTS
@@ -291,7 +291,7 @@ class Acts:public Driver
   public:
     int sock;               // socket to ACTS
 
-    // constructor 
+    // constructor
     //
     Acts( ConfigFile* cf, int section);
 
@@ -310,7 +310,7 @@ Driver* Acts_Init( ConfigFile* cf, int section)
 }
 
 // a driver registration function
-void 
+void
 Acts_Register(DriverTable* table)
 {
   table->AddDriver("acts", Acts_Init);
@@ -344,7 +344,7 @@ Acts::Acts( ConfigFile* cf, int section)
   strncpy(binarypath,
           cf->ReadFilename(section, "path", DEFAULT_ACTS_PATH),
           sizeof(binarypath));
-  strncpy(configfilepath, 
+  strncpy(configfilepath,
           cf->ReadFilename(section, "configfile", DEFAULT_ACTS_CONFIGFILE),
           sizeof(configfilepath));
   strncpy(tmpstr,
@@ -358,7 +358,7 @@ Acts::Acts( ConfigFile* cf, int section)
   }
   width = cf->ReadInt(section, "width", DEFAULT_ACTS_WIDTH);
   height = cf->ReadInt(section, "height", DEFAULT_ACTS_HEIGHT);
-  
+
   // now, get the optionals
   memset(minarea,0,sizeof(minarea));
   if((tmpint = cf->ReadInt(section, "pixels", -1)) >= 0)
@@ -369,19 +369,19 @@ Acts::Acts( ConfigFile* cf, int section)
     snprintf(fps,sizeof(fps),"%d",tmpint);
   memset(drivertype,0,sizeof(drivertype));
   if(cf->ReadString(section, "drivertype", NULL))
-    strncpy(drivertype, cf->ReadString(section, "drivertype", NULL), 
+    strncpy(drivertype, cf->ReadString(section, "drivertype", NULL),
             sizeof(drivertype)-1);
   invertp = cf->ReadInt(section, "invert", -1);
   memset(devicepath,0,sizeof(devicepath));
   if(cf->ReadString(section, "devicepath", NULL))
-    strncpy(devicepath, cf->ReadString(section, "devicepath", NULL), 
+    strncpy(devicepath, cf->ReadString(section, "devicepath", NULL),
             sizeof(devicepath)-1);
   memset(channel,0,sizeof(channel));
   if((tmpint = cf->ReadInt(section, "channel", -1)) >= 0)
     snprintf(channel,sizeof(channel),"%d",tmpint);
   memset(norm,0,sizeof(norm));
   if(cf->ReadString(section, "norm", NULL))
-    strncpy(norm, cf->ReadString(section, "norm", NULL), 
+    strncpy(norm, cf->ReadString(section, "norm", NULL),
             sizeof(norm)-1);
   pxc200p = cf->ReadInt(section, "pxc200", -1);
   memset(brightness,0,sizeof(brightness));
@@ -410,7 +410,7 @@ Acts::Acts( ConfigFile* cf, int section)
   header_elt_len = header_len / ACTS_MAX_CHANNELS;
   memset(portnumstring, 0, sizeof(portnumstring));
   snprintf(portnumstring,sizeof(portnumstring),"%d",portnum);
-  
+
   memset(widthstring, 0, sizeof(widthstring));
   snprintf(widthstring,sizeof(widthstring),"%d",width);
 
@@ -427,10 +427,10 @@ Acts::Acts( ConfigFile* cf, int section)
     this->colors[ch] = color;
   }
 }
-    
+
 // returns the enum representation of the given version string, or
 // -1 on failure to match.
-acts_version_t Acts::version_string_to_enum(char* versionstr)
+acts_version_t Acts::version_string_to_enum(const char* versionstr)
 {
   if(!strcmp(versionstr,ACTS_VERSION_1_0_STRING))
     return(ACTS_VERSION_1_0);
@@ -446,7 +446,7 @@ acts_version_t Acts::version_string_to_enum(char* versionstr)
 // versionstr, up to len.
 // returns  0 on success
 //         -1 on failure to match.
-int Acts::version_enum_to_string(acts_version_t versionnum, 
+int Acts::version_enum_to_string(acts_version_t versionnum,
                                           char* versionstr, int len)
 {
   switch(versionnum)
@@ -497,103 +497,121 @@ Acts::Setup()
   // build the argument list, based on version
   switch(acts_version)
   {
-    case ACTS_VERSION_1_0:
-      acts_args[i++] = "-t";
+    // these are needed as execv expects a const array of char *'s not an array of const char *'s
+    static char dash_d[3] = "-d";
+    static char dash_i[3] = "-i";
+    static char dash_n[3] = "-n";
+    static char dash_p[3] = "-p";
+    static char dash_s[3] = "-s";
+    static char dash_t[3] = "-t";
+    static char dash_w[3] = "-w";
+    static char dash_x[3] = "-x";
+
+    static char dash_B[3] = "-B";
+    static char dash_C[3] = "-C";
+    static char dash_G[3] = "-G";
+    static char dash_H[3] = "-H";
+    static char dash_R[3] = "-R";
+    static char dash_V[3] = "-V";
+    static char dash_W[3] = "-W";
+
+  case ACTS_VERSION_1_0:
+      acts_args[i++] = dash_t;
       acts_args[i++] = configfilepath;
       if(strlen(portnumstring))
       {
-        acts_args[i++] = "-s";
+        acts_args[i++] = dash_s;
         acts_args[i++] = portnumstring;
       }
       if(strlen(devicepath))
       {
-        acts_args[i++] = "-d";
+        acts_args[i++] = dash_d;
         acts_args[i++] = devicepath;
       }
       break;
     case ACTS_VERSION_1_2:
-      acts_args[i++] = "-t";
+      acts_args[i++] = dash_t;
       acts_args[i++] = configfilepath;
       if(strlen(portnumstring))
       {
-        acts_args[i++] = "-p";
+        acts_args[i++] = dash_p;
         acts_args[i++] = portnumstring;
       }
       if(strlen(devicepath))
       {
-        acts_args[i++] = "-d";
+        acts_args[i++] = dash_d;
         acts_args[i++] = devicepath;
       }
       if(strlen(contrast))
       {
-        acts_args[i++] = "-C";
+        acts_args[i++] = dash_C;
         acts_args[i++] = contrast;
       }
       if(strlen(brightness))
       {
-        acts_args[i++] = "-B";
+        acts_args[i++] = dash_B;
         acts_args[i++] = brightness;
       }
-      acts_args[i++] = "-W";
+      acts_args[i++] = dash_W;
       acts_args[i++] = widthstring;
-      acts_args[i++] = "-H";
+      acts_args[i++] = dash_H;
       acts_args[i++] = heightstring;
       break;
     case ACTS_VERSION_2_0:
-      acts_args[i++] = "-t";
+      acts_args[i++] = dash_t;
       acts_args[i++] = configfilepath;
       if(strlen(minarea))
       {
-        acts_args[i++] = "-w";
+        acts_args[i++] = dash_w;
         acts_args[i++] = minarea;
       }
       if(strlen(portnumstring))
       {
-        acts_args[i++] = "-p";
+        acts_args[i++] = dash_p;
         acts_args[i++] = portnumstring;
       }
       if(strlen(fps))
       {
-        acts_args[i++] = "-R";
+        acts_args[i++] = dash_R;
         acts_args[i++] = fps;
       }
       if(strlen(drivertype))
       {
-        acts_args[i++] = "-G";
+        acts_args[i++] = dash_G;
         acts_args[i++] = drivertype;
       }
       if(invertp > 0)
-        acts_args[i++] = "-i";
+        acts_args[i++] = dash_i;
       if(strlen(devicepath))
       {
-        acts_args[i++] = "-d";
+        acts_args[i++] = dash_d;
         acts_args[i++] = devicepath;
       }
       if(strlen(channel))
       {
-        acts_args[i++] = "-n";
+        acts_args[i++] = dash_n;
         acts_args[i++] = channel;
       }
       if(strlen(norm))
       {
-        acts_args[i++] = "-V";
+        acts_args[i++] = dash_V;
         acts_args[i++] = norm;
       }
       if(pxc200p > 0)
-        acts_args[i++] = "-x";
+        acts_args[i++] = dash_x;
       if(strlen(brightness))
       {
-        acts_args[i++] = "-B";
+        acts_args[i++] = dash_B;
         acts_args[i++] = brightness;
       }
       if(strlen(contrast))
       {
-        acts_args[i++] = "-C";
+        acts_args[i++] = dash_C;
         acts_args[i++] = contrast;
       }
-      acts_args[i++] = "-W";
+      acts_args[i++] = dash_W;
       acts_args[i++] = widthstring;
-      acts_args[i++] = "-H";
+      acts_args[i++] = dash_H;
       acts_args[i++] = heightstring;
       break;
     case ACTS_VERSION_UNKNOWN:
@@ -610,7 +628,7 @@ Acts::Setup()
   for(int j=0;acts_args[j];j++)
     printf("%s ", acts_args[j]);
   puts("\n");
-  
+
   if(!(pid = fork()))
   {
     // make sure we don't get that "ACTS: Packet" bullshit on the console
@@ -631,7 +649,7 @@ Acts::Setup()
     {
       if(execvp(acts_bin_name,acts_args) == -1)
       {
-        /* 
+        /*
         * some error.  print it here.  it will really be detected
         * later when the parent tries to connect(2) to it
          */
@@ -643,7 +661,7 @@ Acts::Setup()
     {
       if(execv(binarypath,acts_args) == -1)
       {
-        /* 
+        /*
         * some error.  print it here.  it will really be detected
         * later when the parent tries to connect(2) to it
          */
@@ -657,8 +675,8 @@ Acts::Setup()
     /* in parent */
     /* fill in addr structure */
     server.sin_family = PF_INET;
-    /* 
-     * this is okay to do, because gethostbyname(3) does no lookup if the 
+    /*
+     * this is okay to do, because gethostbyname(3) does no lookup if the
      * 'host' * arg is already an IP addr
      */
     if((entp = gethostbyname(host)) == NULL)
@@ -682,10 +700,10 @@ Acts::Setup()
 
     for(j = 0;j<ACTS_STARTUP_CONN_LIMIT;j++)
     {
-      /* 
+      /*
        * hook it up
        */
-      
+
       // make a new socket, because connect() screws with the old one somehow
       if((sock = socket(PF_INET, SOCK_STREAM, 0)) < 0)
       {
@@ -729,7 +747,7 @@ Acts::Shutdown()
   return(0);
 }
 
-void 
+void
 Acts::KillACTS()
 {
   if(kill(pid,SIGKILL) == -1)
@@ -742,10 +760,10 @@ Acts::Main()
   int numread;
   int num_blobs;
   int i;
-  
+
   // we'll convert the data into this structured buffer
   acts_data_t acts_data;
-  
+
   // we'll write the data from this buffer
   player_blobfinder_data_t local_data;
 
@@ -768,11 +786,11 @@ Acts::Main()
     // clean our buffers
     memset(&acts_data,0,sizeof(acts_data));
     memset(&local_data,0,sizeof(local_data));
-    
+
     // put in some stuff that doesnt change
     acts_data.width = htons(this->width);
     acts_data.height = htons(this->height);
-    
+
     /* test if we are supposed to cancel */
     pthread_testcancel();
 
@@ -793,7 +811,7 @@ Acts::Main()
     else if(numread != header_len)
     {
       fprintf(stderr,"RunVisionThread: something went wrong\n"
-              "              expected %d bytes of header, but only got %d\n", 
+              "              expected %d bytes of header, but only got %d\n",
               header_len,numread);
       break;
     }
@@ -805,9 +823,9 @@ Acts::Main()
       {
         // convert 2-byte ACTS 1.0 encoded entries to byte-swapped integers
         // in a structured array
-        acts_data.header[i].index = 
+        acts_data.header[i].index =
           htons(acts_hdr_buf[header_elt_len*i]-1);
-        acts_data.header[i].num = 
+        acts_data.header[i].num =
           htons(acts_hdr_buf[header_elt_len*i+1]-1);
       }
     }
@@ -818,19 +836,19 @@ Acts::Main()
         // convert 4-byte ACTS 1.2/2.0 encoded entries to byte-swapped integers
         // in a structured array
         acts_data.header[i].index = acts_hdr_buf[header_elt_len*i]-1;
-        acts_data.header[i].index = 
+        acts_data.header[i].index =
           acts_data.header[i].index << 6;
-        acts_data.header[i].index |= 
+        acts_data.header[i].index |=
           acts_hdr_buf[header_elt_len*i+1]-1;
-        acts_data.header[i].index = 
+        acts_data.header[i].index =
           htons(acts_data.header[i].index);
 
         acts_data.header[i].num = acts_hdr_buf[header_elt_len*i+2]-1;
-        acts_data.header[i].num = 
+        acts_data.header[i].num =
           acts_data.header[i].num << 6;
-        acts_data.header[i].num |= 
+        acts_data.header[i].num |=
           acts_hdr_buf[header_elt_len*i+3]-1;
-        acts_data.header[i].num = 
+        acts_data.header[i].num =
           htons(acts_data.header[i].num);
       }
     }
@@ -849,12 +867,12 @@ Acts::Main()
     else if(numread != num_blobs*blob_size)
     {
       fprintf(stderr,"RunVisionThread: something went wrong\n"
-              "              expected %d bytes of blob data, but only got %d\n", 
+              "              expected %d bytes of blob data, but only got %d\n",
               num_blobs*blob_size,numread);
       break;
     }
 
-    
+
     if(acts_version == ACTS_VERSION_1_0)
     {
       // convert 10-byte ACTS 1.0 blobs to new byte-swapped structured array
@@ -865,7 +883,7 @@ Acts::Main()
         // TODO: put a descriptive color in here (I'm not sure where
         // to get it from).
         acts_data.blobs[i].color = 0xFF0000;
-        
+
         // get the 4-byte area first
         acts_data.blobs[i].area = 0;
         for(int j=0;j<4;j++)
@@ -904,10 +922,10 @@ Acts::Main()
 
         // Put in a descriptive color.
         if (ch < (int) (sizeof(colors) / sizeof(colors[0])))
-          acts_data.blobs[i].color = colors[ch];            
+          acts_data.blobs[i].color = colors[ch];
         else
           acts_data.blobs[i].color = 0xFF0000;
-        
+
         // get the 4-byte area first
         acts_data.blobs[i].area = 0;
         for(int j=0;j<4;j++)
@@ -915,7 +933,7 @@ Acts::Main()
           acts_data.blobs[i].area = acts_data.blobs[i].area << 6;
           acts_data.blobs[i].area |= acts_blob_buf[tmpptr++] - 1;
         }
-        
+
         // Get the other 2 byte values
         acts_data.blobs[i].x = acts_blob_buf[tmpptr++] - 1;
         acts_data.blobs[i].x = acts_data.blobs[i].x << 6;
@@ -942,13 +960,13 @@ Acts::Main()
         acts_data.blobs[i].bottom |= acts_blob_buf[tmpptr++] - 1;
       }
     }
-    
+
     // Convert data to interface format
     local_data.width = acts_data.width;
     local_data.height = acts_data.height;
     local_data.blobs_count = num_blobs;
     local_data.blobs = (player_blobfinder_blob_t *)calloc(num_blobs, sizeof(local_data.blobs[0]));
-      
+
     for (i = 0; i < num_blobs; i++)
     {
       src = acts_data.blobs + i;
@@ -973,7 +991,7 @@ Acts::Main()
   pthread_exit(NULL);
 }
 
-void 
+void
 QuitACTS(void* visiondevice)
 {
   char acts_request_quit = ACTS_REQUEST_QUIT;
