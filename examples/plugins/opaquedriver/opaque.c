@@ -1,6 +1,6 @@
 #include <stdio.h>
 //#include <stdint.h>
-#include <libplayercore/playerconfig.h>
+#include <playerconfig.h>
 
 #include <libplayerc/playerc.h>
 
