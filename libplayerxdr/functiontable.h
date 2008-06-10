@@ -47,7 +47,7 @@
 #ifndef _FUNCTIONTABLE_H_
 #define _FUNCTIONTABLE_H_
 
-#include <libplayercore/playerconfig.h>
+#include <playerconfig.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -179,7 +179,7 @@ void playerxdr_free_message(void* msg, uint16_t interf, uint8_t type,
 
 /** @brief Cleanup a message structure's dynamic elements.
  *
- * Deletes any dynamically allocated data used by a message structure, It does not 
+ * Deletes any dynamically allocated data used by a message structure, It does not
  * free the structure itself.
  *
  * @param msg : The message to clean up.
