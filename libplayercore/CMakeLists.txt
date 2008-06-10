@@ -66,7 +66,22 @@ PLAYER_ADD_LIBRARY (playerutils ${playerutils_srcs} ${interface_table_h})
 TARGET_LINK_LIBRARIES (playerutils playererror)
 PLAYER_MAKE_PKGCONFIG ("playerutils" "Player utilities library - part of the Player Project" "" "" "" "")
 
-PLAYER_INSTALL_HEADERS (playercore
-    addr_util.h configfile.h device.h devicetable.h driver.h drivertable.h error.h globals.h
-    interface_util.h message.h playercommon.h ${playerconfig_h} playercore.h player.h
-    ${player_interfaces_h} playertime.h plugins.h property.h wallclocktime.h)
+PLAYER_INSTALL_HEADERS (playercore addr_util.h
+                                   configfile.h
+                                   device.h
+                                   devicetable.h
+                                   driver.h
+                                   drivertable.h
+                                   error.h
+                                   globals.h
+                                   interface_util.h
+                                   message.h
+                                   playercommon.h
+                                   ${playerconfig_h}
+                                   playercore.h
+                                   player.h
+                                   ${player_interfaces_h}
+                                   playertime.h
+                                   plugins.h
+                                   property.h
+                                   wallclocktime.h)
