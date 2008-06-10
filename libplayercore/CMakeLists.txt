@@ -50,9 +50,9 @@ PLAYER_ADD_LIBRARY (playercore ${playercore_srcs} ${player_interfaces_h} ${playe
 # from the fact that message cloning functions are auto-generated into
 # playerxdr and used here.  Those functions should go into a separate
 # library.
-TARGET_LINK_LIBRARIES (playercore playerutils playererror playerxdr ltdl dl pthread)
-PLAYER_ADD_LINK_LIB (ltdl dl pthread)
-PLAYER_MAKE_PKGCONFIG ("playercore" "Player core library - part of the Player Project" "playererror" "" "" "-lltdl -lpthread")
+TARGET_LINK_LIBRARIES (playercore playerutils playererror playerxdr ltdl dl pthread rt)
+PLAYER_ADD_LINK_LIB (ltdl dl pthread rt)
+PLAYER_MAKE_PKGCONFIG ("playercore" "Player core library - part of the Player Project" "playererror" "" "" "-lltdl -lpthread -lrt")
 
 
 SET (playererror_srcs   error.c)

@@ -374,8 +374,12 @@ class MessageQueue
     /// any existing message of the same signature, be ignored or accepted.
     int CheckReplace(player_msghdr_t* hdr);
     /** Wait on this queue.  This method blocks until new data is available
-    (as indicated by a call to DataAvailable()). */
-    void Wait(void);
+    (as indicated by a call to DataAvailable()). 
+            
+    If TimeOut is set to a positive value this method will return false if the
+    timeout occurs before and update is recieved.
+     */
+    bool Wait(double TimeOut=0.0);
     /** Signal that new data is available.  Calling this method will
      release any threads currently waiting on this queue. */
     void DataAvailable(void);
