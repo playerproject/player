@@ -949,7 +949,7 @@ class ImuProxy : public ClientProxy
 
     /**  Reset orientation. */
     void ResetOrientation(int aValue);
-    
+
 
 };
 
@@ -1105,7 +1105,7 @@ class LaserProxy : public ClientProxy
     /// Request the current laser configuration; it is read into the
     /// relevant class attributes.
     void RequestConfigure();
-    
+
     /// Request the ID of the laser; read it with GetID()
     void RequestID();
 
@@ -1149,17 +1149,17 @@ class LaserProxy : public ClientProxy
       b.sw = mDevice->size[1];
       return(b);
     }
-    
+
     /// Minimum range reading on the left side
     double GetMinLeft() const
       { return GetVar(mDevice->min_left); };
-    
+
     /// Minimum range reading on the right side
     double GetMinRight() const
       { return GetVar(mDevice->min_right); };
-           
+
     /// @deprecated Minimum range reading on the left side
-    double MinLeft () const 
+    double MinLeft () const
       { return GetMinLeft(); }
 
     /// @deprecated Minimum range reading on the right side
@@ -2462,7 +2462,7 @@ class WiFiProxy: public ClientProxy
 			 int 	 GetLinkEncrypt(int index)  const {return mDevice->links[index].encrypt; };
 			 int   GetLinkQuality(int index)  const { return mDevice->links[index].qual; };
 			 int 	 GetLinkLevel(int index)  const {return mDevice->links[index].level; };
-			 int 	 GetLinkNoise(int index)  const {return mDevice->links[index].noise; }	;		 
+			 int 	 GetLinkNoise(int index)  const {return mDevice->links[index].noise; }	;
 
 			//player_wifi_link_t
 //     int GetLinkQuality(char/// ip = NULL);

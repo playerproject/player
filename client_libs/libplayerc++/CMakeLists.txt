@@ -3,7 +3,6 @@ ADD_SUBDIRECTORY (test)
 OPTION (BUILD_PLAYERCC "Build the C++ client library" ON)
 OPTION (BUILD_PLAYERCC_BOOST "Include Boost support in the C++ client library" ON)
 IF (BUILD_PLAYERCC)
-    SET (PLAYERCC_DEFINITIONS "" CACHE INTERNAL "" FORCE)   # Clear this out to prevent unnecessary duplication and rebuilding
     # Look for Boost libraries
     SET (boostLinkLibs)
     IF (BUILD_PLAYERCC_BOOST)
@@ -20,7 +19,6 @@ IF (BUILD_PLAYERCC)
                   PLAYERCC_ADD_LINK_LIB (boost_thread)
                   INCLUDE_DIRECTORIES (${Boost_INCLUDE_DIRS})
                   LINK_DIRECTORIES (${Boost_LIBRARY_DIRS})
-                  APPEND_TO_CACHED_STRING (PLAYERCC_DEFINITIONS "libplayerc++ defines" -DHAVE_BOOST_THREAD -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT)
                   SET (boostLinkLibs "${boostLinkLibs} -lboost_thread")
               ELSE (USE_BOOST_THREADS)
                   MESSAGE (STATUS "PlayerC++ client library Boost::Thread support disabled by user.")
@@ -28,7 +26,7 @@ IF (BUILD_PLAYERCC)
           ELSE (HAVE_BOOST_THREAD)
               MESSAGE (STATUS "PlayerC++ client library Boost::Thread support disabled - Boost::Thread library not found.")
           ENDIF (HAVE_BOOST_THREAD)
-  
+
           SET (HAVE_BOOST_SIGNALS TRUE INTERNAL)
           IF (HAVE_BOOST_SIGNALS)
               OPTION (USE_BOOST_SIGNALS "Use the Boost signalling library" ON)
@@ -38,7 +36,6 @@ IF (BUILD_PLAYERCC)
                   PLAYERCC_ADD_LINK_LIB (boost_signals)
                   INCLUDE_DIRECTORIES (${Boost_INCLUDE_DIRS})
                   LINK_DIRECTORIES (${Boost_LIBRARY_DIRS})
-                  APPEND_TO_CACHED_STRING (PLAYERCC_DEFINITIONS "libplayerc++ defines" -DHAVE_BOOST_SIGNALS)
                   SET (boostLinkLibs "${boostLinkLibs} -lboost_signals")
               ELSE (USE_BOOST_SIGNALS)
                   MESSAGE (STATUS "PlayerC++ client library Boost::Signals support disabled by user.")
@@ -53,7 +50,13 @@ IF (BUILD_PLAYERCC)
         MESSAGE (STATUS "Boost support disabled. Boost::Signals and Boost::Thread support will not be included in PlayerC++.")
     ENDIF (BUILD_PLAYERCC_BOOST)
 
-    INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/client_libs)
+    # Auto-generate playerc++config.h.
+    SET (playercppconfig_h_in "${CMAKE_CURRENT_SOURCE_DIR}/playerc++config.h.in")
+    SET (playercppconfig_h "${CMAKE_CURRENT_BINARY_DIR}/playerc++config.h")
+    CONFIGURE_FILE (${playercppconfig_h_in} ${playercppconfig_h})
+
+    INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/client_libs
+                         ${PROJECT_BINARY_DIR}/client_libs)
 
     SET (playerccSrcs   playerc++.h
                         debug.h
@@ -102,10 +105,14 @@ IF (BUILD_PLAYERCC)
                         wifiproxy.cc
                         wsnproxy.cc)
 
-    ADD_DEFINITIONS (${PLAYERCC_DEFINITIONS})
-    PLAYER_ADD_LIBRARY (playerc++ ${playerccSrcs})
+    PLAYER_ADD_LIBRARY (playerc++ ${playerccSrcs} ${playercppconfig_h})
     TARGET_LINK_LIBRARIES (playerc++ playerxdr playerutils playerc ${PLAYERCC_EXTRA_LINK_LIBRARIES})
     PLAYER_MAKE_PKGCONFIG ("playerc++" "C++ wrapper for libplayerc - part of the Player Project" "playerxdr playerc" "" "" "-lm ${boostLinkLibs}")
 
-    PLAYER_INSTALL_HEADERS (playerc++ clientproxy.h playerc++.h playerclient.h playererror.h utility.h)
+    PLAYER_INSTALL_HEADERS (playerc++ ${playercppconfig_h}
+                                      clientproxy.h
+                                      playerc++.h
+                                      playerclient.h
+                                      playererror.h
+                                      utility.h)
 ENDIF (BUILD_PLAYERCC)
