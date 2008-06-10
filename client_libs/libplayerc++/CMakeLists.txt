@@ -90,10 +90,10 @@ IF (BUILD_PLAYERCC)
                     PLAYERCC_ADD_LINK_LIB (boost_signals)
                     MESSAGE (STATUS
                             "PlayerC++ client library will be built with Boost::Signals support.")
-                ELSE (Boost_thread_FOUND)
+                ELSE (Boost_signals_FOUND)
                     MESSAGE (STATUS
                             "Boost::Signals library not found, support will not be included.")
-                ENDIF (Boost_thread_FOUND)
+                ENDIF (Boost_signals_FOUND)
             ELSE (Boost_FOUND)
                 MESSAGE (STATUS
                          "Boost libraries were not found. Boost::Signals and Boost::Thread support

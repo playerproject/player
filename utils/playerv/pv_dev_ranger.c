@@ -48,7 +48,7 @@ ranger_t* ranger_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client
   snprintf(label, sizeof(label), "ranger:%d (%s)", index, ranger->drivername);
   ranger->menu = rtk_menu_create_sub(mainwnd->device_menu, label);
   ranger->subscribe_item = rtk_menuitem_create(ranger->menu, "Subscribe", 1);
-  ranger->style_item = rtk_menuitem_create(ranger->menu, "Filled", 1);
+  ranger->style_item = rtk_menuitem_create(ranger->menu, "Filled", 0);
   ranger->intns_item = rtk_menuitem_create(ranger->menu, "Draw intensity data", 1);
   ranger->device_item = rtk_menuitem_create(ranger->menu, "Singular", 1);
 
