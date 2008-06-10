@@ -25,7 +25,7 @@
  */
 
  //#include <stdint.h>
- #include <libplayercore/playerconfig.h>
+ #include <playerconfig.h>
 
  typedef struct
 {

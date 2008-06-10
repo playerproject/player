@@ -1,5 +1,5 @@
 IF (BUILD_PLAYERCC)
-    INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/client_libs)
+    INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/client_libs ${PROJECT_BINARY_DIR}/client_libs)
 
     SET (exampleSrcs args.h camera.cc example0.cc example4.cc grip.cc clientgraphics.cc
                      clientgraphics3d.cc laserobstacleavoid.cc ptz.cc randomwalk.cc
