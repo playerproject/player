@@ -29,8 +29,12 @@ INCLUDE (${PLAYER_CMAKE_DIR}/internal/SearchForStuff.cmake)
 # Give the user some compile options
 INCLUDE (${PLAYER_CMAKE_DIR}/internal/GeneralCompileOptions.cmake)
 # Write the config.h file
-CONFIGURE_FILE (${PROJECT_SOURCE_DIR}/config.h.cmake ${PROJECT_BINARY_DIR}/config.h)
-
+CONFIGURE_FILE (${PROJECT_SOURCE_DIR}/config.h.in ${PROJECT_BINARY_DIR}/config.h)
+# Generate playerconfig.h
+SET (playerconfig_h_in "${CMAKE_CURRENT_SOURCE_DIR}/playerconfig.h.in")
+SET (playerconfig_h "${CMAKE_CURRENT_BINARY_DIR}/playerconfig.h")
+CONFIGURE_FILE (${playerconfig_h_in} ${playerconfig_h})
+INSTALL (FILES ${playerconfig_h} DESTINATION ${PLAYER_INCLUDE_INSTALL_DIR})
 # Include some useful macros
 INCLUDE (${PLAYER_CMAKE_DIR}/internal/LibraryUtils.cmake)
 
