@@ -47,6 +47,8 @@
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
+#include <math.h>
+#include <time.h>
 
 #include <libplayercore/message.h>
 #include <libplayercore/player.h>
@@ -303,9 +305,10 @@ MessageQueue::CheckReplace(player_msghdr_t* hdr)
 }
 
 // Waits on the condition variable associated with this queue.
-void
-MessageQueue::Wait(void)
+bool
+MessageQueue::Wait(double TimeOut)
 {
+  bool result = true;
   MessageQueueElement* el;
 
   // don't wait if there's data on the queue
@@ -319,7 +322,7 @@ MessageQueue::Wait(void)
   }
   this->Unlock();
   if(el)
-    return;
+    return result;
 
   // need to push this cleanup function, cause if a thread is cancelled while
   // in pthread_cond_wait(), it will immediately relock the mutex.  thus we
@@ -327,9 +330,25 @@ MessageQueue::Wait(void)
   pthread_cleanup_push((void(*)(void*))pthread_mutex_unlock,
                        (void*)&this->condMutex);
   pthread_mutex_lock(&this->condMutex);
-  pthread_cond_wait(&this->cond,&this->condMutex);
+  if (TimeOut > 0)
+  {
+    struct timespec tp;
+    clock_gettime(CLOCK_REALTIME, &tp);
+    tp.tv_sec += static_cast<int> (floor(TimeOut));
+    tp.tv_nsec += static_cast<int> ((TimeOut - floor(TimeOut))*1e9);
+    int ret = pthread_cond_timedwait(&this->cond, &this->condMutex, &tp);
+    // if we got an error or timed out
+    if (ret != 0)
+      result = false;
+  }
+  else
+  {
+    pthread_cond_wait(&this->cond,&this->condMutex);  
+  }
+  
   pthread_mutex_unlock(&this->condMutex);
   pthread_cleanup_pop(0);
+  return result;
 }
 
 bool

@@ -153,9 +153,13 @@ class Driver
     /** @brief Wait for new data to arrive on the driver's queue.
 
     Call this method to block until a new message arrives on
-    Driver::InQueue.  This method will return immediately if at least
-    one message is already waiting. */
-    void Wait() { this->InQueue->Wait(); }
+    Driver::InQueue.  This method will return true immediately if at least
+    one message is already waiting. 
+    
+    If TimeOut is set to a positive value this method will return false if the
+    timeout occurs before and update is recieved.
+    */
+    bool Wait(double TimeOut=0.0) { return this->InQueue->Wait(); }
 
   public:
     /** @brief The driver's thread.
