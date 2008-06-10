@@ -1,0 +1,17 @@
+#cmakedefine HAVE_GEOS 1
+#cmakedefine HAVE_CFMAKERAW 1
+#cmakedefine HAVE_DIRNAME 1
+#cmakedefine HAVE_LIBLTDL 1
+#cmakedefine HAVE_PLAYERSD 1
+#cmakedefine HAVE_POLL 1
+#cmakedefine HAVE_ROUND 1
+#cmakedefine HAVE_STDINT_H 1
+#cmakedefine NEED_COMPRESSBOUND 1
+
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
+#endif
+#include <sys/types.h>
+
+/* Logging level to console and system log */
+#cmakedefine DEBUG_LEVEL @DEBUG_LEVEL@
