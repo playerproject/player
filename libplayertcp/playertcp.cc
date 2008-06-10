@@ -189,6 +189,9 @@ PlayerTCP::Listen(int* ports, int num_ports, int* new_ports)
     // set up for later use of poll() to accept() connections on this port
     this->listen_ufds[i].fd = this->listeners[i].fd;
     this->listen_ufds[i].events = POLLIN;
+
+    // set up for later use by global file watcher
+    fileWatcher->AddFileWatch(this->listeners[i].fd);
   }
 
   return(0);
@@ -247,6 +250,10 @@ PlayerTCP::AddClient(struct sockaddr_in* cliaddr,
   // Set up for later use of poll
   this->client_ufds[j].fd = this->clients[j].fd;
   this->client_ufds[j].events = POLLIN;
+
+  // set up for later use by global file watcher
+  fileWatcher->AddFileWatch(this->client_ufds[j].fd);
+
 
   // Create an outgoing queue for this client
   this->clients[j].queue =
@@ -390,6 +397,8 @@ PlayerTCP::Close(int cli)
   free(this->clients[cli].dev_subs);
   if(close(this->clients[cli].fd) < 0)
     PLAYER_WARN1("close() failed: %s", strerror(errno));
+  fileWatcher->RemoveFileWatch(this->clients[cli].fd);
+
   this->clients[cli].fd = -1;
   this->clients[cli].valid = 0;
   this->clients[cli].queue = QueuePointer();
@@ -746,8 +755,8 @@ PlayerTCP::Write(bool have_lock)
     int ret = pthread_mutex_trylock(&clients_mutex);
     assert (ret == EBUSY);
   }
-	
-	
+
+
   if(!have_lock)
     Lock();
 
@@ -1328,13 +1337,13 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
 }
 
 
-void 
+void
 PlayerTCP::Lock()
 {
   pthread_mutex_lock(&clients_mutex);
 }
 
-void 
+void
 PlayerTCP::Unlock()
 {
   pthread_mutex_unlock(&clients_mutex);

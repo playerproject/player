@@ -21,7 +21,7 @@
 /** @ingroup drivers Drivers */
 /** @{ */
 /*
- * 
+ *
 The tcpstream driver is based on the serialstream driver. It reads from a socket
 continuously and publishes the data. Currently this is usable with the SickS3000 driver
 and the Nav200 driver. This driver does no interpretation of data output, merely reading
@@ -44,7 +44,7 @@ to the socket.
 
 - PLAYER_LASER_REQ_GET_GEOM
 - PLAYER_LASER_REQ_GET_CONFIG
-  
+
 @par Configuration file options
 
 - ip (string)
@@ -58,8 +58,8 @@ to the socket.
 - buffer_size (integer)
   - The size of the buffer to be used when reading, this is the maximum that can be read in one read command
   - Default 4096
-      
-@par Example 
+
+@par Example
 
 @verbatim
 driver
@@ -79,11 +79,11 @@ driver
 
 @endverbatim
 
-@author David Olsen, Toby Collett, Inro Technologies 
+@author David Olsen, Toby Collett, Inro Technologies
 
 */
 /** @} */
-  
+
 
 // ONLY if you need something that was #define'd as a result of configure
 // (e.g., HAVE_CFMAKERAW), then #include <config.h>, like so:
@@ -116,20 +116,8 @@ driver
 #include <libplayercore/playercore.h>
 
 #define DEFAULT_TCP_OPAQUE_BUFFER_SIZE 4096
-#define DEFAULT_TCP_OPAQUE_IP "10.99.10.6"
+#define DEFAULT_TCP_OPAQUE_IP "127.0.0.1"
 #define DEFAULT_TCP_OPAQUE_PORT 4002
-
-////////////////////////////////////////////////////////////////////////////////
-// Device codes
-
-#define STX     0x02
-#define ACK     0xA0
-#define NACK    0x92
-#define CRC16_GEN_POL 0x8005
-
-////////////////////////////////////////////////////////////////////////////////
-// Error macros
-#define RETURN_ERROR(erc, m) {PLAYER_ERROR(m); return erc;}
 
 ////////////////////////////////////////////////////////////////////////////////
 // The class for the driver
@@ -144,7 +132,7 @@ class TCPStream : public Driver
     // Must implement the following methods.
     virtual int Setup();
     virtual int Shutdown();
-    
+
     // This method will be invoked on each incoming message
     virtual int ProcessMessage(QueuePointer &resp_queue,
                                player_msghdr * hdr,
@@ -165,25 +153,19 @@ class TCPStream : public Driver
     // Close the terminal
     // Returns 0 on success
     virtual int CloseTerm();
-    
+
   protected:
 	  int sock;
-    
+
     uint8_t * rx_buffer;
-    //unsigned int rx_buffer_size;
-    
-    struct termios oldtio;
-    
-    // opaque device file descriptor
-    //int opaque_fd; 
-    
+
     // Properties
     IntProperty buffer_size;
     StringProperty ip;
     IntProperty port;
-    
+
     bool connected;
-    
+
     // This is the data we store and send
     player_opaque_data_t mData;
 
@@ -222,12 +204,12 @@ TCPStream::TCPStream(ConfigFile* cf, int section)
 	this->RegisterProperty ("buffer_size", &this->buffer_size, cf, section);
 	this->RegisterProperty ("ip", &this->ip, cf, section);
 	this->RegisterProperty ("port", &this->port, cf, section);
-	
+
 	rx_buffer = new uint8_t[buffer_size];
 	assert(rx_buffer);
-	
+
 	connected = false;
-	
+
 	return;
 }
 
@@ -262,7 +244,7 @@ int TCPStream::Shutdown()
 {
   // Stop and join the driver thread
   StopThread();
-  
+
   CloseTerm();
 
   PLAYER_MSG0(2, "TCP Opaque Driver Shutdown");
@@ -273,21 +255,21 @@ int TCPStream::Shutdown()
 int TCPStream::ProcessMessage(QueuePointer & resp_queue,
                                  player_msghdr* hdr,
                                  void* data)
-{  
+{
 	// Process messages here.  Send a response if necessary, using Publish().
 	// If you handle the message successfully, return 0.  Otherwise,
 	// return -1, and a NACK will be sent for you, if a response is required.
-	
+
 	if (!connected)
 	{
 		PLAYER_MSG0(2, "TCP reconnecting");
 		OpenTerm();
 	}
-	
+
 	if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_OPAQUE_CMD_DATA, this->device_addr))
 	{
 	    player_opaque_data_t * recv = reinterpret_cast<player_opaque_data_t * > (data);
-	    
+
 	    if (recv->data_count) // If there is something to send.
 	    {
 	    	int result;
@@ -302,7 +284,7 @@ int TCPStream::ProcessMessage(QueuePointer & resp_queue,
 	    		CloseTerm();
 	    	}
 	    }
-	    
+
 	    return (0);
 	}
 
@@ -318,8 +300,7 @@ void TCPStream::Main()
   // The main loop; interact with the device here
   for(;;)
   {
-    // test if we are supposed to cancel
-    pthread_testcancel();
+    Wait(1);
 
     // Process incoming messages.  TCPStream::ProcessMessage() is
     // called on each message.
@@ -327,17 +308,14 @@ void TCPStream::Main()
 
     if (connected)
     {
-    	// Reads the data from the tcp server and then publishes it
-    	ReadData();
+      // Reads the data from the tcp server and then publishes it
+      ReadData();
     }
     else
     {
-    	PLAYER_MSG0(2, "TCP reconnecting");
-    	OpenTerm();
+      PLAYER_MSG0(2, "TCP reconnecting");
+      OpenTerm();
     }
-
-    // Sleep (you might, for example, block on a read() instead)
-    usleep(1000);
   }
 }
 
@@ -349,7 +327,7 @@ int TCPStream::OpenTerm()
 	sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (sock < 0)
 		PLAYER_ERROR("Failed to create socket.");
-	
+
 	sockaddr_in address;
 	memset(&address, 0, sizeof(address));
 	address.sin_family = AF_INET;
@@ -357,15 +335,16 @@ int TCPStream::OpenTerm()
 	address.sin_port = htons(port.GetValue());
 	if (connect(sock, (sockaddr*) &address, sizeof(address)) < 0)
 		PLAYER_ERROR("Failed to connect");
-	
+
 	int flags = fcntl(sock, F_GETFL);
 	if (fcntl(sock, F_SETFL, flags | O_NONBLOCK) < 0)
 		PLAYER_ERROR("Error changing socket to be non-blocking");
-	
+
 	PLAYER_MSG0(2, "TCP Opaque Driver connected");
-  
+
 	connected = true;
-	
+	AddFileWatch(sock);
+
   return 0;
 }
 
@@ -375,7 +354,9 @@ int TCPStream::OpenTerm()
 //
 int TCPStream::CloseTerm()
 {
+  RemoveFileWatch(sock);
   close(sock);
+
   connected = false;
   return 0;
 }

@@ -42,11 +42,13 @@
 class DeviceTable;
 class PlayerTime;
 class DriverTable;
+class FileWatcher;
 struct player_sd;
 
 extern DeviceTable* deviceTable;
 extern PlayerTime* GlobalTime;
 extern DriverTable* driverTable;
+extern FileWatcher* fileWatcher;
 extern char playerversion[];
 extern bool player_quit;
 extern bool player_quiet_startup;

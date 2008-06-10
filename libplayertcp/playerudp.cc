@@ -176,6 +176,10 @@ PlayerUDP::Listen(int* ports, int num_ports)
     // set up for later use of poll() to accept() connections on this port
     this->listen_ufds[i].fd = this->listeners[i].fd;
     this->listen_ufds[i].events = POLLIN;
+
+    // set up for later use by global file watcher
+    fileWatcher->AddFileWatch(this->listeners[i].fd);
+
   }
 
   return(0);
@@ -271,6 +275,7 @@ PlayerUDP::Close(int cli)
     }
   }
   free(this->clients[cli].dev_subs);
+  fileWatcher->RemoveFileWatch(this->clients[cli].fd);
   this->clients[cli].fd = -1;
   this->clients[cli].valid = 0;
   // FIXME
@@ -809,7 +814,7 @@ PlayerUDP::ParseBuffer(int cli)
           // update the message size and send it off
           hdr.size = decode_msglen;
           void * msg_data = hdr.size? this->decode_readbuffer: NULL;
-          
+
           if(hdr.addr.interf == PLAYER_PLAYER_CODE)
           {
             Message* msg = new Message(hdr, msg_data, client->queue);

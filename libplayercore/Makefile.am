@@ -21,6 +21,7 @@ libplayercore_la_SOURCES = driver.cc driver.h \
                           configfile.cc configfile.h \
                           playercommon.h player.h playerconfig.h.in \
                           message.h message.cc \
+                          filewatcher.cc filewatcher.h \
                           wallclocktime.cc wallclocktime.h playertime.h \
                           plugins.cc plugins.h \
                           globals.cc globals.h \
@@ -43,6 +44,7 @@ coreinclude_HEADERS = configfile.h \
                       devicetable.h \
                       driver.h \
                       drivertable.h \
+                      filewatcher.h \
                       globals.h \
                       interface_util.h \
                       message.h \

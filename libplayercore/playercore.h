@@ -46,6 +46,7 @@
 #include <libplayercore/driver.h>
 #include <libplayercore/drivertable.h>
 #include <libplayercore/error.h>
+#include <libplayercore/filewatcher.h>
 #include <libplayercore/globals.h>
 #include <libplayercore/interface_util.h>
 #include <libplayercore/message.h>

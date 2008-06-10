@@ -146,7 +146,7 @@ class Driver
     @returns 0 on success, non-zero otherwise. */
     int AddInterface(player_devaddr_t *addr, ConfigFile * cf, int section, int code, char * key = NULL);
 
-    
+
     /** @brief Set/reset error code */
     void SetError(int code) {this->error = code;}
 
@@ -154,12 +154,19 @@ class Driver
 
     Call this method to block until a new message arrives on
     Driver::InQueue.  This method will return true immediately if at least
-    one message is already waiting. 
-    
+    one message is already waiting.
+
     If TimeOut is set to a positive value this method will return false if the
     timeout occurs before and update is recieved.
     */
     bool Wait(double TimeOut=0.0) { return this->InQueue->Wait(); }
+
+    /** @brief Wake up the driver if the specified event occurs on the file descriptor */
+    int AddFileWatch(int fd, bool ReadWatch = true, bool WriteWatch = false, bool ExceptWatch = true);
+
+    /** @brief Remove a previously added watch, call with the same arguments as when adding the watch */
+    int RemoveFileWatch(int fd, bool ReadWatch = true, bool WriteWatch = false, bool ExceptWatch = true);
+
 
   public:
     /** @brief The driver's thread.
@@ -203,10 +210,10 @@ class Driver
                  bool copy=true);
 
      /** @brief Publish a message via one of this driver's interfaces.
-     
+
      This form of Publish will assemble the message header for you.
      The message is broadcast to all interested parties
-     
+
      @param addr The origin address
      @param type The message type
      @param subtype The message subtype
@@ -215,15 +222,15 @@ class Driver
      @param timestamp Timestamp for the message body (if NULL, then the
      current time will be filled in)
      @param copy if set to false the data will be claimed and the caller should no longer use or free it */
-     virtual void Publish(player_devaddr_t addr, 
-                  uint8_t type, 
+     virtual void Publish(player_devaddr_t addr,
+                  uint8_t type,
                   uint8_t subtype,
-                  void* src=NULL, 
+                  void* src=NULL,
                   size_t deprecated=0,
                   double* timestamp=NULL,
                   bool copy=true);
- 
- 
+
+
 
     /** @brief Publish a message via one of this driver's interfaces.
 
@@ -231,7 +238,7 @@ class Driver
     assembled and have a target queue to send to.
     @param queue the target queue.
     @param hdr The message header
-    @param src The message body 
+    @param src The message body
     @param copy if set to false the data will be claimed and the caller should no longer use or free it */
     virtual void Publish(QueuePointer &queue,
                  player_msghdr_t* hdr,
@@ -243,8 +250,8 @@ class Driver
     Use this form of Publish if you already have the message header
     assembled and wish to broadcast the message to all subscribed parties.
     @param hdr The message header
-    @param src The message body 
-    @param copy if set to false the data will be claimed and the caller should no longer use or free it */ 
+    @param src The message body
+    @param copy if set to false the data will be claimed and the caller should no longer use or free it */
     virtual void Publish(player_msghdr_t* hdr,
                  void* src,
                  bool copy = true);
@@ -321,15 +328,15 @@ class Driver
     subscriptions to the driver; a driver MAY override them, but
     usually won't. This alternative form includes the clients queue
     so you can map future requests and unsubscriptions to a specific queue.
-    
+
     If this methods returns a value other than 1 then the other form of subscribe wont be called
 
     @param queue The queue of the subscribing client
     @param addr Address of the device to subscribe to (the driver may
     have more than one interface).
     @returns Returns 0 on success, -ve on error and 1 for unimplemented. */
-    virtual int Subscribe(QueuePointer &queue, player_devaddr_t addr) {return 1;};    
-    
+    virtual int Subscribe(QueuePointer &queue, player_devaddr_t addr) {return 1;};
+
     /** @brief Unsubscribe from this driver.
 
     The Subscribe() and Unsubscribe() methods are used to control
@@ -347,7 +354,7 @@ class Driver
     subscriptions to the driver; a driver MAY override them, but
     usually won't.This alternative form includes the clients queue
     so you can map future requests and unsubscriptions to a specific queue.
-    
+
     If this methods returns a value other than 1 then the other form of subscribe wont be called
 
     @param queue The queue of the subscribing client
@@ -355,7 +362,7 @@ class Driver
     have more than one interface).
     @returns Returns 0 on success. */
     virtual int Unsubscribe(QueuePointer &queue, player_devaddr_t addr) {return 1;};
-    
+
     /** @brief Initialize the driver.
 
     This function is called with the first client subscribes; it MUST
@@ -447,7 +454,6 @@ class Driver
     @param section Configuration file section that may define the property value
     @return True if the property was registered, false otherwise */
     virtual bool RegisterProperty(Property *prop, ConfigFile* cf, int section);
-
 };
 
 
