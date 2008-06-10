@@ -1,4 +1,4 @@
-CMAKE_MINIMUM_REQUIRED (VERSION 2.4 FATAL_ERROR)
+CMAKE_MINIMUM_REQUIRED (VERSION 2.4.7 FATAL_ERROR)
 
 # Set the project name (helps Visual Studio, mainly)
 PROJECT (Player)

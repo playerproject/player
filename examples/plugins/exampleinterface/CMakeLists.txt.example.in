@@ -5,6 +5,7 @@ SET (CMAKE_MODULE_PATH @CMAKE_INSTALL_PREFIX@/share/cmake/Modules)
 INCLUDE (UsePlayerPlugin)
 INCLUDE (UsePlayerC)
 
+INCLUDE_DIRECTORIES (${PROJECT_BINARY_DIR})
 PLAYER_ADD_PLUGIN_INTERFACE (example 128_example.def SOURCES eginterf_client.c)
 # Note the use of files generated during the PLAYER_ADD_PLUGIN_INTERFACE step
 PLAYER_ADD_PLUGIN_DRIVER (example_driver SOURCES eginterf_driver.cc example_interface.h example_xdr.h)
