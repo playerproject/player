@@ -7,7 +7,7 @@
 #define _REPLACE_H
 
 
-#include <config.h>
+#include <playerconfig.h>
 
 /* Compatibility definitions for System V `poll' interface.
    Copyright (C) 1994,96,97,98,99,2000 Free Software Foundation, Inc.
