@@ -51,11 +51,11 @@
 #include <libplayercore/message.h>
 #include <libplayercore/player.h>
 #include <libplayercore/playercommon.h>
-#include <libplayercore/playerconfig.h>
 #include <libplayercore/playertime.h>
 #include <libplayercore/plugins.h>
 #include <libplayercore/wallclocktime.h>
 #include <libplayercore/addr_util.h>
 #include <libplayercore/property.h>
+#include <playerconfig.h>
 
 #endif

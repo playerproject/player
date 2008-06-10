@@ -49,7 +49,7 @@ This library provides miscellaneous utilities functions
 #ifndef _INTERFACE_UTIL_H
 #define _INTERFACE_UTIL_H
 
-#include <libplayercore/playerconfig.h>  // for uint16_t type
+#include <playerconfig.h>  // for uint16_t type
 
 #ifdef __cplusplus
 extern "C" {
