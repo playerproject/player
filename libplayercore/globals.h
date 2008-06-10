@@ -39,6 +39,8 @@
 #ifndef _GLOBALS_H
 #define _GLOBALS_H
 
+#include <playerconfig.h>
+
 class DeviceTable;
 class PlayerTime;
 class DriverTable;

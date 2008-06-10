@@ -36,6 +36,8 @@
  *
  ********************************************************************/
 
+#include <playerconfig.h>
+
 #if HAVE_LIBLTDL
   #include <ltdl.h>
 #else
