@@ -295,7 +295,7 @@ main(int argc, char** argv)
   while(!player_quit)
   {
     // wait until something other than driver requested watches happens
-    fileWatcher->Wait(0.1);
+    fileWatcher->Wait();
 
     if(ptcp->Accept(0) < 0)
     {
