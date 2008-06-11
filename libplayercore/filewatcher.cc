@@ -77,6 +77,7 @@ int FileWatcher::Wait(double Timeout)
 	t.tv_sec = static_cast<int> (floor(Timeout));
 	t.tv_usec = static_cast<int> ((Timeout - static_cast<int> (floor(Timeout))) * 1e6);
 	Unlock();
+
 	int ret = select (maxfd+1,&ReadFds,&WriteFds,&ExceptFds,&t);
 
 	if (ret < 0)
@@ -92,14 +93,16 @@ int FileWatcher::Wait(double Timeout)
 	{
 		int fd = WatchedFiles[ii].fd;
 		QueuePointer &q = WatchedFiles[ii].queue;
-		if (fd > 0 && fd < maxfd)
+		if (fd > 0 && fd <= maxfd)
 		{
 			if ((WatchedFiles[ii].Read && FD_ISSET(fd,&ReadFds)) ||
 					(WatchedFiles[ii].Write && FD_ISSET(fd,&WriteFds)) ||
 					(WatchedFiles[ii].Except && FD_ISSET(fd,&ExceptFds)))
 			{
 				if (q != NULL)
+				{
 					q->DataAvailable();
+				}
 				else
 					queueless_count++;
 
@@ -121,6 +124,7 @@ int FileWatcher::AddFileWatch(int fd, bool WatchRead, bool WatchWrite, bool Watc
 int FileWatcher::AddFileWatch(int fd, QueuePointer & queue, bool WatchRead, bool WatchWrite, bool WatchExcept)
 {
 	Lock();
+	fprintf(stderr,"Added file watch %d \n",fd);
 	// find the first available file descriptor
 	struct fd_driver_pair *next_entry = NULL;
 	if (WatchedFilesArrayCount < WatchedFilesArraySize)
