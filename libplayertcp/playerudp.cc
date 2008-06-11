@@ -46,7 +46,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-#if HAVE_ZLIB_H
+#if HAVE_Z
   #include <zlib.h>
 #endif
 
@@ -508,7 +508,7 @@ PlayerUDP::WriteClient(int cli)
   void* payload;
   int encode_msglen;
   socklen_t addrlen = sizeof(struct sockaddr_in);
-#if HAVE_ZLIB_H
+#if HAVE_Z
   player_map_data_t* zipped_data=NULL;
 #endif
 
@@ -596,7 +596,7 @@ PlayerUDP::WriteClient(int cli)
            (hdr.type == PLAYER_MSGTYPE_RESP_ACK) &&
            (hdr.subtype == PLAYER_MAP_REQ_GET_DATA))
         {
-#if HAVE_ZLIB_H
+#if HAVE_Z
             player_map_data_t* raw_data = (player_map_data_t*)payload;
             zipped_data = (player_map_data_t*)calloc(1,sizeof(player_map_data_t));
             assert(zipped_data);
@@ -634,7 +634,7 @@ PlayerUDP::WriteClient(int cli)
         {
           PLAYER_WARN4("encoding failed on message from %s:%u with type %s:%u",
                        interf_to_str(hdr.addr.interf), hdr.addr.index, msgtype_to_str(hdr.type), hdr.subtype);
-#if HAVE_ZLIB_H
+#if HAVE_Z
           if(zipped_data)
           {
             free(zipped_data->data);
@@ -656,7 +656,7 @@ PlayerUDP::WriteClient(int cli)
 			       PLAYERXDR_ENCODE)) < 0)
         {
           PLAYER_ERROR("failed to encode msg header");
-#if HAVE_ZLIB_H
+#if HAVE_Z
           if(zipped_data)
           {
             free(zipped_data->data);
@@ -672,7 +672,7 @@ PlayerUDP::WriteClient(int cli)
         client->writebufferlen = PLAYERXDR_MSGHDR_SIZE + hdr.size;
       }
       delete msg;
-#if HAVE_ZLIB_H
+#if HAVE_Z
       if(zipped_data)
       {
         free(zipped_data->data);
@@ -807,7 +807,7 @@ PlayerUDP::ParseBuffer(int cli)
           // update the message size and send it off
           hdr.size = decode_msglen;
           void * msg_data = hdr.size? this->decode_readbuffer: NULL;
-          
+
           if(hdr.addr.interf == PLAYER_PLAYER_CODE)
           {
             Message* msg = new Message(hdr, msg_data, client->queue);
@@ -828,7 +828,7 @@ PlayerUDP::ParseBuffer(int cli)
                (hdr.type == PLAYER_MSGTYPE_RESP_ACK) &&
                (hdr.subtype == PLAYER_MAP_REQ_GET_DATA))
             {
-#if HAVE_ZLIB_H
+#if HAVE_Z
               player_map_data_t* zipped_data =
                       (player_map_data_t*)this->decode_readbuffer;
               player_map_data_t* raw_data =
