@@ -213,7 +213,7 @@ void SickS3000_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 SickS3000::SickS3000(ConfigFile* cf, int section)
-    : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LASER_CODE), mirror("mirror", 0, 0)
+    : Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LASER_CODE), mirror("mirror", 0, 0)
 {
 	  
   rx_count = 0;
