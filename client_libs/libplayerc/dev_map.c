@@ -1,4 +1,4 @@
-/* 
+/*
  *  libplayerc : a Player client library
  *  Copyright (C) Andrew Howard 2002-2003
  *
@@ -20,7 +20,7 @@
 /*
  *  Player - One Hell of a Robot Server
  *  Copyright (C) Andrew Howard 2003
- *                      
+ *
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -45,7 +45,7 @@
 
 #include <config.h>
 
-#if HAVE_ZLIB_H
+#if HAVE_Z
   #include <zlib.h>
 #endif
 
@@ -67,7 +67,7 @@ playerc_map_t *playerc_map_create(playerc_client_t *client, int index)
   memset(device, 0, sizeof(playerc_map_t));
   playerc_device_init(&device->info, client, PLAYER_MAP_CODE, index,
                       (playerc_putmsg_fn_t) NULL);
-    
+
   return device;
 }
 
@@ -103,16 +103,16 @@ int playerc_map_get_map(playerc_map_t* device)
   int sx,sy;
   int si,sj;
   char* cell;
-#if HAVE_ZLIB_H
+#if HAVE_Z
   uLongf unzipped_data_len;
   char* unzipped_data;
 #endif
 
 
   // first, get the map info
-  if(playerc_client_request(device->info.client, 
-                            &device->info, 
-                            PLAYER_MAP_REQ_GET_INFO, 
+  if(playerc_client_request(device->info.client,
+                            &device->info,
+                            PLAYER_MAP_REQ_GET_INFO,
                             NULL, (void**)&info_req) < 0)
   {
     PLAYERC_ERR("failed to get map info");
@@ -126,7 +126,7 @@ int playerc_map_get_map(playerc_map_t* device)
   device->origin[1] = info_req->origin.py;
   player_map_info_t_free(info_req);
   info_req=NULL;
-  
+
   // Allocate space for the whole map
   device->cells = (char*)realloc(device->cells, sizeof(char) *
                                 device->width * device->height);
@@ -134,7 +134,7 @@ int playerc_map_get_map(playerc_map_t* device)
 
   // now, get the map, in tiles
 
-#if HAVE_ZLIB_H
+#if HAVE_Z
   // Allocate a buffer into which we'll decompress the map data
   unzipped_data_len = device->width*device->height;
   unzipped_data = (char*)malloc(unzipped_data_len);
@@ -161,14 +161,14 @@ int playerc_map_get_map(playerc_map_t* device)
                               (void*)data_req, (void**)&data_resp) < 0)
     {
       PLAYERC_ERR("failed to get map data");
-#if HAVE_ZLIB_H
+#if HAVE_Z
       free(unzipped_data);
 #endif
       free(data_req);
       return(-1);
     }
 
-#if HAVE_ZLIB_H
+#if HAVE_Z
     unzipped_data_len = device->width*device->height;
     if(uncompress((Bytef*)unzipped_data, &unzipped_data_len,
                   (uint8_t*)data_resp->data, data_resp->data_count) != Z_OK)
@@ -187,7 +187,7 @@ int playerc_map_get_map(playerc_map_t* device)
       for(i=0;i<si;i++)
       {
         cell = device->cells + PLAYERC_MAP_INDEX(device,oi+i,oj+j);
-#if HAVE_ZLIB_H
+#if HAVE_Z
         *cell = unzipped_data[j*si + i];
 #else
         *cell = data_resp->data[j*si + i];
@@ -204,7 +204,7 @@ int playerc_map_get_map(playerc_map_t* device)
   }
   free(data_req);
 
-#if HAVE_ZLIB_H
+#if HAVE_Z
   free(unzipped_data);
 #endif
   player_map_data_t_free(data_resp);
@@ -212,14 +212,14 @@ int playerc_map_get_map(playerc_map_t* device)
   return(0);
 }
 
-int 
+int
 playerc_map_get_vector(playerc_map_t* device)
 {
   player_map_data_vector_t* vmap;
 
-  if(playerc_client_request(device->info.client, 
-                            &device->info, 
-                            PLAYER_MAP_REQ_GET_VECTOR, 
+  if(playerc_client_request(device->info.client,
+                            &device->info,
+                            PLAYER_MAP_REQ_GET_VECTOR,
                             NULL, (void**)&vmap) < 0)
   {
     PLAYERC_ERR("failed to get map vector data");

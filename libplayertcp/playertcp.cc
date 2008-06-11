@@ -51,7 +51,7 @@
   #include <netinet/tcp.h>
 #endif
 
-#if HAVE_ZLIB_H
+#if HAVE_Z
   #include <zlib.h>
 #endif
 
@@ -555,7 +555,7 @@ PlayerTCP::WriteClient(int cli)
   player_msghdr_t hdr;
   void* payload;
   int encode_msglen;
-#if HAVE_ZLIB_H
+#if HAVE_Z
   player_map_data_t* zipped_data=NULL;
 #endif
 
@@ -639,7 +639,7 @@ PlayerTCP::WriteClient(int cli)
            (hdr.type == PLAYER_MSGTYPE_RESP_ACK) &&
            (hdr.subtype == PLAYER_MAP_REQ_GET_DATA))
         {
-#if HAVE_ZLIB_H
+#if HAVE_Z
           player_map_data_t* raw_data = (player_map_data_t*)payload;
           zipped_data = (player_map_data_t*)calloc(1,sizeof(player_map_data_t));
           assert(zipped_data);
@@ -681,7 +681,7 @@ PlayerTCP::WriteClient(int cli)
           {
             PLAYER_WARN4("encoding failed on message from %s:%u with type %s:%u",
                        interf_to_str(hdr.addr.interf), hdr.addr.index, msgtype_to_str(hdr.type), hdr.subtype);
-#if HAVE_ZLIB_H
+#if HAVE_Z
             if(zipped_data)
             {
               free(zipped_data->data);
@@ -706,7 +706,7 @@ PlayerTCP::WriteClient(int cli)
                    PLAYERXDR_ENCODE)) < 0)
         {
           PLAYER_ERROR("failed to encode msg header");
-#if HAVE_ZLIB_H
+#if HAVE_Z
           if(zipped_data)
           {
             free(zipped_data->data);
@@ -722,7 +722,7 @@ PlayerTCP::WriteClient(int cli)
         client->writebufferlen = PLAYERXDR_MSGHDR_SIZE + hdr.size;
       }
       delete msg;
-#if HAVE_ZLIB_H
+#if HAVE_Z
       if(zipped_data)
       {
         free(zipped_data->data);
@@ -744,8 +744,8 @@ PlayerTCP::Write(bool have_lock)
     int ret = pthread_mutex_trylock(&clients_mutex);
     assert (ret == EBUSY);
   }
-	
-	
+
+
   if(!have_lock)
     Lock();
 
@@ -966,7 +966,7 @@ PlayerTCP::ParseBuffer(int cli)
                (hdr.type == PLAYER_MSGTYPE_RESP_ACK) &&
                (hdr.subtype == PLAYER_MAP_REQ_GET_DATA))
             {
-#if HAVE_ZLIB_H
+#if HAVE_Z
               player_map_data_t* zipped_data =
                       (player_map_data_t*)this->decode_readbuffer;
               player_map_data_t* raw_data =
@@ -1326,13 +1326,13 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
 }
 
 
-void 
+void
 PlayerTCP::Lock()
 {
   pthread_mutex_lock(&clients_mutex);
 }
 
-void 
+void
 PlayerTCP::Unlock()
 {
   pthread_mutex_unlock(&clients_mutex);

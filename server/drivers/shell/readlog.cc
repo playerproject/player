@@ -140,7 +140,7 @@ driver
 #include <math.h>
 #include <unistd.h>
 
-#if HAVE_ZLIB_H
+#if HAVE_Z
   #include <zlib.h>
 #endif
 
@@ -353,7 +353,7 @@ class ReadLog: public Driver
   // File to read data from
   private: const char *filename;
   private: FILE *file;
-#if HAVE_ZLIB_H
+#if HAVE_Z
   private: gzFile gzfile;
 #endif
 
@@ -483,7 +483,7 @@ ReadLog::ReadLog(ConfigFile* cf, int section)
   // Initialize other stuff
   this->format = strdup("unknown");
   this->file = NULL;
-#if HAVE_ZLIB_H
+#if HAVE_Z
   this->gzfile = NULL;
 #endif
 
@@ -528,7 +528,7 @@ int ReadLog::Setup()
   if (strlen(this->filename) >= 3 && \
       strcasecmp(this->filename + strlen(this->filename) - 3, ".gz") == 0)
   {
-#if HAVE_ZLIB_H
+#if HAVE_Z
     this->gzfile = gzopen(this->filename, "r");
 #else
     PLAYER_ERROR("no support for reading compressed log files");
@@ -572,7 +572,7 @@ int ReadLog::Shutdown()
   free(this->line);
 
   // Close the file
-#if HAVE_ZLIB_H
+#if HAVE_Z
   if (this->gzfile)
   {
     gzclose(this->gzfile);
@@ -633,7 +633,7 @@ void ReadLog::Main()
     if(!reading_configs && this->rewind_requested)
     {
       // back up to the beginning of the file
-#if HAVE_ZLIB_H
+#if HAVE_Z
       if (this->gzfile)
         ret = gzseek(this->file,0,SEEK_SET);
       else
@@ -679,7 +679,7 @@ void ReadLog::Main()
     {
       // Read a line from the file; note that gzgets is really slow
       // compared to fgets (on uncompressed files), so use the latter.
-#if HAVE_ZLIB_H
+#if HAVE_Z
       if (this->gzfile)
         ret = (gzgets(this->file, this->line, this->line_size) == NULL);
       else
