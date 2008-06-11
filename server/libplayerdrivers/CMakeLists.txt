@@ -55,9 +55,9 @@ ENDIF (PLAYER_DRIVERSLIB_LIBDIRS)
 # Actually add the target
 PLAYER_ADD_LIBRARY (playerdrivers ${driver_config_h} ${driverregistry_cc} ${driversSrcs})
 TARGET_LINK_LIBRARIES (playerdrivers playercore playererror)
-IF (HAVE_LIBJPEG)
+IF (HAVE_JPEG)
     TARGET_LINK_LIBRARIES (playerdrivers playerjpeg)
-ENDIF (HAVE_LIBJPEG)
+ENDIF (HAVE_JPEG)
 
 # Set C flags on source files that need them
 FOREACH (driverName ${PLAYER_BUILT_DRIVERS})
