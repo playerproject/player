@@ -1,5 +1,4 @@
-# If have GTK, give the user the option to enable RTK
-IF (WITH_GTK)
+IF (WITH_GTK AND INCLUDE_RTKGUI)
     SET (rtkSrcs rtk.c
             rtk_canvas.c
             rtk_canvas_movie.c
@@ -13,4 +12,4 @@ IF (WITH_GTK)
         COMPILE_FLAGS "${GNOMECANVAS_CFLAGS} ${GTK_CFLAGS} ${GDKPIXBUF_CFLAGS}")
     SET_TARGET_PROPERTIES (rtk PROPERTIES
         LINK_FLAGS "${GNOMECANVAS_LINKFLAGS} ${GTK_LINKFLAGS} ${GDKPIXBUF_LINKFLAGS}")
-ENDIF (WITH_GTK)
+ENDIF (WITH_GTK AND INCLUDE_RTKGUI)

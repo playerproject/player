@@ -10,6 +10,8 @@
   #include "config.h"
 #endif
 
+#include <playerconfig.h>
+
 #ifdef INCLUDE_RTKGUI
 
 #include <assert.h>
@@ -23,7 +25,7 @@
 #include "pf_pdf.h"
 #include "pf_kdtree.h"
 
- 
+
 // Draw the statistics
 void pf_draw_statistics(pf_t *pf, rtk_fig_t *fig);
 
@@ -38,22 +40,22 @@ void pf_draw_samples(pf_t *pf, rtk_fig_t *fig, int max_samples)
 
   set = pf->sets + pf->current_set;
   max_samples = MIN(max_samples, set->sample_count);
-    
+
   for (i = 0; i < max_samples; i++)
   {
     sample = set->samples + i;
 
     px = sample->pose.v[0];
     py = sample->pose.v[1];
-    pa = sample->pose.v[2];    
+    pa = sample->pose.v[2];
 
     //printf("%f %f\n", px, py);
-    
+
     rtk_fig_point(fig, px, py);
     rtk_fig_arrow(fig, px, py, pa, 0.1, 0.02);
     //rtk_fig_rectangle(fig, px, py, 0, 0.1, 0.1, 0);
   }
-  
+
   return;
 }
 
@@ -67,7 +69,7 @@ void pf_draw_hist(pf_t *pf, rtk_fig_t *fig)
 
   rtk_fig_color(fig, 0.0, 0.0, 1.0);
   pf_kdtree_draw(set->kdtree, fig);
-  
+
   return;
 }
 
@@ -80,10 +82,10 @@ void pf_draw_cep_stats(pf_t *pf, rtk_fig_t *fig)
 
   pf_get_cep_stats(pf, &mean, &var);
   var = sqrt(var);
-  
+
   rtk_fig_color(fig, 0, 0, 1);
   rtk_fig_ellipse(fig, mean.v[0], mean.v[1], mean.v[2], 3 * var, 3 * var, 0);
-  
+
   return;
 }
 
@@ -100,7 +102,7 @@ void pf_draw_cluster_stats(pf_t *pf, rtk_fig_t *fig)
   double weight, o, d1, d2;
 
   set = pf->sets + pf->current_set;
-  
+
   for (i = 0; i < set->cluster_count; i++)
   {
     cluster = set->clusters + i;
@@ -122,7 +124,7 @@ void pf_draw_cluster_stats(pf_t *pf, rtk_fig_t *fig)
     printf("d = \n");
     pf_matrix_fprintf(d, stdout, "%e");
     */
-    
+
     // Compute the orientation of the error ellipse (first eigenvector)
     o = atan2(r.m[1][0], r.m[0][0]);
     d1 = 6 * sqrt(d.m[0][0]);
@@ -141,7 +143,7 @@ void pf_draw_cluster_stats(pf_t *pf, rtk_fig_t *fig)
     rtk_fig_arrow(fig, mean.v[0], mean.v[1], mean.v[2] + 3 * sqrt(cov.m[2][2]), 0.50, 0.10);
     rtk_fig_arrow(fig, mean.v[0], mean.v[1], mean.v[2] - 3 * sqrt(cov.m[2][2]), 0.50, 0.10);
   }
-  
+
   return;
 }
 
