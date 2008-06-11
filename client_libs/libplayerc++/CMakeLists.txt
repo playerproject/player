@@ -75,25 +75,25 @@ IF (BUILD_PLAYERCC)
                 INCLUDE_DIRECTORIES (${Boost_INCLUDE_DIR})
                 LINK_DIRECTORIES (${Boost_LIBRARY_DIRS})
 
-                IF (Boost_thread_FOUND)
+                IF (Boost_THREAD_FOUND)
                     SET (boostThreadLib -lboost_thread)
                     PLAYERCC_ADD_LINK_LIB (boost_thread)
                     MESSAGE (STATUS
                             "PlayerC++ client library will be built with Boost::Thread support.")
-                ELSE (Boost_thread_FOUND)
+                ELSE (Boost_THREAD_FOUND)
                     MESSAGE (STATUS
                             "Boost::Thread library not found, support will not be included.")
-                ENDIF (Boost_thread_FOUND)
+                ENDIF (Boost_THREAD_FOUND)
 
-                IF (Boost_signals_FOUND)
+                IF (Boost_SIGNALS_FOUND)
                     SET (boostSignalsLib -lboost_signals)
                     PLAYERCC_ADD_LINK_LIB (boost_signals)
                     MESSAGE (STATUS
                             "PlayerC++ client library will be built with Boost::Signals support.")
-                ELSE (Boost_signals_FOUND)
+                ELSE (Boost_SIGNALS_FOUND)
                     MESSAGE (STATUS
                             "Boost::Signals library not found, support will not be included.")
-                ENDIF (Boost_signals_FOUND)
+                ENDIF (Boost_SIGNALS_FOUND)
             ELSE (Boost_FOUND)
                 MESSAGE (STATUS
                          "Boost libraries were not found. Boost::Signals and Boost::Thread support
