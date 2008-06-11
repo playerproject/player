@@ -9,6 +9,7 @@
 #ifndef PF_KDTREE_H
 #define PF_KDTREE_H
 
+#include <playerconfig.h>
 
 #ifdef INCLUDE_RTKGUI
 #include "rtk.h"
@@ -24,7 +25,7 @@ typedef struct pf_kdtree_node
   // Pivot dimension and value
   int pivot_dim;
   double pivot_value;
-  
+
   // The key for this node
   int key[3];
 
@@ -45,7 +46,7 @@ typedef struct
 {
   // Cell size
   double size[3];
-  
+
   // The root node of the tree
   pf_kdtree_node_t *root;
 

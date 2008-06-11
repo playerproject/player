@@ -23,7 +23,7 @@ SET (amclSrcs   amcl.cc
 
 IF (INCLUDE_RTKGUI)
     SET (linkFlags "${GTK_LINKFLAGS}")
-    SET (cFlags "-I${PROJECT_SOURCE_DIR}/rtk2 ${GTK_CFLAGS} -DINCLUDE_RTKGUI")
+    SET (cFlags "-I${PROJECT_SOURCE_DIR}/rtk2 ${GTK_CFLAGS}")
 ELSE (INCLUDE_RTKGUI)
     SET (linkFlags)
     SET (cFlags)

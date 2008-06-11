@@ -38,6 +38,7 @@
 
 #include <pthread.h>
 
+#include <playerconfig.h>
 #ifdef INCLUDE_RTKGUI
 #include "rtk.h"
 #endif
