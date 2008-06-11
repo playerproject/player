@@ -117,7 +117,7 @@ Ben Grocholsky, Brad Kratochvil
 #include <libplayercore/playercore.h>
 #include <libplayercore/error.h>
 
-#if HAVE_JPEGLIB_H
+#if HAVE_JPEG
   #include <libplayerjpeg/playerjpeg.h>
 #endif
 
@@ -429,7 +429,7 @@ CMVisionBF::ProcessMessage(QueuePointer & resp_queue,
 
     assert(camera_data);
 
-#if !HAVE_JPEGLIB_H
+#if !HAVE_JPEG
     if (camera_data->compression == PLAYER_CAMERA_COMPRESS_JPEG)
     {
       PLAYER_ERROR("No support for jpeg decompression");
@@ -453,7 +453,7 @@ CMVisionBF::ProcessMessage(QueuePointer & resp_queue,
       ptr = camera_data->image;
       if (camera_data->compression == PLAYER_CAMERA_COMPRESS_JPEG)
       {
-#if HAVE_JPEGLIB_H
+#if HAVE_JPEG
 	jpeg_decompress((unsigned char*)mTmp,
 			mWidth*mHeight*3,
                         camera_data->image,

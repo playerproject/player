@@ -1,7 +1,7 @@
 /*
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2000  Brian Gerkey et al
- *                      gerkey@usc.edu    
+ *                      gerkey@usc.edu
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -32,7 +32,8 @@
 #include <assert.h>
 #include "imagebase.h"
 #include <libplayerxdr/playerxdr.h>
-#if HAVE_JPEGLIB_H
+#include <config.h>
+#if HAVE_JPEG
 #include <libplayerjpeg/playerjpeg.h>
 #endif
 
@@ -51,7 +52,7 @@ ImageBase::ImageBase(ConfigFile *cf, int section, bool overwrite_cmds, size_t qu
   if (cf->ReadDeviceAddr(&this->camera_addr, section, "requires",
                        PLAYER_CAMERA_CODE, -1, NULL) != 0)
   {
-    this->SetError(-1);    
+    this->SetError(-1);
     return;
   }
 
@@ -70,7 +71,7 @@ ImageBase::ImageBase(ConfigFile *cf, int section, bool overwrite_cmds, size_t qu
   if (cf->ReadDeviceAddr(&this->camera_addr, section, "requires",
                        PLAYER_CAMERA_CODE, -1, NULL) != 0)
   {
-    this->SetError(-1);    
+    this->SetError(-1);
     return;
   }
 
@@ -108,7 +109,7 @@ int ImageBase::Setup()
 int ImageBase::Shutdown()
 {
   StopThread();
-	
+
   camera_driver->Unsubscribe(InQueue);
 
   return 0;
@@ -132,7 +133,7 @@ int ImageBase::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, vo
 	    this->stored_data.width = (compdata->width);
 	    this->stored_data.height = (compdata->height);
 	    this->stored_data.fdiv = (compdata->fdiv);
-#if HAVE_JPEGLIB_H
+#if HAVE_JPEG
 	    if (compdata->compression != PLAYER_CAMERA_COMPRESS_JPEG)
 	    {
 #endif
@@ -155,7 +156,7 @@ int ImageBase::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, vo
 		    assert(this->stored_data.image);
 		    memcpy(this->stored_data.image, compdata->image, this->stored_data.image_count);
 		}
-#if HAVE_JPEGLIB_H
+#if HAVE_JPEG
 	    } else
 	    {
 		this->stored_data.compression = PLAYER_CAMERA_COMPRESS_RAW;
@@ -179,7 +180,7 @@ int ImageBase::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, vo
 		    jpeg_decompress(reinterpret_cast<unsigned char *>(this->stored_data.image),
 		                    this->stored_data.image_count,
 		                    reinterpret_cast<unsigned char *>(compdata->image),
-		                    compdata->image_count);		
+		                    compdata->image_count);
 		}
 	    }
 #endif
@@ -196,11 +197,11 @@ void ImageBase::Main()
 	for(;;)
 	{
 		pthread_testcancel();
-		
+
 		InQueue->Wait();
-		
+
 		ProcessMessages();
-		
+
 		Lock();
 		if (HaveData)
 		{
@@ -211,5 +212,5 @@ void ImageBase::Main()
 		}
 		Unlock();
 	}
-	
+
 }

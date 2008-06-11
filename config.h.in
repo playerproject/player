@@ -9,56 +9,22 @@
 /* enable TCP_NODELAY */
 #cmakedefine ENABLE_TCP_NODELAY 1
 
-/* Define to 1 if you have the `getaddrinfo' function. */
 #cmakedefine HAVE_GETADDRINFO 1
-
-/* Define to 1 if you have the <jpeglib.h> header file. */
-#cmakedefine HAVE_JPEGLIB_H 1
-
-/* Define to 1 if you have the GL library (-lGL). */
+//#cmakedefine HAVE_JPEGLIB_H 1
+//#cmakedefine HAVE_LIBJPEG 1
+#cmakedefine HAVE_JPEG 1
 #cmakedefine HAVE_LIBGL 1
-
-/* Define to 1 if you have the GLU library (-lGLU). */
 #cmakedefine HAVE_LIBGLU 1
-
-/* Define to 1 if you have the GLUT library (-lGglut). */
 #cmakedefine HAVE_LIBGLUT 1
-
-/* Define to 1 if you have the jpeg library (-ljpeg). */
-#cmakedefine HAVE_LIBJPEG 1
-
-/* Define to 1 if you have the z library (-lz). */
 #cmakedefine HAVE_LIBZ 1
-
-/* Define to 1 if you have the <linux/joystick.h> header file. */
 #cmakedefine HAVE_LINUX_JOYSTICK_H 1
-
-/* Define to 1 if you have the <stdlib.h> header file. */
 #cmakedefine HAVE_STDLIB_H 1
-
-/* Define to 1 if you have the <strings.h> header file. */
 #cmakedefine HAVE_STRINGS_H 1
-
-/* Define to 1 if you have the <string.h> header file. */
 #cmakedefine HAVE_STRING_H 1
-
-/* Define to 1 if you have the <sys/filio.h> header file. */
 #cmakedefine HAVE_SYS_FILIO_H 1
-
-/* Define to 1 if you have the <sys/soundcard.h> header file. */
 #cmakedefine HAVE_SYS_SOUNDCARD_H 1
-
-/* Define to 1 if you have the <sys/stat.h> header file. */
 #cmakedefine HAVE_SYS_STAT_H 1
-
-/* Define to 1 if you have the <sys/types.h> header file. */
 #cmakedefine HAVE_SYS_TYPES_H 1
-
-/* Define to 1 if you have the <unistd.h> header file. */
 #cmakedefine HAVE_UNISTD_H 1
-
-/* Define to 1 if you have the <zlib.h> header file. */
 #cmakedefine HAVE_ZLIB_H 1
-
-/* Define to 1 if the system is big endian. */
 #cmakedefine WORDS_BIGENDIAN 1

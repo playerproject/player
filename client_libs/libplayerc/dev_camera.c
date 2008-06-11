@@ -42,9 +42,9 @@
  * Date: 26 May 2002
  * CVS: $Id$
  **************************************************************************/
-#include "config.h"
+#include <config.h>
 
-#if HAVE_JPEGLIB_H
+#if HAVE_JPEG
   #include "libplayerjpeg/playerjpeg.h"
 #endif
 
@@ -132,7 +132,7 @@ void playerc_camera_decompress(playerc_camera_t *device)
   if (device->compression == PLAYER_CAMERA_COMPRESS_RAW)
     return;
 
-#if HAVE_JPEGLIB_H
+#if HAVE_JPEG
   int dst_size;
   unsigned char *dst;
 
