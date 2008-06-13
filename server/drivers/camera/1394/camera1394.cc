@@ -1202,7 +1202,7 @@ int Camera1394::GrabFrame()
   unsigned int frame_height;
   uint8_t * capture_buffer;
 #if LIBDC1394_VERSION == 0200
-  frameTime = frame->timestamp/1.e-6;
+  frameTime = frame->timestamp*1.e-6;
   frame_width = frame->size[0];
   frame_height = frame->size[1];
   capture_buffer = reinterpret_cast<uint8_t *>(frame->image);
