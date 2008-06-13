@@ -725,7 +725,6 @@ PTU46_Device::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, voi
 				success = false;
 		    }
 		}
-		Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype);
 	    }
 	    else
 		return -1;
