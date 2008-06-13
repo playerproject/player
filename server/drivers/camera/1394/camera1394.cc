@@ -273,9 +273,15 @@ driver
 #define DC1394_ISO_SPEED_100 SPEED_100
 #define DC1394_ISO_SPEED_200 SPEED_200
 #define DC1394_ISO_SPEED_400 SPEED_400
+#ifdef SPEED_800
 #define DC1394_ISO_SPEED_800 SPEED_800
+#endif
+#ifdef SPEED_1600
 #define DC1394_ISO_SPEED_1600 SPEED_1600
+#endif
+#ifdef SPEED_3200
 #define DC1394_ISO_SPEED_3200 SPEED_3200
+#endif
 
 #endif
 
@@ -660,15 +666,25 @@ Camera1394::Camera1394(ConfigFile* cf, int section)
     case 400:
       this->iso_speed = DC1394_ISO_SPEED_400;
       break;
+#ifdef DC1394_ISO_SPEED_800
     case 800:
       this->iso_speed = DC1394_ISO_SPEED_800;
       break;
+#endif
+#ifdef DC1394_ISO_SPEED_1600
     case 1600:
       this->iso_speed = DC1394_ISO_SPEED_1600;
       break;
+#endif
+#ifdef DC1394_ISO_SPEED_3200
     case 3200:
       this->iso_speed = DC1394_ISO_SPEED_3200;
       break;
+#endif
+    default:
+      PLAYER_ERROR("Unsupported iso_speed");
+      this->SetError(-1);
+      return;
   }
 
   return;
