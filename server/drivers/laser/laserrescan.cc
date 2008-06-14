@@ -36,7 +36,7 @@
 /** @defgroup driver_laserrescan laserrescan
  * @brief Laser rescanner
 
-The laserrescan driver processes a laser scan to create a virtual scan 
+The laserrescan driver processes a laser scan to create a virtual scan
 configuration. Existing scans are interpolated.
 
 The driver was created for the purpose of using pmap with non-sick scanners
@@ -56,7 +56,7 @@ The driver was created for the purpose of using pmap with non-sick scanners
 @par Configuration requests
 
 - PLAYER_LASER_REQ_GET_GEOM
-  
+
 @par Configuration file options
 - min_angle (float)
   - Default: -pi/2
@@ -67,8 +67,8 @@ The driver was created for the purpose of using pmap with non-sick scanners
 - scan_count (int)
   - Default: 181
   - Number of scans from min angle to max angle
-    
-@par Example 
+
+@par Example
 
 @verbatim
 driver
@@ -79,7 +79,7 @@ driver
 )
 driver
 (
-  name "laserescan"
+  name "laserrescan"
   requires ["laser:0"] # read from laser:0
   provides ["laser:1"] # output results on laser:1
 )
@@ -158,18 +158,18 @@ int LaserRescan::UpdateLaser(player_laser_data_t * data)
   this->data.ranges_count = scan_count;
   this->data.ranges = new float[scan_count];
   this->data.max_range = data->max_range;
-  
+
   double real_min = data->min_angle;
   double real_res = data->resolution;
-  
+
 	for (i = 0; i < scan_count; ++i)
 	{
 		double theta = min_angle + i*res;
 		double new_i = (theta - real_min)/real_res;
-		
+
 		unsigned int j = (int) floor(new_i);
 		unsigned int k = (int) ceil(new_i);
-		
+
 		if (j < 0)
 			j = 0;
 		if (j > data->ranges_count)
@@ -180,18 +180,18 @@ int LaserRescan::UpdateLaser(player_laser_data_t * data)
 		if (k > data->ranges_count)
 			k = data->ranges_count;
 
-		
+
 		double theta_j = real_min + j*real_res;
-				
+
 		double interpolate = ((real_min +new_i*real_res) - theta_j)/real_res;
-		
+
 		double new_value = data->ranges[j]+(data->ranges[k] - data->ranges[j])*interpolate;
-		
+
 		this->data.ranges[i] = new_value;
-		
+
 	}
 
-  this->Publish(this->device_addr,  
+  this->Publish(this->device_addr,
                 PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN,
                 &this->data);
   delete [] this->data.ranges;
