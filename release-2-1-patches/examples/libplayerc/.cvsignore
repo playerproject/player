@@ -1,0 +1,8 @@
+Makefile
+Makefile.in
+simple
+speech_c_client
+service_discovery
+vmap
+.libs
+.deps

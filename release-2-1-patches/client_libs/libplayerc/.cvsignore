@@ -1,0 +1,12 @@
+Makefile
+Makefile.in
+playerc.pc
+libplayerc.pc
+libplayerc.pc.in
+playercconfig.h
+.deps
+.libs
+*.lo
+*.a
+*.la
+stamp-h4

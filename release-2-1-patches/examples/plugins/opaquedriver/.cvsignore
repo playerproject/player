@@ -1,0 +1,7 @@
+Makefile
+Makefile.in
+opaque_client
+.libs
+.deps
+*.la
+*.lo

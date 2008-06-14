@@ -1,0 +1,7 @@
+Makefile
+Makefile.in
+*.class
+*.java
+net
+playertcp_java_wrap.cc
+.deps

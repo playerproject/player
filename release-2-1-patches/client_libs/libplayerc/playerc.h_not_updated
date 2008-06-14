@@ -1,0 +1,47 @@
+#if 0
+
+/***************************************************************************/
+/** @defgroup playerc_proxy_joystick joystick
+
+The joystick proxy provides an interface to joysticks.
+
+@{
+*/
+
+/** @brief Joystick device data. */
+typedef struct
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  /** Scaled joystick position (0 = centered, 1 = hard over). */
+  double px, py;
+
+  /** Button states (bitmask) */
+  uint16_t buttons;
+
+} playerc_joystick_t;
+
+
+/** @brief Create a joystick device proxy. */
+playerc_joystick_t *playerc_joystick_create(playerc_client_t *client, int index);
+
+/** @brief Destroy a joystick device proxy. */
+void playerc_joystick_destroy(playerc_joystick_t *device);
+
+/** @brief Subscribe to the joystick device */
+int playerc_joystick_subscribe(playerc_joystick_t *device, int access);
+
+/** @brief Un-subscribe from the joystick device */
+int playerc_joystick_unsubscribe(playerc_joystick_t *device);
+
+/** @brief @internal Parse data from incoming packet */
+void playerc_joystick_putmsg(playerc_joystick_t *device, player_msghdr_t *header,
+                              player_joystick_data_t *data, size_t len);
+
+
+/** @} */
+/**************************************************************************/
+
+#endif
+
