@@ -675,7 +675,7 @@ PTU46_Device::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, voi
 
 		bool success = true;
 		// Different processing depending on movement mode
-		if (MoveMode == PLAYER_PTZ_VELOCITY_CONTROL)
+		if (MoveMode == PTU46_VELOCITY)
 		{
 		    // ignore pan and tilt, just use velocity
 		    if (cmd.panspeed != new_command->panspeed)
