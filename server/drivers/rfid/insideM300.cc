@@ -89,6 +89,8 @@ driver
 #include <termios.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
+#include <stddef.h>
+#include <stdlib.h>
 
 // Includes needed for player
 #include <libplayercore/playercore.h>

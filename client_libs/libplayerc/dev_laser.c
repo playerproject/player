@@ -307,6 +307,7 @@ int
 void playerc_laser_printout( playerc_laser_t * device,
 			  const char* prefix )
 {
+  int i;
   if( prefix )
     printf( "%s: ", prefix );
 
@@ -316,7 +317,6 @@ void playerc_laser_printout( playerc_laser_t * device,
 	 device->scan_count );
 
   printf( "# ranges\n" );
-  int i;
   for( i=0; i<device->scan_count; i++ )
     printf( "%.3f ", device->ranges[i] );
   puts( "" );

@@ -103,7 +103,6 @@ driver
 #include <termios.h>
 
 #include <replace/replace.h>
-#include <vector>
 using namespace std;
 
 #include "urg_laser.h"

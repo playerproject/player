@@ -198,7 +198,7 @@ MapCspace::Transform()
           for(di = -r; di <= r; di++)
           {
             // stay within the radius
-            if((int)rint(sqrt(di*di + dj*dj)) > r)
+            if((int)rint(sqrt(static_cast<double>(di*di + dj*dj))) > r)
               continue;
 
             // make sure we stay on the map

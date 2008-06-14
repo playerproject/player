@@ -174,6 +174,7 @@ _plan_update_plan(plan_t *plan, double lx, double ly, double gx, double gy)
 
   while (1)
   {
+    float * p;
     cell = plan_pop(plan);
     if (cell == NULL)
       break;
@@ -183,7 +184,7 @@ _plan_update_plan(plan_t *plan, double lx, double ly, double gx, double gy)
 
     //printf("pop %d %d %f\n", cell->ci, cell->cj, cell->plan_cost);
 
-    float* p = plan->dist_kernel_3x3;
+    p = plan->dist_kernel_3x3;
     for (dj = -1; dj <= +1; dj++)
     {
       ncell = plan->cells + PLAN_INDEX(plan,oi-1,oj+dj);

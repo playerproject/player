@@ -19,6 +19,10 @@ int test_graphics2d(playerc_client_t *client, int index)
 /*  int t;
   void *rdevice;*/
   playerc_graphics2d_t *device;
+  int p;
+  double r;
+  player_point_2d_t pts[RAYS];
+  player_color_t col;
 
   printf("device [graphics2d] index [%d]\n", index);
 
@@ -32,15 +36,10 @@ int test_graphics2d(playerc_client_t *client, int index)
   }
   PASS();
 
-  
-  player_point_2d_t pts[RAYS];
-  
-  double r;
   for( r=0; r<1.0; r+=0.05 )
     {
       TEST("drawing points");
-      
-      int p;
+
       for( p=0; p<RAYS; p++ )
 	{
 	  pts[p].px = r * cos(p * M_PI/(RAYS/2));
@@ -56,7 +55,6 @@ int test_graphics2d(playerc_client_t *client, int index)
     }
   
   TEST("changing color");
-  player_color_t col;
   col.red = 0;
   col.green = 255;
   col.blue = 0;
@@ -92,8 +90,6 @@ int test_graphics2d(playerc_client_t *client, int index)
   for( r=1.0; r>0; r-=0.1 )
     {
       TEST("drawing polygon");
-      
-      player_point_2d_t pts[4];
       pts[0].px = -r;
       pts[0].py = -r;
       pts[1].px = r;

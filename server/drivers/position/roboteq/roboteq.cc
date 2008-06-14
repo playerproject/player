@@ -104,7 +104,6 @@ driver
 #include <string.h>  // for strncpy(3),memcpy(3) 
 #include <stdlib.h>  // for atexit(3),atoi(3) 
 #include <pthread.h>  // for pthread stuff 
-#include <sys/poll.h> // for poll and poll_fd
 #include <math.h>
 
 #include <libplayercore/playercore.h>
@@ -114,6 +113,14 @@ driver
 #define MAX_MOTOR_SPEED			127
 #define ROBOTEQ_CON_TIMEOUT		10      // seconds to time-out on setting RS-232 mode
 #define ROBOTEQ_DEFAULT_BAUD	9600 
+
+#ifndef CRTSCTS
+#ifdef IHFLOW
+#ifdef OHFLOW
+#define CRTSCTS ((IHFLOW) | (OHFLOW))
+#endif
+#endif
+#endif
 
 // *************************************
 // some assumptions made by this driver:
@@ -287,7 +294,7 @@ roboteq::Setup()
   }
 
     // check response from RoboteQ
-	bzero(serialin_buff, SERIAL_BUFF_SIZE); 
+	memset(serialin_buff, 0, SERIAL_BUFF_SIZE);
 	ret = read(roboteq_fd, serialin_buff, SERIAL_BUFF_SIZE);
 	int beg_time = time(NULL);
 	bool mode_changed = true;
@@ -296,7 +303,7 @@ roboteq::Setup()
 			 mode_changed = false;
 			 break;
 		}
-		bzero(serialin_buff, SERIAL_BUFF_SIZE); 
+		memset(serialin_buff, 0, SERIAL_BUFF_SIZE);
 		ret = read(roboteq_fd, serialin_buff, SERIAL_BUFF_SIZE);
 	}
 	if (!mode_changed)
@@ -331,7 +338,7 @@ int roboteq::Shutdown()
   usleep(25000);
 
     // check response from RoboteQ
-	bzero(serialin_buff, SERIAL_BUFF_SIZE); 
+	memset(serialin_buff, 0, SERIAL_BUFF_SIZE);
 	ret = read(roboteq_fd, serialin_buff, SERIAL_BUFF_SIZE);
 	int beg_time = time(NULL);
 	while (! strchr(serialin_buff, 'W')){
@@ -345,7 +352,7 @@ int roboteq::Shutdown()
 			// failing or is the test bad?
 			return 0; 
 		}
-		bzero(serialin_buff, SERIAL_BUFF_SIZE); 
+		memset(serialin_buff, 0, SERIAL_BUFF_SIZE);
 		ret = read(roboteq_fd, serialin_buff, SERIAL_BUFF_SIZE);
 	}
 	fputs("Unable to reset Roboteq to RC mode!", stderr);

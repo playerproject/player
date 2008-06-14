@@ -135,11 +135,7 @@ driver
 #include <math.h>
 #include <termios.h>
 
-#include <vector>
-
 #include <time.h>
-#include <iostream>
-#include <fstream>
 
 #include "RS4Leuze_laser.h"
 
@@ -185,7 +181,7 @@ private:
 
 	//bool UseSerial;
 	int BaudRate;
-	char * Port;
+	const char * Port;
 	bool invert;
 	int ScanPoints;
 	struct timeval tv;/**<termios variable time interval*/
@@ -227,7 +223,7 @@ RS4LeuzeLaserDriver::RS4LeuzeLaserDriver(ConfigFile* cf, int section)
 	
    	// serial configuration 
 		
-	cout << "myLaser RS4 Leuze:"<< endl;
+	PLAYER_MSG1(1, "%s", "myLaser RS4 Leuze:");
 
 	int b = cf->ReadInt(section, "baud", 57600);
 	switch(b)
@@ -256,10 +252,10 @@ RS4LeuzeLaserDriver::RS4LeuzeLaserDriver(ConfigFile* cf, int section)
 			b = 57600;
 			break;
 	}
-	cout << "baud rate : " << b << endl;
+	PLAYER_MSG1(1, "baud rate: %d", b);
 
-        Port = strdup(cf->ReadString(section, "port", "/dev/ttyS1"));
-	cout << "port :" << Port << endl;
+        Port = cf->ReadString(section, "port", "/dev/ttyS1");
+	PLAYER_MSG1(1, "port: %s", Port);
 
 	// Scan points configuration
 	int sc = cf->ReadInt(section, "scan_points", 132);
@@ -287,7 +283,7 @@ RS4LeuzeLaserDriver::RS4LeuzeLaserDriver(ConfigFile* cf, int section)
 			Conf.resolution = DTOR(4*0.36);
 			break;
 	}
-	cout << "scan points : " << ScanPoints << endl;
+	PLAYER_MSG1(1, "scan points: %d", ScanPoints);
 
 	//invert data from teh leuze. Check if the leuze is upside-down.Normally dat must be inverted
 	//int sc = cf->ReadInt(section, "scan_points", 132);	
@@ -318,7 +314,7 @@ int RS4LeuzeLaserDriver::Setup() {
 	//	this->SetError(1);
 	//	return -1;
 	//}
-	cout << "S4LeuzeLaserDriver::Setup" << endl;
+	PLAYER_MSG1(1, "%s", "S4LeuzeLaserDriver::Setup");
 
     // Start the device thread; spawns a new thread and executes
     // ExampleDriver::Main(), which contains the main loop for the driver.
@@ -369,12 +365,12 @@ int RS4LeuzeLaserDriver::ProcessMessage(QueuePointer &resp_queue,
 // Main function for device thread
 void RS4LeuzeLaserDriver::Main()
 {
-	cout << "RS4LeuzeLaserDriver::Main" << endl;
+	PLAYER_MSG1(1, "%s", "RS4LeuzeLaserDriver::Main");
 
 	bool laser_ON=1;
 	//int i;
 
-	cout<<"Laser Ok"<<endl;
+	PLAYER_MSG1(1, "%s", "Laser Ok");
 
 	// The main loop; interact with the device here
 	for(int veces = 0;;veces++)	{
@@ -396,7 +392,7 @@ void RS4LeuzeLaserDriver::Main()
 
 		int top_ii = Data.ranges_count;
 		float tmp;
-		cout << "Data: ";
+		PLAYER_MSG1(1, "%s", "Data: ");
 		for (unsigned int i = 0; i < Data.ranges_count; ++i)
 		{ 
 			tmp = myLaser->scanData.Reading[i];
@@ -411,9 +407,8 @@ void RS4LeuzeLaserDriver::Main()
 			//Laser upside-down
 				Data.ranges[i] = tmp;
 			}
-			cout << Data.ranges[i] << " ";
+			PLAYER_MSG1(1, "%.4f ", Data.ranges[i]);
 		}
-			cout << endl;
 		
 
 		Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN,

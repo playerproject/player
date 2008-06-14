@@ -71,16 +71,13 @@ driver
 
 /** @} */
 
-#include <iostream>
-#include <cassert>
-#include <cstddef>
-#include <cstring>
-#include <ctime>
-#include <cmath>
+#include <assert.h>
+#include <stddef.h>
+#include <string.h>
+#include <time.h>
+#include <math.h>
 #include <pthread.h>
 #include <libplayercore/playercore.h>
-
-using namespace std;
 
 extern PlayerTime * GlobalTime;
 

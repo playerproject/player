@@ -79,6 +79,9 @@ PLAYER_PTZ_REQ_CONTROL_MODE request.
  * set up of a player driver
  */
 
+// Includes needed for player
+#include <libplayercore/playercore.h>
+
 // serial includes
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -105,9 +108,6 @@ PLAYER_PTZ_REQ_CONTROL_MODE request.
 #define PTU46_MAX_SPEED 'u'
 #define PTU46_VELOCITY 'v'
 #define PTU46_POSITION 'i'
-
-// Includes needed for player
-#include <libplayercore/playercore.h>
 
 #define DEFAULT_PTZ_PORT "/dev/ttyR1"
 #define PTZ_SLEEP_TIME_USEC 100000

@@ -309,12 +309,17 @@ driver
   #include "config.h"
 #endif
 
+#include "p2os.h"
+#include <libplayerxdr/playerxdr.h>
+
 #include <fcntl.h>
 #include <signal.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+#include <strings.h>
 #include <unistd.h>
 #include <math.h>
 #include <stdlib.h>  /* for abs() */
@@ -323,9 +328,6 @@ driver
 #include <sys/socket.h>
 #include <netinet/tcp.h>
 #include <netdb.h>
-
-#include "p2os.h"
-#include <libplayerxdr/playerxdr.h>
 
 Driver*
 P2OS_Init(ConfigFile* cf, int section)
@@ -1614,7 +1616,6 @@ int
 P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
 {
   P2OSPacket packet;
-  //double msgTime;
 
   // zero the combined data buffer.  it will be filled with the latest data
   // by corresponding SIP::Fill*()

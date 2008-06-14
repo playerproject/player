@@ -132,36 +132,36 @@ void playerc_camera_putmsg(playerc_camera_t *device, player_msghdr_t *header,
 void playerc_camera_decompress(playerc_camera_t *device)
 {
   if (device->compression == PLAYER_CAMERA_COMPRESS_RAW)
+  {
     return;
-
+  } else
+  {
 #if HAVE_JPEGLIB_H
-  int dst_size;
-  unsigned char *dst;
+    // Create a temp buffer
+    int dst_size = device->width * device->height * device->bpp / 8;
+    unsigned char * dst = malloc(dst_size);
 
-  // Create a temp buffer
-  dst_size = device->width * device->height * device->bpp / 8;
-  dst = malloc(dst_size);
+    // Decompress into temp buffer
+    jpeg_decompress(dst, dst_size, device->image, device->image_count);
 
-  // Decompress into temp buffer
-  jpeg_decompress(dst, dst_size, device->image, device->image_count);
+    // Copy uncompress image
+    device->image_count = dst_size;
+    device->image = realloc(device->image, sizeof(device->image[0])*device->image_count);
+    if (device->image)
+      memcpy(device->image, dst, dst_size);
+    else
+      PLAYERC_ERR1("failed to allocate memory for image, needed %ld bytes\n", sizeof(device->image[0])*device->image_count);
+    free(dst);
 
-  // Copy uncompress image
-  device->image_count = dst_size;
-  device->image = realloc(device->image, sizeof(device->image[0])*device->image_count);
-  if (device->image)
-    memcpy(device->image, dst, dst_size);
-  else
-    PLAYERC_ERR1("failed to allocate memory for image, needed %ld bytes\n", sizeof(device->image[0])*device->image_count);
-  free(dst);
-
-  // Pixels are now raw
-  device->compression = PLAYER_CAMERA_COMPRESS_RAW;
+    // Pixels are now raw
+    device->compression = PLAYER_CAMERA_COMPRESS_RAW;
 
 #else
 
-  PLAYERC_ERR("JPEG decompression support was not included at compile-time");
+    PLAYERC_ERR("JPEG decompression support was not included at compile-time");
 
 #endif
+  }
 
   return;
 }
