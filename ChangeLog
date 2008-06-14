@@ -1,3 +1,13 @@
+2008-06-14
+	* 2.1 released,	Highliights include:
+		* Static arrays in player interfaces replaced with dynamic arrays
+		* Relicensed all but drivers and utils to LGPL
+		* Clean ups of interfaces and client libraries
+		* Many bug fixes and new drivers
+		
+		The 2.0 -> 2.1 upgrade guide is available on the Player wiki
+			http://playerstage.sourceforge.net/wiki/Player_2.1_Upgrade
+	
 2008-04-16
 	* 2.1.0rc2 released
 
