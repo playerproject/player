@@ -95,6 +95,12 @@ int poll (struct pollfd *fds, unsigned long int nfds, int timeout);
   unsigned long compressBound (unsigned long sourceLen);
 #endif // NEED_COMPRESSBOUND
 
+#if NEED_CLOCK_GETTIME
+    #define CLOCK_REALTIME 0
+    int clock_gettime(int clk_id, struct timespec *tp);
+#endif
+    
+
 #ifdef __cplusplus
 }
 #endif

@@ -429,9 +429,20 @@ AC_TRY_COMPILE(
 dnl Checks for library functions.
 AC_REPLACE_FUNCS(poll dirname cfmakeraw round)
 AC_CHECK_FUNCS(sigblock getaddrinfo)
-AC_CHECK_LIB(rt, nanosleep)
 AC_CHECK_LIB(nsl, gethostbyname)
 AC_CHECK_LIB(socket, connect)
+
+dnl Look for nanosleep in librt (real time)
+dnl On some systems (Darwin) nanosleep is in libc instead
+AC_CHECK_LIB(rt, nanosleep)
+
+AC_CHECK_FUNC(clock_gettime, have_clock_gettime=yes, have_clock_gettime=no)
+if test "x$have_clock_gettime" = "xno"; then
+    AC_LIBOBJ(clock_gettime)
+    AC_DEFINE(NEED_CLOCK_GETTIME, 1, [Define to 1 if you do NOT have the clock_gettime function from librt])
+fi
+
+
 AC_CHECK_LIB(ltdl, lt_dlopenext,
              have_libltdl=yes
              LIBLTDL_FLAG=-lltdl

@@ -1,3 +1,6 @@
+2008-06-16: thjc
+	* Applied fix for missing clock_gettime on OSX
+
 2008-06-14
 	* 2.1 released,	Highliights include:
 		* Static arrays in player interfaces replaced with dynamic arrays
