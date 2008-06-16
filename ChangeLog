@@ -1,4 +1,5 @@
 2008-06-16: thjc
+	* 2.1.1 released
 	* Applied fix for missing clock_gettime on OSX
 
 2008-06-14
