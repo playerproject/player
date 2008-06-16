@@ -207,6 +207,7 @@ void plan_init(plan_t *plan)
         cell->occ_dist_dyn = cell->occ_dist = plan->max_radius;
       cell->plan_cost = PLAN_MAX_COST;
       cell->plan_next = NULL;
+      cell->lpathmark = 0;
     }
   }
   plan->waypoint_count = 0;
