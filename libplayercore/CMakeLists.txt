@@ -50,7 +50,7 @@ INCLUDE_DIRECTORIES (${CMAKE_CURRENT_BINARY_DIR})
 # from the fact that message cloning functions are auto-generated into
 # playerxdr and used here.  Those functions should go into a separate
 # library.
-SET(CORESRCS driver.cc
+SET(playercore_srcs  driver.cc
              device.cc
              drivertable.cc
              devicetable.cc
@@ -69,15 +69,17 @@ IF(HAVE_CLOCK_GETTIME)
   SET(CORE_PC_LIBS "${CORE_PC_LIBS} -lrt")
   PLAYER_ADD_LINK_LIB (rt)
 ELSE(HAVE_CLOCK_GETTIME)
-  SET(CORESRCS ${CORESRCS} ../replace/clock_gettime.c)
+  SET(playercore_srcs ${playercore_srcs} ../replace/clock_gettime.c)
 ENDIF(HAVE_CLOCK_GETTIME)
 IF(HAVE_LIBLTDL)
   SET(CORELIBS ${CORELIBS} ltdl dl)
   SET(CORE_PC_LIBS "${CORE_PC_LIBS} -lltdl -dl")
   PLAYER_ADD_LINK_LIB (ltdl dl)
 ENDIF(HAVE_LIBLTDL)
+IF(NOT HAVE_DIRNAME)
+  SET(playercore_srcs ${playercore_srcs} ../replace/dirname.c)
+ENDIF(NOT HAVE_DIRNAME)
 
-SET (playercore_srcs  ${CORESRCS})
 PLAYER_ADD_LIBRARY (playercore ${playercore_srcs} ${player_interfaces_h} ${playerxdr_h})
 
 TARGET_LINK_LIBRARIES(playercore ${CORELIBS})
