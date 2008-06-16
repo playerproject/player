@@ -55,6 +55,7 @@
 #include <libplayercore/error.h>
 #include <libplayercore/interface_util.h>
 #include <playerxdr.h>
+#include <replace/replace.h>
 
 Message::Message(const struct player_msghdr & aHeader,
                   void * data,
