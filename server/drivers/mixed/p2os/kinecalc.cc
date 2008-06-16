@@ -28,6 +28,7 @@
  */
 
 #include <libplayercore/playercommon.h>
+#include <libplayercore/error.h>
 #include "kinecalc.h"
 
 #include <math.h>
