@@ -22,7 +22,6 @@
 
 #include <playerconfig.h>
 
-#if defined (HAVE_CLOCK_GETTIME)
 
 #include <sys/time.h>
 
@@ -43,4 +42,3 @@ int clock_gettime(int clk_id /*ignored*/, struct timespec *tp)
     return 0;
 }
 
-#endif // defined (HAVE_CLOCK_GETTIME)
