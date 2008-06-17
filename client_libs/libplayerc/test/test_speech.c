@@ -16,6 +16,8 @@ int test_speech(playerc_client_t *client, int index)
   //int t;
   //void *rdevice;
   playerc_speech_t *device;
+  char text[]="Hello World!";
+  char text2[]="12345678901234567890123456789012345678901234567890";
 
   printf("device [speech] index [%d]\n", index);
 
@@ -32,8 +34,6 @@ int test_speech(playerc_client_t *client, int index)
 
         TEST1("writing data (attempt %d)",1);
 
-        char text[]="Hello World!";
-        
         if (playerc_speech_say(device, text  )  != 0) {
             FAIL();
         } else {
@@ -43,8 +43,6 @@ int test_speech(playerc_client_t *client, int index)
 
         TEST1("writing data (attempt %d)",2);
 
-        char text2[]="12345678901234567890123456789012345678901234567890";
-        
         TEST1("Printing: %s",text2);
         if (playerc_speech_say(device, text2  )  != 0) {
             FAIL();

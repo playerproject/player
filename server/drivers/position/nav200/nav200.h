@@ -9,6 +9,7 @@ interfaces was later added by Toby Collett.
 #ifndef _NAV200_H
 #define _NAV200_H
 
+#include <libplayercore/playercore.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -22,7 +23,6 @@ interfaces was later added by Toby Collett.
 #include <string.h>
 #include <pthread.h>
 #include <math.h>
-#include <libplayercore/playercore.h>
 //#include <stdint.h>
 
 

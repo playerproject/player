@@ -224,7 +224,7 @@ class GarminNMEA:public Driver
     int ParseGPRMC(const char *buf);
     int ParsePGRME(const char *buf);
     int ParseGPGST(const char *buf);
-    char* GetNextField(char* field, size_t len, const char* ptr);
+    const char* GetNextField(char* field, size_t len, const char* ptr);
 
     // utility functions to convert geodetic to UTM position
     void UTM(double lat, double lon, double *x, double *y);
@@ -380,11 +380,13 @@ GarminNMEA::SetupSerial()
     cfsetispeed(&term, B115200);
 	 cfsetospeed(&term, B115200);
   }
+#ifdef B230400
   else if (gps_baud == 230400)
   {
     cfsetispeed(&term, B230400);
 	 cfsetospeed(&term, B230400);
   }
+#endif
   else
   {
     cfsetispeed(&term, B4800);
@@ -615,7 +617,7 @@ GarminNMEA::ReadSentence(char* buf, size_t len)
   //printf("reading sentence\n");
   //fflush(stdout);
 
-  while(!(ptr = strchr((const char*)nmea_buf, NMEA_START_CHAR)))
+  while(!(ptr = strchr(nmea_buf, NMEA_START_CHAR)))
   {
     nmea_buf_len=0;
     memset(nmea_buf,0,sizeof(nmea_buf));
@@ -629,7 +631,7 @@ GarminNMEA::ReadSentence(char* buf, size_t len)
   //printf("found start char:[%s]:[%d]\n", nmea_buf,nmea_buf_len);
   //fflush(stdout);
 
-  while(!(ptr = strchr((const char*)nmea_buf, NMEA_END_CHAR)))
+  while(!(ptr = strchr(nmea_buf, NMEA_END_CHAR)))
   {
     if(nmea_buf_len >= sizeof(nmea_buf) - 1)
     {
@@ -674,7 +676,7 @@ GarminNMEA::ReadSentence(char* buf, size_t len)
 
   // verify the checksum, if present.  two hex digits are the XOR of all the
   // characters between the $ and *.
-  if((ptr2 = strchr((const char*)buf,NMEA_CHKSUM_CHAR)) && (strlen(ptr2) == 3))
+  if((ptr2 = strchr(buf,NMEA_CHKSUM_CHAR)) && (strlen(ptr2) == 3))
   {
     ////printf("ptr2 %s\n", ptr2);
     ////fflush(stdout);
@@ -796,11 +798,11 @@ GarminNMEA::WriteSentence(const char *buf, size_t len)
 /*
  * Get the next field from an NMEA sentence.
  */
-char*
+const char*
 GarminNMEA::GetNextField(char* field, size_t len, const char* ptr)
 {
-  char* start;
-  char* end;
+  const char* start;
+  const char* end;
   size_t fieldlen;
 
   if(strlen(ptr) < 2 || !(start = strchr(ptr, ',')))

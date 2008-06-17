@@ -112,6 +112,14 @@ static char THIS_FILE[]=__FILE__;
 #define new DEBUG_NEW
 #endif
 
+#ifndef CRTSCTS
+#ifdef IHFLOW
+#ifdef OHFLOW
+#define CRTSCTS ((IHFLOW) | (OHFLOW))
+#endif
+#endif
+#endif
+
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////

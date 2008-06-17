@@ -17,6 +17,7 @@ int test_simulation(playerc_client_t *client, int index)
   double x,y,a;
   //void *rdevice;
   playerc_simulation_t *device;
+  int fr, col;
 
   printf("device [simulation] index [%d]\n", index);
 
@@ -55,13 +56,13 @@ int test_simulation(playerc_client_t *client, int index)
     FAIL();
   
   TEST("setting property \"fiducial_return\" for model robot1 to 42");
-  int fr = 42;
+  fr = 42;
   if (playerc_simulation_set_property(device, "robot1", "_mp_fiducial_return", &fr, sizeof(fr) ) == 0)
     PASS();
   else
     FAIL();
   
-  int col =  0xFF00;
+  col =  0xFF00;
   TEST("setting property \"color\" for model robot1 to 0x00FF00 (green)");
   if (playerc_simulation_set_property(device, "robot1", "_mp_color", &col, sizeof(col) ) == 0)    
     PASS();

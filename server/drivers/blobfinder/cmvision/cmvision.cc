@@ -32,6 +32,8 @@
   =========================================================================*/
 
 #include "cmvision.h"
+#include <string.h>
+#include <strings.h>
 
 //==== Utility Functions ===========================================//
 // These could be coded as macros, but the inline versions seem to

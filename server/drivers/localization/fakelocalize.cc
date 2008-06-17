@@ -90,11 +90,11 @@ driver
 /** @} */
 
 #include <unistd.h>
-#include <cstddef>
-#include <cstdlib>
-#include <ctime>
-#include <cassert>
-#include <cstring>
+#include <stddef.h>
+#include <stdlib.h>
+#include <time.h>
+#include <assert.h>
+#include <string.h>
 
 #include <libplayercore/playercore.h>
 

@@ -66,8 +66,6 @@ void playerc_blinkenlight_putmsg(playerc_blinkenlight_t *device,
 				 player_msghdr_t *header,
 				 void* data, size_t len)
 {
-  //int i = 0;
-  
   if((header->type == PLAYER_MSGTYPE_DATA) && 
      (header->subtype == PLAYER_BLINKENLIGHT_DATA_STATE))
     {

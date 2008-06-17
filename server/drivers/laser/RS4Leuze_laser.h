@@ -15,8 +15,6 @@
 #include <time.h>
 #include <sys/time.h>
 #include <stdlib.h>
-#include <iostream>
-#include <fstream>
 
 using namespace std;
 
@@ -51,9 +49,6 @@ class Claser
 		struct timeval tv;/**<termios variable time interval*/
 		timeval timeStamp; /**<Time in microseconds resolution*/
 
-
-		ofstream laserDataFile; /**<Laser Scanner Data file*/
-
 	public:
 		
 		//Claser(ClogMsg *lgMsg, bool *laser_ON, char dir_name[80]); /**<Opens serial port*/
@@ -67,7 +62,7 @@ class Claser
 		int  scanRead(); /**<reads one scan and puts it in scanData array*/
 		void runLaser(); /**<Return the scan reading from the laser*/
 		void closeSerial(); /**<Closes serial Port */
-		void openSerial(bool *laser_ON,int Baud_rate, char * Port);  /**<Opens serial Port and get the default paarameters or those given in the .cfg file*/
+		void openSerial(bool *laser_ON,int Baud_rate, const char * Port);  /**<Opens serial Port and get the default paarameters or those given in the .cfg file*/
 		RS4Leuze_laser_readings_t scanData;
 
 };

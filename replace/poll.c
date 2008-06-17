@@ -33,6 +33,28 @@
 #include <sys/param.h>
 #include <unistd.h>
 
+/* *-*-nto-qnx doesn't define this constant in the system headers */
+#ifndef NFDBITS
+#define	NFDBITS (8 * sizeof(unsigned long))
+#endif
+
+/* Macros for counting and rounding.  */
+#ifndef howmany
+#define howmany(x, y)  (((x) + ((y) - 1)) / (y))
+#endif
+#ifndef powerof2
+#define powerof2(x)     ((((x) - 1) & (x)) == 0)
+#endif
+#ifndef roundup
+#ifdef __GNUC__
+#define roundup(x, y)  (__builtin_constant_p (y) && powerof2 (y)             \
+                        ? (((x) + (y) - 1) & ~((y) - 1))                     \
+			: ((((x) + ((y) - 1)) / (y)) * (y)))
+#else
+#define roundup(x, y)  ((((x) + ((y) - 1)) / (y)) * (y))
+#endif
+#endif
+
 /* Poll the file descriptors described by the NFDS structures starting at
    FDS.  If TIMEOUT is nonzero and not -1, allow TIMEOUT milliseconds for
    an event to occur; if TIMEOUT is -1, block until an event occurs.

@@ -153,10 +153,12 @@ player_blackboard_entry_t *playerc_pack_blackboard_entry_double(const char* key,
 
 char *playerc_unpack_blackboard_entry_string(const player_blackboard_entry_t *entry)
 {
+  char * result;
+
   assert(entry->type == PLAYERC_BLACKBOARD_DATA_TYPE_COMPLEX);
   assert(entry->subtype == PLAYERC_BLACKBOARD_DATA_SUBTYPE_STRING);
 
-  char *result = malloc(entry->data_count);
+  result = malloc(entry->data_count);
   assert(result);
   memcpy(result, entry->data, entry->data_count);
 
@@ -164,10 +166,11 @@ char *playerc_unpack_blackboard_entry_string(const player_blackboard_entry_t *en
 }
 int playerc_unpack_blackboard_entry_int(const player_blackboard_entry_t *entry)
 {
+  int result = 0;
+
   assert(entry->type == PLAYERC_BLACKBOARD_DATA_TYPE_SIMPLE);
   assert(entry->subtype == PLAYERC_BLACKBOARD_DATA_SUBTYPE_INT);
 
-  int result = 0;
   memcpy(&result, entry->data, entry->data_count);
 
   return result;
@@ -175,10 +178,11 @@ int playerc_unpack_blackboard_entry_int(const player_blackboard_entry_t *entry)
 
 double playerc_unpack_blackboard_entry_double(const player_blackboard_entry_t *entry)
 {
+  double result = 0.0;
+
   assert(entry->type == PLAYERC_BLACKBOARD_DATA_TYPE_SIMPLE);
   assert(entry->subtype == PLAYERC_BLACKBOARD_DATA_SUBTYPE_DOUBLE);
 
-  double result = 0.0;
   memcpy(&result, entry->data, entry->data_count);
 
   return result;

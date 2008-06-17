@@ -13,9 +13,13 @@ const uint32_t LIGHTCOUNT = 5;
 
 // Basic test for an dio device.
 int test_blinkenlight(playerc_client_t *client, int index) {
-    //int t;
-    //void *rdevice;
     playerc_blinkenlight_t *device;
+    unsigned long shortsleep = 200000L;
+    unsigned long longsleep = 500000L;
+    int u;
+    int lightnum;
+    double rate;
+    double duty;
 
     printf("device [blinkenlight] index [%d]\n", index);
 
@@ -27,18 +31,18 @@ int test_blinkenlight(playerc_client_t *client, int index) {
         return -1;
     }
     PASS();
-    
+
 /*     for (t = 0; t < 5; t++) { */
 /*       TEST1("reading light state (attempt %d)", t); */
-      
+
 /*       do */
 /* 	rdevice = playerc_client_read(client); */
 /*       while (rdevice == client); */
-      
+
 /*       if (rdevice == device)  */
 /* 	{ */
 /* 	  PASS(); */
-	  
+
 /* 	  printf("blinkenlight: enable %u color (%hhX,%hhX,%hhX) period %.3f duty %.3f\n", */
 /* 		 device->enable, */
 /* 		 device->red, */
@@ -46,7 +50,7 @@ int test_blinkenlight(playerc_client_t *client, int index) {
 /* 		 device->blue, */
 /* 		 device->period, */
 /* 		 device->duty ); */
-	  
+
 /* 	} */
 /*       else { */
 /* 	//printf("error: %s", playerc_error_str()); */
@@ -54,36 +58,31 @@ int test_blinkenlight(playerc_client_t *client, int index) {
 /* 	break; */
 /*       } */
 /*     } */
-    
-    unsigned long shortsleep = 200000L;
-    unsigned long longsleep = 500000L;
-    
+
     TEST("Turning light on");
-    if (playerc_blinkenlight_enable( device, 1 )  != 0) 
+    if (playerc_blinkenlight_enable( device, 1 )  != 0)
 	FAIL();
     PASS();
     usleep( longsleep );
-    
+
     TEST("Turning light off");
-    if (playerc_blinkenlight_enable( device, 0 )  != 0) 
+    if (playerc_blinkenlight_enable( device, 0 )  != 0)
 	FAIL();
     PASS();
     usleep( longsleep );
 
     TEST("Turning light on");
-    if (playerc_blinkenlight_enable( device, 1 )  != 0) 
+    if (playerc_blinkenlight_enable( device, 1 )  != 0)
       FAIL();
     PASS();
     usleep( longsleep );
-            
-    int u;
 
     TEST( "Setting colors RED");
     for( u=5; u<256; u+=50 )
-      {	    
+      {
 	for( index=0; index<LIGHTCOUNT; index++ )
 	  {
-	    if (playerc_blinkenlight_color(device, index, u,0,0 )  != 0) 
+	    if (playerc_blinkenlight_color(device, index, u,0,0 )  != 0)
 	      {
 		FAIL();
 		break;
@@ -93,14 +92,12 @@ int test_blinkenlight(playerc_client_t *client, int index) {
       }
     PASS();
 
-    int lightnum;
-
     TEST( "Setting colors GREEN");
     for( u=5; u<256; u+=50 )
-      {	    
+      {
 	for( lightnum=0; lightnum<LIGHTCOUNT; lightnum++ )
 	  {
-	    if (playerc_blinkenlight_color(device, lightnum, 0,u,0 )  != 0) 
+	    if (playerc_blinkenlight_color(device, lightnum, 0,u,0 )  != 0)
 	      {
 		FAIL();
 		break;
@@ -109,13 +106,13 @@ int test_blinkenlight(playerc_client_t *client, int index) {
 	  }
       }
     PASS();
-    
+
     TEST( "Setting colors BLUE");
     for( u=5; u<256; u+=50 )
-      {	    
+      {
 	for( lightnum=0; lightnum<LIGHTCOUNT; lightnum++ )
 	  {
-	    if (playerc_blinkenlight_color(device, lightnum, 0,0,u )  != 0) 
+	    if (playerc_blinkenlight_color(device, lightnum, 0,0,u )  != 0)
 	      {
 		FAIL();
 		break;
@@ -124,13 +121,13 @@ int test_blinkenlight(playerc_client_t *client, int index) {
 	  }
       }
     PASS();
-    
+
     TEST( "Setting colors R+G+B");
     for( u=5; u<256; u+=50 )
-      {	    
+      {
 	for( lightnum=0; lightnum<LIGHTCOUNT; lightnum++ )
 	{
-	  if (playerc_blinkenlight_color(device, lightnum, u,u,u )  != 0) 
+	  if (playerc_blinkenlight_color(device, lightnum, u,u,u )  != 0)
 	    {
 	      FAIL();
 	      break;
@@ -142,14 +139,14 @@ int test_blinkenlight(playerc_client_t *client, int index) {
 
     TEST( "Setting colors randomly");
     for( u=0; u<10; u++ )
-      {	    
+      {
 	for( lightnum=0; lightnum<LIGHTCOUNT; lightnum++ )
 	  {
-	    if (playerc_blinkenlight_color(device, 
+	    if (playerc_blinkenlight_color(device,
 					   lightnum,
 					   random()%255,
 					   random()%255,
-					   random()%255) != 0) 
+					   random()%255) != 0)
 	      {
 		FAIL();
 		break;
@@ -161,14 +158,11 @@ int test_blinkenlight(playerc_client_t *client, int index) {
     usleep(longsleep);  //some time to see the effect
 
     TEST("Varying blink rate");
-    
-    double rate;
-    double duty;
-    
+
     for( rate=3; rate<=10; rate++ )
       for( duty=0.1; rate<=1.0; rate+=0.1 )
 	for( lightnum=0; lightnum<6; lightnum++ )
-	  if (playerc_blinkenlight_blink( device, lightnum, rate, duty  )  != 0) 
+	  if (playerc_blinkenlight_blink( device, lightnum, rate, duty  )  != 0)
 	    {
 	      FAIL();
 	      break;
@@ -176,17 +170,17 @@ int test_blinkenlight(playerc_client_t *client, int index) {
     PASS();
 
     TEST("Turning light off");
-    if (playerc_blinkenlight_enable( device, 0 )  != 0) 
+    if (playerc_blinkenlight_enable( device, 0 )  != 0)
 	FAIL();
     PASS();
-    
+
     TEST("unsubscribing");
     if (playerc_blinkenlight_unsubscribe(device) != 0)
       FAIL();
     PASS();
-    
+
     playerc_blinkenlight_destroy(device);
-    
+
     return 0;
 }
 

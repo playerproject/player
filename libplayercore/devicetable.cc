@@ -43,6 +43,7 @@
  *   class to keep track of available devices.
  */
 #include <string.h> // for strncpy(3)
+#include <stdlib.h> // for atoi(3)
 
 #include <libplayercore/error.h>
 #include <libplayercore/devicetable.h>

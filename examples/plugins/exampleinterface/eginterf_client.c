@@ -56,8 +56,8 @@ void eginterf_putmsg (eginterf_t *device, player_msghdr_t *header, uint8_t *data
 {
 	if((header->type == PLAYER_MSGTYPE_DATA) && (header->subtype == PLAYER_EXAMPLE_DATA_EXAMPLE))
 	{
-		assert(header->size > 0);
 		player_eginterf_data_t *stuffData = (player_eginterf_data_t *) data;
+		assert(header->size > 0);
 		if (device->stuff != NULL)
 			free (device->stuff);
 		if ((device->stuff = (double*) malloc (stuffData->stuff_count)) == NULL)

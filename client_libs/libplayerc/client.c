@@ -56,7 +56,6 @@
   #include <netinet/tcp.h>
 #endif
 #include <sys/socket.h>
-#include <sys/poll.h>
 #include <netdb.h>       // for gethostbyname()
 #include <errno.h>
 #include <sys/time.h>
@@ -64,8 +63,11 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-
+#ifdef HAVE_POLL
+#include <sys/poll.h>
+#else
 #include <replace/replace.h>  // for poll(2)
+#endif
 
 #include "playerc.h"
 #include "error.h"
@@ -319,9 +321,11 @@ int playerc_client_connect(playerc_client_t *client)
                 "unexpected exit may result");
   else
   {
+#ifdef SA_RESTART
     sigact.sa_handler = dummy;
     sigact.sa_flags &= ~SA_RESTART;
     if(sigaction(SIGALRM, &sigact, NULL) != 0)
+#endif
       PLAYER_WARN("failed to set SIGALRM action data; "
                   "unexpected exit may result");
   }
@@ -337,9 +341,11 @@ int playerc_client_connect(playerc_client_t *client)
                 "unexpected exit may result");
 
   /* Restore normal SIGALRM behavior */
+#ifdef SA_RESTART
   sigact.sa_handler = SIG_DFL;
   sigact.sa_flags |= SA_RESTART;
   if(sigaction(SIGALRM, &sigact, NULL) != 0)
+#endif
     PLAYER_WARN("failed to reset SIGALRM action data; "
                 "unexpected behavior may result");
 

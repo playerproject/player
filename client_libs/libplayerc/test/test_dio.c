@@ -15,6 +15,9 @@ int test_dio(playerc_client_t *client, int index) {
     int t;
     void *rdevice;
     playerc_dio_t *device;
+    int i;
+    unsigned int do_value;
+    const unsigned int do_count = 8;
 
     printf("device [dio] index [%d]\n", index);
 
@@ -39,7 +42,6 @@ int test_dio(playerc_client_t *client, int index) {
 
             printf("dio: [%8.3f] MSB...LSB:[ ",
                    device->info.datatime);
-            int i=0;
             //printf("%d :  ",device->digin);
 
             for (i=0 ; i != device->count ; i++) {
@@ -62,9 +64,7 @@ int test_dio(playerc_client_t *client, int index) {
     }
 
 
-    unsigned int do_value=0;
-    const unsigned int do_count=8;
-
+    do_value = 0;
     for (t = 0; t < 5; t++) {
 
         TEST1("writing data (attempt %d)", t);
@@ -81,7 +81,7 @@ int test_dio(playerc_client_t *client, int index) {
     }
 
     //turn everything off:
-    do_value=0;
+    do_value = 0;
     playerc_dio_set_output(device, do_count, do_value  );
 
 
@@ -96,4 +96,3 @@ int test_dio(playerc_client_t *client, int index) {
 
     return 0;
 }
-

@@ -60,6 +60,8 @@ driver
 */
 /** @} */
 
+#include <libplayercore/playercore.h>
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -73,8 +75,6 @@ driver
 #include <string.h>
 #include <pthread.h>
 #include <math.h>
-
-#include <libplayercore/playercore.h>
 
 // Flock of Birds Serial device interface...
 // two classes, the first to do the access, the second to interface with player
