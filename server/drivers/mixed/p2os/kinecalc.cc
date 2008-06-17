@@ -28,6 +28,7 @@
  */
 
 #include <libplayercore/playercommon.h>
+#include <libplayercore/error.h>
 #include "kinecalc.h"
 
 #include <math.h>
@@ -129,9 +130,19 @@ KineVector KineCalc::Normalise (const KineVector &vector)
 {
   KineVector result;
   double length = sqrt (vector.x * vector.x + vector.y * vector.y + vector.z * vector.z);
-  result.x = vector.x / length;
-  result.y = vector.y / length;
-  result.z = vector.z / length;
+  if (length != 0)
+  {
+    result.x = vector.x / length;
+    result.y = vector.y / length;
+    result.z = vector.z / length;
+  }
+  else
+  {
+    PLAYER_WARN ("P2OS: Tried to normalise a vector of zero length.");
+    result.x = 0;
+    result.y = 0;
+    result.z = 0;
+  }
   return result;
 }
 
@@ -141,6 +152,27 @@ KineVector KineCalc::CalculateN (const EndEffector &pose)
   result.x = pose.o.y * pose.a.z - pose.a.y * pose.o.z;
   result.y = pose.o.z * pose.a.x - pose.a.z * pose.o.x;
   result.z = pose.o.x * pose.a.y - pose.a.x * pose.o.y;
+  if (result.x == 0 && result.y == 0 && result.z == 0)
+  {
+    PLAYER_WARN ("P2OS: Approach and orientation cannot be the same vector - their cross product cannot be zero.");
+    // Ensures that a different orientation vector is created
+    KineVector orient;
+    if (pose.a.y == 0 && pose.a.z == 0)
+    {
+      orient.x = 0;
+      orient.y = 1;
+      orient.z = 0;
+    }
+    else
+    {
+      orient.x = 1;
+      orient.y = 0;
+      orient.z = 0;
+    }
+    result.x = orient.y * pose.a.z - pose.a.y * orient.z;
+    result.y = orient.z * pose.a.x - pose.a.z * orient.x;
+    result.z = orient.x * pose.a.y - pose.a.x * orient.y;
+  }
   return Normalise (result);
 }
 
@@ -202,7 +234,7 @@ bool KineCalc::CalculateIK (const EndEffector &fromPosition)
   // Next, using theta1_a, calculate thetas 2 and 3 (a and b)
   // First up is calculating r and rz
   double r = 0.0f, rz = 0.0f;
-  if (sin (solutions[0][0]) < 0.1f || sin(solutions[0][0]) > -0.1f)
+  if (sin (solutions[0][0]) < 0.1f && sin(solutions[0][0]) > -0.1f)
   {
     r = ((p.x - (link5 * a.x)) / cos (solutions[0][0])) - link1;
   }
@@ -258,7 +290,7 @@ bool KineCalc::CalculateIK (const EndEffector &fromPosition)
   // First up is calculating r and rz
   r = 0.0f;
   rz = 0.0f;
-  if (sin (solutions[2][0]) < 0.1f || sin(solutions[2][0]) > -0.1f)
+  if (sin (solutions[2][0]) < 0.1f && sin(solutions[2][0]) > -0.1f)
   {
     r = (p.x - link5 * a.x) / cos (solutions[2][0]) - link1;
   }
@@ -477,7 +509,7 @@ bool KineCalc::SolutionInRange (const double angles[])
 {
   for (int ii = 0; ii < 5; ii++)
   {
-    if (angles[ii] < jointMin[ii] || angles[ii] > jointMax[ii])
+    if (angles[ii] < jointMin[ii] || angles[ii] > jointMax[ii] || isnan(angles[ii]))
       return false;
   }
 
