@@ -55,6 +55,7 @@ SET(playercore_srcs  driver.cc
              drivertable.cc
              devicetable.cc
              configfile.cc
+             filewatcher.cc
              message.cc
              wallclocktime.cc
              plugins.cc
@@ -104,6 +105,7 @@ PLAYER_INSTALL_HEADERS (playercore addr_util.h
                                    driver.h
                                    drivertable.h
                                    error.h
+                                   filewatcher.h
                                    globals.h
                                    interface_util.h
                                    message.h

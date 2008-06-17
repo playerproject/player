@@ -112,20 +112,8 @@ driver
 #include <libplayercore/playercore.h>
 
 #define DEFAULT_TCP_OPAQUE_BUFFER_SIZE 4096
-#define DEFAULT_TCP_OPAQUE_IP "10.99.10.6"
+#define DEFAULT_TCP_OPAQUE_IP "127.0.0.1"
 #define DEFAULT_TCP_OPAQUE_PORT 4002
-
-////////////////////////////////////////////////////////////////////////////////
-// Device codes
-
-#define STX     0x02
-#define ACK     0xA0
-#define NACK    0x92
-#define CRC16_GEN_POL 0x8005
-
-////////////////////////////////////////////////////////////////////////////////
-// Error macros
-#define RETURN_ERROR(erc, m) {PLAYER_ERROR(m); return erc;}
 
 ////////////////////////////////////////////////////////////////////////////////
 // The class for the driver
@@ -166,12 +154,6 @@ class TCPStream : public Driver
 	  int sock;
 
     uint8_t * rx_buffer;
-    //unsigned int rx_buffer_size;
-
-    struct termios oldtio;
-
-    // opaque device file descriptor
-    //int opaque_fd;
 
     // Properties
     IntProperty buffer_size;
@@ -314,8 +296,7 @@ void TCPStream::Main()
   // The main loop; interact with the device here
   for(;;)
   {
-    // test if we are supposed to cancel
-    pthread_testcancel();
+    Wait(1);
 
     // Process incoming messages.  TCPStream::ProcessMessage() is
     // called on each message.
@@ -323,17 +304,14 @@ void TCPStream::Main()
 
     if (connected)
     {
-    	// Reads the data from the tcp server and then publishes it
-    	ReadData();
+      // Reads the data from the tcp server and then publishes it
+      ReadData();
     }
     else
     {
-    	PLAYER_MSG0(2, "TCP reconnecting");
-    	OpenTerm();
+      PLAYER_MSG0(2, "TCP reconnecting");
+      OpenTerm();
     }
-
-    // Sleep (you might, for example, block on a read() instead)
-    usleep(1000);
   }
 }
 
@@ -371,7 +349,9 @@ int TCPStream::OpenTerm()
 //
 int TCPStream::CloseTerm()
 {
+  RemoveFileWatch(sock);
   close(sock);
+
   connected = false;
   return 0;
 }

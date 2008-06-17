@@ -2,7 +2,7 @@
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2005 -
  *     Brian Gerkey
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -109,7 +109,7 @@ Listening on ports: 6665
 void PrintVersion();
 void PrintCopyrightMsg();
 void PrintUsage();
-int ParseArgs(int* port, int* debuglevel, 
+int ParseArgs(int* port, int* debuglevel,
               char** cfgfilename, int* gz_serverid,
               int argc, char** argv);
 void Quit(int signum);
@@ -145,7 +145,7 @@ main(int argc, char** argv)
     PLAYER_ERROR1("signal() failed: %s", strerror(errno));
     exit(-1);
   }
-  
+
   player_globals_init();
   player_register_drivers();
   playerxdr_ftable_init();
@@ -293,6 +293,9 @@ main(int argc, char** argv)
 
   while(!player_quit)
   {
+    // wait until something other than driver requested watches happens
+    fileWatcher->Wait();
+
     if(ptcp->Accept(0) < 0)
     {
       PLAYER_ERROR("failed while accepting new TCP connections");
@@ -363,7 +366,7 @@ PrintCopyrightMsg()
   fprintf(stderr,"* Player comes with ABSOLUTELY NO WARRANTY.  This is free software, and you\n* are welcome to redistribute it under certain conditions; see COPYING\n* for details.\n\n");
 }
 
-void 
+void
 PrintUsage()
 {
   int maxlen=66;
@@ -394,13 +397,13 @@ PrintUsage()
 }
 
 
-int 
+int
 ParseArgs(int* port, int* debuglevel, char** cfgfilename, int* gz_serverid,
           int argc, char** argv)
 {
   int ch;
   const char* optflags = "d:p:hq";
-  
+
   // Get letter options
   while((ch = getopt(argc, argv, optflags)) != -1)
   {
@@ -417,7 +420,7 @@ ParseArgs(int* port, int* debuglevel, char** cfgfilename, int* gz_serverid,
         break;
       case '?':
       case ':':
-      case 'h':	
+      case 'h':
       default:
         return(-1);
     }
@@ -425,7 +428,7 @@ ParseArgs(int* port, int* debuglevel, char** cfgfilename, int* gz_serverid,
 
   if(optind >= argc)
     return(-1);
-  
+
   *cfgfilename = argv[optind];
 
   return(0);

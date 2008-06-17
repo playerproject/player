@@ -430,7 +430,7 @@ Acts::Acts( ConfigFile* cf, int section)
 
 // returns the enum representation of the given version string, or
 // -1 on failure to match.
-acts_version_t Acts::version_string_to_enum(char* versionstr)
+acts_version_t Acts::version_string_to_enum(const char* versionstr)
 {
   if(!strcmp(versionstr,ACTS_VERSION_1_0_STRING))
     return(ACTS_VERSION_1_0);
@@ -497,103 +497,121 @@ Acts::Setup()
   // build the argument list, based on version
   switch(acts_version)
   {
-    case ACTS_VERSION_1_0:
-      acts_args[i++] = "-t";
+    // these are needed as execv expects a const array of char *'s not an array of const char *'s
+    static char dash_d[3] = "-d";
+    static char dash_i[3] = "-i";
+    static char dash_n[3] = "-n";
+    static char dash_p[3] = "-p";
+    static char dash_s[3] = "-s";
+    static char dash_t[3] = "-t";
+    static char dash_w[3] = "-w";
+    static char dash_x[3] = "-x";
+
+    static char dash_B[3] = "-B";
+    static char dash_C[3] = "-C";
+    static char dash_G[3] = "-G";
+    static char dash_H[3] = "-H";
+    static char dash_R[3] = "-R";
+    static char dash_V[3] = "-V";
+    static char dash_W[3] = "-W";
+
+  case ACTS_VERSION_1_0:
+      acts_args[i++] = dash_t;
       acts_args[i++] = configfilepath;
       if(strlen(portnumstring))
       {
-        acts_args[i++] = "-s";
+        acts_args[i++] = dash_s;
         acts_args[i++] = portnumstring;
       }
       if(strlen(devicepath))
       {
-        acts_args[i++] = "-d";
+        acts_args[i++] = dash_d;
         acts_args[i++] = devicepath;
       }
       break;
     case ACTS_VERSION_1_2:
-      acts_args[i++] = "-t";
+      acts_args[i++] = dash_t;
       acts_args[i++] = configfilepath;
       if(strlen(portnumstring))
       {
-        acts_args[i++] = "-p";
+        acts_args[i++] = dash_p;
         acts_args[i++] = portnumstring;
       }
       if(strlen(devicepath))
       {
-        acts_args[i++] = "-d";
+        acts_args[i++] = dash_d;
         acts_args[i++] = devicepath;
       }
       if(strlen(contrast))
       {
-        acts_args[i++] = "-C";
+        acts_args[i++] = dash_C;
         acts_args[i++] = contrast;
       }
       if(strlen(brightness))
       {
-        acts_args[i++] = "-B";
+        acts_args[i++] = dash_B;
         acts_args[i++] = brightness;
       }
-      acts_args[i++] = "-W";
+      acts_args[i++] = dash_W;
       acts_args[i++] = widthstring;
-      acts_args[i++] = "-H";
+      acts_args[i++] = dash_H;
       acts_args[i++] = heightstring;
       break;
     case ACTS_VERSION_2_0:
-      acts_args[i++] = "-t";
+      acts_args[i++] = dash_t;
       acts_args[i++] = configfilepath;
       if(strlen(minarea))
       {
-        acts_args[i++] = "-w";
+        acts_args[i++] = dash_w;
         acts_args[i++] = minarea;
       }
       if(strlen(portnumstring))
       {
-        acts_args[i++] = "-p";
+        acts_args[i++] = dash_p;
         acts_args[i++] = portnumstring;
       }
       if(strlen(fps))
       {
-        acts_args[i++] = "-R";
+        acts_args[i++] = dash_R;
         acts_args[i++] = fps;
       }
       if(strlen(drivertype))
       {
-        acts_args[i++] = "-G";
+        acts_args[i++] = dash_G;
         acts_args[i++] = drivertype;
       }
       if(invertp > 0)
-        acts_args[i++] = "-i";
+        acts_args[i++] = dash_i;
       if(strlen(devicepath))
       {
-        acts_args[i++] = "-d";
+        acts_args[i++] = dash_d;
         acts_args[i++] = devicepath;
       }
       if(strlen(channel))
       {
-        acts_args[i++] = "-n";
+        acts_args[i++] = dash_n;
         acts_args[i++] = channel;
       }
       if(strlen(norm))
       {
-        acts_args[i++] = "-V";
+        acts_args[i++] = dash_V;
         acts_args[i++] = norm;
       }
       if(pxc200p > 0)
-        acts_args[i++] = "-x";
+        acts_args[i++] = dash_x;
       if(strlen(brightness))
       {
-        acts_args[i++] = "-B";
+        acts_args[i++] = dash_B;
         acts_args[i++] = brightness;
       }
       if(strlen(contrast))
       {
-        acts_args[i++] = "-C";
+        acts_args[i++] = dash_C;
         acts_args[i++] = contrast;
       }
-      acts_args[i++] = "-W";
+      acts_args[i++] = dash_W;
       acts_args[i++] = widthstring;
-      acts_args[i++] = "-H";
+      acts_args[i++] = dash_H;
       acts_args[i++] = heightstring;
       break;
     case ACTS_VERSION_UNKNOWN:
