@@ -159,7 +159,7 @@ class Driver
     If TimeOut is set to a positive value this method will return false if the
     timeout occurs before and update is recieved.
     */
-    bool Wait(double TimeOut=0.0) { return this->InQueue->Wait(); }
+    bool Wait(double TimeOut=0.0) { return this->InQueue->Wait(TimeOut); }
 
     /** @brief Wake up the driver if the specified event occurs on the file descriptor */
     int AddFileWatch(int fd, bool ReadWatch = true, bool WriteWatch = false, bool ExceptWatch = true);
