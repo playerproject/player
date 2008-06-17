@@ -105,9 +105,9 @@ driver
 using namespace std;
 
 #include <gbxsickacfr/driver.h>
-#include <gbxsickacfr/gbxutilacfr/trivialtracer.h>
-#include <gbxsickacfr/gbxutilacfr/trivialstatus.h>
-#include <gbxsickacfr/gbxutilacfr/mathdefs.h>
+#include <gbxutilacfr/trivialtracer.h>
+#include <gbxutilacfr/trivialstatus.h>
+#include <gbxutilacfr/mathdefs.h>
 
 #include <libplayercore/playercore.h>
 
@@ -141,8 +141,8 @@ class GbxSickAcfr : public Driver
         gbxsickacfr::Driver *device;
         // Objects to handle messages from the driver
         bool debug;
-        gbxsickacfr::gbxutilacfr::TrivialTracer *tracer;
-        gbxsickacfr::gbxutilacfr::TrivialStatus *status;
+        gbxutilacfr::TrivialTracer *tracer;
+        gbxutilacfr::TrivialStatus *status;
 };
 
 Driver*
@@ -215,8 +215,8 @@ int GbxSickAcfr::Setup (void)
     }
 
     // Create status trackers
-    tracer = new gbxsickacfr::gbxutilacfr::TrivialTracer (debug);
-    status = new gbxsickacfr::gbxutilacfr::TrivialStatus (*tracer);
+    tracer = new gbxutilacfr::TrivialTracer (debug);
+    status = new gbxutilacfr::TrivialStatus (*tracer);
 
     // Create the driver object
     try
@@ -352,7 +352,7 @@ bool GbxSickAcfr::ReadLaser (void)
         if (data.haveWarnings)
             PLAYER_WARN1 ("GbxSickAcfr: Got warnings with scan: %s\n", data.warnings.c_str ());
     }
-    catch (gbxsickacfr::gbxutilacfr::Exception &e)
+    catch (gbxutilacfr::Exception &e)
     {
         // No data received by the timeout; warn but go on anyway
         PLAYER_WARN ("GbxSickAcfr: Timed out while reading laser scan.\n");
