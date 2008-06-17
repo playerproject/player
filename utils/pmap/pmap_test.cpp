@@ -144,7 +144,7 @@ $ pmap_test -g --num_samples 500 --grid_width 50 --grid_height 25 <logfile>
 @endverbatim
 
 */
-#include "config.h"
+#include "pmapconfig.h"
 
 #include <assert.h>
 #include <math.h>
@@ -156,7 +156,7 @@ $ pmap_test -g --num_samples 500 --grid_width 50 --grid_height 25 <logfile>
 #include <unistd.h>
 #include <sys/time.h>
 
-#ifdef HAVE_LIBGLUT
+#ifdef GLUT_FOUND
 #include <GL/glut.h>
 #endif
 
@@ -277,7 +277,7 @@ void show_help ()
 // Key callback
 void win_key(unsigned char key, int x, int y)
 {
-#ifdef HAVE_LIBGLUT
+#ifdef GLUT_FOUND
   // Show the samples
   if (key == 'T' || key == 't')
   {
@@ -339,7 +339,7 @@ void win_key(unsigned char key, int x, int y)
 // Mouse callback
 void win_mouse(int button, int state, int x, int y)
 {
-#ifdef HAVE_LIBGLUT
+#ifdef GLUT_FOUND
 
   if (state == GLUT_DOWN)
   {
@@ -360,7 +360,7 @@ void win_mouse(int button, int state, int x, int y)
 // Handle window reshape events
 void win_reshape(int width, int height)
 {
-#ifdef HAVE_LIBGLUT
+#ifdef GLUT_FOUND
 
   glViewport(0, 0, width, height);
   viewport_width = width;
@@ -373,7 +373,7 @@ void win_reshape(int width, int height)
 // Redraw the window
 void win_redraw()
 {
-#ifdef HAVE_LIBGLUT
+#ifdef GLUT_FOUND
 
   double left, right, top, bot;
 
@@ -440,7 +440,7 @@ void win_idle()
   if (!gui_pause)
   {
     process();
-	#ifdef HAVE_LIBGLUT
+	#ifdef GLUT_FOUND
     glutPostRedisplay();      
 	#endif
   }
@@ -454,7 +454,7 @@ void win_idle()
 // Run the GUI
 int win_run(int *argc, char **argv)
 {
-#ifdef HAVE_LIBGLUT
+#ifdef GLUT_FOUND
 
   glutInit(argc, argv);
     

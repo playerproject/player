@@ -31,9 +31,9 @@
 
 #include <gsl/gsl_multimin.h>
 
-#include <config.h>
+#include "pmapconfig.h"
 
-#ifdef HAVE_LIBGLUT
+#ifdef GLUT_FOUND
 #include <GL/glut.h>
 #endif
 
@@ -572,7 +572,7 @@ void rmap_interpolate(rmap_t *self)
 // Draw the current map
 void rmap_draw_map(rmap_t *self)
 {
-#ifdef HAVE_LIBGLUT
+#ifdef GLUT_FOUND
   int i, j;
   rmap_scan_t *scan;
   vector2_t p;
@@ -609,7 +609,7 @@ void rmap_draw_map(rmap_t *self)
 // Draw constraints
 void rmap_draw_cons(rmap_t *self)
 {
-#ifdef HAVE_LIBGLUT
+#ifdef GLUT_FOUND
   int i;
   rmap_constraint_t *con;
   vector2_t pa, pb;

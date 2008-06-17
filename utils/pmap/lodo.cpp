@@ -24,7 +24,7 @@
   CVS: $Id$
 */
 
-#include "config.h"
+#include "pmapconfig.h"
 
 #include <assert.h>
 #include <math.h>
@@ -37,7 +37,7 @@
 
 #include "lodo.h"
 
-#ifdef HAVE_LIBGLUT
+#ifdef GLUT_FOUND
 #include <GL/glut.h>
 #endif
 
@@ -676,7 +676,7 @@ void lodo_print_err(lodo_t *self)
 // Draw a scan
 void lodo_draw_scan(lodo_t *self, lodo_scan_t *scan)
 {
-#ifdef HAVE_LIBGLUT
+#ifdef GLUT_FOUND
   int i;
   vector2_t p;
 
@@ -713,7 +713,7 @@ void lodo_draw_scan(lodo_t *self, lodo_scan_t *scan)
 // Draw current map (hits)
 void lodo_draw_map(lodo_t *self)
 {
-#ifdef HAVE_LIBGLUT
+#ifdef GLUT_FOUND
   int i;
   vector3_t p;
 

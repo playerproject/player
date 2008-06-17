@@ -49,9 +49,9 @@ SET (playercSrcs    playerc.h
                     dev_vectormap.c
                     dev_wifi.c
                     dev_wsn.c)
-IF(NOT HAVE_POLL)
-  SET(playercSrcs  ${playercSrcs} ../../replace/poll.c)
-ENDIF(NOT HAVE_POLL)
+IF (NOT HAVE_POLL)
+  SET (playercSrcs ${playercSrcs} ${PROJECT_SOURCE_DIR}/replace/poll.c)
+ENDIF (NOT HAVE_POLL)
 APPEND_TO_CACHED_LIST (PLAYERC_EXTRA_LINK_LIBRARIES "Libs to link to with playerc" z m)
 
 PLAYER_ADD_LIBRARY (playerc ${playercSrcs})

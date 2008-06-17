@@ -22,7 +22,7 @@
   Date: 19 Nov 2004
   CVS: $Id$
  */
-#include "config.h"
+#include "pmapconfig.h"
 
 #include <assert.h>
 #include <math.h>
@@ -32,7 +32,7 @@
 #include <string.h>
 #include <gsl/gsl_randist.h>
 
-#ifdef HAVE_LIBGLUT
+#ifdef GLUT_FOUND
 #include <GL/glut.h>
 #endif
 
@@ -574,7 +574,7 @@ void pmap_add_scan_sample(pmap_t *self, int sample_index, double *ranges)
 // Draw the current range scan
 void pmap_draw_scan(pmap_t *self, double *ranges)
 {
-#ifdef HAVE_LIBGLUT
+#ifdef GLUT_FOUND
   int i, best_i;
   double max_w;
   vector2_t p;
@@ -634,7 +634,7 @@ void pmap_draw_scan(pmap_t *self, double *ranges)
 // Draw all samples
 void pmap_draw_samples(pmap_t *self)
 {
-#ifdef HAVE_LIBGLUT
+#ifdef GLUT_FOUND
   int i;
   pmap_sample_t *sample;
 
@@ -658,7 +658,7 @@ void pmap_draw_samples(pmap_t *self)
 // Draw a particular sample
 void pmap_draw_sample(pmap_t *self, int sample_index)
 {
-#ifdef HAVE_LIBGLUT
+#ifdef GLUT_FOUND
   int i;
   pmap_sample_t *sample;
   pose2_t pose;
@@ -683,7 +683,7 @@ void pmap_draw_sample(pmap_t *self, int sample_index)
 // Draw a candidate map
 void pmap_draw_map(pmap_t *self, double scale)
 {
-#ifdef HAVE_LIBGLUT
+#ifdef GLUT_FOUND
   pmap_draw_sample_map(self, scale, self->best_sample);  
   return;
 #endif
@@ -693,7 +693,7 @@ void pmap_draw_map(pmap_t *self, double scale)
 // Draw a particular sample map
 void pmap_draw_sample_map(pmap_t *self, double scale, int sample_index)
 {
-#ifdef HAVE_LIBGLUT
+#ifdef GLUT_FOUND
   int i, j;
   pmap_sample_t *sample;
 
