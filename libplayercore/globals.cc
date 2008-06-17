@@ -47,6 +47,7 @@
 
 #include <libplayercore/devicetable.h>
 #include <libplayercore/drivertable.h>
+#include <libplayercore/filewatcher.h>
 #include <libplayercore/playertime.h>
 #include <libplayercore/wallclocktime.h>
 
@@ -60,10 +61,13 @@ DeviceTable* deviceTable;
 // this table holds all the currently *available* drivers
 DriverTable* driverTable;
 
-// the global PlayerTime object has a method 
+// the global PlayerTime object has a method
 //   int GetTime(struct timeval*)
 // which everyone must use to get the current time
 PlayerTime* GlobalTime;
+
+// global class for watching for changes in files and sockets
+FileWatcher* fileWatcher;
 
 char playerversion[32];
 
@@ -84,6 +88,7 @@ player_globals_init()
   deviceTable = new DeviceTable();
   driverTable = new DriverTable();
   GlobalTime = new WallclockTime();
+  fileWatcher = new FileWatcher();
   strncpy(playerversion, PLAYER_VERSION, sizeof(playerversion));
   player_quit = false;
   player_quiet_startup = false;
@@ -95,12 +100,10 @@ player_globals_init()
 void
 player_globals_fini()
 {
-  if(deviceTable)
-    delete deviceTable;
-  if(driverTable)
-    delete driverTable;
-  if(GlobalTime)
-    delete GlobalTime;
+  delete deviceTable;
+  delete driverTable;
+  delete GlobalTime;
+  delete fileWatcher;
 #if HAVE_PLAYERSD
   if(globalSD)
     player_sd_fini(globalSD);

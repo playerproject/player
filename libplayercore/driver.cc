@@ -61,6 +61,7 @@
 #include <libplayercore/devicetable.h>
 #include <libplayercore/configfile.h>
 #include <libplayercore/globals.h>
+#include <libplayercore/filewatcher.h>
 #include <libplayercore/property.h>
 #include <libplayercore/interface_util.h>
 
@@ -226,10 +227,10 @@ Driver::Publish(player_devaddr_t addr,
 }
 
 void
-Driver::Publish(player_devaddr_t addr, 
-                uint8_t type, 
+Driver::Publish(player_devaddr_t addr,
+                uint8_t type,
                 uint8_t subtype,
-                void* src, 
+                void* src,
                 size_t deprecated,
                 double* timestamp,
                 bool copy)
@@ -301,6 +302,19 @@ int Driver::Unsubscribe(player_devaddr_t addr)
 
   return( shutdownResult );
 }
+
+/** @brief Wake up the driver if the specified event occurs on the file descriptor */
+int Driver::AddFileWatch(int fd, bool ReadWatch , bool WriteWatch , bool ExceptWatch )
+{
+  return fileWatcher->AddFileWatch(fd,InQueue,ReadWatch,WriteWatch,ExceptWatch);
+}
+
+/** @brief Remove a previously added watch, call with the same arguments as when adding the watch */
+int Driver::RemoveFileWatch(int fd, bool ReadWatch , bool WriteWatch , bool ExceptWatch )
+{
+  return fileWatcher->RemoveFileWatch(fd,InQueue,ReadWatch,WriteWatch,ExceptWatch);
+}
+
 
 /* start a thread that will invoke Main() */
 void

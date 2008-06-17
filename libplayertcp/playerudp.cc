@@ -174,6 +174,10 @@ PlayerUDP::Listen(int* ports, int num_ports)
     // set up for later use of poll() to accept() connections on this port
     this->listen_ufds[i].fd = this->listeners[i].fd;
     this->listen_ufds[i].events = POLLIN;
+
+    // set up for later use by global file watcher
+    fileWatcher->AddFileWatch(this->listeners[i].fd);
+
   }
 
   return(0);
@@ -269,6 +273,7 @@ PlayerUDP::Close(int cli)
     }
   }
   free(this->clients[cli].dev_subs);
+  fileWatcher->RemoveFileWatch(this->clients[cli].fd);
   this->clients[cli].fd = -1;
   this->clients[cli].valid = 0;
   // FIXME
