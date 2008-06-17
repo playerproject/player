@@ -18,6 +18,14 @@
 #include <libplayercore/playercore.h>
 #include <replace/replace.h>
 
+#ifndef CRTSCTS
+#ifdef IHFLOW
+#ifdef OHFLOW
+#define CRTSCTS ((IHFLOW) | (OHFLOW))
+#endif
+#endif
+#endif
+
 #define CAM_ERROR_NONE 0x30
 #define CAM_ERROR_BUSY 0x31
 #define CAM_ERROR_PARAM 0x35

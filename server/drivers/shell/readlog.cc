@@ -130,6 +130,9 @@ driver
 
 #include <config.h>
 
+#include <libplayercore/playercore.h>
+#include <libplayerxdr/playerxdr.h>
+
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
@@ -137,15 +140,13 @@ driver
 #include <sys/time.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <math.h>
 #include <unistd.h>
 
 #if HAVE_Z
   #include <zlib.h>
 #endif
-
-#include <libplayercore/playercore.h>
-#include <libplayerxdr/playerxdr.h>
 
 #include "encode.h"
 #include "readlog_time.h"

@@ -12,7 +12,6 @@
 #include <unistd.h>
 #include <termios.h>
 #include <fcntl.h>
-#include <sys/signal.h>
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/ioctl.h>
@@ -20,6 +19,14 @@
 
 #include "rflex-info.h"
 #include "rflex-io.h"
+
+#ifndef CRTSCTS
+#ifdef IHFLOW
+#ifdef OHFLOW
+#define CRTSCTS ((IHFLOW) | (OHFLOW))
+#endif
+#endif
+#endif
 
 int
 iParity( enum PARITY_TYPE par )
@@ -132,9 +139,11 @@ cBaudrate( int baudrate )
   case 115200:
     return(B115200);
     break;
+#ifdef B230400
   case 230400:
     return(B230400);
     break;
+#endif
 
 #ifdef B460800  // POSIX doesn't have this one
 #warning Including support for baud rate B460800 which is not available in all implementations of termios. 

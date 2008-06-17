@@ -6,9 +6,13 @@
 */
 #include <termios.h>
 #include <iostream>
+#include <unistd.h>
 #include <fcntl.h>
 #include <libplayercore/playercore.h>
 #include <libplayercore/playercommon.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "rfi341_protocol.h"
 
@@ -265,7 +269,7 @@ int
 int
   rfi341_protocol::ReadResult ()
 {
-  bzero (buffer, 256);
+  memset(buffer, 0, 256);
   // Read ACK
   int n = read (fd, buffer, 1);
   if (verbose && ((n < 0) || (buffer[0] != ACK)))

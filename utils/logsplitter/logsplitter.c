@@ -41,6 +41,10 @@ FILE
     char data[1024];
     char fileName[80];
     double t1;
+    FILE *output;
+    FILE *rest;
+    struct stat fbuf;
+    long lastdatalen;
 
     // Save current position in file
     long currentPos = ftell (input);
@@ -59,16 +63,14 @@ FILE
 	}
     }
     memset (data, 0, 1024);
-    
+
     sprintf (fileName, "%lf-split.log", t1);
-    
+
     // Seek to the beginning of the file
     fseek (input, 0L, SEEK_SET);
-    
+
     // Create output file
-    FILE *output;
-    struct stat fbuf;
-    
+
     if (stat (fileName, &fbuf) != 0)
     {
         output = fopen (fileName, "w+");
@@ -100,9 +102,8 @@ FILE
     sprintf (fileName, "%lf-split.log", t2);
     if (stat (fileName, &fbuf) != 0)
     {
-	FILE *rest = fopen (fileName, "w+");
-	printf ("I: Creating... %s\n", fileName);
-	long lastdatalen;
+	rest = fopen (fileName, "w+");
+	printf ("I: Creating... %s\n", fileName);	
 	while (1)
 	{
 	    fgets (data, 1024, input);
@@ -137,6 +138,9 @@ main (int argc, const char **argv)
     long before, after;
     char btime[26];
     const char *base_filename;
+    float min_timedifference;
+    struct stat fbuf;
+    struct stat ftempbuf;
     
     // We need 2 parameters
     if (argc != 3)
@@ -148,7 +152,7 @@ main (int argc, const char **argv)
     }
     
     // Get the minimum time difference between two consecutive timestamps
-    float min_timedifference = atof (argv[1]);
+    min_timedifference = atof (argv[1]);
     base_filename = argv[2];
     
     printf ("I: Minimum time difference is: %f seconds.\n", min_timedifference);
@@ -162,8 +166,7 @@ main (int argc, const char **argv)
     }
     else
         printf ("I: Opening %s ...[success]\n", base_filename);
-    
-    struct stat fbuf;
+
     stat (base_filename, &fbuf);
 
     // Create a temporary file
@@ -186,7 +189,6 @@ main (int argc, const char **argv)
     // Close the original logfile
     fclose (fd);
 
-    struct stat ftempbuf;
     fstat (fileno (tempfd), &ftempbuf);
 
     if ((fbuf.st_size - ftempbuf.st_size) != 0)

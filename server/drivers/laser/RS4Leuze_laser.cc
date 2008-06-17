@@ -7,7 +7,9 @@
 
 //include
 #include "RS4Leuze_laser.h"
+#include <unistd.h>
 #include <string.h>
+#include <libplayercore/playercore.h>
 /**
   Default constructor.
 */
@@ -34,12 +36,12 @@ void Claser::closeSerial()
 	close(serialFD);
 }
 
-void Claser::openSerial(bool *laser_ON, int Baud_rate, char * Port)
+void Claser::openSerial(bool *laser_ON, int Baud_rate, const char * Port)
 {
 	serialFD = open(Port, O_RDWR|O_NOCTTY);
 	if (serialFD<0)
 	{
-		cout << "Claser, Error opening serial port " << endl;
+		PLAYER_ERROR("Claser, Error opening serial port");
 		*laser_ON=0;
 		return;
 	}
@@ -55,7 +57,7 @@ void Claser::openSerial(bool *laser_ON, int Baud_rate, char * Port)
 	// Set configuration immediately.
   	if (tcsetattr(serialFD, TCSANOW, &ttyset)<0) 
 	{
-		cout << "Claser, Error opening serial port " << endl;
+		PLAYER_ERROR("Claser, Error opening serial port");
 		*laser_ON=0;
 		return;
 	}
@@ -118,7 +120,7 @@ int Claser::scanRead()
 		if(byte != 0x00)
 		{
 			//cout << " Claser::scanRead(STEP 1), Error reading Laser message header" << endl;
-			cout << "Error reading Laser message header" << endl;
+			PLAYER_ERROR("Error reading Laser message header");
 			return 1;
 		}
 	}
@@ -154,7 +156,7 @@ int Claser::scanRead()
 			if (byte != 0xFE)
 			{
 				//cout << "Claser::scanRead(STEP 2), Error reading Laser message header" << endl;
-				cout << "Error reading Laser message header" << endl;
+				PLAYER_ERROR("Error reading Laser message header");
 				return 1;
 			}
 		}
@@ -212,7 +214,7 @@ void Claser::runLaser()
 	}
 	else
 	{
-        	cout<<"Laser disconnected!!!!!!!!!!!!!!!!"<<endl;
+        	PLAYER_ERROR("Laser disconnected!!!!!!!!!!!!!!!!");
 	}
 }
 

@@ -87,8 +87,8 @@ void playerc_audio_putmsg(playerc_audio_t *device,
 {
   if((header->type == PLAYER_MSGTYPE_DATA) && (header->subtype == PLAYER_AUDIO_DATA_WAV_REC))
   {
-    assert(header->size > 0);
     player_audio_wav_t * wdata = (player_audio_wav_t *) data;
+    assert(header->size > 0);
     device->wav_data.data_count = wdata->data_count;
     if (device->wav_data.data != NULL)
       free (device->wav_data.data);
@@ -102,22 +102,22 @@ void playerc_audio_putmsg(playerc_audio_t *device,
   }
   else if((header->type == PLAYER_MSGTYPE_DATA) && (header->subtype == PLAYER_AUDIO_DATA_SEQ))
   {
-    assert(header->size > 0);
     player_audio_seq_t * sdata = (player_audio_seq_t *) data;
+    assert(header->size > 0);
     device->seq_data.tones_count = sdata->tones_count;
     memcpy(device->seq_data.tones, sdata->tones, sdata->tones_count * sizeof(device->seq_data.tones[0]));
   }
   else if((header->type == PLAYER_MSGTYPE_DATA) && (header->subtype == PLAYER_AUDIO_DATA_MIXER_CHANNEL))
   {
-    assert(header->size > 0);
     player_audio_mixer_channel_list_t * wdata = (player_audio_mixer_channel_list_t *) data;
+    assert(header->size > 0);
     device->mixer_data.channels_count = wdata->channels_count;
     memcpy(device->mixer_data.channels, wdata->channels, wdata->channels_count * sizeof(device->mixer_data.channels[0]));
   }
   else if((header->type == PLAYER_MSGTYPE_DATA) && (header->subtype == PLAYER_AUDIO_DATA_STATE))
   {
-    assert(header->size > 0);
     player_audio_state_t *sdata = (player_audio_state_t *) data;
+    assert(header->size > 0);
     device->state = sdata->state;
   }
   else

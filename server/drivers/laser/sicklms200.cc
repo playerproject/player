@@ -456,9 +456,11 @@ SickLMS200::SickLMS200(ConfigFile* cf, int section)
      case 115200:
         this->serial_high_speed_baudremap = B115200;
         break;
+#ifdef B230400
      case 230400:
         this->serial_high_speed_baudremap = B230400;
         break;
+#endif
      default:
         printf("Unknown baud rate [%d] defaulting to B38400\n", this->serial_high_speed_baudremap);
         this->serial_high_speed_baudremap = B38400;

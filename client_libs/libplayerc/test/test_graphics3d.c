@@ -19,6 +19,11 @@ int test_graphics3d(playerc_client_t *client, int index)
 /*  int t;
   void *rdevice;*/
   playerc_graphics3d_t *device;
+  player_color_t col;
+  player_point_3d_t pts[RAYS];
+  player_point_3d_t pt;
+  int p;
+  double r;
 
   printf("device [graphics3d] index [%d]\n", index);
 
@@ -32,9 +37,7 @@ int test_graphics3d(playerc_client_t *client, int index)
   }
   PASS();
 
-
   TEST("changing color");
-  player_color_t col;
   col.red = 0;
   col.green = 0;
   col.blue = 255;
@@ -44,15 +47,11 @@ int test_graphics3d(playerc_client_t *client, int index)
     FAIL();
   else
     PASS();
-  
-  player_point_3d_t pts[RAYS];
-  
-  double r;
+
   for( r=0; r<1.0; r+=0.05 )
     {
       TEST("drawing line loop");
-      
-      int p;
+
       for( p=0; p<RAYS; p++ )
 	{
 	  pts[p].px = 5 * r * cos(p * M_PI/(RAYS/2));
@@ -107,7 +106,6 @@ int test_graphics3d(playerc_client_t *client, int index)
   
   for( r=0; r<300; r++ )
     {
-      player_point_3d_t pt;
       pt.px = fmod( rand(), 100 ) / 50.0 - 1.0;
       pt.py = fmod( rand(), 100 ) / 50.0 - 1.0;
       pt.pz = fmod( rand(), 100 ) / 30;

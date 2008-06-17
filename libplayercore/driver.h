@@ -54,7 +54,6 @@
 #include <libplayercore/player.h>
 #include <libplayercore/property.h>
 
-#include <map>
 using namespace std;
 
 /**

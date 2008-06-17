@@ -80,8 +80,6 @@
 #include <stdlib.h>
 #include <termios.h>
 #include <unistd.h>
-#include <iostream>
-#include <fstream>
 #include <string.h>
 
 #include <sys/types.h>
