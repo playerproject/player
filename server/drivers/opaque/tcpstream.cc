@@ -296,12 +296,7 @@ void TCPStream::Main()
   // The main loop; interact with the device here
   for(;;)
   {
-    Wait(1);
-
-    // Process incoming messages.  TCPStream::ProcessMessage() is
-    // called on each message.
-    ProcessMessages();
-
+    // we read/connect first otherwise we we wait when we have no data connection
     if (connected)
     {
       // Reads the data from the tcp server and then publishes it
@@ -312,6 +307,11 @@ void TCPStream::Main()
       PLAYER_MSG0(2, "TCP reconnecting");
       OpenTerm();
     }
+
+    PLAYER_MSG1(2, "TCP Main loop running (%d)",device_addr.index);
+    Wait(1);
+    
+    ProcessMessages();
   }
 }
 
