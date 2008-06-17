@@ -221,6 +221,7 @@ int
     return -1;
   }
   urg_laser_config_t ucfg;
+  ucfg.resolution = DTOR (360.0/1024.0);
   Laser.GetSensorConfig (&ucfg);
 
   Conf.min_angle = ucfg.min_angle;
