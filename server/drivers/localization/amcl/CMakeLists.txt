@@ -22,7 +22,7 @@ SET (amclSrcs   amcl.cc
                 map/map_draw.c)
 
 IF (INCLUDE_RTKGUI)
-    SET (linkFlags "${GTK_LINKFLAGS}")
+    SET (linkFlags "-L${PROJECT_BINARY_DIR}/rtk2 -lrtk ${GTK_LINKFLAGS}")
     SET (cFlags "-I${PROJECT_SOURCE_DIR}/rtk2 ${GTK_CFLAGS}")
 ELSE (INCLUDE_RTKGUI)
     SET (linkFlags)
