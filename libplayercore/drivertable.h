@@ -1,8 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -40,7 +40,7 @@
 /*
  * $Id$
  *
- *   class to keep track of available drivers.  
+ *   class to keep track of available drivers.
  */
 
 #ifndef _DRIVERTABLE_H
@@ -71,10 +71,10 @@ class DriverEntry
   DriverInitFn initfunc;
 
   // the string name for the driver
-  char name[PLAYER_MAX_DRIVER_STRING_LEN]; 
+  char name[PLAYER_MAX_DRIVER_STRING_LEN];
 
   // next in list
-  DriverEntry* next;  
+  DriverEntry* next;
 
   DriverEntry() { name[0]='\0'; next = NULL; }
 };
@@ -100,7 +100,7 @@ class DriverTable
   /// @brief Add a driver class to the table
   /// @param name Driver name (as it appears in the configuration file).
   /// @param initfunc Driver factory function.
-  int AddDriver(char* name, DriverInitFn initfunc);
+  int AddDriver(const char* name, DriverInitFn initfunc);
 
   /// @brief Lookup a driver entry by name
   /// @param name Driver name.

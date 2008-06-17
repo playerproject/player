@@ -17,13 +17,13 @@ nimu::~nimu()
 int nimu::Open()
 {
 	int ret;
-	ret = usb_find_busses();	
+	ret = usb_find_busses();
 	if (ret < 0)
 		return ret;
 	int NumDevices = usb_find_devices();
 	if (NumDevices < 0)
 		return NumDevices;
-	
+
 	struct usb_bus *busses = usb_get_busses();
 
 	struct usb_bus *bus;
@@ -54,12 +54,13 @@ int nimu::Open()
 					}
 
 					// configure the device for data output
-					ret = usb_control_msg(nimu_dev,0,0x02,0x02,0," ",0x0,1000);
+					char space[] = " ";
+					ret = usb_control_msg(nimu_dev,0,0x02,0x02,0,space,0x0,1000);
 					if (ret < 0)
 					{
 						printf("Error sending control message2: %d (%s)\n",ret,usb_strerror());
 						return ret;
-					}					
+					}
 				}
 				else
 				{

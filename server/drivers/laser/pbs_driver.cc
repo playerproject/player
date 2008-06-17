@@ -142,7 +142,7 @@ class PBSDriver : public Driver
 	int encodePBS(unsigned char *uncoded, unsigned char *encoded, int length);
 	int ConvertToM(unsigned char *pPbsDataHex, float *pPbsDataMm, int length);
 	unsigned int combineTwoCharsToInt(unsigned char MSB, unsigned char LSB);
-	bool InitializeCom(char ComNumber[10]);
+	bool InitializeCom(const char *ComNumber);
 	int Write_Buffer(unsigned char *chars, DWORD dwToWrite);
 	int Read_Single_Char(unsigned char *result);
 
@@ -1150,16 +1150,16 @@ unsigned int PBSDriver::combineTwoCharsToInt(unsigned char MSB, unsigned char LS
 
 
 /// Function for setting up the com port
-bool PBSDriver::InitializeCom(char ComNumber[10])
+bool PBSDriver::InitializeCom(const char *Port_Name)
 {
-	char *Port_Name = ComNumber; // Serial port name.
+	//char *Port_Name = ComNumber; // Serial port name.
 
 	ifd = open(Port_Name, O_RDWR | O_NOCTTY | O_NDELAY);
 
 	if (ifd == -1)
 	{
 		return 0;
-		perror("open_port: Unable to open /dev/ttyS0 - ");
+		perror("open_port: Unable to open serial port");
 	}
 	else
 	{

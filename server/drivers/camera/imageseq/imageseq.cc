@@ -237,8 +237,7 @@ int ImageSeq::LoadImage(const char *filename)
   this->data.width = image->width;
   this->data.height = image->height;
   this->data.compression = PLAYER_CAMERA_COMPRESS_RAW;
-
-  if (this->data.image_count != image->imageSize || this->data.image == NULL)
+  if (this->data.image_count != static_cast<unsigned> (image->imageSize) || this->data.image == NULL)
   {
     this->data.image_count = image->imageSize;
     delete [] this->data.image;

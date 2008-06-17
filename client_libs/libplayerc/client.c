@@ -84,7 +84,7 @@ int playerc_client_readpacket(playerc_client_t *client,
                               char *data);
 int playerc_client_writepacket(playerc_client_t *client,
                                player_msghdr_t *header,
-                               char *data);
+                               const char *data);
 void playerc_client_push(playerc_client_t *client,
                          player_msghdr_t *header, void *data);
 int playerc_client_pop(playerc_client_t *client,
@@ -188,7 +188,7 @@ void playerc_client_destroy(playerc_client_t *client)
   {
 	  playerxdr_cleanup_message(client->data,header.addr.interf, header.type, header.subtype);
   }
-  
+
   free(client->data);
   free(client->write_xdrdata);
   free(client->read_xdrdata);
@@ -384,7 +384,7 @@ int playerc_client_connect(playerc_client_t *client)
 
   //set the datamode to pull
   playerc_client_datamode(client, PLAYER_DATAMODE_PULL);
-  
+
   PLAYER_MSG4(3,"[%s] connected on [%s:%d] with sock %d\n", banner, client->host, client->port, client->sock);
   return 0;
 }
@@ -515,7 +515,7 @@ playerc_client_requestdata(playerc_client_t* client)
   if(client->mode != PLAYER_DATAMODE_PULL || client->data_requested)
     return(0);
 
-  ret = playerc_client_request(client, NULL, PLAYER_PLAYER_REQ_DATA, 
+  ret = playerc_client_request(client, NULL, PLAYER_PLAYER_REQ_DATA,
                                &req, NULL);
   if(ret == 0)
   {
@@ -544,7 +544,7 @@ int playerc_client_internal_peek(playerc_client_t *client, int timeout)
 {
   int count;
   struct pollfd fd;
-  
+
   if (client->sock < 0)
   {
     PLAYERC_WARN("no socket to peek at");
@@ -597,7 +597,7 @@ void *playerc_client_read(playerc_client_t *client)
     if (ret < 0)
       return NULL;
     nanosleep(&sleeptime,NULL);
-  }  
+  }
 }
 
 
@@ -627,8 +627,8 @@ int playerc_client_read_nonblock_withproxy(playerc_client_t *client, void ** pro
       if((ret = playerc_client_readpacket (client, &header, client->data)) < 0)
         return ret;
     }
-	  
-    // One way or another, we got a new packet into (header,client->data), 
+
+    // One way or another, we got a new packet into (header,client->data),
     // so process it
     switch(header.type)
     {
@@ -729,7 +729,7 @@ int playerc_client_write(playerc_client_t *client,
 int playerc_client_request(playerc_client_t *client,
                            playerc_device_t *deviceinfo,
                            uint8_t subtype,
-                           void *req_data, void **rep_data)
+                           const void *req_data, void **rep_data)
 {
   double t;
   int peek;
@@ -873,7 +873,7 @@ int playerc_client_get_devlist(playerc_client_t *client)
   client->devinfo_count = rep_config->devices_count;
 
   player_device_devlist_t_free(rep_config);
-  
+
   // Now get the driver info
   return playerc_client_get_driverinfo(client);
 }
@@ -901,7 +901,7 @@ int playerc_client_get_driverinfo(playerc_client_t *client)
     strncpy(client->devinfos[i].drivername, resp->driver_name,
       resp->driver_name_count);
     client->devinfos[i].drivername[resp->driver_name_count] = '\0';
-    
+
     player_device_driverinfo_t_free(resp);
   }
 
@@ -949,7 +949,7 @@ int playerc_client_unsubscribe(playerc_client_t *client, int code, int index)
 {
   player_device_req_t req, *resp;
   int ret;
-  
+
   req.addr.host = 0;
   req.addr.robot = 0;
   req.addr.interf = code;
@@ -1143,7 +1143,7 @@ int playerc_client_readpacket(playerc_client_t *client,
 
 // Write a raw packet
 int playerc_client_writepacket(playerc_client_t *client,
-                               player_msghdr_t *header, char *data)
+                               player_msghdr_t *header, const char *data)
 {
   int bytes, ret, length;
   player_pack_fn_t packfunc;

@@ -335,7 +335,8 @@ int Iwspy::InitIwSpy()
   if (pid == 0)
   {
     argc = 0;
-    args[argc++] = "iwspy";
+    char app[] = "iwspy";
+    args[argc++] = app;
     args[argc++] = strdup(this->ethx);
 
     // Add the list of MAC addresses to be monitored.
@@ -348,8 +349,10 @@ int Iwspy::InitIwSpy()
     if (execvp("iwspy", args) != 0)
     {
       PLAYER_ERROR1("error on exec: [%s]", strerror(errno));
+      free (args[1]);
       exit(errno);
     }
+    free (args[1]);
     assert(false);
   }
 

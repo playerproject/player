@@ -157,7 +157,7 @@ class PTU46
 	// read buffer
 	char buffer[PTU46_BUFFER_LEN+1];
 
-	int Write(char * data, int length = 0);
+	int Write(const char * data, int length = 0);
 };
 
 
@@ -288,7 +288,7 @@ PTU46::~PTU46()
 }
 
 
-int PTU46::Write(char * data, int length)
+int PTU46::Write(const char * data, int length)
 {
 
 	if (fd < 0)

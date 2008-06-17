@@ -1,9 +1,9 @@
 /**
   *  Videre Erratic robot driver for Player
-  *                   
+  *
   *  Copyright (C) 2006
   *     Videre Design
-  *  Copyright (C) 2000  
+  *  Copyright (C) 2000
   *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
   *
   *  This program is free software; you can redistribute it and/or modify
@@ -34,51 +34,51 @@ void initialize_robot_params(void);
 
 typedef struct
 {
-  double AngleConvFactor; // 
-  char* Class;
-  double DiffConvFactor; // 
-  double DistConvFactor; // 
-  int FrontBumpers; // 
-  double GyroScaler; // 
-  int HasMoveCommand; // 
-  int Holonomic; // 
-  int IRNum; // 
-  int IRUnit; // 
-  int LaserFlipped; // 
-  char* LaserIgnore;
-  char* LaserPort;
-  int LaserPossessed; // 
-  int LaserPowerControlled; // 
-  int LaserTh; // 
-  int LaserX; // 
-  int LaserY; // 
-  int MaxRVelocity; // 
-  int MaxVelocity; // 
-  int NewTableSensingIR; // 
-  int NumFrontBumpers; // 
-  int NumRearBumpers; // 
-  double RangeConvFactor; // 
-  int RearBumpers; // 
-  int RequestEncoderPackets; // 
-  int RequestIOPackets; // 
-  int RobotDiagonal; // 
-  int RobotLength; // 
-  int RobotRadius; // 
-  int RobotWidth; // 
-  int RobotAxleOffset; // 
-  int RotAccel; // 
-  int RotDecel; // 
-  int RotVelMax; // 
-  int SettableAccsDecs; // 
-  int SettableVelMaxes; // 
-  char* Subclass;
-  int SwitchToBaudRate; // 
-  int TableSensingIR; // 
-  int TransAccel; // 
-  int TransDecel; // 
-  int TransVelMax; // 
-  int Vel2Divisor; // 
-  double VelConvFactor; // 
+  double AngleConvFactor; //
+  const char* Class;
+  double DiffConvFactor; //
+  double DistConvFactor; //
+  int FrontBumpers; //
+  double GyroScaler; //
+  int HasMoveCommand; //
+  int Holonomic; //
+  int IRNum; //
+  int IRUnit; //
+  int LaserFlipped; //
+  const char* LaserIgnore;
+  const char* LaserPort;
+  int LaserPossessed; //
+  int LaserPowerControlled; //
+  int LaserTh; //
+  int LaserX; //
+  int LaserY; //
+  int MaxRVelocity; //
+  int MaxVelocity; //
+  int NewTableSensingIR; //
+  int NumFrontBumpers; //
+  int NumRearBumpers; //
+  double RangeConvFactor; //
+  int RearBumpers; //
+  int RequestEncoderPackets; //
+  int RequestIOPackets; //
+  int RobotDiagonal; //
+  int RobotLength; //
+  int RobotRadius; //
+  int RobotWidth; //
+  int RobotAxleOffset; //
+  int RotAccel; //
+  int RotDecel; //
+  int RotVelMax; //
+  int SettableAccsDecs; //
+  int SettableVelMaxes; //
+  const char* Subclass;
+  int SwitchToBaudRate; //
+  int TableSensingIR; //
+  int TransAccel; //
+  int TransDecel; //
+  int TransVelMax; //
+  int Vel2Divisor; //
+  double VelConvFactor; //
   int NumSonars;
   player_pose3d_t sonar_pose[32];
   int NumIR;

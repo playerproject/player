@@ -5,7 +5,7 @@
  CVS: $Id$
 */
 #include <sys/socket.h>
-#include <netdb.h> 
+#include <netdb.h>
 #include <libplayercore/playercore.h>
 
 #include "lms400_cola.h"
@@ -29,24 +29,24 @@ int
 {
   // Create a socket
   sockfd = socket (AF_INET, SOCK_STREAM, 0);
-  if (sockfd < 0) 
+  if (sockfd < 0)
     return (-1);
-                          
+
   // Get the network host entry
   server = gethostbyname ((const char *)hostname);
   if (server == NULL)
     return (-1);
-  
+
   // Fill in the sockaddr_in structure values
   bzero ((char *) &serv_addr, sizeof (serv_addr));
   serv_addr.sin_family = AF_INET;
   serv_addr.sin_port   = htons (portno);
-  bcopy ((char *)server->h_addr, 
+  bcopy ((char *)server->h_addr,
          (char *)&serv_addr.sin_addr.s_addr,
          server->h_length);
-         
+
   // Attempt to connect
-  if (connect (sockfd, (const sockaddr*)&serv_addr, sizeof (serv_addr)) < 0) 
+  if (connect (sockfd, (const sockaddr*)&serv_addr, sizeof (serv_addr)) < 0)
     return (-1);
 
   return (0);
@@ -69,7 +69,7 @@ int
   char cmd[40];
   sprintf (cmd, "sWN MDblex %i", onoff);
   SendCommand (cmd);
-  
+
   if (ReadAnswer () != 0)
     return (-1);
   ExtendedRIS = onoff;
@@ -80,7 +80,7 @@ int
 // Get the current laser unit configuration and return it into Player format
 player_laser_config
   lms400_cola::GetConfiguration ()
-{ 
+{
   player_laser_config_t cfg;
   cfg = Configuration;
   return cfg;
@@ -94,13 +94,13 @@ int
   char cmd[40];
   sprintf (cmd, "sWN FLmean 0 %i", num_scans);
   SendCommand (cmd);
-  
+
   if (ReadAnswer () != 0)
     return (-1);
   MeanFilterNumScans = num_scans;
   return (0);
 }
-	
+
 ////////////////////////////////////////////////////////////////////////////////
 // Set the range filter parameters
 int
@@ -109,7 +109,7 @@ int
   char cmd[40];
   sprintf (cmd, "sWN FLrang %+f %+f", ranges[0], ranges[1]);
   SendCommand (cmd);
-  
+
   if (ReadAnswer () != 0)
     return (-1);
   RangeFilterBottomLimit = ranges[0];
@@ -125,7 +125,7 @@ int
   char cmd[40];
   sprintf (cmd, "sWN FLsel %+i", filter_mask);
   SendCommand (cmd);
-  
+
   if (ReadAnswer () != 0)
     return (-1);
   FilterMask = filter_mask;
@@ -137,18 +137,18 @@ int
 unsigned char*
   lms400_cola::ParseIP (char* ip)
 {
-  char* tmp = (char*) malloc (strlen (ip) + 1); 
+  char* tmp = (char*) malloc (strlen (ip) + 1);
   unsigned char* _ip = (unsigned char*) malloc (4);
 
   strcpy (tmp, ip);
-  _ip[0] = atoi (strtok (tmp, ".")); 
+  _ip[0] = atoi (strtok (tmp, "."));
   for (int i = 1; i < 4; i++)
     _ip[i] = atoi (strtok (NULL, "."));
 
   free (tmp);
   return _ip;
 }
-	
+
 ////////////////////////////////////////////////////////////////////////////////
 // Set the desired userlevel by logging in with the appropriate password
 int
@@ -172,7 +172,7 @@ int
   SendCommand ("sRN EImac ");
   if (ReadAnswer () != 0)
     return (-1);
-	
+
   strtok ((char*) buffer, " ");
   strtok (NULL, " ");
 
@@ -188,7 +188,7 @@ int
   *macaddress = mac;
   return (0);
 }
-	
+
 ////////////////////////////////////////////////////////////////////////////////
 // Set the IP address of the LMS400
 int
@@ -197,7 +197,7 @@ int
   unsigned char* ip_str;
   ip_str = ParseIP (ip);
   char cmd[80];
-	
+
   sprintf (cmd, "sWN EIip %X %X %X %X", ip_str[0], ip_str[1], ip_str[2], ip_str[3]);
   free (ip_str);
   SendCommand (cmd);
@@ -217,7 +217,7 @@ int
   sprintf (cmd, "sWN EIgate %X %X %X %X", gw_str[0], gw_str[1], gw_str[2], gw_str[3]);
   free (gw_str);
   SendCommand (cmd);
-  
+
   return (ReadAnswer ());
 }
 
@@ -255,9 +255,9 @@ int
 int
   lms400_cola::ResetDevice ()
 {
-  char* cmd = "sMN mDCreset ";
+  const char* cmd = "sMN mDCreset ";
   SendCommand (cmd);
-  
+
   return (ReadAnswer ());
 }
 
@@ -266,9 +266,9 @@ int
 int
   lms400_cola::TerminateConfiguration ()
 {
-  char* cmd = "sMN Run";
+  const char* cmd = "sMN Run";
   SendCommand (cmd);
-  
+
   return (ReadConfirmationAndAnswer ());
 }
 
@@ -279,40 +279,40 @@ int
                                     float angle_start, float angle_range)
 {
   char cmd[80];
-  sprintf (cmd, "sMN mSCconfigbyang 04 %s %+f 01 %+f %+f", 
+  sprintf (cmd, "sMN mSCconfigbyang 04 %s %+f 01 %+f %+f",
            password, ang_res, angle_start, angle_range);
   SendCommand (cmd);
-  
+
   return (ReadConfirmationAndAnswer ());
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set the laser scanning frequency. Requires userlevel 2. Unused for now.
 int
-  lms400_cola::SetScanningFrequency (const char* password, float freq, 
+  lms400_cola::SetScanningFrequency (const char* password, float freq,
                                     float angle_start, float angle_range)
 {
   char cmd[80];
-  sprintf (cmd, "sMN mSCconfigbyfreq 04 %s %+f 01 %+f %+f", 
+  sprintf (cmd, "sMN mSCconfigbyfreq 04 %s %+f 01 %+f %+f",
            password, freq, angle_start, angle_range);
   SendCommand (cmd);
-  
+
   return (ReadConfirmationAndAnswer ());
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set both resolution and frequency without going to a higher user level (?)
 int
-  lms400_cola::SetResolutionAndFrequency (float freq, float ang_res, 
+  lms400_cola::SetResolutionAndFrequency (float freq, float ang_res,
                                           float angle_start, float angle_range)
 {
   char cmd[80];
-  sprintf (cmd, "sMN mSCsetscanconfig %+.2f %+.2f %+.2f %+.2f", 
+  sprintf (cmd, "sMN mSCsetscanconfig %+.2f %+.2f %+.2f %+.2f",
     freq, ang_res, angle_start, angle_range);
-  SendCommand (cmd); 
-  
+  SendCommand (cmd);
+
   int error = ReadConfirmationAndAnswer ();
-  
+
   // If no error, parse the results
   if (error == 0)
   {
@@ -320,18 +320,18 @@ int
     int ErrorCode = strtol (strtok (NULL, " "), NULL, 16);
     long int sf = strtol (strtok (NULL, " "), NULL, 16);
     long int re = strtol (strtok (NULL, " "), NULL, 16);
-    
+
     if ((ErrorCode != 0) && (verbose))
       printf (">> Warning: got an error code %d\n", ErrorCode);
-    
+
     memcpy (&Configuration.scanning_frequency, &sf, sizeof (uint32_t));
     memcpy (&Configuration.resolution, &re, sizeof (uint32_t));
-    
-    if (verbose) 
-      printf (">> Measured value quality is: %ld [5-10]\n", 
+
+    if (verbose)
+      printf (">> Measured value quality is: %ld [5-10]\n",
         strtol (strtok (NULL, " "), NULL, 16));
   }
-  
+
   return (error);
 }
 
@@ -345,9 +345,9 @@ int
     sprintf (cmd, "sMN mLRreqdata %x", 0x20);
   else
     sprintf (cmd, "sMN mLRreqdata %x", 0x21);
-  
+
   SendCommand (cmd);
-  
+
   return (ReadConfirmationAndAnswer ());
 }
 
@@ -358,11 +358,11 @@ player_laser_data_t
 {
   player_laser_data_t player_data;
   player_data.ranges_count = -1;
-  
+
   char cs_read = 0, cs_calc = 0;
-  int length  = 0;  
+  int length  = 0;
   int current = 0;
-	
+
   bzero (buffer, 256);
   if (!MeasurementQueue->empty ())
   {
@@ -375,7 +375,7 @@ player_laser_data_t
   {
     if (verbose == 2) printf (">>> Queue empty. Reading from socket...\n");
     n = read (sockfd, buffer, 8);
-    if (n < 0) 
+    if (n < 0)
     {
       if (verbose) printf (">>> E: error reading from socket!\n");
       return (player_data);
@@ -386,7 +386,7 @@ player_laser_data_t
       n = read (sockfd, buffer, 255);
       return (player_data);
     }
-      
+
     // find message length
     length = ( (buffer[4] << 24) | (buffer[5] << 16) | (buffer[6] <<  8) | (buffer[7]) );
     do
@@ -394,13 +394,13 @@ player_laser_data_t
       n = read (sockfd, &buffer[current], length-current);
       current += n;
     } while (current < length);
-     
+
     // read checksum:
-    read (sockfd, &cs_read, 1); 
-      
+    read (sockfd, &cs_read, 1);
+
     for (int i = 0; i < length; i++)
       cs_calc ^= buffer[i];
-      
+
     if (cs_calc != cs_read)
     {
       if (verbose) printf (">>> E: checksums do not match!\n");
@@ -411,14 +411,14 @@ player_laser_data_t
   // parse measurements header and fill in the configuration parameters
   MeasurementHeader_t meas_header;
   memcpy (&meas_header, (void *)buffer, sizeof (MeasurementHeader_t));
-	
+
   Configuration.min_angle  = meas_header.StartingAngle / 10000.0;
   Configuration.resolution = meas_header.AngularStepWidth / 10000.0;
-  Configuration.max_angle = 
+  Configuration.max_angle =
     ((float) meas_header.NumberMeasuredValues) * Configuration.resolution + Configuration.min_angle;
   Configuration.scanning_frequency = meas_header.ScanningFrequency;
-  
-  if (verbose == 2) printf (">>> Reading %d values from %f to %f\n", 
+
+  if (verbose == 2) printf (">>> Reading %d values from %f to %f\n",
     meas_header.NumberMeasuredValues,
     meas_header.StartingAngle / 10000.0,
     ((float) meas_header.NumberMeasuredValues) * Configuration.resolution + Configuration.min_angle);
@@ -437,14 +437,14 @@ player_laser_data_t
   player_data.id              = 0;
   player_data.ranges = new float[  player_data.ranges_count];
   player_data.intensity = new uint8_t[  player_data.intensity_count];
-  
-  memcpy (&player_data.id, &buffer[sizeof(MeasurementHeader_t) + 
-                                 meas_header.NumberMeasuredValues * 3 + 
+
+  memcpy (&player_data.id, &buffer[sizeof(MeasurementHeader_t) +
+                                 meas_header.NumberMeasuredValues * 3 +
                                  14], 2);
 
   // Parse the read buffer and copy values into our distance/intensity buffer
   for (int i = 0; i < meas_header.NumberMeasuredValues ; i++)
-  {   
+  {
     if (meas_header.Format == 0x20 || meas_header.Format == 0x21)
     {
       memcpy (&distance, (void *)&buffer[index], sizeof (uint16_t) );
@@ -455,12 +455,12 @@ player_laser_data_t
       memcpy (&remission, (void *)&buffer[index], sizeof (uint8_t) );
       index += sizeof (uint8_t);
     }
-    player_data.ranges[i]    = distance * meas_header.DistanceScaling / 1000.0; 
+    player_data.ranges[i]    = distance * meas_header.DistanceScaling / 1000.0;
     player_data.intensity[i] = remission * meas_header.RemissionScaling;
-    
-    if (verbose == 2) 
-      printf (" >>> [%i] dist: %i\t remission: %i\n", i, 
-        distance * meas_header.DistanceScaling , 
+
+    if (verbose == 2)
+      printf (" >>> [%i] dist: %i\t remission: %i\n", i,
+        distance * meas_header.DistanceScaling ,
         remission * meas_header.RemissionScaling);
   }
 
@@ -474,20 +474,20 @@ int
 {
   char cmd[40];
   sprintf (cmd, "sMN mLRstopdata");
-  SendCommand (cmd);  
-  
+  SendCommand (cmd);
+
   return (ReadConfirmationAndAnswer ());
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Send a command to the laser unit. Returns -1 on error.
 int
-  lms400_cola::SendCommand (char* cmd)
+  lms400_cola::SendCommand (const char* cmd)
 {
-  if (verbose) 
+  if (verbose)
     printf (">> Sent: \"%s\"\n", cmd);
   assemblecommand ((unsigned char *) cmd, strlen (cmd));
-    
+
   n = write (sockfd, command, commandlength);
   if (n < 0)
     return (-1);
@@ -502,7 +502,7 @@ int
 {
   bzero (buffer, 256);
   n = read (sockfd, buffer, 8);
-  if (n < 0) 
+  if (n < 0)
     return (-1);
 
   if (buffer[0] != 0x02 || buffer[1] != 0x02 || buffer[2] != 0x02 || buffer[3] != 0x02)
@@ -511,7 +511,7 @@ int
     n = read (sockfd, buffer, 255);
     return (-1);
   }
-    
+
   // Find message length
   int length = ( (buffer[4] << 24) | (buffer[5] << 16) | (buffer[6] <<  8) | (buffer[7]) );
   int current = 0;
@@ -524,18 +524,18 @@ int
   bufferlength = length;
   if ((verbose) && (buffer[0] != 0x20))
     printf (">> Received: \"%s\"\n", buffer);
-  
+
   // Check for error
   if (strncmp ((const char*)buffer, "sFA", 3) == 0)
   {
     strtok ((char*)buffer, " ");
     printf (">> E: Got an error message with code 0x%s\n", strtok (NULL, " "));
   }
-  
+
   // Read checksum:
   char cs_read = 0;
-  read (sockfd, &cs_read, 1); 
-  
+  read (sockfd, &cs_read, 1);
+
 //  printf ("%d %d 0x%x\n", bufferlength, sizeof(MeasurementHeader_t), buffer[0]);
   if (buffer[0] == 's')
     return (0);
@@ -585,7 +585,7 @@ int
 {
   unsigned char checksum = 0;
   int index = 0;
-    
+
   command[0]  = 0x02;  // Messages start with 4 STX's
   command[1]  = 0x02;
   command[2]  = 0x02;
@@ -594,7 +594,7 @@ int
   command[5]  = (len >> 16) & 0xff;
   command[6]  = (len >>  8) & 0xff;
   command[7]  = (len      ) & 0xff;
-    
+
   for (index = 0; index < len; index++)
   {
     command[index + 8]  = cmd[index];
@@ -602,7 +602,7 @@ int
   }
   command[8 + len] = checksum;
   command[9 + len] = 0x00;
-    
+
   commandlength = 9 + len;
   return (0);
 }

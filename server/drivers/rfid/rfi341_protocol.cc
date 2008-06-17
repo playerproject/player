@@ -36,7 +36,7 @@ int
                    (char*) port, strerror (errno));
     return (-1);
   }
-  
+
   // Change port settings
   struct termios options;
   memset (&options, 0, sizeof (options));// clear the struct for new port settings
@@ -62,7 +62,7 @@ int
   // read satisfied if TIME is exceeded (t = TIME *0.1 s)
 //  options.c_cc[VTIME] = 1;
 //  options.c_cc[VMIN] = 0;
-  
+
   // Change the baud rate
   switch (port_speed) {
     case 1200: {
@@ -116,7 +116,7 @@ int
   PLAYER_MSG1 (1, "> Connecting to SICK RFI341 at %dbps...[done]", port_speed);
   // Make sure queues are empty before we begin
   tcflush (fd, TCIOFLUSH);
-  
+
   return (0);
 }
 
@@ -195,21 +195,21 @@ int
       return (-1);
     }
   }
-  
+
   // Tell sensor to change the baud rate
-  char *c = (char*) malloc (10); 
+  char *c = (char*) malloc (10);
   while (strncmp ((const char*)buffer, "1003", 4) != 0)
   {
     sprintf (c, "1003%s", transferspeed_string);
     SendCommand (c);
     ReadResult ();
   }
-  
+
   // OK, we told the sensor to change baud rate, so let's do it also
   struct termios options;
   // clear the struct for new port settings
   memset (&options, 0, sizeof (options));
-  
+
   // Get the current port settings
   if (tcgetattr (fd, &options) != 0) {
     PLAYER_ERROR (">> Unable to get serial port attributes !");
@@ -235,20 +235,20 @@ int
     return (0);
   }
   else
-    PLAYER_WARN1 ("> Checksum error [0x%x]!", checksum); 
+    PLAYER_WARN1 ("> Checksum error [0x%x]!", checksum);
   return (-1);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Send a command to the rfid unit. Returns -1 on error.
 int
-  rfi341_protocol::SendCommand (char* cmd)
+  rfi341_protocol::SendCommand (const char* cmd)
 {
   assemblecommand ((unsigned char *) cmd, strlen (cmd));
- 
+
   if (verbose)
   {
-    printf ("--> STX "); 
+    printf ("--> STX ");
     printf ("%s ", cmd);
     printf ("ETX 0x%x\n", command[commandlength-1]);
   }
@@ -256,7 +256,7 @@ int
   int n = write (fd, command, commandlength);
   if (n < 0)
     return (-1);
-  
+
   return (0);
 }
 
@@ -287,7 +287,7 @@ int
   n = read (fd, &buffer[read_count], 1);
   checksum = buffer[read_count];
   read_count += n;
-  
+
   // TODO: check the checksum (that's what it's for!)
   buffer[read_count-2] = 0x00;
   bufferlength = read_count-2;
@@ -296,7 +296,7 @@ int
   {
     printf ("<-- STX ");
     printf ("%s ", buffer);
-    printf ("ETX 0x%X\n", checksum); 
+    printf ("ETX 0x%X\n", checksum);
   }
   return (0);
 }
@@ -308,21 +308,21 @@ int
 {
   unsigned char checksum = 0;
   int index = 0;
-  
+
   command[0] = STX;		// Messages start with STX
-  
+
   for (index = 0; index < len; index++)
     command[index + 1]  = cmd[index];
 
   command[1 + len] = ETX;	// Messages end with ETX
-  
+
   for (int i = 0; i < len+2; i++)
     checksum ^= command[i];
-  
+
   command[2 + len] = checksum;
-  
+
   commandlength = 3 + len;
-  
+
   return (0);
 }
 
@@ -334,15 +334,15 @@ player_rfid_data_t
 {
   char buf[17];
   unsigned int hexnumber;
-  
+
   // create inventory, single mode
   SendCommand ("6C20s");
   ReadResult  ();
-        
+
   // get inventory
   SendCommand ("6C21");
   ReadResult  ();
-  
+
   if (tags != NULL)
   {
     for (int i = 0; i < number_of_tags; i++)
@@ -354,7 +354,7 @@ player_rfid_data_t
   memcpy (buf, &buffer[4], 4);
   buf[4] = 0;
   number_of_tags = atol(buf);
-  
+
   // allocate memory for the tags
   tags = (char**)malloc (number_of_tags*sizeof(char*));
   for (int i=0; i < number_of_tags; i++)
@@ -371,7 +371,7 @@ player_rfid_data_t
   player_rfid_data_t player_data;
   player_data.tags_count = number_of_tags;
   player_data.tags = (player_rfid_tag_t*)calloc(player_data.tags_count, sizeof(player_data.tags[0]));
-  
+
   player_rfid_tag_t tag;
   for (int i=0; i < number_of_tags; i++)
   {
