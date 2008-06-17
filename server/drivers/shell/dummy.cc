@@ -246,13 +246,18 @@ void Dummy::Main(void)
                 player_laser_data_t data;
                 data.min_angle  = -1.5707964;
                 data.max_angle  = 1.5707964;
-                data.resolution = 49;
-                data.max_range  = 4.0;
+                data.resolution = .5 * M_PI/180;
+                data.max_range  = 8.0;
                 data.ranges_count    = 361;
                 data.intensity_count = 361;
+                data.ranges = (float *) 
+                              malloc( data.ranges_count * sizeof(float) );
+
+                data.intensity = (uint8_t *) 
+                              malloc( data.ranges_count * sizeof(uint8_t) );
                 for (i = 0; i < data.ranges_count; i++)
                 {
-                    data.ranges[i]    = 1;
+                    data.ranges[i]    = data.max_range;
                     data.intensity[i] = 1;
                 }
                 data.id = 1;
@@ -260,6 +265,8 @@ void Dummy::Main(void)
                 Publish (device_addr, PLAYER_MSGTYPE_DATA,
                          PLAYER_LASER_DATA_SCAN, (void*)&data, sizeof(data),
                          NULL);
+                free(data.ranges);
+                free(data.intensity);
                 break;
             }
             case PLAYER_POSITION2D_CODE:
