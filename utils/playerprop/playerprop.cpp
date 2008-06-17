@@ -85,7 +85,7 @@ int GetOptions (int argc, char *argv[])
 int main (int argc, char *argv[])
 {
 	ClientProxy* deviceProxy;
-	int argsIndex = 0, intValue;
+	int32_t argsIndex = 0, intValue;
 	double dblValue;
 	char *strValue;
 
