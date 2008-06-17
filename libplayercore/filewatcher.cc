@@ -11,7 +11,6 @@
 #include <sys/time.h>
 #include <stdlib.h>
 #include <assert.h>
-#include <error.h>
 #include <math.h>
 #include <string.h>
 
