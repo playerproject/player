@@ -680,7 +680,7 @@ If an error is returned then no data will have been stored in rep_data.
 */
 int playerc_client_request(playerc_client_t *client,
                            struct _playerc_device_t *device, uint8_t reqtype,
-                           void *req_data, void **rep_data);
+                           const void *req_data, void **rep_data);
 
 /** @brief Wait for response from server (blocking).
 

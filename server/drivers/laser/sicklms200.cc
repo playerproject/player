@@ -619,7 +619,8 @@ SickLMS200::ProcessMessage(QueuePointer & resp_queue,
   {
     player_laser_config_t * config =
             reinterpret_cast<player_laser_config_t *> (data);
-    int old_scan_width, old_scan_res;
+    int old_scan_width = this->scan_width;
+    int old_scan_res = this->scan_res;
 
     this->intensity = config->intensity;
     this->scan_res = (int) rint(RTOD(config->resolution)*100);

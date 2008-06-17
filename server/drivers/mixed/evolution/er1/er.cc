@@ -973,8 +973,10 @@ void
     float
         ER::BytesToFloat(unsigned char *ptr)
     {
-      uint32_t rawi = BytesToInt32 (ptr);
-      return *reinterpret_cast<float *>(&rawi);
+      float res;
+      int intermediate = BytesToInt32 (ptr);
+      memcpy(&res,&intermediate,sizeof(res));
+      return res;
     }
 
     int

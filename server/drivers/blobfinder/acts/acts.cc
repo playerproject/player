@@ -252,7 +252,7 @@ class Acts:public Driver
 
     // returns the enum representation of the given version string, or
     // ACTS_VERSION_UNKNOWN on failure to match.
-    acts_version_t version_string_to_enum(char* versionstr);
+    acts_version_t version_string_to_enum(const char* versionstr);
 
     // writes the string representation of the given version number into
     // versionstr, up to len.

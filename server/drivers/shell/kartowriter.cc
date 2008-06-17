@@ -122,12 +122,12 @@ public:
 	//destructor
 	virtual ~LogDevice();
 	//prints the Device unique ID
-	char* getUID();
+	const char* getUID();
 };
 
 LogDevice::LogDevice(const player_devaddr_t& playerAddr) : pDevice(NULL), pUid(NULL), addr(playerAddr)
 	{
-	pUid = getUID();
+	pUid = strdup(getUID());
 	}
 
 LogDevice::~LogDevice() {
@@ -182,7 +182,7 @@ public:
 	int Setup();
 	int Shutdown();
 
-	char* getUID(player_devaddr_t dev);
+	const char* getUID(player_devaddr_t dev);
 	virtual int Unsubscribe(Device* pId);
 
 	// MessageHandler
@@ -566,7 +566,7 @@ int KartoLogger::WriteGeometry(LogDevice* pDev) {
 //
 // KartoLogger:getUID
 // No need to check for buffer overflow on the sprintf since hostname is max 256, dev.robot is uint32, dev.index is uint16
-char* KartoLogger::getUID(player_devaddr_t dev) {
+const char* KartoLogger::getUID(player_devaddr_t dev) {
 	char* id = (char*)malloc(ID_MAX_SIZE);
 	if (id == NULL)
 		{
@@ -593,7 +593,7 @@ char* KartoLogger::getUID(player_devaddr_t dev) {
 //
 // KartoLogger:getUID()
 // No need to check for buffer overflow on the sprintf since hostname is max 256, addr->robot is uint32, addr->index is uint16
-char* LogDevice::getUID() {
+const char* LogDevice::getUID() {
 	if (this->pUid != NULL)
 		{
 				return (this->pUid);

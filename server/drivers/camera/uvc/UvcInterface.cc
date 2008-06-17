@@ -11,10 +11,11 @@
 
 int UvcInterface::Open(void)
 {
-	int ret,i;
-	
+	int ret=0;
+	int i;
+
 	if(fd!=-1) Close();
-	
+
 	try
 	{
 		fd=open(device,O_RDWR|O_NONBLOCK);
@@ -26,15 +27,15 @@ int UvcInterface::Open(void)
 	    ret=ioctl(fd,VIDIOC_QUERYCAP,&cap);
 	    if(ret==-1)
 	    	throw "Error querying capabilities";
-	    
+
 	    //check for video capture capability
 	    if(!cap.capabilities&V4L2_CAP_VIDEO_CAPTURE)
 	    	throw "Device does not support video capture";
-	    	
-		//check for streaming i/o capability (unnecessary?)	    
+
+		//check for streaming i/o capability (unnecessary?)
 	    if(!cap.capabilities&V4L2_CAP_STREAMING)
 	    	throw "Device does not support streaming i/o";
-	     
+
 	     //check for read/write capability
 		if(!cap.capabilities&V4L2_CAP_READWRITE)
 			throw "Device does not support read/write i/o";
@@ -49,11 +50,11 @@ int UvcInterface::Open(void)
 		ret=ioctl(fd,VIDIOC_S_FMT,&fmt);
 		if(ret==-1)
 			printf("Unable to set format. (%d, %d)\r\n",ret,errno);
-			
+
 		ret=ioctl(fd,VIDIOC_G_FMT,&fmt);
 		if(ret==-1)
 			printf("Unable to retrieve format. (%d, %d)\r\n",ret,errno);
-		
+
 		//request memory buffers
 		v4l2_requestbuffers rb;
 		memset(&rb,0,sizeof(v4l2_requestbuffers));
@@ -63,13 +64,13 @@ int UvcInterface::Open(void)
 		ret = ioctl(fd,VIDIOC_REQBUFS,&rb);
 		if(ret==-1)
 			throw "Unable to allocate buffers";
-			
+
 		//general-purpose buffer info struct
 		v4l2_buffer buf;
 
 		buffer[0]=0;
 		buffer[1]=0;
-		
+
 		for(i=0;i<2;i++)
 		{
 			//query a buffer
@@ -80,18 +81,18 @@ int UvcInterface::Open(void)
 			ret=ioctl(fd,VIDIOC_QUERYBUF,&buf);
 			if(ret==-1)
 				throw "Unable to query frame";
-			
+
 			//retrieve the buffer memory location
 			buffer[i]=(unsigned char*)mmap(0,buf.length,PROT_READ,MAP_SHARED,fd,buf.m.offset);
 			length[i]=buf.length;
-			
+
 			if(buffer[i]==MAP_FAILED)
 			{
 				buffer[i]=0;
 				throw "Unable to map frame";
 			}
 		}
-			
+
 		for(i=0;i<2;i++)
 		{
 			memset(&buf,0,sizeof(v4l2_buffer));
@@ -107,7 +108,7 @@ int UvcInterface::Open(void)
 		ret=ioctl(fd,VIDIOC_STREAMON,&type);
 		if(ret==-1)
 			throw "Unable to initiate video stream";
-			
+
 		int bufLength=length[0];
 		if(length[1]>bufLength) bufLength=length[1];
 		frame=new unsigned char[bufLength+dht_size];
@@ -124,14 +125,14 @@ int UvcInterface::Open(void)
 int UvcInterface::Close(void)
 {
 	int ret,i;
-	
+
 	if(fd==-1) return 0;
-	
+
 	int type=V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	ret=ioctl(fd,VIDIOC_STREAMOFF,&type);
 	if(ret==-1)
 		printf("Unable to terminate video stream. (%d, %d)\r\n",ret,errno);
-	
+
 	for(i=0;i<2;i++)
 	{
 		if(buffer[i]!=0)
@@ -157,9 +158,9 @@ int UvcInterface::Close(void)
 
 int UvcInterface::Read()
 {
-	int ret;
+	int ret=0;
 	const int hdr=0xaf;
-	
+
 	try
 	{
 		pollfd pfd;
@@ -169,9 +170,9 @@ int UvcInterface::Read()
 		{
 			poll(&pfd,1,100);
 			pthread_testcancel();
-			
+
 		} while(pfd.revents==0);
-		
+
 		v4l2_buffer buf;
 	    memset(&buf,0,sizeof(v4l2_buffer));
 	    buf.type=V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -179,7 +180,7 @@ int UvcInterface::Read()
 	    ret=ioctl(fd,VIDIOC_DQBUF,&buf);
 	    if(ret==-1)
 			throw "Unable to dequeue frame";
-			
+
 		memcpy(frame,buffer[buf.index],hdr);
 		memcpy(frame+hdr,dht_data,dht_size);
 		memcpy(frame+hdr+dht_size,buffer[buf.index]+hdr,(buf.bytesused-hdr));
@@ -194,7 +195,7 @@ int UvcInterface::Read()
 		printf("%s. (%d, %d)\r\n",msg,ret,errno);
 		return -1;
 	}
-	return 0;	
+	return 0;
 }
 
 int UvcInterface::GetWidth(void) const

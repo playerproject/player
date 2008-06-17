@@ -1614,7 +1614,7 @@ int
 P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
 {
   P2OSPacket packet;
-  double msgTime;
+  //double msgTime;
 
   // zero the combined data buffer.  it will be filled with the latest data
   // by corresponding SIP::Fill*()
@@ -3097,7 +3097,7 @@ int P2OS::HandleLiftCommand (player_msghdr *hdr, void *data)
       // Followed by the carry time
       command[0] = GRIPPERVAL;
       command[2] = liftCarryVal & 0x00FF;
-      command[3] = liftCarryVal & 0xFF00;
+      command[3] = (liftCarryVal & 0xFF00) >> 8;
       packet.Build (command, 4);
       SendReceive (&packet);
     }

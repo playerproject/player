@@ -488,7 +488,7 @@ class SonyEVID30:public Driver
   virtual int SendAbsZoom(short zoom);
   virtual int GetAbsZoom(short* zoom);
   virtual int GetAbsPanTilt(short* pan, short* tilt);
-  virtual void PrintPacket(char* str, unsigned char* cmd, int len);
+  virtual void PrintPacket(const char* str, unsigned char* cmd, int len);
 
   /*
    * Get the current Pan/Tilt/Zoom state of the camera (and take a guess at
@@ -1419,7 +1419,7 @@ int SonyEVID30::ProcessMessage(QueuePointer &resp_queue,
 }
 
 
-void SonyEVID30::PrintPacket(char *str, unsigned char *cmd, int len)
+void SonyEVID30::PrintPacket(const char *str, unsigned char *cmd, int len)
 {
   printf("%s: ", str);
   for(int i=0;i<len;i++)

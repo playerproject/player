@@ -1,8 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -40,7 +40,7 @@
 /*
  * $Id$
  *
- *   class to keep track of available drivers.  
+ *   class to keep track of available drivers.
  */
 
 #include <string.h> // for strncpy(3)
@@ -74,14 +74,14 @@ DriverTable::~DriverTable()
 
 // add a new driver to the table (new-style)
 int
-DriverTable::AddDriver(char* name, DriverInitFn initfunc)
+DriverTable::AddDriver(const char* name, DriverInitFn initfunc)
 {
   DriverEntry* thisentry;
   DriverEntry* preventry;
 
-  // don't check for preexisting driver, just overwrite the old driver.  
+  // don't check for preexisting driver, just overwrite the old driver.
   // shouldn't really come up.
-  for(thisentry = head,preventry=NULL; thisentry; 
+  for(thisentry = head,preventry=NULL; thisentry;
       preventry=thisentry, thisentry=thisentry->next)
   {
     if(!strncmp(thisentry->name, name, sizeof(thisentry->name)))
@@ -107,7 +107,7 @@ DriverTable::AddDriver(char* name, DriverInitFn initfunc)
 
 
 // matches on the string name
-DriverEntry* 
+DriverEntry*
 DriverTable::GetDriverEntry(const char* name)
 {
   DriverEntry* thisentry;
@@ -124,7 +124,7 @@ DriverTable::GetDriverEntry(const char* name)
 }
 
 // get the ith driver name; returns NULL if there is no such driver
-char* 
+char*
 DriverTable::GetDriverName(int idx)
 {
   DriverEntry* thisentry;

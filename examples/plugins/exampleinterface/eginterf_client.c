@@ -86,7 +86,7 @@ int eginterf_req (eginterf_t *device, int blah)
 	player_eginterf_req_t *rep;
 	memset (&rep, 0, sizeof (player_eginterf_req_t));
 	req.value = blah;
-	if ((result = playerc_client_request (device->info.client, &device->info, PLAYER_EXAMPLE_REQ_EXAMPLE, &req, (void**)&rep)) < 0)
+	if ((result = playerc_client_request (device->info.client, &device->info, PLAYER_EXAMPLE_REQ_EXAMPLE, &req, &rep)) < 0)
 		return result;
 
 	device->value = rep->value;

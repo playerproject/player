@@ -472,7 +472,7 @@ int SickNAV200::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr,
 		return (0);
 	}
 
-	char* layerName = "0"; // Dumb name.
+	char layerName[] = "0"; // Dumb name.
 
 	// Request for map info
 	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
@@ -518,7 +518,7 @@ int SickNAV200::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr,
 	// Request for layer data
 	else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
 			PLAYER_VECTORMAP_REQ_GET_LAYER_DATA, this->vectormap_addr)) {
-		char* featureName = "point";
+		char featureName[] = "point";
 		player_vectormap_feature_data feature;
 		memset(&feature, 0, sizeof(feature));
 		feature.name = featureName;

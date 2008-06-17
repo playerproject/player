@@ -22,26 +22,26 @@ class rfi341_protocol
 {
   public:
     rfi341_protocol (const char* port_name, int debug_mode);
-	
+
     // Creates socket, connects
     // Connects first at 'connect_speed'
     int Connect (int connect_speed);
-	
+
     // but for transfer, we might want to use a different 'transfer_speed'
     int SetupSensor (int transfer_speed);
 
     int Disconnect ();
 
     // assembles a command and sends it on the wire
-    int SendCommand (char* cmd);
+    int SendCommand (const char* cmd);
     // reads the result of a query from the device
     int ReadResult  ();
     player_rfid_data_t ReadTags ();
-    
+
   private:
     // assembles STX's, message, checksum ready to be sent. Cool.
     int assemblecommand (unsigned char* command, int len);
-   
+
     int number_of_tags;
     char **tags;
 
@@ -58,7 +58,7 @@ class rfi341_protocol
     unsigned char buffer[4096];
     unsigned int bufferlength;
     int checksum;
-    
+
     // for sending:
     unsigned char command[BUF_SIZE];
     int commandlength;

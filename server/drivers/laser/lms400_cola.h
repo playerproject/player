@@ -13,7 +13,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 typedef struct
-{  
+{
   unsigned char* string;
   int length;
 } MeasurementQueueElement_t;
@@ -38,7 +38,7 @@ class lms400_cola
 {
   public:
     lms400_cola (const char* host, int port, int debug_mode);
-	
+
     // Creates socket, connects
     int Connect ();
     int Disconnect ();
@@ -47,28 +47,28 @@ class lms400_cola
     int SetAngularResolution (const char* password, float ang_res, float angle_start, float angle_range);
     int SetScanningFrequency (const char* password, float freq, float angle_start, float angle_range);
     int SetResolutionAndFrequency (float freq, float ang_res, float angle_start, float angle_range);
-    
+
     int StartMeasurement (bool intensity = true);
     player_laser_data ReadMeasurement  ();
     int StopMeasurement  ();
-    
+
     int SetUserLevel  (int8_t userlevel, const char* password);
     int GetMACAddress (char** macadress);
-	
+
     int SetIP         (char* ip);
     int SetGateway    (char* gw);
     int SetNetmask    (char* mask);
     int SetPort       (uint16_t port);
-    
+
     int ResetDevice            ();
     int TerminateConfiguration ();
-    
-    int SendCommand   (char* cmd);
+
+    int SendCommand   (const char* cmd);
     int ReadResult    ();
-    // for "Variables", Commands that only reply with one Answer message	
+    // for "Variables", Commands that only reply with one Answer message
     int ReadAnswer    ();
     // for "Procedures", Commands that reply with a Confirmation message and an Answer message
-    int ReadConfirmationAndAnswer ();	
+    int ReadConfirmationAndAnswer ();
 
     int EnableRIS (int onoff);
     player_laser_config GetConfiguration ();
