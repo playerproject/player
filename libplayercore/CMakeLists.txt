@@ -40,63 +40,65 @@ SET (playerxdr_c "${CMAKE_CURRENT_BINARY_DIR}/playerxdr.c")
 ADD_CUSTOM_COMMAND (OUTPUT ${playerxdr_h} ${playerxdr_c}
     COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/libplayerxdr/playerxdrgen.py -distro ${CMAKE_CURRENT_SOURCE_DIR}/player.h ${playerxdr_c} ${playerxdr_h} ${CMAKE_CURRENT_BINARY_DIR}/player_interfaces.h
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    DEPENDS ${interfaceFiles} ${CMAKE_CURRENT_BINARY_DIR}/player_interfaces.h
-)
+    DEPENDS ${interfaceFiles} ${CMAKE_CURRENT_BINARY_DIR}/player_interfaces.h)
 
 # Include from the binary dir to get player_interfaces.h and interface_table.h
 INCLUDE_DIRECTORIES (${CMAKE_CURRENT_BINARY_DIR})
+
+SET (playercoreSrcs driver.cc
+                    device.cc
+                    drivertable.cc
+                    devicetable.cc
+                    configfile.cc
+                    filewatcher.cc
+                    message.cc
+                    wallclocktime.cc
+                    plugins.cc
+                    globals.cc
+                    property.cpp)
 
 # TODO: playerxdr should NOT be linked here; it's a bogus dependency coming
 # from the fact that message cloning functions are auto-generated into
 # playerxdr and used here.  Those functions should go into a separate
 # library.
-SET(playercore_srcs  driver.cc
-             device.cc
-             drivertable.cc
-             devicetable.cc
-             configfile.cc
-             filewatcher.cc
-             message.cc
-             wallclocktime.cc
-             plugins.cc
-             globals.cc
-             property.cpp)
-SET(CORELIBS playerutils playererror playerxdr pthread)
-SET(CORE_PC_LIBS "-lpthread")
+SET (coreLibs playerutils playererror playerxdr pthread)
+SET (corePCLibs "-lpthread")
 PLAYER_ADD_LINK_LIB (pthread)
 
-IF(HAVE_CLOCK_GETTIME)
-  SET(CORELIBS ${CORELIBS} rt)
-  SET(CORE_PC_LIBS "${CORE_PC_LIBS} -lrt")
+IF (HAVE_CLOCK_GETTIME)
+  SET (coreLibs ${coreLibs} rt)
+  SET (corePCLibs "${corePCLibs} -lrt")
   PLAYER_ADD_LINK_LIB (rt)
-ELSE(HAVE_CLOCK_GETTIME)
-  SET(playercore_srcs ${playercore_srcs} ../replace/clock_gettime.c)
-ENDIF(HAVE_CLOCK_GETTIME)
-IF(HAVE_LIBLTDL)
-  SET(CORELIBS ${CORELIBS} ltdl dl)
-  SET(CORE_PC_LIBS "${CORE_PC_LIBS} -lltdl -dl")
+ELSE (HAVE_CLOCK_GETTIME)
+  SET (playercoreSrcs ${playercoreSrcs} ${PROJECT_SOURCE_DIR}/replace/clock_gettime.c)
+ENDIF (HAVE_CLOCK_GETTIME)
+IF (HAVE_LIBLTDL)
+  SET (coreLibs ${coreLibs} ltdl dl)
+  SET (corePCLibs "${corePCLibs} -lltdl -dl")
   PLAYER_ADD_LINK_LIB (ltdl dl)
-ENDIF(HAVE_LIBLTDL)
-IF(NOT HAVE_DIRNAME)
-  SET(playercore_srcs ${playercore_srcs} ../replace/dirname.c)
-ENDIF(NOT HAVE_DIRNAME)
+ENDIF (HAVE_LIBLTDL)
+IF (NOT HAVE_DIRNAME)
+  SET (playercoreSrcs ${playercoreSrcs} ${PROJECT_SOURCE_DIR}/replace/dirname.c)
+ENDIF (NOT HAVE_DIRNAME)
 
-PLAYER_ADD_LIBRARY (playercore ${playercore_srcs} ${player_interfaces_h} ${playerxdr_h})
-
-TARGET_LINK_LIBRARIES(playercore ${CORELIBS})
-PLAYER_MAKE_PKGCONFIG ("playercore" "Player core library - part of the Player Project" "playererror" "" "" "${CORE_PC_LIBS}")
-
-
-SET (playererror_srcs   error.c)
-PLAYER_ADD_LIBRARY (playererror ${playererror_srcs})
-PLAYER_MAKE_PKGCONFIG ("playererror" "Player error reporting library - part of the Player Project" "" "" "" "")
+PLAYER_ADD_LIBRARY (playercore ${playercoreSrcs} ${player_interfaces_h} ${playerxdr_h})
+TARGET_LINK_LIBRARIES (playercore ${coreLibs})
+PLAYER_MAKE_PKGCONFIG ("playercore" "Player core library - part of the Player Project"
+                       "playererror" "" "" "${corePCLibs}")
 
 
-SET (playerutils_srcs   interface_util.c
-                        addr_util.c)
-PLAYER_ADD_LIBRARY (playerutils ${playerutils_srcs} ${interface_table_h})
+SET (playererrorSrcs error.c)
+PLAYER_ADD_LIBRARY (playererror ${playererrorSrcs})
+PLAYER_MAKE_PKGCONFIG ("playererror" "Player error reporting library - part of the Player Project"
+                       "" "" "" "")
+
+
+SET (playerutilsSrcs interface_util.c
+                      addr_util.c)
+PLAYER_ADD_LIBRARY (playerutils ${playerutilsSrcs} ${interface_table_h})
 TARGET_LINK_LIBRARIES (playerutils playererror)
-PLAYER_MAKE_PKGCONFIG ("playerutils" "Player utilities library - part of the Player Project" "" "" "" "")
+PLAYER_MAKE_PKGCONFIG ("playerutils" "Player utilities library - part of the Player Project"
+                       "" "" "" "")
 
 PLAYER_INSTALL_HEADERS (playercore addr_util.h
                                    configfile.h

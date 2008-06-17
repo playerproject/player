@@ -24,7 +24,7 @@
  */
 
 
-#include "config.h"
+#include "pmapconfig.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -33,7 +33,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef HAVE_LIBGLUT
+#ifdef GLUT_FOUND
 #include <GL/glut.h>
 #endif
 
@@ -205,7 +205,7 @@ int omap_save_pgm(omap_t *self, const char *filename)
 // Draw the current map
 void omap_draw_map(omap_t *self, double scale)
 {
-#ifdef HAVE_LIBGLUT
+#ifdef GLUT_FOUND
   int i, j;
 
   // Set pixel zoom factor so DrawPixel ops align

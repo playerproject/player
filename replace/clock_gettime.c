@@ -20,9 +20,6 @@
  *
  */
 
-#include <playerconfig.h>
-
-
 #include <sys/time.h>
 
 /* This replacement function originally written by Klass Gadeyne
