@@ -79,7 +79,7 @@ driver
 )
 driver
 (
-  name "laserescan"
+  name "laserrescan"
   requires ["laser:0"] # read from laser:0
   provides ["laser:1"] # output results on laser:1
 )
