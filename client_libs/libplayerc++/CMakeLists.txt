@@ -1,7 +1,14 @@
 ADD_SUBDIRECTORY (test)
 
 OPTION (BUILD_PLAYERCC "Build the C++ client library" ON)
-OPTION (BUILD_PLAYERCC_BOOST "Include Boost support in the C++ client library" ON)
+
+IF (PLAYER_OS_OSX AND CMAKE_MAJOR_VERSION EQUAL 2 AND CMAKE_MINOR_VERSION EQUAL 4)
+    # Boost is off by default on OS X under CMake 2.4
+    OPTION (BUILD_PLAYERCC_BOOST "Include Boost support in the C++ client library" OFF)
+ELSE (PLAYER_OS_OSX AND CMAKE_MAJOR_VERSION EQUAL 2 AND CMAKE_MINOR_VERSION EQUAL 4)
+    OPTION (BUILD_PLAYERCC_BOOST "Include Boost support in the C++ client library" ON)
+ENDIF (PLAYER_OS_OSX AND CMAKE_MAJOR_VERSION EQUAL 2 AND CMAKE_MINOR_VERSION EQUAL 4)
+
 IF (BUILD_PLAYERCC)
     # Look for Boost libraries
     IF (BUILD_PLAYERCC_BOOST)
@@ -59,16 +66,24 @@ IF (BUILD_PLAYERCC)
             IF (Boost_FOUND)
                 # For 2.4, assume that if boost is found then both signals and threads are present
                 SET (HAVE_BOOST_THREAD TRUE INTERNAL)
+                IF (PLAYER_OS_OSX)
+                    OPTION (Boost_USE_MULTITHREAD "Use the multithreaded versions of the Boost libraries" ON)
+                ELSE (PLAYER_OS_OSX)
+                    OPTION (Boost_USE_MULTITHREAD "Use the multithreaded versions of the Boost libraries" OFF)
+                ENDIF (PLAYER_OS_OSX)
+                IF (Boost_USE_MULTITHREAD)
+                    SET (boostLibSuffix -mt)
+                ENDIF (Boost_USE_MULTITHREAD)
                 IF (HAVE_BOOST_THREAD)
                     OPTION (USE_BOOST_THREAD "Use the Boost threading library" ON)
                     MARK_AS_ADVANCED (USE_BOOST_THREAD)
                     IF (USE_BOOST_THREAD)
                         MESSAGE (STATUS
                              "PlayerC++ client library will be built with Boost::Thread support.")
-                        PLAYERCC_ADD_LINK_LIB (boost_thread)
+                        SET (boostThreadLib boost_thread${boostLibSuffix})
+                        PLAYERCC_ADD_LINK_LIB (${boostThreadLib})
                         INCLUDE_DIRECTORIES (${Boost_INCLUDE_DIRS})
                         LINK_DIRECTORIES (${Boost_LIBRARY_DIRS})
-                        SET (boostThreadLib boost_thread)
                         SET (boostIncludeDir ${Boost_INCLUDE_DIRS})
                     ELSE (USE_BOOST_THREAD)
                         MESSAGE (STATUS
@@ -87,10 +102,10 @@ IF (BUILD_PLAYERCC)
                     IF (USE_BOOST_SIGNALS)
                         MESSAGE (STATUS
                              "PlayerC++ client library will be built with Boost::Signals support.")
-                        PLAYERCC_ADD_LINK_LIB (boost_signals)
+                        SET (boostSignalsLib boost_signals${boostLibSuffix})
+                        PLAYERCC_ADD_LINK_LIB (${boostSignalsLib})
                         INCLUDE_DIRECTORIES (${Boost_INCLUDE_DIRS})
                         LINK_DIRECTORIES (${Boost_LIBRARY_DIRS})
-                        SET (boostSignalsLib boost_signals)
                         SET (boostIncludeDir ${Boost_INCLUDE_DIRS})
                     ELSE (USE_BOOST_SIGNALS)
                         MESSAGE (STATUS
