@@ -8,5 +8,5 @@ Name: @PKG_NAME@
 Description: @PKG_DESC@
 Version: @PLAYER_VERSION@
 Requires: @PKG_EXTERNAL_DEPS@
-Libs: -L${libdir} @PKG_LIBFLAGS@ -l@PKG_NAME@ @PKG_INTERNAL_DEPS@
+Libs: -L${libdir} -l@PKG_NAME@ @PKG_LIBFLAGS@ @PKG_INTERNAL_DEPS@
 Cflags: -I${includedir}/player-@PLAYER_MAJOR_VERSION@.@PLAYER_MINOR_VERSION@ @PKG_CFLAGS@
