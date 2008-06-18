@@ -8,6 +8,7 @@ IF (BUILD_PLAYERCC)
         # There is a new, much better, FindBoost.cmake in 2.6
         IF (CMAKE_MAJOR_VERSION EQUAL 2 AND CMAKE_MINOR_VERSION EQUAL 6)
             OPTION (Boost_USE_STATIC_LIBS "Use the static versions of the Boost libraries" OFF)
+            MARK_AS_ADVANCED (Boost_USE_STATIC_LIBS)
             OPTION (USE_BOOST_THREAD "Use the Boost threading library" ON)
             MARK_AS_ADVANCED (USE_BOOST_THREAD)
             OPTION (USE_BOOST_SIGNALS "Use the Boost signalling library" ON)
@@ -25,8 +26,11 @@ IF (BUILD_PLAYERCC)
                 LINK_DIRECTORIES (${Boost_LIBRARY_DIRS})
 
                 IF (Boost_THREAD_FOUND)
-                    #SET (boostThreadLib -lboost_thread)
-                    #PLAYERCC_ADD_LINK_LIB (boost_thread)
+                    GET_FILENAME_COMPONENT (boostThreadLib ${Boost_THREAD_LIBRARY} NAME_WE CACHE)
+                    # Chop off the lib at the front, too, if present
+                    STRING (REGEX REPLACE "^lib" "" boostThreadLib ${boostThreadLib})
+                    PLAYERCC_ADD_LINK_LIB (${boostThreadLib})
+                    SET (boostIncludeDir ${Boost_INCLUDE_DIR})
                     MESSAGE (STATUS
                             "PlayerC++ client library will be built with Boost::Thread support.")
                 ELSE (Boost_THREAD_FOUND)
@@ -35,8 +39,10 @@ IF (BUILD_PLAYERCC)
                 ENDIF (Boost_THREAD_FOUND)
 
                 IF (Boost_SIGNALS_FOUND)
-                    #SET (boostSignalsLib -lboost_signals)
-                    #PLAYERCC_ADD_LINK_LIB (boost_signals)
+                    GET_FILENAME_COMPONENT (boostSignalsLib ${Boost_SIGNALS_LIBRARY} NAME_WE CACHE)
+                    STRING (REGEX REPLACE "^lib" "" boostSignalsLib ${boostSignalsLib})
+                    PLAYERCC_ADD_LINK_LIB (${boostSignalsLib})
+                    SET (boostIncludeDir ${Boost_INCLUDE_DIR})
                     MESSAGE (STATUS
                             "PlayerC++ client library will be built with Boost::Signals support.")
                 ELSE (Boost_SIGNALS_FOUND)
@@ -62,7 +68,8 @@ IF (BUILD_PLAYERCC)
                         PLAYERCC_ADD_LINK_LIB (boost_thread)
                         INCLUDE_DIRECTORIES (${Boost_INCLUDE_DIRS})
                         LINK_DIRECTORIES (${Boost_LIBRARY_DIRS})
-                        SET (boostThreadLib -lboost_thread)
+                        SET (boostThreadLib boost_thread)
+                        SET (boostIncludeDir ${Boost_INCLUDE_DIRS})
                     ELSE (USE_BOOST_THREAD)
                         MESSAGE (STATUS
                              "PlayerC++ client library Boost::Thread support disabled by user.")
@@ -83,7 +90,8 @@ IF (BUILD_PLAYERCC)
                         PLAYERCC_ADD_LINK_LIB (boost_signals)
                         INCLUDE_DIRECTORIES (${Boost_INCLUDE_DIRS})
                         LINK_DIRECTORIES (${Boost_LIBRARY_DIRS})
-                        SET (boostSignalsLib -lboost_signals)
+                        SET (boostSignalsLib boost_signals)
+                        SET (boostIncludeDir ${Boost_INCLUDE_DIRS})
                     ELSE (USE_BOOST_SIGNALS)
                         MESSAGE (STATUS
                                  "PlayerC++ client library Boost::Signals support disabled by
@@ -165,7 +173,8 @@ IF (BUILD_PLAYERCC)
     TARGET_LINK_LIBRARIES (playerc++ playerxdr playerutils playerc ${PLAYERCC_EXTRA_LINK_LIBRARIES})
     PLAYER_MAKE_PKGCONFIG ("playerc++"
                            "C++ wrapper for libplayerc - part of the Player Project"
-                           "playerxdr playerc" "" "" "-lm ${Boost_THREAD_LIBRARY} ${Boost_SIGNALS_LIBRARY}")
+                           "playerxdr playerc" "" "-I${boostIncludeDir}"
+                           "-lm -L${Boost_LIBRARY_DIRS} -l${boostThreadLib} -l${boostSignalsLib}")
 
     PLAYER_INSTALL_HEADERS (playerc++ ${playercppconfig_h}
                                       clientproxy.h
