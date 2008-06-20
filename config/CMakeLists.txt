@@ -29,6 +29,7 @@ SET (sampleConfigFiles  amigobot.cfg
                         umass_ATRVJr.cfg
                         umass_ATRVMini.cfg
                         umass_reb.cfg
+                        urg_nz.cfg
                         urglaser.cfg
                         vfh.cfg
                         wavefront.cfg
