@@ -510,6 +510,10 @@ void GbxSickAcfr_Register(DriverTable* table);
 void urg_nz_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_FLEXIPORT
+void flexiport_Register(DriverTable* table);
+#endif
+
 /*
  * this function will be called at startup.  all available devices should
  * be added to the driverTable here.  they will be instantiated later as
@@ -978,5 +982,9 @@ player_register_drivers()
 
 #ifdef INCLUDE_URG_NZ
   urg_nz_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_FLEXIPORT
+  flexiport_Register(driverTable);
 #endif
 }

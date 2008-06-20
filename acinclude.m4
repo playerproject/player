@@ -223,6 +223,9 @@ PLAYER_ADD_DRIVER([fakelocalize], [yes],[],[],[])
 
 PLAYER_ADD_DRIVER([festival],[yes],[],[],[])
 
+PLAYER_ADD_DRIVER([flexiport],[yes],[],[],[],[FLEXIPORT],[flexiport >= 0.0.1])
+PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $FLEXIPORT_LIBS"
+
 PLAYER_ADD_DRIVER([flockofbirds],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([garcia],[no],
