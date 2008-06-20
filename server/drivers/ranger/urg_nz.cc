@@ -352,7 +352,7 @@ bool UrgDriver::ReadLaser (void)
 
 	try
 	{
-		unsigned int numRead = _device.GetRanges (&_data, _minAngle, _maxAngle);
+		_device.GetRanges (&_data, _minAngle, _maxAngle);
 	}
 	catch (urg_nz::URGError &e)
 	{
