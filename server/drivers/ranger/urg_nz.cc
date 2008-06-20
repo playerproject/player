@@ -262,7 +262,7 @@ int UrgDriver::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, voi
 
 				Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, PLAYER_SET_INTPROP_REQ,
 						NULL, 0, NULL);
-				return -1;
+				return 0;
 			}
 			_baudRate.SetValueFromMessage (data);
 			Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_SET_INTPROP_REQ, NULL,
@@ -305,9 +305,10 @@ int UrgDriver::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, voi
 		_maxAngle = newParams->max_angle;
 		if (!AllocateDataSpace ())
 		{
+			PLAYER_ERROR ("urg_nz: Failed to allocate space for storing range data.");
 			Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, PLAYER_RANGER_REQ_GET_CONFIG,
 					NULL, 0, NULL);
-			return -1;
+			return 0;
 		}
 
 		_frequency = static_cast<int> (newParams->frequency);
@@ -334,7 +335,7 @@ int UrgDriver::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, voi
 			SetError (e.Code ());
 			Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, PLAYER_RANGER_REQ_GET_CONFIG,
 					NULL, 0, NULL);
-			return -1;
+			return 0;
 		}
 
 		Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_RANGER_REQ_GET_CONFIG,
