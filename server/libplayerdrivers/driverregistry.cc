@@ -507,7 +507,7 @@ void GbxSickAcfr_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_URG_NZ
-void UrgDriver_Register(DriverTable* table);
+void urg_nz_Register(DriverTable* table);
 #endif
 
 /*
@@ -977,6 +977,6 @@ player_register_drivers()
 #endif
 
 #ifdef INCLUDE_URG_NZ
-  UrgDriver_Register(driverTable);
+  urg_nz_Register(driverTable);
 #endif
 }

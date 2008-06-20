@@ -442,7 +442,7 @@ if  test "x$enable_urglaser" = "xyes"; then
   AC_CHECK_HEADERS(linux/serial.h, [], [], [])
 fi
 
-PLAYER_ADD_DRIVER([urg_nz],[no],[],[],[],[URG_NZ],[urg_nz >= 0.0.1])
+PLAYER_ADD_DRIVER([urg_nz],[yes],[],[],[],[URG_NZ],[urg_nz >= 0.0.1])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $URG_NZ_LIBS"
 
 PLAYER_ADD_DRIVER([vec2map],[yes],["geos_c.h"],[],["-lgeos"])
