@@ -360,5 +360,8 @@ bool GbxSickAcfr::ReadLaser (void)
     catch (const std::exception &e)
     {
         PLAYER_ERROR1 ("GbxSickAcfr: Failed to read scan: %s\n", e.what ());
+        return false;
     }
+
+    return true;
 }
