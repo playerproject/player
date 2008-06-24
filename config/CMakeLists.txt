@@ -2,6 +2,7 @@ SET (sampleConfigFiles  amigobot.cfg
                         amigobot_tcp.cfg
                         amtecM5.cfg
                         b21r_rflex_lms200.cfg
+                        cvcam.cfg
                         dummy.cfg
                         erratic.cfg
                         gazebo.cfg
