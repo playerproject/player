@@ -6,12 +6,12 @@ PLAYERDRIVER_ADD_DRIVER (gbxsickacfr build_gbxsickacfr
     LINKFLAGS "${gbxsickacfr_linkFlags}" CFLAGS "${gbxsickacfr_cFlags}"
     SOURCES gbxsickacfr.cc)
 
-PLAYERDRIVER_OPTION (urg_nz build_urg_nz ON)
-PLAYERDRIVER_REQUIRE_PKG (urg_nz build_urg_nz urg_nz urg_nz_includeDir urg_nz_libDir
-    urg_nz_linkFlags urg_nz_cFlags)
-PLAYERDRIVER_ADD_DRIVER (urg_nz build_urg_nz INCLUDEDIRS "${urg_nz_includeDir}" LIBDIRS "${urg_nz_libDir}"
-    LINKFLAGS "${urg_nz_linkFlags}" CFLAGS "${urg_nz_cFlags}"
-    SOURCES urg_nz.cc)
+PLAYERDRIVER_OPTION (hokuyo_aist build_hokuyo_aist ON)
+PLAYERDRIVER_REQUIRE_PKG (hokuyo_aist build_hokuyo_aist hokuyo_aist hokuyo_aist_includeDir
+    hokuyo_aist_libDir hokuyo_aist_linkFlags hokuyo_aist_cFlags)
+PLAYERDRIVER_ADD_DRIVER (hokuyo_aist build_hokuyo_aist INCLUDEDIRS "${hokuyo_aist_includeDir}"
+    LIBDIRS "${hokuyo_aist_libDir}" LINKFLAGS "${hokuyo_aist_linkFlags}"
+    CFLAGS "${hokuyo_aist_cFlags}" SOURCES hokuyo_aist.cc)
 
 PLAYERDRIVER_OPTION (lasertoranger build_lasertoranger ON)
 PLAYERDRIVER_ADD_DRIVER (lasertoranger build_lasertoranger SOURCES toranger.cc lasertoranger.cc)
