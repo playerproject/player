@@ -149,6 +149,11 @@ int CvCam::Setup()
 {
   if (this->capture) cvReleaseCapture(&(this->capture));
   this->capture = cvCaptureFromCAM(this->camindex);
+  if (!(this->capture))
+  {
+    PLAYER_ERROR("Couldn't create capture device. Something is wrong with your OpenCV.");
+    return -1;
+  }
   this->StartThread();
   return 0;
 }
