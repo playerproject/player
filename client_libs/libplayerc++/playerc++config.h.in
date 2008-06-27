@@ -6,7 +6,9 @@
 
 #if defined (HAVE_BOOST_THREAD)
 #define _POSIX_PTHREAD_SEMANTICS
+#if !defined(_REENTRANT)
 #define _REENTRANT
+#endif
 #endif
 
 #endif
