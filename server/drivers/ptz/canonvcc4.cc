@@ -1,3 +1,77 @@
+/*
+ *  Player - One Hell of a Robot Server
+ *  Copyright (C) 2000  Brian Gerkey   &  Kasper Stoy
+ *                      gerkey@usc.edu    kaspers@robotics.usc.edu
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ */
+
+/** @ingroup drivers */
+/** @{ */
+/** @defgroup driver_canonvcc4 canonvcc4
+ * @brief Canon VC-C4 pan-tilt-zoom cameras
+
+The canonvcc4 driver provides control of a Canon VC-C4 (and possibly similar)
+pan-tilt-zoom camera unit.
+
+@todo Provide more detailed documentation
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+- @ref interface_ptz
+
+@par Requires
+
+- None
+
+@par Configuration requests
+
+- PLAYER_PTZ_REQ_GENERIC
+
+@par Configuration file options
+
+- port (string)
+  - Default: "/dev/ttyS1"
+  - The serial port to be used.
+
+- fov (angle tuple)
+  - Default: [3.0 30.0]
+  - The minimum and maximum fields of view (in degrees), which will depend on
+    the lens(es) you are using.
+
+@par Example
+
+@verbatim
+driver
+(
+  name "canonvcc4"
+  provides ["ptz:0"]
+  port "/dev/ttyS1"
+  fov [3 30]
+)
+@endverbatim
+
+@author ??
+
+*/
+/** @} */
 #ifdef HAVE_CONFIG_H
   #include "config.h"
 #endif
