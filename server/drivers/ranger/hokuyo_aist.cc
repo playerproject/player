@@ -47,9 +47,8 @@
  - PLAYER_RANGER_REQ_GET_CONFIG
  - PLAYER_RANGER_REQ_SET_CONFIG
  - PLAYER_RANGER_REQ_POWER
- - Note: Only the min_angle, max_angle and frequency values can be configured using this request.
-   In addition, the frequency value must be equivalent to a suitable RPM value (see the hokuyo_aist
-   library documentation for suitable values).
+ - Note: Only the min_angle and max_angle values can be configured using this request. To change
+   the scanning frequency, use the speed_level property.
 
  @par Configuration file options
 
@@ -68,10 +67,6 @@
  - max_angle (float, radians)
    - Default: 2.08 rad (119.0 degrees)
    - Maximum scan angle to return. Will be adjusted if outside the laser's scannable range.
- - frequency (float, Hz)
-   - Default: 10Hz
-   - The frequency at which the laser operates. This must be equivalent to a suitable RPM value. See
-   - the hokuyo_aist library documentation for suitable values.
  - power (boolean)
    - Default: true
    - If true, the sensor power will be switched on upon driver activation (i.e. when the first
@@ -83,10 +78,17 @@
 
  @par Properties
 
- - baudrate (integer)
+ - baud_rate (integer)
    - Default: 19200bps
    - Change the baud rate of the connection to the laser. See hokuyo_aist documentation for valid
      values.
+ - speed_level (integer, 0 to 10 or 99)
+   - Default: 0
+   - The speed at which the laser operates, as a level down from maximum speed. See the hokuyo_aist
+     library documentation for suitable values.
+ - high_sensitivity (integer)
+   - Default: 0
+   - Set to non-zero to enable high sensitivity mode on models that support it.
 
  @par Example
 
@@ -110,7 +112,8 @@
 #include <libplayercore/playercore.h>
 
 const int DEFAULT_BAUDRATE = 19200;
-const int DEFAULT_SPEED = 600;
+const int DEFAULT_SPEED_LEVEL = 0;
+const int DEFAULT_SENSITIVITY = 0;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Driver object
@@ -133,9 +136,8 @@ class HokuyoDriver : public Driver
 
 		// Configuration parameters
 		bool _verbose, _powerOnStartup;
-		int _frequency;
 		double _minAngle, _maxAngle;
-		IntProperty _baudRate;
+		IntProperty _baudRate, _speedLevel, _highSensitivity;
 		std::string _portOpts;
 		// Geometry
 		player_ranger_geom_t _geom;
@@ -154,15 +156,18 @@ class HokuyoDriver : public Driver
 
 HokuyoDriver::HokuyoDriver (ConfigFile* cf, int section) :
 	Driver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_RANGER_CODE),
-	_baudRate ("baudrate", DEFAULT_BAUDRATE, false), _ranges (NULL)
+	_baudRate ("baud_rate", DEFAULT_BAUDRATE, false),
+	_speedLevel ("speed_level", DEFAULT_SPEED_LEVEL, false),
+	_highSensitivity ("high_sensitivity", DEFAULT_SENSITIVITY, false), _ranges (NULL)
 {
-	// Get the baudrate and motor speed
-	RegisterProperty ("baudrate", &_baudRate, cf, section);
+	// Get the baudrate, speed and sensitivity
+	RegisterProperty ("baud_rate", &_baudRate, cf, section);
+	RegisterProperty ("speed_level", &_speedLevel, cf, section);
+	RegisterProperty ("high_sensitivity", &_highSensitivity, cf, section);
 
 	// Get config
 	_minAngle = cf->ReadFloat (section, "min_angle", -2.08);
 	_maxAngle = cf->ReadFloat (section, "max_angle", 2.08);
-	_frequency = cf->ReadInt (section, "frequency", 10);
 	_portOpts = cf->ReadString (section, "portopts", "type=serial,device=/dev/ttyACM0,timeout=1");
 	_verbose = cf->ReadBool (section, "verbose", false);
 	_powerOnStartup = cf->ReadBool (section, "power", true);
@@ -244,7 +249,7 @@ int HokuyoDriver::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, 
 	{
 		player_intprop_req_t *req = reinterpret_cast<player_intprop_req_t*> (data);
 		// Change in the baud rate
-		if (strncmp (req->key, "baudrate", 8) == 0)
+		if (strncmp (req->key, "baud_rate", 9) == 0)
 		{
 			try
 			{
@@ -270,6 +275,46 @@ int HokuyoDriver::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, 
 				return 0;
 			}
 			_baudRate.SetValueFromMessage (data);
+			Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_SET_INTPROP_REQ, NULL,
+					0, NULL);
+			return 0;
+		}
+		else if (strncmp (req->key, "speed_level", 11) == 0)
+		{
+			try
+			{
+				_device.SetMotorSpeed (req->value);
+			}
+			catch (hokuyo_aist::HokuyoError &e)
+			{
+				PLAYER_ERROR2 ("hokuyo_aist: Error while changing motor speed: (%d) %s",
+						e.Code (), e.what ());
+				SetError (e.Code ());
+				Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, PLAYER_SET_INTPROP_REQ,
+						NULL, 0, NULL);
+				return 0;
+			}
+			_speedLevel.SetValueFromMessage (data);
+			Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_SET_INTPROP_REQ, NULL,
+					0, NULL);
+			return 0;
+		}
+		else if (strncmp (req->key, "high_sensitivity", 16) == 0)
+		{
+			try
+			{
+				_device.SetHighSensitivity (req->value != 0);
+			}
+			catch (hokuyo_aist::HokuyoError &e)
+			{
+				PLAYER_ERROR2 ("hokuyo_aist: Error while changing sensitivity: (%d) %s",
+						e.Code (), e.what ());
+				SetError (e.Code ());
+				Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, PLAYER_SET_INTPROP_REQ,
+						NULL, 0, NULL);
+				return 0;
+			}
+			_highSensitivity.SetValueFromMessage (data);
 			Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_SET_INTPROP_REQ, NULL,
 					0, NULL);
 			return 0;
@@ -339,7 +384,6 @@ int HokuyoDriver::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, 
 			return 0;
 		}
 
-		_frequency = static_cast<int> (newParams->frequency);
 		try
 		{
 			hokuyo_aist::HokuyoSensorInfo info;
@@ -354,7 +398,6 @@ int HokuyoDriver::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, 
 				_maxAngle = info.maxAngle;
 				PLAYER_WARN1 ("hokuyo_aist: Adjusted max_angle to %lf", _maxAngle);
 			}
-			_device.SetMotorSpeed (_frequency * 60);
 		}
 		catch (hokuyo_aist::HokuyoError &e)
 		{
@@ -433,6 +476,16 @@ int HokuyoDriver::Setup (void)
 			if (e.Code () != hokuyo_aist::HOKUYO_ERR_NOTSERIAL)
 				throw;
 			PLAYER_WARN ("hokuyo_aist: Cannot change the baud rate of a non-serial connection.");
+		}
+		_device.SetMotorSpeed (_speedLevel.GetValue ());
+		try
+		{
+			// Catch any errors here as this is an optional setting not supported by all models
+			_device.SetHighSensitivity (_highSensitivity.GetValue () != 0);
+		}
+		catch (hokuyo_aist::HokuyoError &e)
+		{
+			PLAYER_WARN2 ("hokuyo_aist: Unable to set sensitivity: (%d) %s", e.Code (), e.what ());
 		}
 	}
 	catch (hokuyo_aist::HokuyoError &e)
