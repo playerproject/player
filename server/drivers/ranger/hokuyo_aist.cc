@@ -46,6 +46,7 @@
  - PLAYER_RANGER_REQ_GET_GEOM
  - PLAYER_RANGER_REQ_GET_CONFIG
  - PLAYER_RANGER_REQ_SET_CONFIG
+ - PLAYER_RANGER_REQ_POWER
  - Note: Only the min_angle, max_angle and frequency values can be configured using this request.
    In addition, the frequency value must be equivalent to a suitable RPM value (see the hokuyo_aist
    library documentation for suitable values).
@@ -137,9 +138,9 @@ class HokuyoDriver : public Driver
 		IntProperty _baudRate;
 		std::string _portOpts;
 		// Geometry
-		player_ranger_geom_t geom;
-		player_pose3d_t sensorPose;
-		player_bbox3d_t sensorSize;
+		player_ranger_geom_t _geom;
+		player_pose3d_t _sensorPose;
+		player_bbox3d_t _sensorSize;
 		// The hardware device itself
 		hokuyo_aist::HokuyoLaser _device;
 		// Data storage
@@ -167,21 +168,21 @@ HokuyoDriver::HokuyoDriver (ConfigFile* cf, int section) :
 	_powerOnStartup = cf->ReadBool (section, "power", true);
 
 	// Set up geometry information
-	geom.pose.px = cf->ReadTupleLength (section, "pose", 0, 0.0);
-	geom.pose.py = cf->ReadTupleLength (section, "pose", 1, 0.0);
-	geom.pose.pz = cf->ReadTupleLength (section, "pose", 2, 0.0);
-	geom.pose.proll = cf->ReadTupleAngle (section, "pose", 3, 0.0);
-	geom.pose.ppitch = cf->ReadTupleAngle (section, "pose", 4, 0.0);
-	geom.pose.pyaw = cf->ReadTupleAngle (section, "pose", 5, 0.0);
-	geom.size.sw = cf->ReadTupleLength (section, "size", 0, 0.0);
-	geom.size.sl = cf->ReadTupleLength (section, "size", 1, 0.0);
-	geom.size.sh = cf->ReadTupleLength (section, "size", 2, 0.0);
-	geom.sensor_poses_count = 1;
-	geom.sensor_poses = &sensorPose;
-	memcpy(geom.sensor_poses, &geom.pose, sizeof (geom.pose));
-	geom.sensor_sizes_count = 1;
-	geom.sensor_sizes = &sensorSize;
-	memcpy(geom.sensor_sizes, &geom.size, sizeof (geom.size));
+	_geom.pose.px = cf->ReadTupleLength (section, "pose", 0, 0.0);
+	_geom.pose.py = cf->ReadTupleLength (section, "pose", 1, 0.0);
+	_geom.pose.pz = cf->ReadTupleLength (section, "pose", 2, 0.0);
+	_geom.pose.proll = cf->ReadTupleAngle (section, "pose", 3, 0.0);
+	_geom.pose.ppitch = cf->ReadTupleAngle (section, "pose", 4, 0.0);
+	_geom.pose.pyaw = cf->ReadTupleAngle (section, "pose", 5, 0.0);
+	_geom.size.sw = cf->ReadTupleLength (section, "size", 0, 0.0);
+	_geom.size.sl = cf->ReadTupleLength (section, "size", 1, 0.0);
+	_geom.size.sh = cf->ReadTupleLength (section, "size", 2, 0.0);
+	_geom.sensor_poses_count = 1;
+	_geom.sensor_poses = &_sensorPose;
+	memcpy(_geom.sensor_poses, &_geom.pose, sizeof (_geom.pose));
+	_geom.sensor_sizes_count = 1;
+	_geom.sensor_sizes = &_sensorSize;
+	memcpy(_geom.sensor_sizes, &_geom.size, sizeof (_geom.size));
 
 	// Turn on/off verbose mode
 	_device.SetVerbose (_verbose);
@@ -276,11 +277,34 @@ int HokuyoDriver::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, 
 	}
 
 	// Standard ranger messages
+	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_POWER, device_addr))
+	{
+		player_ranger_power_config_t *config =
+			reinterpret_cast<player_ranger_power_config_t*> (data);
+		try
+		{
+			if (config->state)
+				_device.SetPower (true);
+			else
+				_device.SetPower (false);
+		}
+		catch (hokuyo_aist::HokuyoError &e)
+		{
+			PLAYER_ERROR2 ("hokuyo_aist: Error while setting power state: (%d) %s",
+					e.Code (), e.what ());
+			SetError (e.Code ());
+			Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, PLAYER_RANGER_REQ_POWER,
+					NULL, 0, NULL);
+		}
+		Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_RANGER_REQ_POWER, NULL,
+				0, NULL);
+		return 0;
+	}
 	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_GET_GEOM,
 			device_addr))
 	{
 		Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_RANGER_REQ_GET_GEOM,
-				&geom, sizeof (geom), NULL);
+				&_geom, sizeof (_geom), NULL);
 		return 0;
 	}
 	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_GET_CONFIG,
