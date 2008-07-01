@@ -237,6 +237,9 @@ PLAYER_ADD_DRIVER([garminnmea],[yes],[],[],[])
 PLAYER_ADD_DRIVER([gbxsickacfr],[no],[],[],[],[GBXSICKACFR],[GbxSickAcfr >= 0.0.1])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $GBXSICKACFR_LIBS"
 
+PLAYER_ADD_DRIVER([hokuyo_aist],[yes],[],[],[],[HOKUYO_AIST],[hokuyo_aist >= 0.0.1])
+PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $HOKUYO_AIST_LIBS"
+
 PLAYER_ADD_DRIVER([imageseq],[yes],[],[],[],[OPENCV],[opencv])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $OPENCV_LIBS"
 
@@ -444,9 +447,6 @@ PLAYER_ADD_DRIVER([urglaser],[yes],[],[],[])
 if  test "x$enable_urglaser" = "xyes"; then
   AC_CHECK_HEADERS(linux/serial.h, [], [], [])
 fi
-
-PLAYER_ADD_DRIVER([urg_nz],[yes],[],[],[],[URG_NZ],[urg_nz >= 0.0.1])
-PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $URG_NZ_LIBS"
 
 PLAYER_ADD_DRIVER([vec2map],[yes],["geos_c.h"],[],["-lgeos"])
 

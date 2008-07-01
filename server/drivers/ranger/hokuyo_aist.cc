@@ -11,13 +11,13 @@
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
  * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License along with this program.
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
- Desc: Wrapper driver around the Gearbox urg_nz library (see http://gearbox.sourceforge.net)
+ Desc: Wrapper driver around the Gearbox hokuyo_aist library (see http://gearbox.sourceforge.net)
  Author: Geoffrey Biggs
  Date: 20 June 2008
  CVS: $Id$
@@ -25,16 +25,16 @@
 
 /** @ingroup drivers */
 /** @{ */
-/** @defgroup driver_urg_nz urg_nz
- * @brief Gearbox urg_nz Hokuyo URG laser scanner driver library
+/** @defgroup driver_hokuyo_aist hokuyo_aist
+ * @brief Gearbox hokuyo_aist Hokuyo laser scanner driver library
 
- This driver provides a @ref interface_ranger interface to the urg_nz Hokuyo URG laser scanner
+ This driver provides a @ref interface_ranger interface to the hokuyo_aist Hokuyo laser scanner
  driver provided by Gearbox. Communication with the laser is via the Gearbox Flexiport library. The
  driver supports the SCIP protocol versions 1 and 2.
 
  @par Compile-time dependencies
 
- - Gearbox library urg_nz
+ - Gearbox library hokuyo_aist
  - Gearbox library flexiport
 
  @par Provides
@@ -47,7 +47,7 @@
  - PLAYER_RANGER_REQ_GET_CONFIG
  - PLAYER_RANGER_REQ_SET_CONFIG
  - Note: Only the min_angle, max_angle and frequency values can be configured using this request.
-   In addition, the frequency value must be equivalent to a suitable RPM value (see the urg_nz
+   In addition, the frequency value must be equivalent to a suitable RPM value (see the hokuyo_aist
    library documentation for suitable values).
 
  @par Configuration file options
@@ -70,7 +70,7 @@
  - frequency (float, Hz)
    - Default: 10Hz
    - The frequency at which the laser operates. This must be equivalent to a suitable RPM value. See
-   - the urg_nz library documentation for suitable values.
+   - the hokuyo_aist library documentation for suitable values.
  - power (boolean)
    - Default: true
    - If true, the sensor power will be switched on upon driver activation (i.e. when the first
@@ -84,14 +84,15 @@
 
  - baudrate (integer)
    - Default: 19200bps
-   - Change the baud rate of the connection to the laser. See urg_nz documentation for valid values.
+   - Change the baud rate of the connection to the laser. See hokuyo_aist documentation for valid
+     values.
 
  @par Example
 
  @verbatim
  driver
  (
-     name "urg_nz"
+     name "hokuyo_aist"
      provides ["ranger:0"]
      portopts "type=serial,device=/dev/ttyS0,timeout=1"
  )
@@ -104,7 +105,7 @@
 
 #include <string>
 
-#include <urg_nz/urg_nz.h>
+#include <hokuyo_aist/hokuyo_aist.h>
 #include <libplayercore/playercore.h>
 
 const int DEFAULT_BAUDRATE = 19200;
@@ -114,11 +115,11 @@ const int DEFAULT_SPEED = 600;
 // Driver object
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class UrgDriver : public Driver
+class HokuyoDriver : public Driver
 {
 	public:
-		UrgDriver (ConfigFile* cf, int section);
-		~UrgDriver (void);
+		HokuyoDriver (ConfigFile* cf, int section);
+		~HokuyoDriver (void);
 
 		virtual int Setup (void);
 		virtual int Shutdown (void);
@@ -140,9 +141,9 @@ class UrgDriver : public Driver
 		player_pose3d_t sensorPose;
 		player_bbox3d_t sensorSize;
 		// The hardware device itself
-		urg_nz::URGLaser _device;
+		hokuyo_aist::HokuyoLaser _device;
 		// Data storage
-		urg_nz::URGData _data;
+		hokuyo_aist::HokuyoData _data;
 		double *_ranges;
 };
 
@@ -150,7 +151,7 @@ class UrgDriver : public Driver
 // Constructor/destructor
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-UrgDriver::UrgDriver (ConfigFile* cf, int section) :
+HokuyoDriver::HokuyoDriver (ConfigFile* cf, int section) :
 	Driver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_RANGER_CODE),
 	_baudRate ("baudrate", DEFAULT_BAUDRATE, false), _ranges (NULL)
 {
@@ -186,7 +187,7 @@ UrgDriver::UrgDriver (ConfigFile* cf, int section) :
 	_device.SetVerbose (_verbose);
 }
 
-UrgDriver::~UrgDriver (void)
+HokuyoDriver::~HokuyoDriver (void)
 {
 	if (_ranges != NULL)
 		delete[] _ranges;
@@ -196,7 +197,7 @@ UrgDriver::~UrgDriver (void)
 // Driver implementation
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool UrgDriver::AllocateDataSpace (void)
+bool HokuyoDriver::AllocateDataSpace (void)
 {
 	if (_ranges != NULL)
 		delete _ranges;
@@ -204,14 +205,14 @@ bool UrgDriver::AllocateDataSpace (void)
 	int numRanges = _device.AngleToStep (_maxAngle) - _device.AngleToStep (_minAngle) + 1;
 	if ((_ranges = new double[numRanges]) == NULL)
 	{
-		PLAYER_ERROR1 ("urg_nz: Failed to allocate space for %d range readings.", numRanges);
+		PLAYER_ERROR1 ("hokuyo_aist: Failed to allocate space for %d range readings.", numRanges);
 		return false;
 	}
 
 	return true;
 }
 
-void UrgDriver::Main (void)
+void HokuyoDriver::Main (void)
 {
 	while (true)
 	{
@@ -223,7 +224,7 @@ void UrgDriver::Main (void)
 	}
 }
 
-int UrgDriver::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, void *data)
+int HokuyoDriver::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, void *data)
 {
 	// Check for capability requests
 	HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data,
@@ -237,7 +238,7 @@ int UrgDriver::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, voi
 	HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data,
 			PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_POWER);
 
-	// Property handlers that need to be done manually due to calling into the urg_nz library.
+	// Property handlers that need to be done manually due to calling into the hokuyo_aist library.
 	if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_SET_INTPROP_REQ, this->device_addr))
 	{
 		player_intprop_req_t *req = reinterpret_cast<player_intprop_req_t*> (data);
@@ -249,20 +250,23 @@ int UrgDriver::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, voi
 				// Change the baud rate
 				_device.SetBaud (req->value);
 			}
-			catch (urg_nz::URGError &e)
+			catch (hokuyo_aist::HokuyoError &e)
 			{
-				if (e.Code () != urg_nz::URG_ERR_NOTSERIAL)
+				if (e.Code () != hokuyo_aist::HOKUYO_ERR_NOTSERIAL)
 				{
-					PLAYER_ERROR2 ("urg_nz: Error while changing baud rate: (%d) %s", e.Code (),
-							e.what ());
+					PLAYER_ERROR2 ("hokuyo_aist: Error while changing baud rate: (%d) %s",
+							e.Code (), e.what ());
 					SetError (e.Code ());
 				}
 				else
-					PLAYER_WARN ("urg_nz: Cannot change the baud rate of a non-serial connection.");
+				{
+					PLAYER_WARN (
+						"hokuyo_aist: Cannot change the baud rate of a non-serial connection.");
+				}
 
 				Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, PLAYER_SET_INTPROP_REQ,
 						NULL, 0, NULL);
-				return -1;
+				return 0;
 			}
 			_baudRate.SetValueFromMessage (data);
 			Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_SET_INTPROP_REQ, NULL,
@@ -283,7 +287,7 @@ int UrgDriver::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, voi
 			device_addr))
 	{
 		player_ranger_config_t rangerConfig;
-		urg_nz::URGSensorInfo info;
+		hokuyo_aist::HokuyoSensorInfo info;
 		_device.GetSensorInfo (&info);
 
 		rangerConfig.min_angle = _minAngle; // These two are user-configurable
@@ -305,36 +309,37 @@ int UrgDriver::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, voi
 		_maxAngle = newParams->max_angle;
 		if (!AllocateDataSpace ())
 		{
+			PLAYER_ERROR ("hokuyo_aist: Failed to allocate space for storing range data.");
 			Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, PLAYER_RANGER_REQ_GET_CONFIG,
 					NULL, 0, NULL);
-			return -1;
+			return 0;
 		}
 
 		_frequency = static_cast<int> (newParams->frequency);
 		try
 		{
-			urg_nz::URGSensorInfo info;
+			hokuyo_aist::HokuyoSensorInfo info;
 			_device.GetSensorInfo (&info);
 			if (_minAngle < info.minAngle)
 			{
 				_minAngle = info.minAngle;
-				PLAYER_WARN1 ("urg_nz: Adjusted min_angle to %lf", _minAngle);
+				PLAYER_WARN1 ("hokuyo_aist: Adjusted min_angle to %lf", _minAngle);
 			}
 			if (_maxAngle> info.maxAngle)
 			{
 				_maxAngle = info.maxAngle;
-				PLAYER_WARN1 ("urg_nz: Adjusted max_angle to %lf", _maxAngle);
+				PLAYER_WARN1 ("hokuyo_aist: Adjusted max_angle to %lf", _maxAngle);
 			}
 			_device.SetMotorSpeed (_frequency * 60);
 		}
-		catch (urg_nz::URGError &e)
+		catch (hokuyo_aist::HokuyoError &e)
 		{
-			PLAYER_ERROR2 ("urg_nz: Library error while changing settings: (%d) %s", e.Code (),
+			PLAYER_ERROR2 ("hokuyo_aist: Library error while changing settings: (%d) %s", e.Code (),
 					e.what ());
 			SetError (e.Code ());
 			Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, PLAYER_RANGER_REQ_GET_CONFIG,
 					NULL, 0, NULL);
-			return -1;
+			return 0;
 		}
 
 		Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_RANGER_REQ_GET_CONFIG,
@@ -345,7 +350,7 @@ int UrgDriver::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, voi
 	return -1;
 }
 
-bool UrgDriver::ReadLaser (void)
+bool HokuyoDriver::ReadLaser (void)
 {
 	player_ranger_data_range_t rangeData;
 
@@ -353,9 +358,9 @@ bool UrgDriver::ReadLaser (void)
 	{
 		_device.GetRanges (&_data, _minAngle, _maxAngle);
 	}
-	catch (urg_nz::URGError &e)
+	catch (hokuyo_aist::HokuyoError &e)
 	{
-		PLAYER_ERROR2 ("urg_nz: Failed to read scan: (%d) %s", e.Code (), e.what ());
+		PLAYER_ERROR2 ("hokuyo_aist: Failed to read scan: (%d) %s", e.Code (), e.what ());
 		SetError (e.Code ());
 		return false;
 	}
@@ -370,24 +375,24 @@ bool UrgDriver::ReadLaser (void)
 	return true;
 }
 
-int UrgDriver::Setup (void)
+int HokuyoDriver::Setup (void)
 {
 	try
 	{
 		// Open the laser
 		_device.Open (_portOpts);
 		// Get the sensor information and check _minAngle and _maxAngle are OK
-		urg_nz::URGSensorInfo info;
+		hokuyo_aist::HokuyoSensorInfo info;
 		_device.GetSensorInfo (&info);
 		if (_minAngle < info.minAngle)
 		{
 			_minAngle = info.minAngle;
-			PLAYER_WARN1 ("urg_nz: Adjusted min_angle to %lf", _minAngle);
+			PLAYER_WARN1 ("hokuyo_aist: Adjusted min_angle to %lf", _minAngle);
 		}
 		if (_maxAngle> info.maxAngle)
 		{
 			_maxAngle = info.maxAngle;
-			PLAYER_WARN1 ("urg_nz: Adjusted max_angle to %lf", _maxAngle);
+			PLAYER_WARN1 ("hokuyo_aist: Adjusted max_angle to %lf", _maxAngle);
 		}
 		if (!AllocateDataSpace ())
 			return -1;
@@ -399,16 +404,16 @@ int UrgDriver::Setup (void)
 		{
 			_device.SetBaud (_baudRate.GetValue ());
 		}
-		catch (urg_nz::URGError &e)
+		catch (hokuyo_aist::HokuyoError &e)
 		{
-			if (e.Code () != urg_nz::URG_ERR_NOTSERIAL)
+			if (e.Code () != hokuyo_aist::HOKUYO_ERR_NOTSERIAL)
 				throw;
-			PLAYER_WARN ("urg_nz: Cannot change the baud rate of a non-serial connection.");
+			PLAYER_WARN ("hokuyo_aist: Cannot change the baud rate of a non-serial connection.");
 		}
 	}
-	catch (urg_nz::URGError &e)
+	catch (hokuyo_aist::HokuyoError &e)
 	{
-		PLAYER_ERROR2 ("urg_nz: Failed to setup laser driver: (%d) %s", e.Code (), e.what ());
+		PLAYER_ERROR2 ("hokuyo_aist: Failed to setup laser driver: (%d) %s", e.Code (), e.what ());
 		SetError (e.Code ());
 		return -1;
 	}
@@ -417,7 +422,7 @@ int UrgDriver::Setup (void)
 	return 0;
 }
 
-int UrgDriver::Shutdown (void)
+int HokuyoDriver::Shutdown (void)
 {
 	StopThread ();
 
@@ -433,12 +438,12 @@ int UrgDriver::Shutdown (void)
 // Driver management functions
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Driver* UrgDriver_Init (ConfigFile* cf, int section)
+Driver* HokuyoDriver_Init (ConfigFile* cf, int section)
 {
-	return reinterpret_cast <Driver*> (new UrgDriver (cf, section));
+	return reinterpret_cast <Driver*> (new HokuyoDriver (cf, section));
 }
 
-void urg_nz_Register (DriverTable* table)
+void hokuyo_aist_Register (DriverTable* table)
 {
-	table->AddDriver ("urg_nz", UrgDriver_Init);
+	table->AddDriver ("hokuyo_aist", HokuyoDriver_Init);
 }

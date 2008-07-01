@@ -8,6 +8,7 @@ b21r_rflex_lms200.cfg \
 dummy.cfg \
 erratic.cfg \
 gazebo.cfg \
+hokuyo_aist.cfg \
 iwspy.cfg \
 joystick.cfg \
 lms400.cfg \
@@ -32,7 +33,6 @@ sphere.cfg \
 umass_ATRVJr.cfg \
 umass_ATRVMini.cfg \
 umass_reb.cfg \
-urg_nz.cfg \
 urglaser.cfg \
 vfh.cfg \
 wavefront.cfg \

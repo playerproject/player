@@ -506,8 +506,8 @@ void LocalBB_Register (DriverTable* table);
 void GbxSickAcfr_Register(DriverTable* table);
 #endif
 
-#ifdef INCLUDE_URG_NZ
-void urg_nz_Register(DriverTable* table);
+#ifdef INCLUDE_HOKUYO_AIST
+void hokuyo_aist_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_FLEXIPORT
@@ -980,8 +980,8 @@ player_register_drivers()
   GbxSickAcfr_Register(driverTable);
 #endif
 
-#ifdef INCLUDE_URG_NZ
-  urg_nz_Register(driverTable);
+#ifdef INCLUDE_HOKUYO_AIST
+  hokuyo_aist_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_FLEXIPORT
