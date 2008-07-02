@@ -158,10 +158,6 @@ driver
 */
 /** @} */
 
-#ifdef HAVE_CONFIG_H
-  #include "config.h"
-#endif
-
 #include <errno.h>
 #include <string.h>
 #include <math.h>
@@ -169,6 +165,8 @@ driver
 #include <stddef.h>       // for NULL
 #include <unistd.h>
 #include <assert.h>
+
+#include <camera1394.h>
 
 #ifdef HAVE_LIBRAW1394
     #include <libraw1394/raw1394.h>
