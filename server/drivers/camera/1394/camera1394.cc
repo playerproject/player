@@ -774,8 +774,22 @@ int Camera1394::Setup()
     return -1;
   }
 
-  // we just use the first one returned and then free the rest
-  camera = dc1394_camera_new (d, list->ids[0].guid);
+  for (int i=0; i < list->num; i++)
+  {
+    uint32_t camNode, camGeneration;
+
+    // Create a camera
+    this->camera = dc1394_camera_new (d, list->ids[this->node].guid);
+
+    // Get the node of the camera
+    dc1394_camera_get_node(this->camera, &camNode, &camGeneration);
+
+    // Make sure we have the correct camera
+    if (camNode == this->node)
+      break;
+    else
+      dc1394_camera_free(this->camera);
+  }
 
   if (!camera)
   {
