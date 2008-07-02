@@ -495,27 +495,26 @@ Acts::Setup()
   i = 0;
   acts_args[i++] = acts_bin_name;
   // build the argument list, based on version
+  // these are needed as execv expects a const array of char *'s not an array of const char *'s
+  static char dash_d[] = "-d";
+  static char dash_i[] = "-i";
+  static char dash_n[] = "-n";
+  static char dash_p[] = "-p";
+  static char dash_s[] = "-s";
+  static char dash_t[] = "-t";
+  static char dash_w[] = "-w";
+  static char dash_x[] = "-x";
+
+  static char dash_B[] = "-B";
+  static char dash_C[] = "-C";
+  static char dash_G[] = "-G";
+  static char dash_H[] = "-H";
+  static char dash_R[] = "-R";
+  static char dash_V[] = "-V";
+  static char dash_W[] = "-W";
   switch(acts_version)
   {
-    // these are needed as execv expects a const array of char *'s not an array of const char *'s
-    static char dash_d[3] = "-d";
-    static char dash_i[3] = "-i";
-    static char dash_n[3] = "-n";
-    static char dash_p[3] = "-p";
-    static char dash_s[3] = "-s";
-    static char dash_t[3] = "-t";
-    static char dash_w[3] = "-w";
-    static char dash_x[3] = "-x";
-
-    static char dash_B[3] = "-B";
-    static char dash_C[3] = "-C";
-    static char dash_G[3] = "-G";
-    static char dash_H[3] = "-H";
-    static char dash_R[3] = "-R";
-    static char dash_V[3] = "-V";
-    static char dash_W[3] = "-W";
-
-  case ACTS_VERSION_1_0:
+    case ACTS_VERSION_1_0:
       acts_args[i++] = dash_t;
       acts_args[i++] = configfilepath;
       if(strlen(portnumstring))
