@@ -4,6 +4,8 @@
 STRING (REGEX MATCH "Linux" PLAYER_OS_LINUX ${CMAKE_SYSTEM_NAME})
 # Nor *BSD
 STRING (REGEX MATCH "BSD" PLAYER_OS_BSD ${CMAKE_SYSTEM_NAME})
+# Or Solaris. I'm seeing a trend, here
+STRING (REGEX MATCH "Solaris" PLAYER_OS_SOLARIS ${CMAKE_SYSTEM_NAME})
 
 # Windows is easy (for once)
 IF (WIN32)
@@ -19,6 +21,11 @@ IF (APPLE)
     ENDIF (NOT PLAYER_OS_OSX)
 ENDIF (APPLE)
 
+# QNX
+IF (QNXNTO)
+    SET (PLAYER_OS_QNX TRUE BOOL INTERNAL)
+ENDIF (QNXNTO)
+
 IF (PLAYER_OS_LINUX)
     MESSAGE (STATUS "Operating system is Linux")
 ELSEIF (PLAYER_OS_BSD)
@@ -29,6 +36,10 @@ ELSEIF (PLAYER_OS_OSX)
     MESSAGE (STATUS "Operating system is Apple MacOS X")
 ELSEIF (PLAYER_OS_MACOS)
     MESSAGE (STATUS "Operating system is Apple MacOS (not OS X)")
+ELSEIF (PLAYER_OS_QNX)
+    MESSAGE (STATUS "Operating system is QNX")
+ELSEIF (PLAYER_OS_SOLARIS)
+    MESSAGE (STATUS "Operating system is Solaris")
 ELSE (PLAYER_OS_LINUX)
     MESSAGE (STATUS "Operating system is generic Unix")
 ENDIF (PLAYER_OS_LINUX)
