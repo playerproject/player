@@ -67,7 +67,7 @@ IF (PLAYER_OS_QNX)
 ELSE (PLAYER_OS_QNX)
     SET (corePCLibs "-lpthread")
     PLAYER_ADD_LINK_LIB (pthread)
-ENDIF (NOT PLAYER_OS_QNX)
+ENDIF (PLAYER_OS_QNX)
 
 IF (HAVE_CLOCK_GETTIME)
     SET (coreLibs ${coreLibs} rt)
