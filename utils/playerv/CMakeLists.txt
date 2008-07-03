@@ -1,4 +1,4 @@
-IF (WITH_GTK AND INCLUDE_RTKGUI)
+IF (WITH_GTK AND INCLUDE_RTK)
     SET (playervSrcs    playerv.c
                         playerv.h
                         registry.c
@@ -32,6 +32,6 @@ IF (WITH_GTK AND INCLUDE_RTKGUI)
         COMPILE_FLAGS "${GTK_CFLAGS}")
     SET_TARGET_PROPERTIES (playerv PROPERTIES
         LINK_FLAGS "${GTK_LINKFLAGS}")
-ELSE (WITH_GTK AND INCLUDE_RTKGUI)
+ELSE (WITH_GTK AND INCLUDE_RTK)
     MESSAGE (STATUS "playerv will not be built - GTK not found or RTK disabled.")
-ENDIF (WITH_GTK AND INCLUDE_RTKGUI)
+ENDIF (WITH_GTK AND INCLUDE_RTK)
