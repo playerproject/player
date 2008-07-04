@@ -10,6 +10,8 @@
 #cmakedefine INCLUDE_RTK 1
 #cmakedefine INCLUDE_RTKGUI 1
 #cmakedefine HAVE_CLOCK_GETTIME 1
+#cmakedefine HAVE_XDR_LONGLONG_T 1
+#cmakedefine HAVE_STL 1
 
 #ifdef HAVE_STDINT_H
 #include <stdint.h>

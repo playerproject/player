@@ -5,7 +5,6 @@
  CVS: $Id$
 */
 #include <termios.h>
-#include <iostream>
 #include <unistd.h>
 #include <fcntl.h>
 #include <libplayercore/playercore.h>

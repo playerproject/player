@@ -56,6 +56,34 @@
 #include "playerxdr.h"
 #include "functiontable.h"
 
+#ifndef HAVE_XDR_LONGLONG_T
+#include <rpc/types.h>
+#include <rpc/xdr.h>
+
+bool_t xdr_longlong_t(XDR *xdrs, long long int *llp)
+{
+  long int t1, t2;
+  
+  if (xdrs->x_op == XDR_ENCODE)
+  {
+    t1 = (long) ((*llp) >> 32);
+    t2 = (long) (*llp);
+    return (XDR_PUTLONG(xdrs, &t1) && XDR_PUTLONG(xdrs, &t2));
+  }
+  if (xdrs->x_op == XDR_DECODE)
+  {
+    if (!XDR_GETLONG(xdrs, &t1) || !XDR_GETLONG(xdrs, &t2))
+      return FALSE;
+    *llp = ((long long int) t1) << 32;
+    *llp |= (uint32_t) t2;
+    return TRUE;
+  }
+  if (xdrs->x_op == XDR_FREE)
+    return TRUE;
+  return FALSE;
+}
+#endif
+
 static playerxdr_function_t init_ftable[] =
 {
   /* This list is currently alphabetized, please keep it that way! */
