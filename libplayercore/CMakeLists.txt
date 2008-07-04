@@ -61,10 +61,11 @@ SET (playercoreSrcs driver.cc
 # from the fact that message cloning functions are auto-generated into
 # playerxdr and used here.  Those functions should go into a separate
 # library.
-SET (coreLibs playerutils playererror playerxdr pthread)
+SET (coreLibs playerutils playererror playerxdr)
 IF (PLAYER_OS_QNX)
     SET (corePCLibs)
 ELSE (PLAYER_OS_QNX)
+    SET (coreLibs ${coreLibs} pthread)
     SET (corePCLibs "-lpthread")
     PLAYER_ADD_LINK_LIB (pthread)
 ENDIF (PLAYER_OS_QNX)

@@ -36,9 +36,19 @@ SET (playerxdrSrcs  ${playerxdr_h}
                     functiontable.c
                     ${functiontable_gen_h})
 
+IF (PLAYER_OS_QNX)
+    SET (xdrLibFlag -lrpc)
+ELSE (PLAYER_OS_QNX)
+    SET (xdrLibFlag)
+ENDIF (PLAYER_OS_QNX)
+
 INCLUDE_DIRECTORIES (${CMAKE_CURRENT_BINARY_DIR})
 PLAYER_ADD_LIBRARY (playerxdr ${playerxdrSrcs})
 SET_SOURCE_FILES_PROPERTIES (${playerxdr_h} ${playerxdr_c} PROPERTIES GENERATED TRUE)
-PLAYER_MAKE_PKGCONFIG ("playerxdr" "Player XDR messaging library - part of the Player Project" "" "" "" "")
+IF (PLAYER_OS_QNX)
+    TARGET_LINK_LIBRARIES (playerxdr rpc)
+    PLAYER_ADD_LINK_LIB (rpc)
+ENDIF (PLAYER_OS_QNX)
+PLAYER_MAKE_PKGCONFIG ("playerxdr" "Player XDR messaging library - part of the Player Project" "" "" "" "${xdrLibFlag}")
 
 PLAYER_INSTALL_HEADERS (playerxdr ${playerxdr_h} functiontable.h)

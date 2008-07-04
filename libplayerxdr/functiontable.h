@@ -53,6 +53,12 @@
 extern "C" {
 #endif
 
+#ifndef HAVE_XDR_LONGLONG_T
+	#include <rpc/types.h>
+	#include <rpc/xdr.h>
+	bool_t xdr_longlong_t(XDR *xdrs, long long int *llp);
+#endif
+
 /** @addtogroup libplayerxdr libplayerxdr @{ */
 
 /** Generic Prototype for a player XDR packing function */

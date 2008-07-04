@@ -1,6 +1,11 @@
 ADD_SUBDIRECTORY (test)
 
-OPTION (BUILD_PLAYERCC "Build the C++ client library" ON)
+IF (HAVE_STL)
+    OPTION (BUILD_PLAYERCC "Build the C++ client library" ON)
+ELSE (HAVE_STL)
+    MESSAGE (STATUS "PlayerC++ client library will not be built - STL is not available.")
+    SET (BUILD_PLAYERCC OFF CACHE BOOL "Build the C++ client library" FORCE)
+ENDIF (HAVE_STL)
 
 IF (PLAYER_OS_OSX AND CMAKE_MAJOR_VERSION EQUAL 2 AND CMAKE_MINOR_VERSION EQUAL 4)
     # Boost is off by default on OS X under CMake 2.4
@@ -191,6 +196,13 @@ IF (BUILD_PLAYERCC)
 
     PLAYER_ADD_LIBRARY (playerc++ ${playerccSrcs} ${playercppconfig_h})
     TARGET_LINK_LIBRARIES (playerc++ playerxdr playerutils playerc ${PLAYERCC_EXTRA_LINK_LIBRARIES})
+    IF (PLAYER_OS_SOLARIS)
+        TARGET_LINK_LIBRARIES (playerc++ socket nsl)
+        SET (pkgconfigLibFlags "-lsocket -lnsl")
+    ELSE (PLAYER_OS_SOLARIS)
+        SET (pkgconfigLibFlags)
+    ENDIF (PLAYER_OS_SOLARIS)
+
     PLAYER_MAKE_PKGCONFIG ("playerc++"
                            "C++ wrapper for libplayerc - part of the Player Project"
                            "playerxdr playerc" "" "-I${boostIncludeDir}"

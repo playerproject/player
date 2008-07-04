@@ -1180,7 +1180,7 @@ int playerc_client_writepacket(playerc_client_t *client,
     if((encode_msglen =
         (*packfunc)(client->write_xdrdata + PLAYERXDR_MSGHDR_SIZE,
                     PLAYER_MAX_MESSAGE_SIZE - PLAYERXDR_MSGHDR_SIZE,
-                    data, PLAYERXDR_ENCODE)) < 0)
+                    (void*) data, PLAYERXDR_ENCODE)) < 0)
     {
       PLAYERC_ERR4("encoding failed on message from %s:%u with type %s:%u",
                    interf_to_str(header->addr.interf), header->addr.index, msgtype_to_str(header->type), header->subtype);
