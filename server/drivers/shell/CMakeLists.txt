@@ -1,7 +1,11 @@
 PLAYERDRIVER_OPTION (dummy build_dummy ON)
 PLAYERDRIVER_ADD_DRIVER (dummy build_dummy SOURCES dummy.cc)
 
-PLAYERDRIVER_OPTION (kartowriter build_kartowriter ON)
+IF (HAVE_STL)
+    PLAYERDRIVER_OPTION (kartowriter build_kartowriter ON)
+ELSE (HAVE_STL)
+    PLAYERDRIVER_OPTION (kartowriter build_kartowriter OFF "STL not found.")
+ENDIF (HAVE_STL)
 PLAYERDRIVER_ADD_DRIVER (kartowriter build_kartowriter SOURCES kartowriter.cc)
 
 PLAYERDRIVER_OPTION (writelog build_writelog ON)
