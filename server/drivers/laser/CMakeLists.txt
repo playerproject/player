@@ -8,7 +8,11 @@ PLAYERDRIVER_OPTION (sicklms200 build_sicklms200 ON)
 PLAYERDRIVER_REQUIRE_HEADER (sicklms200 build_sicklms200 linux/serial.h)
 PLAYERDRIVER_ADD_DRIVER (sicklms200 build_sicklms200 SOURCES sicklms200.cc)
 
-PLAYERDRIVER_OPTION (sicklms400 build_sicklms400 ON)
+IF (HAVE_STL)
+    PLAYERDRIVER_OPTION (sicklms400 build_sicklms400 ON)
+ELSE (HAVE_STL)
+    PLAYERDRIVER_OPTION (sicklms400 build_sicklms400 OFF "STL not found.")
+ENDIF (HAVE_STL)
 PLAYERDRIVER_ADD_DRIVER (sicklms400 build_sicklms400 SOURCES lms400_cola.cc sicklms400.cc)
 
 PLAYERDRIVER_OPTION (sicks3000 build_sicks3000 ON)
