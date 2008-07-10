@@ -97,7 +97,7 @@ plan_do_local(plan_t *plan, double lx, double ly, double plan_halfwidth)
   // Find a local goal to pursue
   if(_plan_find_local_goal(plan, &gx, &gy, lx, ly) != 0)
   {
-    puts("no local goal");
+    //puts("no local goal");
     return(-1);
   }
 
@@ -276,7 +276,7 @@ _plan_find_local_goal(plan_t *plan, double* gx, double* gy,
   // Must already have computed a global goal
   if(plan->path_count == 0)
   {
-    puts("no global path");
+    //puts("no global path");
     return(-1);
   }
 

@@ -67,6 +67,8 @@ plan_compute_diffdrive_cmds(plan_t* plan, double* vx, double *va,
     return(0);
   }
 
+  *rotate_dir = 0;
+
   // We're away from the goal; compute velocities
   if(plan_get_carrot(plan, &cx, &cy, lx, ly, maxd, dweight) < 0.0)
   {
