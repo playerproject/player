@@ -78,6 +78,13 @@ laser scanner driver provided by Gearbox.
  - size (float 3-tuple: (m, m, m))
    - Default: [0.0 0.0 0.0]
    - Size of the laser in metres.
+- retry (integer)
+   - Default: 0
+   - If the initial connection to the laser fails, retry this many times before giving up.
+- delay (integer)
+   - Default: 0
+   - Delay (in seconds) before laser is initialized (set this to 32-35 if you have a newer
+     generation Pioneer whose laser is switched on when the serial port is open).
 
 @par Example
 
@@ -127,6 +134,8 @@ class GbxSickAcfr : public Driver
 
         // Configuration parameters
         gbxsickacfr::Config config;
+        unsigned int connectionTries;
+        unsigned int connectionDelay;
         // Geometry
         player_ranger_geom_t geom;
         player_pose3d_t sensorPose;
@@ -169,6 +178,8 @@ GbxSickAcfr::GbxSickAcfr (ConfigFile* cf, int section)
     config.baudRate = cf->ReadInt (section, "baudrate", 38400);
     config.device = cf->ReadString (section, "port", "/dev/ttyS0");
     debug = cf->ReadBool (section, "debug", false);
+    connectionTries = cf->ReadInt (section, "retry", 0) + 1;
+    connectionDelay = cf->ReadInt (section, "delay", 0);
     // Set up geometry information
     geom.pose.px = cf->ReadTupleLength (section, "pose", 0, 0.0f);
     geom.pose.py = cf->ReadTupleLength (section, "pose", 1, 0.0f);
@@ -218,14 +229,34 @@ int GbxSickAcfr::Setup (void)
     tracer = new gbxsickacfr::gbxutilacfr::TrivialTracer (debug);
     status = new gbxsickacfr::gbxutilacfr::TrivialStatus (*tracer);
 
-    // Create the driver object
-    try
+    // Sleep if necessary
+    if (connectionDelay > 0)
+    	sleep (connectionDelay);
+
+    // Create the driver object - try a few times
+    unsigned int tryNum = 0;
+    bool success = false;
+    do
     {
-        device = new gbxsickacfr::Driver(config, *tracer, *status);
+	    try
+	    {
+	        if ((device = new gbxsickacfr::Driver(config, *tracer, *status)) == NULL)
+	        {
+	        	PLAYER_ERROR ("Failed to allocate gbxsickacfr::Driver object.");
+	        	return -1;
+	        }
+	        success = true;
+	    }
+	    catch (const std::exception& e)
+	    {
+	    	tryNum++;
+	        PLAYER_WARN2 ("GbxSickAcfr: Failed to initialise laser device (try %d): %s\n",
+	        		tryNum, e.what ());
+	    }
     }
-    catch (const std::exception& e)
+    while (tryNum < connectionTries);
+    if (!success)
     {
-        PLAYER_ERROR1 ("GbxSickAcfr: Failed to initialise laser device: %s\n", e.what ());
         return -1;
     }
 
