@@ -312,9 +312,8 @@ void TCPStream::Main()
       OpenTerm();
     }
 
-    PLAYER_MSG1(2, "TCP Main loop running (%d)",device_addr.index);
     Wait(1);
-    
+
     ProcessMessages();
   }
 }
