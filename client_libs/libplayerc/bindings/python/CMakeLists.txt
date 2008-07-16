@@ -35,7 +35,10 @@ IF (PYTHONINTERP_FOUND)
             SWIG_ADD_MODULE (playerc python ${playerc_i})
             SWIG_LINK_LIBRARIES (playerc ${PYTHON_LIBRARIES})
             ADD_DEPENDENCIES (${SWIG_MODULE_playerc_REAL_NAME} playerc_oo_i_target)
-            TARGET_LINK_LIBRARIES (${SWIG_MODULE_playerc_REAL_NAME} playerxdr playerc playerjpeg jpeg playererror)
+            TARGET_LINK_LIBRARIES (${SWIG_MODULE_playerc_REAL_NAME} playerxdr playerc playererror)
+            IF (HAVE_JPEG)
+                TARGET_LINK_LIBRARIES (${SWIG_MODULE_playerc_REAL_NAME} playerjpeg)
+            ENDIF (HAVE_JPEG)
 
             # Generate the set up script
 #             CONFIGURE_FILE (${CMAKE_CURRENT_SOURCE_DIR}/setup.py.cmake ${CMAKE_CURRENT_BINARY_DIR}/setup.py)
