@@ -10,8 +10,6 @@
 #cmakedefine ENABLE_TCP_NODELAY 1
 
 #cmakedefine HAVE_GETADDRINFO 1
-//#cmakedefine HAVE_JPEGLIB_H 1
-//#cmakedefine HAVE_LIBJPEG 1
 #cmakedefine HAVE_JPEG 1
 #cmakedefine HAVE_LIBZ 1
 #cmakedefine HAVE_LINUX_JOYSTICK_H 1

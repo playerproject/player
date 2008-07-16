@@ -52,18 +52,16 @@ INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR} ${PROJECT_BINAR
 ADD_SUBDIRECTORY (client_libs)
 ADD_SUBDIRECTORY (libplayercore)
 ADD_SUBDIRECTORY (libplayerxdr)
-IF (NOT PLAYER_OS_WIN)
-    ADD_SUBDIRECTORY (config)           # Example config files
-    ADD_SUBDIRECTORY (libplayerjpeg)
-    ADD_SUBDIRECTORY (libplayertcp)
-    ADD_SUBDIRECTORY (libplayersd)
-    ADD_SUBDIRECTORY (rtk2)
-    ADD_SUBDIRECTORY (server)
-    ADD_SUBDIRECTORY (examples)
-    ADD_SUBDIRECTORY (utils)
-    ADD_SUBDIRECTORY (doc)
-ENDIF (NOT PLAYER_OS_WIN)
-ADD_SUBDIRECTORY (cmake)
+ADD_SUBDIRECTORY (config)           # Example config files
+ADD_SUBDIRECTORY (libplayerjpeg)
+ADD_SUBDIRECTORY (libplayertcp)
+ADD_SUBDIRECTORY (libplayersd)
+ADD_SUBDIRECTORY (rtk2)
+ADD_SUBDIRECTORY (server)
+ADD_SUBDIRECTORY (examples)
+ADD_SUBDIRECTORY (utils)
+ADD_SUBDIRECTORY (doc)
+ADD_SUBDIRECTORY (cmake)            # CMake modules for Player libraries
 MESSAGE (STATUS "")
 
 SET (PLAYER_EXTRA_LINK_LIBRARIES "" CACHE INTERNAL "Libs to link to" FORCE)
