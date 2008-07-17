@@ -47,6 +47,9 @@ INCLUDE (${PLAYER_CMAKE_DIR}/internal/LibraryUtils.cmake)
 
 # Set some common include directories, including the binary dir to get config.h
 INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR} ${PROJECT_BINARY_DIR}/libplayercore)
+# Extra directories where needed libraries, etc may be located (set by the user)
+INCLUDE_DIRECTORIES (${PLAYER_EXTRA_INCLUDE_DIRS})
+LINK_DIRECTORIES (${PLAYER_EXTRA_LIB_DIRS})
 
 # If on Windows, only build the client libraries. (this won't actually work yet cause libplayerc needs some stuff from core)
 ADD_SUBDIRECTORY (client_libs)
