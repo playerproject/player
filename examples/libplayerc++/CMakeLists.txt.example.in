@@ -14,7 +14,7 @@ PLAYER_ADD_PLAYERCPP_CLIENT (laserobstacleavoid SOURCES laserobstacleavoid.cc)
 PLAYER_ADD_PLAYERCPP_CLIENT (ptz SOURCES ptz.cc)
 PLAYER_ADD_PLAYERCPP_CLIENT (randomwalk SOURCES randomwalk.cc)
 PLAYER_ADD_PLAYERCPP_CLIENT (sonarobstacleavoid SOURCES sonarobstacleavoid.cc)
-PLAYER_ADD_PLAYERCPP_CLIENT (speed SOURCES speech.cc)
+PLAYER_ADD_PLAYERCPP_CLIENT (speech SOURCES speech.cc)
 PLAYER_ADD_PLAYERCPP_CLIENT (wallfollow SOURCES wallfollow.cc)
 
 SET (HAVE_BOOST_THREADS @USE_BOOST_THREADS@)
