@@ -37,7 +37,7 @@ ptz:                camera, ptz
 randomwalk:         laser or sonar, position2d
 sonarobstacleavoid: position2d, sonar
 speech:             speech
-speech_cpp_client:  speech
+speech_cpp_client:  speech_recognition
 wallfollow:         laser, position2d
 
 For example0, goto, laserobstacleavoid, randomwalk, sonarobstacleavoid and

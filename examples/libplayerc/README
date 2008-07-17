@@ -25,7 +25,7 @@ is running. These are:
 simple:             position2d
 vmap:               laser
 service_discovery:  vectormap
-speed_c_client:     speech
+speed_c_client:     speech_recognition
 
 For simple and vmap, the simple.cfg configuration sample provided with stage
 will suffice.
