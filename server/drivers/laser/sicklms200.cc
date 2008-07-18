@@ -199,6 +199,9 @@ driver
 #include <unistd.h>
 #include <sys/ioctl.h>
 
+// TODO: figure out why this can't be included without using the full path
+//#include <laser_config.h>
+#include <../drivers/laser/laser_config.h>
 
 #undef HAVE_HI_SPEED_SERIAL
 #ifdef HAVE_LINUX_SERIAL_H
