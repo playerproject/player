@@ -9,6 +9,7 @@
 #include <libplayercore/playercore.h>
 
 #include "lms400_cola.h"
+#include <unistd.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor.

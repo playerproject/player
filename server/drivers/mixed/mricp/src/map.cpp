@@ -19,6 +19,7 @@
  ***************************************************************************/
 #include "map.h"
 #include <math.h>
+#include <stdlib.h>
 #include <cassert>
 #include <iostream>
 using namespace std;
