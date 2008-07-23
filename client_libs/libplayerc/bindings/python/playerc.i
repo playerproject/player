@@ -422,15 +422,17 @@ double get_range (int index)
 #define LIST_EVENTS_INDEX 2
 #define BOOL_QUEUE_EVENTS_INDEX 3
 
-// Helper function to convert a c blackboard_entry_t into a python dictionary object
+// Helper function to convert a c blackboard_entry_t into a python dictionary object.
+// Returns a new reference to a dictionary object.
 PyObject *__convert_blackboard_entry__(player_blackboard_entry_t *entry)
 {
   PyObject *entry_dict, *data;
   char* str;
   int i;
   double d;
+  int ok;
 
-  entry_dict = PyDict_New();
+  entry_dict = PyDict_New(); // New reference
   assert (entry_dict);
 
   assert(entry);
@@ -439,22 +441,68 @@ PyObject *__convert_blackboard_entry__(player_blackboard_entry_t *entry)
   assert(entry->group);
   assert(entry->group_count > 0);
 
-  PyDict_SetItemString(entry_dict, "key", PyString_FromString(entry->key));
-  PyDict_SetItemString(entry_dict, "group", PyString_FromString(entry->group));	
-  PyDict_SetItemString(entry_dict, "type", PyLong_FromLong(entry->type));
-  PyDict_SetItemString(entry_dict, "subtype", PyLong_FromLong(entry->subtype));
-  PyDict_SetItemString(entry_dict, "timestamp_sec", PyLong_FromLong(entry->timestamp_sec));
-  PyDict_SetItemString(entry_dict, "timestamp_usec", PyLong_FromLong(entry->timestamp_usec));
+  ok = PyDict_SetItemString(entry_dict, "key", PyString_FromString(entry->key)); // Steals reference
+  if (ok != 0)
+  {
+  	PyErr_SetString(PyExc_RuntimeError, "Could not set dictionary value for 'key'");
+  	Py_XDECREF(entry_dict);
+  	return NULL;
+  }
+
+  ok = PyDict_SetItemString(entry_dict, "group", PyString_FromString(entry->group)); // Steals reference
+  if (ok != 0)
+  {
+  	PyErr_SetString(PyExc_RuntimeError, "Could not set dictionary value for 'group'");
+  	Py_XDECREF(entry_dict);
+  	return NULL;
+  }
+	
+  ok = PyDict_SetItemString(entry_dict, "type", PyLong_FromLong(entry->type)); // Steals reference
+  if (ok != 0)
+  {
+  	PyErr_SetString(PyExc_RuntimeError, "Could not set dictionary value for 'type'");
+  	Py_XDECREF(entry_dict);
+  	return NULL;
+  }
+
+  ok = PyDict_SetItemString(entry_dict, "subtype", PyLong_FromLong(entry->subtype)); // Steals reference
+  if (ok != 0)
+  {
+  	PyErr_SetString(PyExc_RuntimeError, "Could not set dictionary value for 'subtype'");
+  	Py_XDECREF(entry_dict);
+  	return NULL;
+  }
+
+  ok = PyDict_SetItemString(entry_dict, "timestamp_sec", PyLong_FromLong(entry->timestamp_sec)); // Steals reference
+  if (ok != 0)
+  {
+  	PyErr_SetString(PyExc_RuntimeError, "Could not set dictionary value for 'timestamp_sec'");
+  	Py_XDECREF(entry_dict);
+  	return NULL;
+  }
+
+  ok = PyDict_SetItemString(entry_dict, "timestamp_usec", PyLong_FromLong(entry->timestamp_usec)); // Steals reference
+  if (ok != 0)
+  {
+  	PyErr_SetString(PyExc_RuntimeError, "Could not set dictionary value for 'timestamp_usec'");
+  	Py_XDECREF(entry_dict);
+  	return NULL;
+  }
 
   switch(entry->subtype)
   {
     case PLAYERC_BLACKBOARD_DATA_SUBTYPE_NONE:
       data = Py_None;
+      Py_INCREF(data);
     break;
     case PLAYERC_BLACKBOARD_DATA_SUBTYPE_STRING:
       assert(entry->type == PLAYERC_BLACKBOARD_DATA_TYPE_COMPLEX);
       str = malloc(entry->data_count);
-      assert(str);
+      if (!str)
+      {
+  	    Py_XDECREF(entry_dict);
+  	    return PyErr_NoMemory();
+      }
       memcpy(str, entry->data, entry->data_count);
       data = PyString_FromString(str);
     break;
@@ -472,17 +520,27 @@ PyObject *__convert_blackboard_entry__(player_blackboard_entry_t *entry)
     break;
     default:
       data = Py_None;
+      Py_INCREF(data);
     break;
   }
 
-  PyDict_SetItemString(entry_dict, "data", data);
+  ok = PyDict_SetItemString(entry_dict, "data", data); // Steals reference
+  if (ok != 0)
+  {
+  	PyErr_SetString(PyExc_RuntimeError, "Could not set dictionary value for 'data'");
+  	Py_XDECREF(entry_dict);
+  	return NULL;
+  }
+  
   return entry_dict;
 }
 
 // Helper function which sets a value in a nested dictionary. Equivalent of dict['group']['key'] = value.
+// Steals the entry reference.
 PyObject *__set_nested_dictionary_entry__(PyObject *dict, const char* key, const char* group, PyObject *entry)
 {
   PyObject *group_dict;
+  int ok;
   int create_dict = 0;
 
   // Check we got valid arguments.
@@ -511,19 +569,34 @@ PyObject *__set_nested_dictionary_entry__(PyObject *dict, const char* key, const
   }
 
   // Get the dictionary for the entry's group. If it doesn't exist, create it.
-  group_dict = (PyObject*)PyDict_GetItemString(dict, group);
+  group_dict = (PyObject*)PyDict_GetItemString(dict, group); // Borrowed reference
   if (!group_dict)
   {
     create_dict = 1;
-    group_dict = PyDict_New();
+    group_dict = PyDict_New(); // New reference    
   }
 
-  PyDict_SetItemString(group_dict, key, entry);
+  ok = PyDict_SetItemString(group_dict, key, entry); // Steals reference
+  if (ok != 0)
+  {
+    PyErr_SetString(PyExc_RuntimeError, "Failed to set dictionary entry");
+    if (create_dict)
+    {
+    	Py_XDECREF(group_dict);
+    }
+    return NULL;
+  }
 
   // If we created the dictionary, we need to put it in the parent dictionary.
   if (create_dict == 1)
   {
-    PyDict_SetItemString(dict, group, group_dict);
+    ok = PyDict_SetItemString(dict, group, group_dict); // Steals reference
+    if (ok != 0)
+    {
+    	PyErr_SetString(PyExc_RuntimeError, "Failed to set dictionary entry");
+    	Py_XDECREF(group_dict);
+    	return NULL;
+    }
   }
 
   Py_RETURN_NONE;
@@ -535,21 +608,31 @@ int __increment_reference_count__(PyObject *dict, const char* key, const char* g
   PyObject *group_dict, *entry;
   int old_value, new_value;
 
-  // Get the dictionary for the entry's group. If it doesn't exist, create it and increment it.
-  group_dict = (PyObject*)PyDict_GetItemString(dict, group);
+  // Get the dictionary for the entry's group. If it doesn't exist.
+  group_dict = (PyObject*)PyDict_GetItemString(dict, group); // Borrowed reference
   if (!group_dict)
   {
-    playerc_blackboard___set_nested_dictionary_entry__(self, dict, key, group, (PyObject*)PyInt_FromLong(inc));
+    playerc_blackboard___set_nested_dictionary_entry__(self, dict, key, group, (PyObject*)PyInt_FromLong(inc)); // Steals reference to entry
     return inc;
   }
 
-  entry = PyDict_GetItemString(group_dict, key);
-  old_value = PyLong_AsLong(entry);
+  entry = PyDict_GetItemString(group_dict, key); // Borrowed reference
+  if (entry)
+  {
+  	old_value = PyLong_AsLong(entry);
+  }
+  else
+  {
+  	old_value = 0;
+  }
+  
   new_value = old_value + inc;
   if (new_value < 0)
+  {
   	new_value = 0;
+  }
 
-  playerc_blackboard___set_nested_dictionary_entry__(self, dict, key, group, PyInt_FromLong(new_value));
+  playerc_blackboard___set_nested_dictionary_entry__(self, dict, key, group, PyInt_FromLong(new_value)); // Steals reference to entry
 
   return new_value;
 }
@@ -561,24 +644,25 @@ static void __python_on_blackboard_event__(playerc_blackboard_t *device, player_
 
   // Get the main groups dictionary
   assert(device->py_private);
-  groups_dict = (PyObject*)PyTuple_GetItem(device->py_private, DICT_GROUPS_INDEX);
+  groups_dict = (PyObject*)PyTuple_GetItem(device->py_private, DICT_GROUPS_INDEX); // Borrowed reference
   assert(groups_dict);
 
   // Get a dictionary of the entry
-  entry_dict = playerc_blackboard___convert_blackboard_entry__(device, &entry);
+  entry_dict = playerc_blackboard___convert_blackboard_entry__(device, &entry); // New reference
   assert(entry_dict);
-  // Set the entry in the groups dictionary
-  playerc_blackboard___set_nested_dictionary_entry__(device, groups_dict, entry.key, entry.group, entry_dict);
-
+  
   // If we are queueing events, add them to the list
-  queue_events = PyTuple_GetItem(device->py_private, BOOL_QUEUE_EVENTS_INDEX);
+  queue_events = PyTuple_GetItem(device->py_private, BOOL_QUEUE_EVENTS_INDEX); // Borrowed reference
   assert(queue_events);
   if (PyLong_AsLong(queue_events) != 0)
   {
-    list = (PyObject*)PyTuple_GetItem(device->py_private, LIST_EVENTS_INDEX);
+    list = (PyObject*)PyTuple_GetItem(device->py_private, LIST_EVENTS_INDEX); // Borrowed reference
     assert(list);
-    PyList_Append(list, PyDict_Copy(entry_dict));
+    PyList_Append(list, entry_dict); // Increments refcount for us
   }
+  
+  // Set the entry in the groups dictionary
+  playerc_blackboard___set_nested_dictionary_entry__(device, groups_dict, entry.key, entry.group, entry_dict); // Steals reference to entry_dict
 }
 
 // Returns a list of dictionary objects containing the entries.
@@ -588,20 +672,32 @@ static void __python_on_blackboard_event__(playerc_blackboard_t *device, player_
 %feature("autodoc", "1");
 PyObject *GetEvents()
 {
-  PyObject *list, *copy;
-  int i, j;
+  PyObject *list, *copy, *item;
+  int i, j, ok;
 
   assert(self->py_private);
-  list = (PyObject*)PyTuple_GetItem(self->py_private, LIST_EVENTS_INDEX);
+  list = (PyObject*)PyTuple_GetItem(self->py_private, LIST_EVENTS_INDEX); // Borrowed reference
   assert(list);
 
-  copy = PyList_New(0);
   j = PyList_Size(list);
+  copy = PyList_New(j); // New reference
+  
   for (i = 0; i < j; i++)
   {
-    PyList_Append(copy, PyList_GetItem(list, 0));
+  	item = PyList_GetItem(list, 0); // Borrowed reference
+  	Py_INCREF(item);
+  	assert(item);
+    ok = PyList_SetItem(copy, i, item); // Steals reference
+    if (ok != 0)
+    {
+    	PyErr_SetString(PyExc_RuntimeError, "Failed to set list entry");
+    	Py_XDECREF(copy);
+    	Py_XDECREF(item);
+    	return NULL;
+    }
     PySequence_DelItem(list,0);
   }
+
   return copy;
 }
 
@@ -610,28 +706,21 @@ PyObject *GetEvents()
 // Will always return a dictionary object.
 PyObject *GetDict()
 {
-  PyObject *dict, *copy, *list, *pair;
-  int i, j;
+  PyObject *dict, *copy;
 
   assert(self->py_private);
-  dict = (PyObject*)PyTuple_GetItem(self->py_private, DICT_GROUPS_INDEX);
+  dict = (PyObject*)PyTuple_GetItem(self->py_private, DICT_GROUPS_INDEX); // Borrowed reference
   assert(dict);
 
-  copy = PyDict_New();
-  list = PyDict_Items(dict);
-  j = PyList_Size(list);
-  for (i = 0; i < j; i++)
-  {
-    pair = PyList_GetItem(list, i);
-    PyDict_SetItem(copy, PyTuple_GetItem(pair, 0), PyTuple_GetItem(pair, 1));
-  }
-
+  copy = PyDict_Copy(dict); // New reference
   return copy;
 }
 
 // Set whether events should be put into the list, to be retrieved by get_events_list().
 PyObject *SetQueueEvents(PyObject *boolean)
 {
+  int ok;
+
   if(!PyBool_Check(boolean))
   {
     PyErr_SetString(PyExc_TypeError, "Expected type 'bool'");
@@ -639,11 +728,21 @@ PyObject *SetQueueEvents(PyObject *boolean)
   }
   if (boolean == Py_False)
   {
-    PyTuple_SetItem(self->py_private, BOOL_QUEUE_EVENTS_INDEX, PyLong_FromLong(0));
+    ok = PyTuple_SetItem((PyObject*)self->py_private, BOOL_QUEUE_EVENTS_INDEX, PyLong_FromLong(0)); // Steals reference
+    if (ok != 0)
+    {
+      PyErr_SetString(PyExc_RuntimeError, "Failed to set tuple entry");
+      return NULL;
+    }
   }
   else
   {
-    PyTuple_SetItem(self->py_private, BOOL_QUEUE_EVENTS_INDEX, PyLong_FromLong(1));
+    ok = PyTuple_SetItem((PyObject*)self->py_private, BOOL_QUEUE_EVENTS_INDEX, PyLong_FromLong(1)); // Steals reference
+    if (ok != 0)
+    {
+      PyErr_SetString(PyExc_RuntimeError, "Failed to set tuple entry");
+      return NULL;
+    }
   }
 
   Py_RETURN_NONE;
@@ -688,14 +787,15 @@ int UnsubscribeFromKey(const char *key, const char *group)
 {
   PyObject *groups_dict, *group_dict, *subscription_data;
   int result, ref_count;
-  subscription_data = PyTuple_GetItem(self->py_private, DICT_SUBSCRIPTION_DATA_INDEX);
+
+  subscription_data = PyTuple_GetItem((PyObject*)self->py_private, DICT_SUBSCRIPTION_DATA_INDEX); // Borrowed reference
   assert(subscription_data);
   ref_count = playerc_blackboard___increment_reference_count__(self, subscription_data, key, group, -1);
   if (ref_count <= 0)
   {
-    groups_dict = PyTuple_GetItem(self->py_private, DICT_GROUPS_INDEX);
+    groups_dict = PyTuple_GetItem((PyObject*)self->py_private, DICT_GROUPS_INDEX); // Borrowed reference
     assert(groups_dict);
-    group_dict = PyDict_GetItemString(groups_dict, group);
+    group_dict = PyDict_GetItemString(groups_dict, group); // Borrowed reference
     assert(group_dict);
     PyDict_DelItemString(group_dict, key);
   }
@@ -717,14 +817,15 @@ PyObject *SubscribeToKey(const char *key, const char *group)
     return NULL;
   }
 
-  entry_dict = playerc_blackboard___convert_blackboard_entry__(self, entry);
-  groups_dict = (PyObject*)PyTuple_GetItem(self->py_private, DICT_GROUPS_INDEX);
+  entry_dict = playerc_blackboard___convert_blackboard_entry__(self, entry); // New reference
+  assert(entry_dict);
+  groups_dict = (PyObject*)PyTuple_GetItem((PyObject*)self->py_private, DICT_GROUPS_INDEX); // Borrowed reference
   assert(groups_dict);
 
-  assert(entry_dict);
-  playerc_blackboard___set_nested_dictionary_entry__(self, groups_dict, key, group, entry_dict);
+  Py_INCREF(entry_dict);
+  playerc_blackboard___set_nested_dictionary_entry__(self, groups_dict, key, group, entry_dict); // Steals reference to entry_dict
 
-  subscription_data = PyTuple_GetItem(self->py_private, DICT_SUBSCRIPTION_DATA_INDEX);
+  subscription_data = PyTuple_GetItem((PyObject*)self->py_private, DICT_SUBSCRIPTION_DATA_INDEX); // Borrowed reference
   assert(subscription_data);
 
   playerc_blackboard___increment_reference_count__(self, subscription_data, key, group, 1);
@@ -740,40 +841,48 @@ PyObject *SubscribeToKey(const char *key, const char *group)
 int UnsubscribeFromGroup(const char *group)
 {
   int i, j, ref_count;
-  PyObject *groups_dict, *group_dict, *list, *tuple, *subscription_data, *items;
+  PyObject *groups_dict, *group_dict, *list, *tuple, *subscription_data, *items, *item;
   const char* key;
   int result;
+
   result = playerc_blackboard_unsubscribe_from_group(self, group);
 
   assert(self->py_private);
-  groups_dict = PyTuple_GetItem(self->py_private, DICT_GROUPS_INDEX);
+  groups_dict = PyTuple_GetItem((PyObject*)self->py_private, DICT_GROUPS_INDEX); // Borrowed reference
   assert(groups_dict);
 
-  group_dict = PyDict_GetItemString(groups_dict, group);
+  group_dict = PyDict_GetItemString(groups_dict, group); // Borrowed reference
   if (group_dict)
   {
-    list = PyList_New(0);
-    subscription_data = PyTuple_GetItem(self->py_private, DICT_SUBSCRIPTION_DATA_INDEX);
+    list = PyList_New(0); // New reference
+    subscription_data = PyTuple_GetItem((PyObject*)self->py_private, DICT_SUBSCRIPTION_DATA_INDEX); // Borrowed reference
     assert(subscription_data);
 
     items = PyDict_Items(group_dict);
     j = PyList_Size(items);
     for (i = 0; i < j; i++)
     {
-      tuple = PyList_GetItem(items, 0);
-      key = PyString_AsString(PyTuple_GetItem(tuple, 0));
+      tuple = PyList_GetItem(items, 0); // Borrowed reference
+      assert(tuple);
+      item = PyTuple_GetItem(tuple, 0); // Borrowed reference
+      assert(item);
+      key = PyString_AsString(item);
       ref_count = playerc_blackboard___increment_reference_count__(self, subscription_data, key, group, 0);
       if (ref_count <= 0)
-      {
-        PyList_Append(list, PyTuple_GetItem(tuple, 0));
+      {  
+        PyList_Append(list, item); // Increments refcount for us
       }
     }
 
     j = PyList_Size(list);
     for (i =0; i < j; i++)
     {
-      PyDict_DelItem(group_dict, PyList_GetItem(list, i));
+      item = PyList_GetItem(list, i); // Borrowed reference
+      assert(item);
+      PyDict_DelItem(group_dict, item);
     }
+
+    Py_DECREF(list);
   }
 
   return result;
@@ -798,12 +907,13 @@ PyObject *GetEntry(const char *key, const char *group)
     PyErr_SetString(PyExc_RuntimeError, "Failed to get entry");
     return NULL;
   }
-  entry_dict = playerc_blackboard___convert_blackboard_entry__(self, entry);
+  entry_dict = playerc_blackboard___convert_blackboard_entry__(self, entry); // New reference
   
-  groups_dict = PyTuple_GetItem(self->py_private, DICT_GROUPS_INDEX);
+  groups_dict = PyTuple_GetItem((PyObject*)self->py_private, DICT_GROUPS_INDEX); // Borrowed reference
   assert(groups_dict);
   assert(entry_dict);
-  playerc_blackboard___set_nested_dictionary_entry__(self, groups_dict, key, group, entry_dict);
+  Py_INCREF(entry_dict);
+  playerc_blackboard___set_nested_dictionary_entry__(self, groups_dict, key, group, entry_dict); // Steals reference to entry_dict
 
   free(entry->key);
   free(entry->group);
@@ -818,12 +928,12 @@ PyObject *SetEntryRaw(player_blackboard_entry_t *entry)
   int result;
   PyObject *entry_dict, *groups_dict;
   
-  entry_dict = playerc_blackboard___convert_blackboard_entry__(self, entry);
-  groups_dict = PyTuple_GetItem(self->py_private, DICT_GROUPS_INDEX);
-  assert(groups_dict);
+  entry_dict = playerc_blackboard___convert_blackboard_entry__(self, entry); // New reference
   assert(entry_dict);
+  groups_dict = PyTuple_GetItem((PyObject*)self->py_private, DICT_GROUPS_INDEX); // Borrowed reference
+  assert(groups_dict);
 
-  playerc_blackboard___set_nested_dictionary_entry__(self, groups_dict, entry->key, entry->group, entry_dict);
+  playerc_blackboard___set_nested_dictionary_entry__(self, groups_dict, entry->key, entry->group, entry_dict); // Steals reference to entry_dict
   result = playerc_blackboard_set_entry(self, entry);
   return PyInt_FromLong(result);
 }
@@ -844,13 +954,13 @@ PyObject *SetEntry(PyObject *dict)
   player_blackboard_entry_t entry;
   memset(&entry, 0, sizeof(entry));
 
-  key = PyDict_GetItem(dict, PyString_FromString("key"));
-  group = PyDict_GetItem(dict, PyString_FromString("group"));
-  type = PyDict_GetItem(dict, PyString_FromString("type"));
-  subtype = PyDict_GetItem(dict, PyString_FromString("subtype"));
-  timestamp_sec = PyDict_GetItem(dict, PyString_FromString("timestamp_sec"));
-  timestamp_usec = PyDict_GetItem(dict, PyString_FromString("timestamp_usec"));
-  data = PyDict_GetItem(dict, PyString_FromString("data"));
+  key = PyDict_GetItem(dict, PyString_FromString("key")); // Borrowed reference
+  group = PyDict_GetItem(dict, PyString_FromString("group")); // Borrowed reference
+  type = PyDict_GetItem(dict, PyString_FromString("type")); // Borrowed reference
+  subtype = PyDict_GetItem(dict, PyString_FromString("subtype")); // Borrowed reference
+  timestamp_sec = PyDict_GetItem(dict, PyString_FromString("timestamp_sec")); // Borrowed reference
+  timestamp_usec = PyDict_GetItem(dict, PyString_FromString("timestamp_usec")); // Borrowed reference
+  data = PyDict_GetItem(dict, PyString_FromString("data")); // Borrowed reference
 
   if (key == NULL || group == NULL || type == NULL || subtype == NULL || timestamp_sec == NULL || timestamp_usec == NULL || data == NULL)
   {
@@ -958,10 +1068,10 @@ PyObject *SetEntry(PyObject *dict)
   }
 
   result = playerc_blackboard_set_entry(self, &entry);
-  groups_dict = PyTuple_GetItem(self->py_private, DICT_GROUPS_INDEX);
+  groups_dict = PyTuple_GetItem((PyObject*)self->py_private, DICT_GROUPS_INDEX); // Borrowed reference
   assert(groups_dict);
-  assert(entry_dict);
-  playerc_blackboard___set_nested_dictionary_entry__(self, groups_dict, entry.key, entry.group, dict);
+  Py_INCREF(dict);
+  playerc_blackboard___set_nested_dictionary_entry__(self, groups_dict, entry.key, entry.group, dict); // Steals reference to entry
   free(entry.data);
 
   return PyInt_FromLong(result);
@@ -985,7 +1095,7 @@ playerc_blackboard_t *python_playerc_blackboard_create(playerc_client_t *client,
   // Tuple item 1: Dictionary of keys that have been subscribed to.
   // Tuple item 2: List of all events that have occurred. Need to call set_queue_events(True). Updated on client.read() callback.
   // Tuple item 3: Whether to queue all events or not. Default not. (0 for false, non-zero for true)
-  device->py_private = Py_BuildValue("({},{},[],i)",0); // tuple of a dict and a list to store our keys and events in
+  device->py_private = (void*)Py_BuildValue("({},{},[],i)",0); // tuple of a dict and a list to store our keys and events in
   
   device->on_blackboard_event = playerc_blackboard___python_on_blackboard_event__;
   return device;
@@ -1000,7 +1110,7 @@ void python_playerc_blackboard_destroy(playerc_blackboard_t* device)
   playerc_device_term(&device->info);
   if (device->py_private != NULL)
   {
-  	Py_DECREF((PyObject*)device->py_private);
+  	Py_XDECREF((PyObject*)device->py_private);
   }
   free(device);
 }
