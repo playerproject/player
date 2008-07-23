@@ -38,6 +38,7 @@
  */
 
 #include <string.h>
+#include <math.h>
 
 #include "playerc.h"
 #include "error.h"
@@ -72,6 +73,10 @@ void playerc_ranger_destroy(playerc_ranger_t *device)
     free(device->sensor_poses);
   if(device->sensor_sizes != NULL)
     free(device->sensor_sizes);
+  if(device->bearings != NULL)
+    free(device->bearings);
+  if(device->points != NULL)
+    free(device->points);
   free(device);
 }
 
@@ -90,16 +95,74 @@ int playerc_ranger_unsubscribe(playerc_ranger_t *device)
 }
 
 
+// Calculate bearings
+void playerc_ranger_calculate_bearings(playerc_ranger_t *device)
+{
+  device->bearings_count = device->ranges_count;
+  if (device->bearings_count == 0 && device->bearings != NULL)
+  {
+    free(device->bearings);
+    device->bearings = NULL;
+  }
+  else
+  {
+    if((device->bearings = (double *) realloc(device->bearings, device->bearings_count * sizeof(double))) == NULL)
+    {
+      device->bearings_count = 0;
+      PLAYER_ERROR("Failed to allocate space to store bearings");
+      return;
+    }
+
+    double b = device->min_angle;
+    uint32_t ii;
+    for (ii = 0; ii < device->bearings_count; ii++)
+    {
+      device->bearings[ii] = b;
+      b += device->resolution;
+    }
+  }
+}
+
+
+// Calculate scan points
+void playerc_ranger_calculate_points(playerc_ranger_t *device)
+{
+  device->points_count = device->ranges_count;
+  if (device->points_count == 0 && device->points != NULL)
+  {
+    free(device->points);
+    device->points = NULL;
+  }
+  else
+  {
+    if((device->points = (player_point_3d_t *) realloc(device->points, device->points_count * sizeof(player_point_3d_t))) == NULL)
+    {
+      device->points_count = 0;
+      PLAYER_ERROR("Failed to allocate space to store points");
+      return;
+    }
+
+    double b = device->min_angle;
+    uint32_t ii;
+    for (ii = 0; ii < device->points_count; ii++)
+    {
+      double r = device->ranges[ii];
+      device->points[ii].px = r * cos(b);
+      device->points[ii].py = r * sin(b);
+      device->points[ii].pz = 0.0;
+      b += device->resolution;
+    }
+  }
+}
+
+
 // Copy range data to the device
 void playerc_ranger_copy_range_data(playerc_ranger_t *device, player_ranger_data_range_t *data)
 {
   if (device->ranges_count != data->ranges_count || device->ranges == NULL)
   {
-    // The number of data has changed, so delete any old data
-    if(device->ranges != NULL)
-      free(device->ranges);
     // Allocate memory for the new data
-    if((device->ranges = (double *) malloc(data->ranges_count * sizeof(double))) == NULL)
+    if((device->ranges = (double *) realloc(device->ranges, data->ranges_count * sizeof(double))) == NULL)
     {
       device->ranges_count = 0;
       PLAYER_ERROR("Failed to allocate space to store range data");
@@ -117,11 +180,8 @@ void playerc_ranger_copy_intns_data(playerc_ranger_t *device, player_ranger_data
 {
   if (device->intensities_count != data->intensities_count || device->intensities == NULL)
   {
-    // The number of data has changed, so delete any old data
-    if(device->intensities != NULL)
-      free(device->intensities);
     // Allocate memory for the new data
-    if((device->intensities = (double *) malloc(data->intensities_count * sizeof(double))) == NULL)
+    if((device->intensities = (double *) realloc(device->intensities, data->intensities_count * sizeof(double))) == NULL)
     {
       device->intensities_count = 0;
       PLAYER_ERROR("Failed to allocate space to store intensity data");
@@ -189,11 +249,15 @@ void playerc_ranger_putmsg(playerc_ranger_t *device, player_msghdr_t *header,
   if((header->type == PLAYER_MSGTYPE_DATA) && (header->subtype == PLAYER_RANGER_DATA_RANGE))
   {
     playerc_ranger_copy_range_data(device, (player_ranger_data_range_t *) data);
+    playerc_ranger_calculate_bearings(device);
+    playerc_ranger_calculate_points(device);
   }
   else if((header->type == PLAYER_MSGTYPE_DATA) && (header->subtype == PLAYER_RANGER_DATA_RANGEPOSE))
   {
     playerc_ranger_copy_range_data(device, &((player_ranger_data_rangepose_t *) data)->data);
     playerc_ranger_copy_geom(device, &((player_ranger_data_rangepose_t *) data)->geom);
+    playerc_ranger_calculate_bearings(device);
+    playerc_ranger_calculate_points(device);
   }
   else if((header->type == PLAYER_MSGTYPE_DATA) && (header->subtype == PLAYER_RANGER_DATA_INTNS))
   {

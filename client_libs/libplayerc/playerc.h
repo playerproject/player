@@ -2979,6 +2979,16 @@ typedef struct
   properties include intns_on for laser devices and volt_on for IR devices. */
   double *intensities;
 
+  /** Number of individual scan bearings. */
+  uint32_t bearings_count;
+  /** Scan bearings [radians]. */
+  double *bearings;
+
+  /** Number of scan points. */
+  uint32_t points_count;
+  /** Scan points (x, y, z). */
+  player_point_3d_t *points;
+
 } playerc_ranger_t;
 
 /** @brief Create a ranger proxy. */
