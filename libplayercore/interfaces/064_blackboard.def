@@ -13,6 +13,8 @@ message { REQ, SET_ENTRY, 3, player_blackboard_entry_t };
 message { REQ, SUBSCRIBE_TO_GROUP, 4, player_blackboard_entry_t };
 /** Request/reply subtype: unsubscribe from group. */
 message { REQ, UNSUBSCRIBE_FROM_GROUP, 5, player_blackboard_entry_t };
+/** Request/reply subtype: get a value. */
+message { REQ, GET_ENTRY, 6, player_blackboard_entry_t };
+
 /** Data update reply */
 message { DATA, UPDATE, 1, player_blackboard_entry_t };
-

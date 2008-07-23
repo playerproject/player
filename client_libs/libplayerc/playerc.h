@@ -1174,6 +1174,10 @@ int playerc_blackboard_unsubscribe(playerc_blackboard_t *device);
  * responsible for freeing it. */
 int playerc_blackboard_subscribe_to_key(playerc_blackboard_t *device, const char* key, const char* group, player_blackboard_entry_t** entry);
 
+/** @brief Get the current value of a key, without subscribing. If entry is none null it will be filled in with the response. The caller is
+ * responsible for freeing it. */
+int playerc_blackboard_get_entry(playerc_blackboard_t *device, const char* key, const char* group, player_blackboard_entry_t** entry);
+
 /** @brief Unsubscribe from a key. */
 int playerc_blackboard_unsubscribe_from_key(playerc_blackboard_t *device, const char* key, const char* group);
 
