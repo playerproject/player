@@ -145,8 +145,10 @@ int FileWatcher::AddFileWatch(int fd, QueuePointer & queue, bool WatchRead, bool
 		if (next_entry == NULL)
 		{
 			// otherwise we allocate some more room for the array
+			size_t orig_size = WatchedFilesArraySize;
 			WatchedFilesArraySize*=2;
 			WatchedFiles = reinterpret_cast<struct fd_driver_pair *> (realloc(WatchedFiles,sizeof(WatchedFiles[0])*WatchedFilesArraySize));
+			memset(&WatchedFiles[orig_size],0,sizeof(WatchedFiles[0])*(WatchedFilesArraySize-orig_size));
 			next_entry = &WatchedFiles[WatchedFilesArrayCount];
 
 		}
