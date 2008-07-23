@@ -258,6 +258,9 @@ Device::Request(QueuePointer &resp_queue,
                 double* timestamp,
                 bool threaded)
 {
+  // check driver still ahs subscriptions, stops deadlocks on server shutdown
+  if (driver->subscriptions == 0)
+    return NULL;
   // Send the request message
   this->PutMsg(resp_queue,
                type, subtype,
@@ -282,13 +285,13 @@ Device::Request(QueuePointer &resp_queue,
   // non-threaded, then his ProcessMessage() would get called
   // recursively).
 
-  Message* msg;
+  Message* msg = NULL;
   if(threaded)
   {
-    resp_queue->Wait();
     // HACK: this loop should not be neccesary!
     // pthread_cond_wait does not garuntee no false wake up, so maybe it is.
-    while(!(msg = resp_queue->Pop()))
+    // test driver is still subscribed to prevent deadlocks on server shutdown
+    while(driver->subscriptions > 0 && !(msg = resp_queue->Pop()))
     {
       PLAYER_WARN("empty queue after waiting!");
       resp_queue->Wait(); // this is a cancelation point

@@ -74,6 +74,8 @@ DeviceTable::~DeviceTable()
       thisentry->driver->Shutdown();
       thisentry->driver->subscriptions = 0;
       thisentry->driver->alwayson = 0;
+      // wake up anything waiting on the drivers queue, so they can notice it is dead
+      thisentry->driver->InQueue->DataAvailable();
     }
     thisentry = thisentry->next;
   }
