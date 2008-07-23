@@ -295,6 +295,43 @@ int playerc_blackboard_subscribe_to_key(playerc_blackboard_t* device, const char
   return 0;
 }
 
+// Get the value of a key
+int playerc_blackboard_get_entry(playerc_blackboard_t* device, const char* key, const char* group, player_blackboard_entry_t** entry_out)
+{
+  player_blackboard_entry_t req;
+  memset(&req, 0, sizeof(req));
+  req.key = strdup(key);
+  req.key_count = strlen(key) + 1;
+  
+  req.group = strdup(group);
+  req.group_count = strlen(group) + 1;
+
+  if (playerc_client_request(device->info.client, &device->info, 
+  PLAYER_BLACKBOARD_REQ_GET_ENTRY, &req, (void**)entry_out) < 0)
+  {
+  	if (req.key != NULL)
+  	{
+  		free(req.key);
+  	}
+  	if (req.group != NULL)
+  	{
+  		free(req.group);
+  	}
+    PLAYERC_ERR("failed to get to blackboard entry");
+    return -1;
+  }
+
+  if (req.key != NULL)
+  {
+    free(req.key);
+  }
+  if (req.group != NULL)
+  {
+    free(req.group);
+  }
+  return 0;
+}
+
 // Unsubscribe from a blackboard key
 int playerc_blackboard_unsubscribe_from_key(playerc_blackboard_t* device, const char* key, const char* group)
 {
