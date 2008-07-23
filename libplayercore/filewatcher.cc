@@ -123,7 +123,6 @@ int FileWatcher::AddFileWatch(int fd, bool WatchRead, bool WatchWrite, bool Watc
 int FileWatcher::AddFileWatch(int fd, QueuePointer & queue, bool WatchRead, bool WatchWrite, bool WatchExcept)
 {
 	Lock();
-	fprintf(stderr,"Added file watch %d \n",fd);
 	// find the first available file descriptor
 	struct fd_driver_pair *next_entry = NULL;
 	if (WatchedFilesArrayCount < WatchedFilesArraySize)
