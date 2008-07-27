@@ -30,8 +30,8 @@
 
 The cmucam2 driver connects over a serial port to a CMUCam2. Presents a
 @ref interface_blobfinder interface and a @ref interface_ptz
-interface and can track multiple color blobs (plus an additional 
-@ref interface_camera for getting image data). Color tracking parameters are 
+interface and can track multiple color blobs (plus an additional
+@ref interface_camera for getting image data). Color tracking parameters are
 defined in Player's config file (see below for an example).
 
 
@@ -75,8 +75,8 @@ defined in Player's config file (see below for an example).
   - Default: 1
   - Set bloborcamera to 1 if you want the blobfinder/ptz active, or set it
     to 2 if you want camera/ptz active. (this will be changed in the future)
-  
-@par Example 
+
+@par Example
 
 @verbatim
 driver
@@ -89,7 +89,7 @@ driver
 # values must be between 40 and 240 (!)
   color0 [  red_min red_max blue_min blue_max green_min green_max] )
 # values must be between 40 and 240 (!)
-  color1 [  red_min red_max blue_min blue_max green_min green_max] )  
+  color1 [  red_min red_max blue_min blue_max green_min green_max] )
 )
 @endverbatim
 
@@ -117,7 +117,7 @@ driver
 
 #define MAX_CHANNELS 32
 
-class Cmucam2:public Driver 
+class Cmucam2:public Driver
 {
 	private:
 
@@ -138,7 +138,7 @@ class Cmucam2:public Driver
 		// PTZ interface (provides)
 		player_devaddr_t         ptz_id;
 		player_ptz_data_t        ptz_data;
-	
+
 		// Camera interface (provides)
 		player_devaddr_t         cam_id;
 		player_camera_data_t     cam_data;
@@ -157,18 +157,18 @@ class Cmucam2:public Driver
 
 	public:
 
-		// constructor 
+		// constructor
 		//
 		Cmucam2( ConfigFile* cf, int section);
 		~Cmucam2();
 
-		// Process incoming messages from clients 
-		virtual int ProcessMessage(QueuePointer & resp_queue, 
-								   player_msghdr * hdr, 
+		// Process incoming messages from clients
+		virtual int ProcessMessage(QueuePointer & resp_queue,
+								   player_msghdr * hdr,
 								   void * data);
 
 		virtual void Main();
-  
+
 		int Setup();
 		int Shutdown();
 };
@@ -182,7 +182,7 @@ Driver* Cmucam2_Init( ConfigFile* cf, int section)
 
 ////////////////////////////////////////////////////////////////////////////////
 // a driver registration function
-void 
+void
 Cmucam2_Register(DriverTable* table)
 {
 	table->AddDriver("cmucam2", Cmucam2_Init);
@@ -194,11 +194,11 @@ Cmucam2::Cmucam2( ConfigFile* cf, int section)
 	memset (&this->blobfinder_id, 0, sizeof (player_devaddr_t));
 	memset (&this->ptz_id,        0, sizeof (player_devaddr_t));
 	memset (&this->cam_id,        0, sizeof (player_devaddr_t));
-			
+
 	BlobORCamera = cf->ReadInt (section, "bloborcamera", 1);
 	if ((BlobORCamera != 1) && (BlobORCamera != 2))
 		BlobORCamera = 1;
-	
+
 	// Outgoing blobfinder interface
 	if(cf->ReadDeviceAddr(&(this->blobfinder_id), section, "provides",
 	   PLAYER_BLOBFINDER_CODE, -1, NULL) == 0)
@@ -209,7 +209,7 @@ Cmucam2::Cmucam2( ConfigFile* cf, int section)
 			return;
 		}
 	}
-  
+
 	// Outgoing camera interface
 	if(cf->ReadDeviceAddr(&(this->cam_id), section, "provides",
 	   PLAYER_CAMERA_CODE, -1, NULL) == 0)
@@ -220,7 +220,7 @@ Cmucam2::Cmucam2( ConfigFile* cf, int section)
 			return;
 		}
 	}
-	
+
 	// Outgoing ptz interface
 	if(cf->ReadDeviceAddr(&(this->ptz_id), section, "provides",
 	   PLAYER_PTZ_CODE, -1, NULL) == 0)
@@ -240,7 +240,7 @@ Cmucam2::Cmucam2( ConfigFile* cf, int section)
 		color = new color_config[num_of_blobs];
 		for (int i = 0; i < num_of_blobs; i++)
 		{
-			sprintf (variable, "color%d", i);   
+			sprintf (variable, "color%d", i);
 			color[i].rmin = (int)cf->ReadTupleFloat (section, variable, 0, 16);
 			color[i].rmax = (int)cf->ReadTupleFloat (section, variable, 1, 16);
 			color[i].gmin = (int)cf->ReadTupleFloat (section, variable, 2, 16);
@@ -260,7 +260,7 @@ Cmucam2::Cmucam2( ConfigFile* cf, int section)
 
 	pan_position = 0;
 	tilt_position = 0;
- 
+
 	if(!(this->devicepath = (char*)cf->ReadString(section, "devicepath", NULL)))
 	{
 		PLAYER_ERROR("must specify devicepath");
@@ -283,7 +283,7 @@ int Cmucam2::Setup()
 	if(fd<0)                           // if not successful, stop
 	{
 		printf("Camera connection failed!\n");
-		return -1; 
+		return -1;
 	}
 	auto_servoing(fd, 0);
 
@@ -304,16 +304,16 @@ int Cmucam2::Shutdown()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-int Cmucam2::ProcessMessage (QueuePointer & resp_queue, 
+int Cmucam2::ProcessMessage (QueuePointer & resp_queue,
 								player_msghdr * hdr,
 								void * data)
 {
 	assert(hdr);
 	assert(data);
 
-	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, ptz_id))
+	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_PTZ_CMD_STATE, ptz_id))
 	{
-		player_ptz_cmd_t & command = 
+		player_ptz_cmd_t & command =
 				*reinterpret_cast<player_ptz_cmd_t * > (data);
 
 		if(pan_position != (short)ntohs((unsigned short)(command.pan)))
@@ -331,13 +331,10 @@ int Cmucam2::ProcessMessage (QueuePointer & resp_queue,
 				set_servo_position(fd, 1, -1*tilt_position);
 		}
 
-		Publish (this->ptz_id, resp_queue,
-				 PLAYER_MSGTYPE_RESP_ACK,
-				 hdr->subtype);
 		return 0;
-	}	
+	}
 
-// 	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
+// 	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
 // 		PLAYER_PTZ_REQ_AUTOSERVO, ptz_id))
 // 	{
 // 		player_ptz_req_control_mode *servo = (player_ptz_req_control_mode*)data;
@@ -346,14 +343,14 @@ int Cmucam2::ProcessMessage (QueuePointer & resp_queue,
 // 			PLAYER_MSG0 (1, "Auto servoing is enabled.");
 // 		else
 // 			PLAYER_MSG0 (1, "Auto servoing is disabled.");
-// 
+//
 // 		Publish (this->ptz_id, resp_queue,
 // 				 PLAYER_MSGTYPE_RESP_ACK,
 // 				 PLAYER_PTZ_REQ_AUTOSERVO);
 // 		return PLAYER_MSGTYPE_RESP_ACK;
 // 	}
 
-	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
+	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
 		PLAYER_BLOBFINDER_REQ_SET_COLOR, blobfinder_id))
 	{
 		player_blobfinder_color_config_t color_config;
@@ -365,8 +362,8 @@ int Cmucam2::ProcessMessage (QueuePointer & resp_queue,
 		color[0].gmax = color_config.gmax;
 		color[0].bmin = color_config.bmin;
 		color[0].bmax = color_config.bmax;
-		
-		PLAYER_MSG6 (1, 
+
+		PLAYER_MSG6 (1,
 		"Cmucam2_blobfinder received new tracking color: [%d,%d,%d,%d,%d,%d]",
 					 color[0].rmin, color[0].rmax,
 					 color[0].gmin, color[0].gmax,
@@ -377,13 +374,13 @@ int Cmucam2::ProcessMessage (QueuePointer & resp_queue,
 				 PLAYER_BLOBFINDER_REQ_SET_COLOR);
 		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-	
-	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
+
+	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
 		PLAYER_BLOBFINDER_REQ_SET_IMAGER_PARAMS, blobfinder_id))
 	{
 		player_blobfinder_imager_config player_ic;
 		player_ic = *((player_blobfinder_imager_config*)data);
-		
+
 		stop_tracking (fd);
 
 		imager_config ic;
@@ -399,13 +396,13 @@ int Cmucam2::ProcessMessage (QueuePointer & resp_queue,
 
 		color_config cc;
 		track_blob (fd, cc);
-		
+
 		Publish (this->blobfinder_id, resp_queue,
 				 PLAYER_MSGTYPE_RESP_ACK,
 				 PLAYER_BLOBFINDER_REQ_SET_IMAGER_PARAMS);
 		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-	
+
 	return -1;
 }
 
@@ -470,10 +467,10 @@ void Cmucam2::RefreshDataBlobfinder ()
 	}
 
 	blobfinder_data.blobs_count = blobs_observed;
-  
+
 	/* got the data. now fill it in */
-	Publish (this->blobfinder_id, PLAYER_MSGTYPE_DATA, 
-			 PLAYER_BLOBFINDER_DATA_BLOBS, &blobfinder_data, 
+	Publish (this->blobfinder_id, PLAYER_MSGTYPE_DATA,
+			 PLAYER_BLOBFINDER_DATA_BLOBS, &blobfinder_data,
 			 sizeof (player_blobfinder_data), NULL);
 	delete [] blobfinder_data.blobs;
 	return;
@@ -484,21 +481,21 @@ void Cmucam2::RefreshDataPtz        ()
 {
 	memset (&this->ptz_data, 0, sizeof (this->ptz_data));
 
-	ptz_data.zoom      = 45;                  // cmucam does not have these 
+	ptz_data.zoom      = 45;                  // cmucam does not have these
 	ptz_data.panspeed  = 0;
 	ptz_data.tiltspeed = 0;
 	ptz_data.zoom      = ptz_data.zoom;
 	ptz_data.panspeed  = ptz_data.panspeed;
 	ptz_data.tiltspeed = ptz_data.tiltspeed;
- 
+
 	ptz_data.pan   = -1*get_servo_position (fd, 0);
 	ptz_data.tilt  = -1*get_servo_position (fd, 1);
 	ptz_data.pan   = ptz_data.pan;
-	ptz_data.tilt  = ptz_data.tilt; 
+	ptz_data.tilt  = ptz_data.tilt;
 
-	Publish (this->ptz_id, PLAYER_MSGTYPE_DATA, PLAYER_PTZ_DATA_STATE, 
+	Publish (this->ptz_id, PLAYER_MSGTYPE_DATA, PLAYER_PTZ_DATA_STATE,
 			 &ptz_data, sizeof (player_ptz_data_t), NULL);
-	
+
 	return;
 }
 
@@ -509,7 +506,7 @@ void Cmucam2::RefreshDataCamera     ()
 
         camera_packet = (packet_f*)malloc(sizeof(packet_f));
         assert(camera_packet);
-  
+
 	memset (&this->cam_data, 0, sizeof (this->cam_data));
 	memset (camera_packet,  0, sizeof (packet_f));
 
@@ -522,12 +519,12 @@ void Cmucam2::RefreshDataCamera     ()
 	get_image (camera_packet, &cam_data);
         free(camera_packet);
 
-	Publish (this->cam_id, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, 
+	Publish (this->cam_id, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
 			 &cam_data, sizeof (player_camera_data_t), NULL);
 	return;
 }
 
-/**************************************************************************	
+/**************************************************************************
                            *** GET BLOB ***
 **************************************************************************/
 /* Description: This function uses CMUcam's T packet for tracking to get
@@ -537,15 +534,15 @@ void Cmucam2::RefreshDataCamera     ()
    Returns:     The Player format for blob information
 */
 
-void Cmucam2::get_blob (packet_t cam_packet, 
+void Cmucam2::get_blob (packet_t cam_packet,
 						player_blobfinder_blob_t *blob,
 						color_config range)
 {
 	// a descriptive color for the blob
-	unsigned char red   = (range.rmin + range.rmax)/2; 
+	unsigned char red   = (range.rmin + range.rmax)/2;
 	unsigned char green = (range.gmin + range.gmax)/2;
 	unsigned char blue  = (range.bmin + range.bmax)/2;
-  
+
 	(*blob).color  = red << 16 + green << 8 + blue;
 	// the number of pixels in the blob
 	(*blob).area   = cam_packet.blob_area;
@@ -555,13 +552,13 @@ void Cmucam2::get_blob (packet_t cam_packet,
 	(*blob).left   = 2*cam_packet.left_x;
 	// highest and lowest y-value for top and bottom
 	(*blob).right  = 2*cam_packet.right_x;
-	(*blob).top    = (cam_packet.left_y > cam_packet.right_y) ? 
+	(*blob).top    = (cam_packet.left_y > cam_packet.right_y) ?
 			cam_packet.left_y : cam_packet.right_y;
-	(*blob).bottom = (cam_packet.left_y <= cam_packet.right_y) ? 
+	(*blob).bottom = (cam_packet.left_y <= cam_packet.right_y) ?
 			cam_packet.left_y : cam_packet.right_y;
 }
 
-/**************************************************************************	
+/**************************************************************************
                            *** GET IMAGE ***
 **************************************************************************/
 /* Description: This function uses CMUcam's F packet to get an image
@@ -569,12 +566,12 @@ void Cmucam2::get_blob (packet_t cam_packet,
    Returns:     The Player format for image data
 */
 
-void Cmucam2::get_image (packet_f* cam_packet, 
+void Cmucam2::get_image (packet_f* cam_packet,
 						 player_camera_data_t *cam_data)
 {
 	int x = 0;
 	int y = 0;
-  
+
 	(*cam_data).width       = cam_packet->xsize;
 	(*cam_data).height      = cam_packet->ysize;
 	(*cam_data).bpp         = 24;
@@ -592,7 +589,7 @@ void Cmucam2::get_image (packet_f* cam_packet,
 			int blue  = cam_packet->rows[y].rgb[x].b;
 			(*cam_data).image[y * (*cam_data).width * 2 + x * 2]
 					= (red + green + blue);
-			(*cam_data).image[y * (*cam_data).width * 2 + x * 2 + 1] 
+			(*cam_data).image[y * (*cam_data).width * 2 + x * 2 + 1]
 					= (red + green + blue);
 		}
 	}
