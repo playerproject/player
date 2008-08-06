@@ -10,15 +10,15 @@ PLAYERDRIVER_ADD_DRIVER (sickRFI341 build_sickRFI341 SOURCES rfi341_protocol.cc 
 PLAYERDRIVER_OPTION (phidgetRFID build_phidgetRFID ON)
 SET (PHIDGETRFID_DIR "" CACHE STRING "Directory containing the Phidget RFID headers and libraries")
 MARK_AS_ADVANCED (PHIDGETRFID_DIR)
-IF (NOT "${PHIDGETRFID_DIR}" STREQUAL "")
+IF ("${PHIDGETRFID_DIR}" STREQUAL "")
     SET (phidgetReqHeader "phidget21.h")
     SET (phidgetExtraFlags "")
     SET (phidgetExtraLibs "-lphidget21")
-ELSE (NOT "${PHIDGETRFID_DIR}" STREQUAL "")
+ELSE ("${PHIDGETRFID_DIR}" STREQUAL "")
     SET (phidgetReqHeader "${PHIDGETRFID_DIR}/phidget21.h")
     SET (phidgetExtraFlags "-I${PHIDGETRFID_DIR}/include")
     SET (phidgetExtraLibs "-L${PHIDGETRFID_DIR}/lib -lphidget21")
-ENDIF (NOT "${PHIDGETRFID_DIR}" STREQUAL "")
+ENDIF ("${PHIDGETRFID_DIR}" STREQUAL "")
 PLAYERDRIVER_REQUIRE_HEADER (phidgetRFID build_phidgetRFID ${phidgetReqHeader})
 PLAYERDRIVER_ADD_DRIVER (phidgetRFID build_phidgetRFID
     LINKFLAGS ${phidgetExtraLibs} CFLAGS "${phidgetExtraFlags}"
