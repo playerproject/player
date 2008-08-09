@@ -214,7 +214,9 @@ PlayerTCP::AddClient(struct sockaddr_in* cliaddr,
                      bool have_lock)
 {
   if(!have_lock)
+  {
     Lock();
+  }
 
   unsigned char data[PLAYER_IDENT_STRLEN];
 
@@ -253,7 +255,6 @@ PlayerTCP::AddClient(struct sockaddr_in* cliaddr,
 
   // set up for later use by global file watcher
   fileWatcher->AddFileWatch(this->client_ufds[j].fd);
-
 
   // Create an outgoing queue for this client
   this->clients[j].queue =
@@ -329,7 +330,9 @@ PlayerTCP::Accept(int timeout)
   }
 
   if(!num_accepts)
+  {
     return(0);
+  }
 
   for(int i=0; (i<num_listeners) && (num_accepts>0); i++)
   {
@@ -395,9 +398,9 @@ PlayerTCP::Close(int cli)
     }
   }
   free(this->clients[cli].dev_subs);
+  fileWatcher->RemoveFileWatch(this->clients[cli].fd);
   if(close(this->clients[cli].fd) < 0)
     PLAYER_WARN1("close() failed: %s", strerror(errno));
-  fileWatcher->RemoveFileWatch(this->clients[cli].fd);
 
   this->clients[cli].fd = -1;
   this->clients[cli].valid = 0;

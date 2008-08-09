@@ -136,13 +136,13 @@ class PlayerTCP
     /** Total size of @p decode_readbuffer */
     int decode_readbuffersize;
 
+    void Lock();
+    void Unlock();
 
   public:
     PlayerTCP();
     ~PlayerTCP();
 
-    void Lock();
-    void Unlock();
 
     static void InitGlobals(void);
 
@@ -150,7 +150,7 @@ class PlayerTCP
 
     int Listen(int* ports, int num_ports, int* new_ports=NULL);
     int Listen(int port);
-    QueuePointer AddClient(struct sockaddr_in* cliaddr, 
+    QueuePointer AddClient(struct sockaddr_in* cliaddr,
                             unsigned int local_host,
                             unsigned int local_port,
                             int newsock,
