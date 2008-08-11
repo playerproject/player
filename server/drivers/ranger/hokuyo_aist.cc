@@ -475,10 +475,10 @@ bool HokuyoDriver::ReadLaser (void)
 	{
 		player_ranger_data_range_t rangeData;
 		player_ranger_data_intns_t intensityData;
-	
+
 		try
 		{
-			_device.GetNewRangesAndIntensities (&_data, _minAngle, _maxAngle);
+			_device.GetNewRangesAndIntensitiesByAngle (&_data, _minAngle, _maxAngle);
 		}
 		catch (hokuyo_aist::HokuyoError &e)
 		{
@@ -486,7 +486,7 @@ bool HokuyoDriver::ReadLaser (void)
 			SetError (e.Code ());
 			return false;
 		}
-	
+
 		for (unsigned int ii = 0; ii < _data.Length (); ii++)
 		{
 			_ranges[ii] = _data[ii] / 1000.0f;
@@ -506,10 +506,10 @@ bool HokuyoDriver::ReadLaser (void)
 	else
 	{
 		player_ranger_data_range_t rangeData;
-	
+
 		try
 		{
-			_device.GetRanges (&_data, _minAngle, _maxAngle);
+			_device.GetRangesByAngle (&_data, _minAngle, _maxAngle);
 		}
 		catch (hokuyo_aist::HokuyoError &e)
 		{
@@ -517,7 +517,7 @@ bool HokuyoDriver::ReadLaser (void)
 			SetError (e.Code ());
 			return false;
 		}
-	
+
 		for (unsigned int ii = 0; ii < _data.Length (); ii++)
 			_ranges[ii] = _data[ii] / 1000.0f;
 		rangeData.ranges = _ranges;
