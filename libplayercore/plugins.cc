@@ -57,6 +57,36 @@
 
 #include "plugins.h"
 
+class plugin_path_list
+{
+public:
+	plugin_path_list(plugin_path_list * parent)
+	{
+		memset(fullpath,0,sizeof(fullpath));
+		next = NULL;
+		if (parent)
+		{
+			parent->next = this;
+		}
+	}
+
+	~plugin_path_list()
+	{
+		delete next;
+	}
+
+	plugin_path_list * last()
+	{
+		plugin_path_list * ret = NULL;
+		for (ret = this; ret->next != NULL; ret = ret->next);
+		return ret;
+	}
+
+	char fullpath[PATH_MAX];
+	plugin_path_list * next;
+};
+
+
 // Try to load a given plugin, using a particular search algorithm.
 // Returns true on success and false on failure.
 lt_dlhandle
@@ -79,122 +109,100 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
   }
 
   lt_dlhandle handle=NULL;
-  char fullpath[PATH_MAX] = {0};
+  plugin_path_list paths(NULL);
+
   char* playerpath;
   char* tmp;
   char* cfgdir;
   unsigned int i,j;
 
+  // allocate a buffer to put the searched paths in so we can just display the error at the end
+  // rather than during plugin loading
   // see if we got an absolute path
   if(pluginname[0] == '/' || pluginname[0] == '~')
   {
-    strcpy(fullpath,pluginname);
-    PLAYER_MSG1(1, "trying to load %s...", fullpath);
-    fflush(stdout);
-    if((handle = lt_dlopenext(fullpath)))
-      PLAYER_MSG0(1, "success");
-    else
-    {
-      PLAYER_MSG1(2, "failed (%s)\n", lt_dlerror() );
-      return NULL;
-    }
+    strncpy(paths.fullpath,pluginname,PATH_MAX);
   }
-
-  // we got a relative path, so search for the module
-
-  // did the user set PLAYERPATH?
-  if(!handle && (playerpath = getenv("PLAYERPATH")))
+  else
   {
-    PLAYER_MSG1(1,"PLAYERPATH: %s\n", playerpath);
-
-    // yep, now parse it, as a colon-separated list of directories
-    i=0;
-    while(i<strlen(playerpath))
+    // we got a relative path, so search for the module
+    // did the user set PLAYERPATH?
+    if((playerpath = getenv("PLAYERPATH")))
     {
-      j=i;
-      while(j<strlen(playerpath))
+      PLAYER_MSG1(1,"PLAYERPATH: %s\n", playerpath);
+
+      // yep, now parse it, as a colon-separated list of directories
+      i=0;
+      while(i<strlen(playerpath))
       {
-        if(playerpath[j] == ':')
+        j=i;
+        while(j<strlen(playerpath))
         {
-          break;
+          if(playerpath[j] == ':')
+          {
+            break;
+          }
+          j++;
         }
-        j++;
-      }
-      memset(fullpath,0,PATH_MAX);
-      strncpy(fullpath,playerpath+i,j-i);
-      strcat(fullpath,"/");
-      strcat(fullpath,pluginname);
+        plugin_path_list * path = paths.last();
+        new plugin_path_list(path);
+        strncpy(path->fullpath,playerpath+i,j-i);
+        strcat(path->fullpath,"/");
+        strcat(path->fullpath,pluginname);
 
-      PLAYER_MSG1(1, "trying to load %s...", fullpath);
-
-      if((handle = lt_dlopenext(fullpath)))
-      {
-        PLAYER_MSG0(1, "success");
-        break;
+        i=j+1;
       }
-      else
-      {
-        PLAYER_MSG2(2, "failed to load %s (error %s)\n", fullpath,  lt_dlerror());
-      }
-      i=j+1;
     }
-  }
 
-  // try to load it from the directory where the config file is
-  if(!handle && cfgfile)
-  {
-    // Note that dirname() modifies the contents, so
-    // we need to make a copy of the filename.
-    tmp = strdup(cfgfile);
-    assert(tmp);
-    memset(fullpath,0,PATH_MAX);
-    cfgdir = dirname(tmp);
-    if(cfgdir[0] != '/' && cfgdir[0] != '~')
+    // try to load it from the directory where the config file is
+    if(cfgfile)
     {
-      getcwd(fullpath, PATH_MAX);
-      strncat(fullpath,"/", PATH_MAX);
+      // Note that dirname() modifies the contents, so
+      // we need to make a copy of the filename.
+      tmp = strdup(cfgfile);
+      assert(tmp);
+      plugin_path_list * path = paths.last();
+      new plugin_path_list(path);
+      cfgdir = dirname(tmp);
+      if(cfgdir[0] != '/' && cfgdir[0] != '~')
+      {
+        getcwd(path->fullpath, PATH_MAX);
+        strncat(path->fullpath,"/", PATH_MAX);
+      }
+      strncat(path->fullpath,cfgdir, PATH_MAX);
+      strncat(path->fullpath,"/", PATH_MAX);
+      strncat(path->fullpath,pluginname, PATH_MAX);
+      free(tmp); // this should ha
     }
-    strncat(fullpath,cfgdir, PATH_MAX);
-    strncat(fullpath,"/", PATH_MAX);
-    strncat(fullpath,pluginname, PATH_MAX);
-    PLAYER_MSG1(1, "trying to load %s...", fullpath);
-    if((handle = lt_dlopenext(fullpath)))//, RTLD_NOW)))
-      PLAYER_MSG0(1, "success");
-    else
-      PLAYER_MSG1(1, "failed (%s)\n", lt_dlerror());
-    free(tmp); // this should ha
+
+    // try to load it from prefix/lib
+    plugin_path_list * path = paths.last();
+    new plugin_path_list(path);
+    strncpy(path->fullpath,PLAYER_INSTALL_PREFIX, PATH_MAX);
+    strncat(path->fullpath,"/lib/", PATH_MAX);
+    strncat(path->fullpath,pluginname, PATH_MAX);
+
+    // just pass the libname to lt_dlopenext, to see if it can handle it
+    // (this may work when the plugin is installed in a default system
+    // location).
+    path = paths.last();
+    strncpy(path->fullpath,pluginname,PATH_MAX);
+
+    PLAYER_MSG1(3, "loading plugin %s", pluginname);
+  }
+  for (plugin_path_list *path = &paths;!handle && path;path = path->next)
+  {
+    if((handle = lt_dlopenext(path->fullpath)))
+    {
+      break;
+    }
   }
 
-  // try to load it from prefix/lib
   if(!handle)
   {
-    memset(fullpath,0,PATH_MAX);
-    strncpy(fullpath,PLAYER_INSTALL_PREFIX, PATH_MAX);
-    strncat(fullpath,"/lib/", PATH_MAX);
-    strncat(fullpath,pluginname, PATH_MAX);
-    PLAYER_MSG1(1, "trying to load %s...", fullpath);
-    if((handle = lt_dlopenext(fullpath)))
-      PLAYER_MSG0(1, "success");
-    else
-      PLAYER_MSG1(1, "failed (%s)\n", lt_dlerror() );
-  }
-
-  // just pass the libname to lt_dlopenext, to see if it can handle it
-  // (this may work when the plugin is installed in a default system
-  // location).
-  if(!handle)
-  {
-    PLAYER_MSG1(1, "trying to load %s...", pluginname);
-    if((handle = lt_dlopenext(pluginname)))
-      PLAYER_MSG0(1, "success");
-    else
-      PLAYER_MSG1(1, "failed (%s)\n", lt_dlerror());
-  }
-
-  if (handle == NULL)
-  {
-    PLAYER_ERROR1("error loading plugin: %s", pluginname);
-    return NULL;
+    PLAYER_ERROR1("failed to load plugin %s, tried paths:",pluginname);
+    for (plugin_path_list *path = &paths;path;path = path->next)
+      PLAYER_ERROR1("\t%s", path->fullpath);
   }
 
   return handle;
