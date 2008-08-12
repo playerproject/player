@@ -41,7 +41,7 @@ MACRO (PLAYERDRIVER_ADD_DRIVER _name _cumulativeVar)
             MESSAGE (STATUS "WARNING: No sources given for driver ${_name}")
         ENDIF (NOT _srcs)
         # Add this driver's list of sources to the list of sources for libplayerdrivers
-        PLAYERDRIVER_ADD_TO_BUILT (${_name} "${_includeDir}" "${_libDir}" "${_linkFlags}" "${_cFlags}" ${_srcs})
+        PLAYERDRIVER_ADD_TO_BUILT (${_name} "${_includeDirs}" "${_libDir}" "${_linkFlags}" "${_cFlags}" ${_srcs})
     ENDIF (${_cumulativeVar})
 ENDMACRO (PLAYERDRIVER_ADD_DRIVER)
 
