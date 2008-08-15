@@ -69,7 +69,7 @@ ENDIF (HAVE_GEOS)
 IF (PLAYER_OS_QNX)
     TARGET_LINK_LIBRARIES (playerc socket rpc)
 ELSEIF (PLAYER_OS_SOLARIS)
-    TARGET_LINK_LIBRARIES (playerc socket nsl)
+    TARGET_LINK_LIBRARIES (playerc socket nsl rt)
 ENDIF (PLAYER_OS_QNX)
 
 PLAYER_INSTALL_HEADERS (playerc playerc.h)

@@ -45,7 +45,6 @@ IF (NOT HAVE_ROUND)
 ENDIF (NOT HAVE_ROUND)
 
 FILTER_DUPLICATES (driversSrcs "${driversSrcs}")
-# MESSAGE (STATUS "Sources is ${driversSrcs}")
 
 # Set lib-wide link and include directories
 IF (PLAYER_DRIVERSLIB_INCLUDEDIRS)
@@ -65,6 +64,9 @@ TARGET_LINK_LIBRARIES (playerdrivers playercore playererror)
 IF (HAVE_JPEG)
     TARGET_LINK_LIBRARIES (playerdrivers playerjpeg)
 ENDIF (HAVE_JPEG)
+IF (PLAYER_OS_SOLARIS)
+    TARGET_LINK_LIBRARIES (playerdrivers rt)
+ENDIF (PLAYER_OS_SOLARIS)
 
 # Set C flags on source files that need them
 FOREACH (driverName ${PLAYER_BUILT_DRIVERS})

@@ -10,6 +10,7 @@
 
 #include "lms400_cola.h"
 #include <unistd.h>
+#include <strings.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor.
@@ -18,7 +19,7 @@ lms400_cola::lms400_cola (const char* host, int port, int debug_mode)
   portno   = port;
   hostname = host;
   verbose  = debug_mode;
-  bzero (command, BUF_SIZE);
+  memset (command, 0, BUF_SIZE);
   MeasurementQueue = new std::vector<MeasurementQueueElement_t >;
 }
 
@@ -39,12 +40,12 @@ int
     return (-1);
 
   // Fill in the sockaddr_in structure values
-  bzero ((char *) &serv_addr, sizeof (serv_addr));
+  memset ((char *) &serv_addr, 0, sizeof (serv_addr));
   serv_addr.sin_family = AF_INET;
   serv_addr.sin_port   = htons (portno);
-  bcopy ((char *)server->h_addr,
-         (char *)&serv_addr.sin_addr.s_addr,
-         server->h_length);
+  memcpy ((char *)&serv_addr.sin_addr.s_addr,
+		  (char *)server->h_addr,
+          server->h_length);
 
   // Attempt to connect
   if (connect (sockfd, (const sockaddr*)&serv_addr, sizeof (serv_addr)) < 0)
@@ -364,7 +365,7 @@ player_laser_data_t
   int length  = 0;
   int current = 0;
 
-  bzero (buffer, 256);
+  memset (buffer, 0, 256);
   if (!MeasurementQueue->empty ())
   {
     if (verbose) printf (">>> Reading from queue...\n");
@@ -501,7 +502,7 @@ int
 int
   lms400_cola::ReadResult ()
 {
-  bzero (buffer, 256);
+  memset (buffer, 0, 256);
   n = read (sockfd, buffer, 8);
   if (n < 0)
     return (-1);
