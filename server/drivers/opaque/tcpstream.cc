@@ -338,8 +338,9 @@ int TCPStream::OpenTerm()
 	PLAYER_MSG0(2, "TCP Opaque Driver connected");
 
 	connected = true;
-
-  return 0;
+	AddFileWatch(sock);
+	
+	return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
