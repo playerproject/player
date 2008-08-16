@@ -410,9 +410,24 @@
 {
 double get_range (int index)
 {
-	return self->ranges[index];
+	if (index < self->scan_count)
+		return self->ranges[index];
+	else
+		return 0;
 };
 }
+
+%extend playerc_sonar
+{
+double get_scan (int index)
+{
+	if (index < self->scan_count)
+		return self->scan[index];
+	else
+		return 0;
+};
+}
+
 
 %extend playerc_blackboard
 {
