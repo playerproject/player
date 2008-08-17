@@ -353,6 +353,8 @@ class BlackBoardProxy : public ClientProxy
   	void UnsubscribeFromGroup(const char* group);
   	/** Set a key value */
   	void SetEntry(const player_blackboard_entry_t &entry);
+  	/** Get a value for a key */
+  	player_blackboard_entry_t *GetEntry(const char* key, const char* group);
   	/** Set the function pointer which will be called when an entry is updated. */
   	void SetEventHandler(void (*on_blackboard_event)(playerc_blackboard_t *, player_blackboard_entry_t));
 };
