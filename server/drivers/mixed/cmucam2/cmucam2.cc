@@ -311,7 +311,7 @@ int Cmucam2::ProcessMessage (QueuePointer & resp_queue,
 	assert(hdr);
 	assert(data);
 
-	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, ptz_id))
+	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_PTZ_CMD_STATE, ptz_id))
 	{
 		player_ptz_cmd_t & command =
 				*reinterpret_cast<player_ptz_cmd_t * > (data);
@@ -331,9 +331,6 @@ int Cmucam2::ProcessMessage (QueuePointer & resp_queue,
 				set_servo_position(fd, 1, -1*tilt_position);
 		}
 
-		Publish (this->ptz_id, resp_queue,
-				 PLAYER_MSGTYPE_RESP_ACK,
-				 hdr->subtype);
 		return 0;
 	}
 
