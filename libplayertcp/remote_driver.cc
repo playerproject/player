@@ -2,7 +2,6 @@
  *  Player - One Hell of a Robot Server
  *  Copyright (C) <insert dates here>
  *     <insert author's name(s) here>
- *                      
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -53,24 +52,20 @@
 #include <libplayerxdr/playerxdr.h>
 #include "remote_driver.h"
 
-TCPRemoteDriver::TCPRemoteDriver(player_devaddr_t addr, void* arg) 
-        : Driver(NULL, 0, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
+TCPRemoteDriver::TCPRemoteDriver(player_devaddr_t addr, void* arg)
+        : Driver(NULL, 0, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN),
+          sock(-1),
+          setup_timeout (DEFAULT_SETUP_TIMEOUT)
 {
-  if(arg)
-    this->ptcp = (PlayerTCP*)arg;
-  else
-    this->ptcp = NULL;
-
-  this->sock = -1;
-  this->setup_timeout = DEFAULT_SETUP_TIMEOUT;
+    ptcp = reinterpret_cast<PlayerTCP*> (arg);
 }
 
 TCPRemoteDriver::~TCPRemoteDriver()
 {
 }
 
-int 
-TCPRemoteDriver::Setup() 
+int
+TCPRemoteDriver::Setup()
 {
   struct sockaddr_in server;
   char banner[PLAYER_IDENT_STRLEN];
@@ -92,7 +87,7 @@ TCPRemoteDriver::Setup()
   }
 
 
-  // Construct socket 
+  // Construct socket
   this->sock = socket(PF_INET, SOCK_STREAM, 0);
   if(this->sock < 0)
   {
@@ -104,17 +99,17 @@ TCPRemoteDriver::Setup()
   server.sin_addr.s_addr = this->device_addr.host;
   server.sin_port = htons(this->device_addr.robot);
 
-  // Connect the socket 
+  // Connect the socket
   if(connect(this->sock, (struct sockaddr*)&server, sizeof(server)) < 0)
   {
     PLAYER_ERROR3("connect call on [%s:%u] failed with error [%s]",
                 this->ipaddr,
-                this->device_addr.robot, 
+                this->device_addr.robot,
                 strerror(errno));
     return(-1);
   }
 
-  printf("connected to: %s:%u\n",
+  PLAYER_MSG2(2,"connected to: %s:%u\n",
          this->ipaddr, this->device_addr.robot);
 
   // make the socket non-blocking
@@ -141,7 +136,7 @@ TCPRemoteDriver::Setup()
   numread=0;
   while(numread < (int)sizeof(banner))
   {
-    if((thisnumread = read(this->sock, banner+numread, 
+    if((thisnumread = read(this->sock, banner+numread,
                            sizeof(banner)-numread)) < 0)
     {
       if(errno != EAGAIN)
@@ -169,13 +164,14 @@ TCPRemoteDriver::Setup()
 
   // Add this socket for monitoring
   this->kill_flag = 0;
-  this->queue = this->ptcp->AddClient(NULL, 
-                                      this->device_addr.host, 
-                                      this->device_addr.robot, 
-                                      this->sock, 
+  this->queue = this->ptcp->AddClient(NULL,
+                                      this->device_addr.host,
+                                      this->device_addr.robot,
+                                      this->sock,
                                       false,
                                       &this->kill_flag,
                                       (this->ptcp->thread == pthread_self()));
+
   PLAYER_MSG0(5,"Adding new TCPRemoteDriver to the PlayerTCP Client List...Success");
 
   return(0);
@@ -204,7 +200,7 @@ TCPRemoteDriver::SubscribeRemote(unsigned char mode)
   req.driver_name_count = 0;
 
   // Encode the body
-  if((encode_msglen = 
+  if((encode_msglen =
       player_device_req_pack(buf + PLAYERXDR_MSGHDR_SIZE,
                              sizeof(buf)-PLAYERXDR_MSGHDR_SIZE,
                              &req, PLAYERXDR_ENCODE)) < 0)
@@ -231,7 +227,7 @@ TCPRemoteDriver::SubscribeRemote(unsigned char mode)
 
   while(numbytes < encode_msglen)
   {
-    if((thisnumbytes = write(this->sock, buf+numbytes, 
+    if((thisnumbytes = write(this->sock, buf+numbytes,
                              encode_msglen-numbytes)) < 0)
     {
       if(errno != EAGAIN)
@@ -256,13 +252,13 @@ TCPRemoteDriver::SubscribeRemote(unsigned char mode)
   // In any case, explicitly unsubscribing is just a courtesy.
   if(mode == PLAYER_CLOSE_MODE)
     return(0);
-  
+
   // Receive the response header
   GlobalTime->GetTimeDouble(&t1);
   numbytes = 0;
   while(numbytes < PLAYERXDR_MSGHDR_SIZE)
   {
-    if((thisnumbytes = read(this->sock, buf+numbytes, 
+    if((thisnumbytes = read(this->sock, buf+numbytes,
                             PLAYERXDR_MSGHDR_SIZE-numbytes)) < 0)
     {
       if(errno != EAGAIN)
@@ -289,7 +285,7 @@ TCPRemoteDriver::SubscribeRemote(unsigned char mode)
   }
 
   // Is it the right kind of message?
-  if(!Message::MatchMessage(&hdr, 
+  if(!Message::MatchMessage(&hdr,
                             PLAYER_MSGTYPE_RESP_ACK,
                             PLAYER_PLAYER_REQ_DEV,
                             hdr.addr))
@@ -303,7 +299,7 @@ TCPRemoteDriver::SubscribeRemote(unsigned char mode)
   numbytes = 0;
   while(numbytes < (int)hdr.size)
   {
-    if((thisnumbytes = read(this->sock, buf+PLAYERXDR_MSGHDR_SIZE+numbytes, 
+    if((thisnumbytes = read(this->sock, buf+PLAYERXDR_MSGHDR_SIZE+numbytes,
                             hdr.size-numbytes)) < 0)
     {
       if(errno != EAGAIN)
@@ -349,8 +345,8 @@ TCPRemoteDriver::SubscribeRemote(unsigned char mode)
   return(0);
 }
 
-int 
-TCPRemoteDriver::Shutdown() 
+int
+TCPRemoteDriver::Shutdown()
 {
   // Have we already been killed?
   if(!this->kill_flag)
@@ -364,27 +360,12 @@ TCPRemoteDriver::Shutdown()
     this->ptcp->DeleteClient(this->queue,
                              (this->ptcp->thread == pthread_self()));
   }
-  return(0); 
+  return(0);
 }
 
-void 
-TCPRemoteDriver::Update()
-{
-  if(this->ptcp->thread == pthread_self())
-  {
-    //this->ptcp->Read(0,true);
-    this->ptcp->Lock();
-    this->ptcp->ReadClient(this->queue);
-    this->ptcp->Unlock();
-  }
-  this->ProcessMessages();
-  if(this->ptcp->thread == pthread_self())
-    this->ptcp->Write(false);
-}
-
-int 
-TCPRemoteDriver::ProcessMessage(QueuePointer &resp_queue, 
-                                player_msghdr * hdr, 
+int
+TCPRemoteDriver::ProcessMessage(QueuePointer &resp_queue,
+                                player_msghdr * hdr,
                                 void * data)
 {
   // Is it data from the remote device?
@@ -442,7 +423,7 @@ TCPRemoteDriver::ProcessMessage(QueuePointer &resp_queue,
     }
   }
   // Forward response (success or failure) from the laser
-  else if((Message::MatchMessage(hdr, PLAYER_MSGTYPE_RESP_ACK, 
+  else if((Message::MatchMessage(hdr, PLAYER_MSGTYPE_RESP_ACK,
                                  -1, this->device_addr)) ||
           (Message::MatchMessage(hdr, PLAYER_MSGTYPE_RESP_NACK,
                                  -1, this->device_addr)))
@@ -459,7 +440,7 @@ TCPRemoteDriver::ProcessMessage(QueuePointer &resp_queue,
 }
 
 
-Driver* 
+Driver*
 TCPRemoteDriver::TCPRemoteDriver_Init(player_devaddr_t addr, void* arg)
 {
   return((Driver*)(new TCPRemoteDriver(addr, arg)));

@@ -2,7 +2,7 @@
  *  Player - One Hell of a Robot Server
  *  Copyright (C) <insert dates here>
  *     <insert author's name(s) here>
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -63,9 +63,8 @@ class TCPRemoteDriver : public Driver
 
     virtual int Setup();
     virtual int Shutdown();
-    virtual void Update();
-    virtual int ProcessMessage(QueuePointer & resp_queue, 
-                               player_msghdr * hdr, 
+    virtual int ProcessMessage(QueuePointer & resp_queue,
+                               player_msghdr * hdr,
                                void * data);
 
     static Driver* TCPRemoteDriver_Init(player_devaddr_t addr, void* arg);

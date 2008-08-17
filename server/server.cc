@@ -294,26 +294,27 @@ main(int argc, char** argv)
   while(!player_quit)
   {
     // wait until something other than driver requested watches happens
-    fileWatcher->Wait();
-
-    if(ptcp->Accept(0) < 0)
+    int numready = fileWatcher->Wait(0.01); // run at a minimum of 100Hz for other drivers
+    if (numready > 0)
     {
-      PLAYER_ERROR("failed while accepting new TCP connections");
-      break;
-    }
+      if(ptcp->Accept(0) < 0)
+      {
+        PLAYER_ERROR("failed while accepting new TCP connections");
+        break;
+      }
 
-    if(ptcp->Read(100,false) < 0)
-    {
-      PLAYER_ERROR("failed while reading from TCP clients");
-      break;
-    }
+      if(ptcp->Read(0,false) < 0)
+      {
+        PLAYER_ERROR("failed while reading from TCP clients");
+        break;
+      }
 
-    if(pudp->Read(0) < 0)
-    {
-      PLAYER_ERROR("failed while reading from UDP clients");
-      break;
+      if(pudp->Read(0) < 0)
+      {
+        PLAYER_ERROR("failed while reading from UDP clients");
+        break;
+      }
     }
-
     deviceTable->UpdateDevices();
 
     if(ptcp->Write(false) < 0)
