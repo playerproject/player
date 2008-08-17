@@ -181,6 +181,18 @@ void BlackBoardProxy::SetEntry(const player_blackboard_entry_t &entry)
 	delete copy;
 }
 
+player_blackboard_entry_t *BlackBoardProxy::GetEntry(const char* key, const char* group)
+{
+	scoped_lock_t lock(mPc->mMutex);
+	player_blackboard_entry_t *entry;
+	if (0 != playerc_blackboard_get_entry(mDevice, key, group, &entry))
+	{
+		throw PlayerError("BlackBoardProxy::GetEntry(const char* key, const char* group)", "failed to get entry");
+	}
+	
+	return entry;
+}
+
 void BlackBoardProxy::SetEventHandler(void (*on_blackboard_event)(playerc_blackboard_t*, player_blackboard_entry_t))
 {
 	mDevice->on_blackboard_event = on_blackboard_event;
