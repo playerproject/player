@@ -131,10 +131,10 @@ None
 @par Example
 
 @verbatim
-device
+driver
 (
-  plugin "lodo_driver.so"
-  driver "lodo_driver"
+  name "lodo_driver"
+  plugin "liblododriver"
   requires ["position2d:0" "laser:0"]
   provides ["position2d:10" "laser:10"]
 )
