@@ -36,22 +36,24 @@
 #include <sys/time.h>
 #include <fcntl.h>
 #include <termios.h>
-#include <stdio.h>
-#include <strings.h>
+#include <cstdio>
 #include <unistd.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstddef>
+#include <cerrno>
+#include <cstring>
+#include <string>
 #include <pthread.h>
-#include <math.h>
+#include <cmath>
 #include <fstream>
 #include <iostream>
-#include <signal.h>
+#include <csignal>
+#include <vector>
 #include <netinet/in.h>
 // Player includes
 #include <libplayercore/playercore.h>
 
-#include <assert.h>
+#include <cassert>
 #include "icp.h"
 #include "map.h"
 #include "lasermodel.h"

@@ -1,4 +1,4 @@
-/* 
+/*
  *  PlayerViewer
  *  Copyright (C) Andrew Howard 2002
  *
@@ -32,7 +32,7 @@
 // Update the map configuration
 void vectormap_update_config(vectormap_t *map);
 
-// Draw the map 
+// Draw the map
 void vectormap_draw(vectormap_t *map);
 
 // Draw a single map feature
@@ -46,7 +46,7 @@ vectormap_t *vectormap_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *
   char label[64];
   char section[64];
   vectormap_t *map;
-  
+
   map = malloc(sizeof(vectormap_t));
   map->proxy = playerc_vectormap_create(client, index);
   map->drivername = strdup(drivername);
@@ -163,12 +163,13 @@ void vectormap_draw(vectormap_t *map)
 {
   unsigned ii, jj;
   GEOSGeom feature;
+  uint32_t colour = 0xFF0000;
+  double xCenter, yCenter;
 
   rtk_fig_show(map->fig, 1);
   rtk_fig_clear(map->fig);
 
   // draw map data
-  uint32_t colour = 0xFF0000;
   for (ii = 0;  ii < map->proxy->layers_count; ++ii)
   {
     // get a different colour for each layer the quick way, will duplicate after 6 layers
@@ -186,8 +187,8 @@ void vectormap_draw(vectormap_t *map)
 
   // draw map extent
   rtk_fig_color_rgb32( map->fig, 0xFF0000 );
-  double xCenter = map->proxy->extent.x1 - (map->proxy->extent.x1 - map->proxy->extent.x0)/2;
-  double yCenter = map->proxy->extent.y1 - (map->proxy->extent.y1 - map->proxy->extent.y0)/2;
+  xCenter = map->proxy->extent.x1 - (map->proxy->extent.x1 - map->proxy->extent.x0)/2;
+  yCenter = map->proxy->extent.y1 - (map->proxy->extent.y1 - map->proxy->extent.y0)/2;
 
   rtk_fig_rectangle(
                     map->fig,
@@ -210,7 +211,8 @@ void vectormap_draw_feature(vectormap_t *map, GEOSGeom geom)
   unsigned numcoords;
   unsigned ii;
   double x,y,x2,y2;
-  switch (GEOSGeomTypeId(geom)) 
+
+  switch (GEOSGeomTypeId(geom))
   {
     case GEOS_POINT:
       seq = GEOSGeom_getCoordSeq(geom);

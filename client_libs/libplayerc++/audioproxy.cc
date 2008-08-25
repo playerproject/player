@@ -47,6 +47,7 @@
 #include <cassert>
 #include <sstream>
 #include <iomanip>
+#include <iostream>
 
 #include "playerc++.h"
 #include "debug.h"
@@ -93,7 +94,7 @@ std::ostream& std::operator << (std::ostream& os, const PlayerCc::AudioProxy& a)
   player_audio_mixer_channel_t channel;
 
   int old_precision = os.precision(3);
-  std::_Ios_Fmtflags old_flags = os.flags();
+  std::ios::fmtflags old_flags = os.flags();
   os.setf(std::ios::fixed);
 
   int NumChannelDetails = a.GetMixerDetailsCount();

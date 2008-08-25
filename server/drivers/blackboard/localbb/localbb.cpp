@@ -66,13 +66,15 @@
 /** @} */
 
 #include <sys/types.h> // required by Darwin
-#include <stdlib.h>
 #include <libplayercore/playercore.h>
 #include <libplayercore/error.h>
 #include <vector>
 #include <map>
-#include <strings.h>
 #include <iostream>
+#include <cstdlib>
+#include <cstddef>
+#include <string>
+#include <cstring>
 
 bool operator ==(const player_devaddr_t &a, const player_devaddr_t &b);
 bool operator <(const player_devaddr_t &a, const player_devaddr_t &b);
@@ -108,9 +110,9 @@ typedef struct BlackBoardEntry
   BlackBoardEntry() { key = ""; group = ""; }
 
   /** Entry label */
-  string key;
+  std::string key;
   /** Secondary identifier. */
-  string group;
+  std::string group;
   /** Entry data */
   EntryData data;
 } BlackBoardEntry;
@@ -154,8 +156,8 @@ BlackBoardEntry FromPlayerBlackBoardEntry(const player_blackboard_entry_t &entry
   BlackBoardEntry result;
   result.data.type = entry.type;
   result.data.subtype = entry.subtype;
-  result.key = string(entry.key);
-  result.group = string(entry.group);
+  result.key = std::string(entry.key);
+  result.group = std::string(entry.group);
   result.data.data_count = entry.data_count;
   result.data.data = new uint8_t[result.data.data_count];
   memcpy(result.data.data, entry.data, result.data.data_count);
@@ -258,26 +260,26 @@ class LocalBB : public Driver
 		 * @param group Second identifier.
 		 * @param resp_queue Player response queue of the subscriber.
 		 */
-		BlackBoardEntry SubscribeKey(const string &key, const string &group, const QueuePointer &resp_queue, const player_devaddr_t addr);
+		BlackBoardEntry SubscribeKey(const std::string &key, const std::string &group, const QueuePointer &resp_queue, const player_devaddr_t addr);
 		/** @brief Remove the key and queue combination from the listeners hash-map.
 		 * @param key Entry key.
 		 * @param group Second identifier.
 		 * @param qp Player response queue of the unsubscriber.
 		 * @return Blackboard entry containing the value of the key and group.
 		 */
-		void UnsubscribeKey(const string &key, const string &group, const QueuePointer &qp);
+		void UnsubscribeKey(const std::string &key, const std::string &group, const QueuePointer &qp);
 		/** @brief Add a group to the group listeners hash-map and return all entries of that group
 		 * @param group Entry gruop
 		 * @param qp resp_queue Player response queue of the subscriber
 		 * @return Vector of blackboard entries of that group
 		 */
-		vector<BlackBoardEntry> SubscribeGroup(const string &group, const QueuePointer &qp, const player_devaddr_t addr);
+		vector<BlackBoardEntry> SubscribeGroup(const std::string &group, const QueuePointer &qp, const player_devaddr_t addr);
 		/**
 		 * @brief Remove the group from the group listeners hash-map.
 		 * @param group Entry group
 		 * @param qp Player response queue of the unsubscriber
 		 */
-		void UnsubscribeGroup(const string &group, const QueuePointer &qp);
+		void UnsubscribeGroup(const std::string &group, const QueuePointer &qp);
 
 		/** @brief Set the entry in the entries hashmap. *
 		* @param entry BlackBoardEntry that must be put in the hashmap.
@@ -295,16 +297,16 @@ class LocalBB : public Driver
 		* map<group, map<key, entry> >
 		*/
 
-		map<string, map<string, BlackBoardEntry> > entries;
+		map<std::string, map<std::string, BlackBoardEntry> > entries;
 		/** Map of labels to listening queues.
 		* map<group, map<key, vector<device queue> > >
 		*/
-		map<string, map<string, vector<QueuePointer> > > listeners;
+		map<std::string, map<std::string, vector<QueuePointer> > > listeners;
 
 		/** Map of groups to queues subscribed to groups.
 		* map<group, vector<device queue> >
 		*/
-		map<string, vector<QueuePointer> > group_listeners;
+		map<std::string, vector<QueuePointer> > group_listeners;
 
 		/** Map of queues to devices. Used to remove unneeded queues when a device is unsubscribed. */
 		map<player_devaddr_t, QueuePointer> subscribed_devices;
@@ -314,10 +316,10 @@ class LocalBB : public Driver
 int LocalBB::Unsubscribe(player_devaddr_t addr)
 {
 	QueuePointer &qp = subscribed_devices[addr];
-	for (map<string, map<string, vector<QueuePointer> > >::iterator itr = listeners.begin(); itr != listeners.end(); itr++)
+	for (map<std::string, map<std::string, vector<QueuePointer> > >::iterator itr = listeners.begin(); itr != listeners.end(); itr++)
 	{
-		map<string, vector<QueuePointer> > &keys = (*itr).second;
-		for (map<string, vector<QueuePointer> >::iterator jtr = keys.begin(); jtr != keys.end(); jtr++)
+		map<std::string, vector<QueuePointer> > &keys = (*itr).second;
+		for (map<std::string, vector<QueuePointer> >::iterator jtr = keys.begin(); jtr != keys.end(); jtr++)
 		{
 			vector<QueuePointer> &qps = (*jtr).second;
 			vector<vector<QueuePointer>::iterator> remove_list;
@@ -335,7 +337,7 @@ int LocalBB::Unsubscribe(player_devaddr_t addr)
 		}
 	}
 
-	for (map<string, vector<QueuePointer> >::iterator itr = group_listeners.begin(); itr != group_listeners.end(); itr++)
+	for (map<std::string, vector<QueuePointer> >::iterator itr = group_listeners.begin(); itr != group_listeners.end(); itr++)
 	{
 		vector<QueuePointer> &qps = (*itr).second;
 		vector<vector<QueuePointer>::iterator> remove_list;
@@ -497,7 +499,7 @@ int LocalBB::ProcessGetEntryMessage(QueuePointer &resp_queue, player_msghdr * hd
 
 	// Retrieve the entry for the key
 	player_blackboard_entry_t *request = reinterpret_cast<player_blackboard_entry_t*>(data);
-	BlackBoardEntry current_value = entries[string(request->group)][string(request->key)];
+	BlackBoardEntry current_value = entries[std::string(request->group)][std::string(request->key)];
 
 	// Convert the entry
 	player_blackboard_entry_t response = ToPlayerBlackBoardEntry(current_value);
@@ -685,7 +687,7 @@ int LocalBB::ProcessSetEntryMessage(QueuePointer &resp_queue, player_msghdr * hd
 
 ////////////////////////////////////////////////////////////////////////////////
 // Add a device to the listener list for a key. Return the current value of the entry.
-BlackBoardEntry LocalBB::SubscribeKey(const string &key, const string &group, const QueuePointer &resp_queue, const player_devaddr_t addr)
+BlackBoardEntry LocalBB::SubscribeKey(const std::string &key, const std::string &group, const QueuePointer &resp_queue, const player_devaddr_t addr)
 {
 	listeners[group][key].push_back(resp_queue);
 	subscribed_devices[addr] = resp_queue;
@@ -700,7 +702,7 @@ BlackBoardEntry LocalBB::SubscribeKey(const string &key, const string &group, co
 
 ////////////////////////////////////////////////////////////////////////////////
 // Remove a device from the listener list for a key.
-void LocalBB::UnsubscribeKey(const string &key, const string &group, const QueuePointer &qp)
+void LocalBB::UnsubscribeKey(const std::string &key, const std::string &group, const QueuePointer &qp)
 {
 	vector<QueuePointer> &devices = listeners[group][key];
 
@@ -716,16 +718,16 @@ void LocalBB::UnsubscribeKey(const string &key, const string &group, const Queue
 
 ////////////////////////////////////////////////////////////////////////////////
 // Add a device to the group listener map. Return vector of entries for that group.
-vector<BlackBoardEntry> LocalBB::SubscribeGroup(const string &group, const QueuePointer &qp, const player_devaddr_t addr)
+vector<BlackBoardEntry> LocalBB::SubscribeGroup(const std::string &group, const QueuePointer &qp, const player_devaddr_t addr)
 {
 	group_listeners[group].push_back(qp);
 	subscribed_devices[addr] = qp;
 
 	vector<BlackBoardEntry> group_entries;
 	//map<group, map<key, entry> >
-	map<string, BlackBoardEntry> &entry_map = entries[group];
+	map<std::string, BlackBoardEntry> &entry_map = entries[group];
 
-	for (map<string, BlackBoardEntry>::iterator itr = entry_map.begin(); itr != entry_map.end(); itr++)
+	for (map<std::string, BlackBoardEntry>::iterator itr = entry_map.begin(); itr != entry_map.end(); itr++)
 	{
 		BlackBoardEntry current_value = (*itr).second;
 		if (current_value.key == "")
@@ -743,7 +745,7 @@ vector<BlackBoardEntry> LocalBB::SubscribeGroup(const string &group, const Queue
 
 ////////////////////////////////////////////////////////////////////////////////
 // Remove a device from the group listener map
-void LocalBB::UnsubscribeGroup(const string &group, const QueuePointer &qp)
+void LocalBB::UnsubscribeGroup(const std::string &group, const QueuePointer &qp)
 {
 	vector<QueuePointer> &devices = group_listeners[group];
 

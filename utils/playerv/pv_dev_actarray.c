@@ -1,4 +1,4 @@
-/* 
+/*
  *  PlayerViewer
  *  Copyright (C) Andrew Howard 2002
  *
@@ -46,7 +46,7 @@ actarray_t *actarray_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *cl
   char section[64];
   char label[64];
   actarray_t *actarray;
-  
+
   actarray = malloc(sizeof(actarray_t));
   actarray->datatime = 0;
   actarray->drivername = strdup(drivername);
@@ -66,7 +66,7 @@ actarray_t *actarray_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *cl
   actarray->menu = rtk_menu_create_sub(mainwnd->device_menu, label);
   actarray->subscribe_item = rtk_menuitem_create(actarray->menu, "Subscribe", 1);
   actarray->command_item = rtk_menuitem_create(actarray->menu, "Command", 1);
-  
+
   // Set the initial menu state
   rtk_menuitem_check(actarray->subscribe_item, actarray->proxy->info.subscribed);
 
@@ -75,7 +75,7 @@ actarray_t *actarray_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *cl
   actarray->actuator_fig_cmd = NULL;
   actarray->lastvalue = NULL;
   actarray->mainwnd = mainwnd;
-  
+
   return actarray;
 }
 
@@ -198,8 +198,8 @@ void actarray_draw(actarray_t *actarray)
   double min, max;
   double ax, ay, bx, by;
   double fx, fd;
-
   int ii;
+  rtk_fig_t *fig;
 
   actarray_allocate(actarray, actarray->proxy->actuators_count);
 
@@ -217,7 +217,7 @@ void actarray_draw(actarray_t *actarray)
     if (value > max) value = max;
     if (value < min) value = min;
     value = 2*(value-min)/(max-min) -1;
-    rtk_fig_t * fig = actarray->actuator_fig[ii];
+    fig = actarray->actuator_fig[ii];
     rtk_fig_show(fig, 1);
     rtk_fig_clear(fig);
     rtk_fig_origin(actarray->actuator_fig[ii], ARRAY_SPACING*ii +ARRAY_X_OFFSET, 0, 0);

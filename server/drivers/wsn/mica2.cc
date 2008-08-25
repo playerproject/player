@@ -883,15 +883,13 @@ int Mica2::WriteSerial (unsigned char *buffer, int length, unsigned char ack)
 NodeCalibrationValues Mica2::FindNodeValues (unsigned int nodeID)
 {
     NodeCalibrationValues n;
+    NCV::iterator it;
 
-    unsigned int i = 0;
-
-    for (i = 0; i < ncv.size (); i++)
+    for (it = ncv.begin (); it != ncv.end (); it++)
     {
-    	n = ncv.at (i);
-
-	if (n.node_id == nodeID)
-	    break;
+        n = *it;
+        if (n.node_id == nodeID)
+            break;
     }
 
     return n;
