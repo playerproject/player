@@ -190,8 +190,9 @@ render_camera(gpointer data)
   GdkPixbuf *blobbuf= NULL;
   GdkGC         *gc = NULL;
   GtkWidget *drawing_area = GTK_WIDGET(data);
-  gc = GTK_WIDGET(drawing_area)->style->fg_gc[GTK_WIDGET_STATE(GTK_WIDGET(drawing_area))];
   uint16_t i;
+
+  gc = GTK_WIDGET(drawing_area)->style->fg_gc[GTK_WIDGET_STATE(GTK_WIDGET(drawing_area))];
 
   player_update();
 
@@ -447,7 +448,7 @@ player_init(int argc, char *argv[])
   assert(g_width>0);
   assert(g_height>0);
 
-  playerc_client_datamode(g_client,PLAYER_DATAMODE_PULL); 
+  playerc_client_datamode(g_client,PLAYER_DATAMODE_PULL);
   playerc_client_set_replace_rule(g_client,-1,-1,PLAYER_MSGTYPE_DATA,-1,1);
 }
 
@@ -462,17 +463,17 @@ player_update()
     {
       // Decompress the image if necessary
       playerc_camera_decompress(g_camera);
+      assert(allocated_size > g_camera->image_count*3);
       // figure out the colorspace
       switch (g_camera->format)
       {
-        assert(allocated_size > g_camera->image_count*3);
         case PLAYER_CAMERA_FORMAT_MONO8:
           // we should try to use the alpha layer,
           // but for now we need to change
           // the image data
           for (i=0;i<g_camera->image_count;++i)
           {
-        
+
             memcpy(g_img+i*3, g_camera->image+i, 3);
           }
           break;
@@ -482,8 +483,8 @@ player_update()
           // Transform to MONO8
           for (i = 0; i < g_camera->image_count; i++, j+=2)
           {
-            g_img[i*3+1] = g_img[i*3+2] = g_img[i*3+3] = 
-          	  ((unsigned char)(g_camera->image[j]) << 8) + 
+            g_img[i*3+1] = g_img[i*3+2] = g_img[i*3+3] =
+          	  ((unsigned char)(g_camera->image[j]) << 8) +
           	  (unsigned char)(g_camera->image[j+1]);
           }
           break;

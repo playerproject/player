@@ -46,6 +46,9 @@
 #include <cassert>
 #include <sstream>
 #include <iomanip>
+#if __GNUC__ > 2
+  #include <locale>
+#endif
 
 #include "playerc++.h"
 #include "debug.h"
@@ -95,7 +98,9 @@ void
 CameraProxy::SaveFrame(const std::string aPrefix, uint32_t aWidth)
 {
   std::ostringstream filename;
+#if __GNUC__ > 2
   filename.imbue(std::locale(""));
+#endif
   filename.fill('0');
 
   filename << aPrefix << std::setw(aWidth) << mFrameNo++;

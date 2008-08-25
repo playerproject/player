@@ -47,6 +47,7 @@
 #include <cassert>
 #include <sstream>
 #include <iomanip>
+#include <iostream>
 
 #include "playerc++.h"
 #include "debug.h"
@@ -94,7 +95,7 @@ std::operator << (std::ostream& os, const PlayerCc::LimbProxy& a)
   player_limb_geom_req_t geom = a.GetGeom ();
 
   int old_precision = os.precision(3);
-  std::_Ios_Fmtflags old_flags = os.flags();
+  std::ios::fmtflags old_flags = os.flags();
   os.setf(std::ios::fixed);
 
   os << "Limb offset: " << geom.basePos.px << ", " << geom.basePos.py << ", " << geom.basePos.pz << endl;

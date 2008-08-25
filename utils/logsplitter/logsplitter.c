@@ -19,8 +19,8 @@
  * CVS: $Id$
  */
 /*
- Desc  : Splits log files into smaller chunks, based on the difference between 
-         consecutive timestamp entries. A bit ugly, but it works. There's room 
+ Desc  : Splits log files into smaller chunks, based on the difference between
+         consecutive timestamp entries. A bit ugly, but it works. There's room
 	 for optimization, so feel free.
  Author: Radu Bogdan Rusu
  Date  : 20th of September, 2006
@@ -35,7 +35,7 @@
 #include <sys/stat.h>
 
 // Splits a logfile and returns the new file handle
-FILE 
+FILE
 *copySplitData (FILE *input, double t2, long before)
 {
     char data[1024];
@@ -48,10 +48,10 @@ FILE
 
     // Save current position in file
     long currentPos = ftell (input);
-    
+
     // Seek to the beginning of the file
     fseek (input, 0L, SEEK_SET);
-    
+
     // Read the first entry
     while (!feof (input))
     {
@@ -75,7 +75,7 @@ FILE
     {
         output = fopen (fileName, "w+");
         printf ("I: Creating... %s\n", fileName);
-	
+
 	// Copy the relevant data
 	while (!feof (input))
 	{
@@ -84,10 +84,10 @@ FILE
 		break;
 	    fputs (data, output);
 	}
-        
+
 	// Seek back in the source file
 	fseek (input, currentPos - strlen (data), SEEK_SET);
-    
+
 	// Close output file
 	fclose (output);
     }
@@ -97,18 +97,18 @@ FILE
 	// Seek back in the source file
 	fseek (input, currentPos - before, SEEK_SET);
     }
-    
+
     // Create a new file and copy the remainings there
     sprintf (fileName, "%lf-split.log", t2);
     if (stat (fileName, &fbuf) != 0)
     {
 	rest = fopen (fileName, "w+");
-	printf ("I: Creating... %s\n", fileName);	
+	printf ("I: Creating... %s\n", fileName);
 	while (1)
 	{
 	    fgets (data, 1024, input);
 	    lastdatalen = strlen (data);
-	    if (feof (input)) 
+	    if (feof (input))
 		break;
     	    fputs (data, rest);
 	}
@@ -118,7 +118,7 @@ FILE
 	// Truncate the remainings from the source file
         ftruncate (fileno (input), currentPos - before);
 	fclose (input);
-	
+
 	return rest;
     }
     else
@@ -141,7 +141,7 @@ main (int argc, const char **argv)
     float min_timedifference;
     struct stat fbuf;
     struct stat ftempbuf;
-    
+
     // We need 2 parameters
     if (argc != 3)
     {
@@ -150,13 +150,13 @@ main (int argc, const char **argv)
                 "USAGE:  logsplitter [min_time_difference_in_seconds] [FILE]\n\n");
 	return -1;
     }
-    
+
     // Get the minimum time difference between two consecutive timestamps
     min_timedifference = atof (argv[1]);
     base_filename = argv[2];
-    
+
     printf ("I: Minimum time difference is: %f seconds.\n", min_timedifference);
-    
+
     // Open file for reading
     fd = fopen (base_filename, "r+");
     if (!fd)
@@ -175,17 +175,17 @@ main (int argc, const char **argv)
 	printf ("E: Cannot create a temporary file! Aborting...\n");
 	return -1;
     }
-    
+
     // Copy the content of our logfile to that temporary file
     while (1)
     {
 	fgets (buf, 1024, fd);
-        if (feof (fd)) 
+        if (feof (fd))
     	    break;
     	fputs (buf, tempfd);
     }
     fflush (tempfd);
-    
+
     // Close the original logfile
     fclose (fd);
 
@@ -196,7 +196,7 @@ main (int argc, const char **argv)
 	printf ("E: The temporary file differs than the original log file by %ld bytes! Aborting...",
 	    fbuf.st_size - ftempbuf.st_size);
     }
-    
+
     // Get an initial reading
     rewind (tempfd);
     while (!feof (tempfd))
@@ -223,13 +223,17 @@ main (int argc, const char **argv)
 	    sscanf (buf, "%lf", &t2);
 
 	after  = ftell (tempfd);
-	
+
 	// Verify if we need a break
 	if ((fabs (t2 - t1) > min_timedifference) && (after - before > 0))
 	{
-	    time_t t = (time_t)t1;
-    	    ctime_r (&t, btime);
-	    printf ("I: Break (%f) needed after T = %f -> %s", t2 - t1, t1, btime);
+        time_t t = (time_t)t1;
+#if defined (__SVR4) && defined (__sun)
+        ctime_r (&t, btime, sizeof (btime));
+#else
+        ctime_r (&t, btime);
+#endif
+        printf ("I: Break (%f) needed after T = %f -> %s", t2 - t1, t1, btime);
 
 	    tempfd = copySplitData (tempfd, t2, after - before);
 	    if (ftell (tempfd) == 0)
@@ -241,6 +245,6 @@ main (int argc, const char **argv)
 
     // Close file
     fclose (tempfd);
-    
+
     return 0;
 }

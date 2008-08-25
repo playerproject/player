@@ -383,13 +383,11 @@ float Accel_Calib::ConvertAccel (float raw_accel,
 NodeCalibrationValues Accel_Calib::FindNodeValues (unsigned int nodeID)
 {
     NodeCalibrationValues n;
+    NCV::iterator it;
 
-    unsigned int i = 0;
-
-    for (i = 0; i < ncv.size (); i++)
+    for (it = ncv.begin (); it != ncv.end (); it++)
     {
-        n = ncv.at (i);
-
+        n = *it;
         if (n.node_id == nodeID)
             break;
     }

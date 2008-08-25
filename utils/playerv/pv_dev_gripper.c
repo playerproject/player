@@ -105,6 +105,10 @@ void gripper_destroy(gripper_t *gripper)
 // Update a gripper device
 void gripper_update(gripper_t *gripper)
 {
+  double gripper_length, gripper_width;
+  double paddle_center, paddle_length, paddle_width, paddle_pos;
+  double ibbx, obbx, bby;
+  double led_dx;
   int i;
 
   // Update the device subscription
@@ -151,12 +155,12 @@ void gripper_update(gripper_t *gripper)
 
 	// draw paddles
 
-	double gripper_length = gripper->proxy->outer_size.sw;
-	double gripper_width = gripper->proxy->outer_size.sl;
+	gripper_length = gripper->proxy->outer_size.sw;
+	gripper_width = gripper->proxy->outer_size.sl;
 
-	double paddle_center = gripper_length * (1.0/6.0);
-	double paddle_length = gripper_length * (2.0/3.0);
-	double paddle_width = gripper_width * 0.15;
+	paddle_center = gripper_length * (1.0/6.0);
+	paddle_length = gripper_length * (2.0/3.0);
+	paddle_width = gripper_width * 0.15;
 
 	rtk_fig_color_rgb32( gripper->grip_fig, GRIPPER_COLOR_FILL );
 	rtk_fig_rectangle( gripper->grip_fig,
@@ -174,7 +178,7 @@ void gripper_update(gripper_t *gripper)
 
 	if( gripper->proxy->state == PLAYER_GRIPPER_STATE_OPEN )
 	  {
-	    double paddle_pos = gripper_width/2.0 - paddle_width/2.0;
+	    paddle_pos = gripper_width/2.0 - paddle_width/2.0;
 
 	    rtk_fig_color_rgb32( gripper->grip_fig, GRIPPER_COLOR_FILL );
 	    rtk_fig_rectangle(gripper->grip_fig,
@@ -196,7 +200,7 @@ void gripper_update(gripper_t *gripper)
 
 	if( gripper->proxy->state == PLAYER_GRIPPER_STATE_CLOSED )
 	  {
-	    double paddle_pos = paddle_width/2.0;
+	    paddle_pos = paddle_width/2.0;
 
 	    rtk_fig_color_rgb32( gripper->grip_fig, GRIPPER_COLOR_FILL );
 	    rtk_fig_rectangle(gripper->grip_fig,
@@ -227,14 +231,14 @@ void gripper_update(gripper_t *gripper)
 
 
 	// different x location for each beam
-	double ibbx =  paddle_center - 0.3*paddle_length;
-	double obbx =  paddle_center + 0.3*paddle_length;
+	ibbx =  paddle_center - 0.3*paddle_length;
+	obbx =  paddle_center + 0.3*paddle_length;
 
 	// common y position
-	double bby = (gripper->proxy->state == PLAYER_GRIPPER_STATE_OPEN) ? gripper_width/2.0 - paddle_width: 0;
+	bby = (gripper->proxy->state == PLAYER_GRIPPER_STATE_OPEN) ? gripper_width/2.0 - paddle_width: 0;
 
 	// size of the paddle indicator lights
-	double led_dx = paddle_width/2.0;
+	led_dx = paddle_width/2.0;
 
 	if( gripper->proxy->beams & 0x00000001 )
 	  {

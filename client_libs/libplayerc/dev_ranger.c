@@ -52,7 +52,7 @@ playerc_ranger_t *playerc_ranger_create(playerc_client_t *client, int index)
 {
   playerc_ranger_t *device;
 
-  device = malloc(sizeof(playerc_ranger_t));
+  device = (playerc_ranger_t*) malloc(sizeof(playerc_ranger_t));
   memset(device, 0, sizeof(playerc_ranger_t));
   playerc_device_init(&device->info, client, PLAYER_RANGER_CODE, index,
                       (playerc_putmsg_fn_t) playerc_ranger_putmsg);
@@ -98,6 +98,9 @@ int playerc_ranger_unsubscribe(playerc_ranger_t *device)
 // Calculate bearings
 void playerc_ranger_calculate_bearings(playerc_ranger_t *device)
 {
+  double b;
+  uint32_t ii;
+
   device->bearings_count = device->ranges_count;
   if (device->bearings_count == 0 && device->bearings != NULL)
   {
@@ -113,8 +116,7 @@ void playerc_ranger_calculate_bearings(playerc_ranger_t *device)
       return;
     }
 
-    double b = device->min_angle;
-    uint32_t ii;
+    b = device->min_angle;
     for (ii = 0; ii < device->bearings_count; ii++)
     {
       device->bearings[ii] = b;
@@ -127,6 +129,9 @@ void playerc_ranger_calculate_bearings(playerc_ranger_t *device)
 // Calculate scan points
 void playerc_ranger_calculate_points(playerc_ranger_t *device)
 {
+  double b;
+  uint32_t ii;
+
   device->points_count = device->ranges_count;
   if (device->points_count == 0 && device->points != NULL)
   {
@@ -142,8 +147,7 @@ void playerc_ranger_calculate_points(playerc_ranger_t *device)
       return;
     }
 
-    double b = device->min_angle;
-    uint32_t ii;
+    b = device->min_angle;
     for (ii = 0; ii < device->points_count; ii++)
     {
       double r = device->ranges[ii];
