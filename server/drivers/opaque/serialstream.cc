@@ -328,7 +328,6 @@ int SerialStream::ProcessMessage(QueuePointer & resp_queue,
 	//else if it is a opaque data message then I want to flush the current serial port and write to whatever is connected to the serial port
 	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_OPAQUE_CMD_DATA, this->device_addr))
 	{
-		PLAYER_MSG0(2, "Command message received");
 	    player_opaque_data_t * recv = reinterpret_cast<player_opaque_data_t * > (data);
 	    // Make sure both input and output queues are empty
 	    tcflush(opaque_fd, TCIOFLUSH);
