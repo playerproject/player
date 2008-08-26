@@ -26,8 +26,6 @@ void Timer::Synch(double period)
 	int us;
 
 	double time_elapsed = this->TimeElapsed();
-	if( time_elapsed < period*1000)
-		usleep((int)(period*1000 -time_elapsed));
 	if (time_elapsed < (period*1000))
 	{
 		us = static_cast<int>(period*1000-time_elapsed);
