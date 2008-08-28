@@ -59,7 +59,7 @@
 
 Message::Message(const struct player_msghdr & aHeader,
                   void * data,
-                  bool copy) 
+                  bool copy)
 {
   CreateMessage(aHeader, data, copy);
 }
@@ -96,7 +96,7 @@ Message::~Message()
 
 void Message::CreateMessage(const struct player_msghdr & aHeader,
                   void * data,
-                  bool copy) 
+                  bool copy)
 {
   this->Lock = new pthread_mutex_t;
   assert(this->Lock);
@@ -335,8 +335,9 @@ MessageQueue::Wait(double TimeOut)
   {
     struct timespec tp;
     clock_gettime(CLOCK_REALTIME, &tp);
+    TimeOut += static_cast<double> (tp.tv_nsec) * 1e-9;
     tp.tv_sec += static_cast<int> (floor(TimeOut));
-    tp.tv_nsec += static_cast<int> ((TimeOut - floor(TimeOut))*1e9);
+    tp.tv_nsec = static_cast<int> ((TimeOut - floor(TimeOut))*1e9);
     int ret = pthread_cond_timedwait(&this->cond, &this->condMutex, &tp);
     // if we got an error or timed out
     if (ret != 0)
@@ -344,9 +345,9 @@ MessageQueue::Wait(double TimeOut)
   }
   else
   {
-    pthread_cond_wait(&this->cond,&this->condMutex);  
+    pthread_cond_wait(&this->cond,&this->condMutex);
   }
-  
+
   pthread_mutex_unlock(&this->condMutex);
   pthread_cleanup_pop(0);
   return result;
@@ -412,15 +413,15 @@ MessageQueue::DataAvailable(void)
   pthread_cond_broadcast(&this->cond);
   pthread_mutex_unlock(&this->condMutex);
 }
-    
+
 /// @brief Set the data_requested flag
-void 
+void
 MessageQueue::SetDataRequested(bool d, bool haveLock)
-{ 
+{
   if(!haveLock)
     this->Lock();
-  this->data_requested = d; 
-  this->data_delivered = false; 
+  this->data_requested = d;
+  this->data_delivered = false;
   if(!haveLock)
     this->Unlock();
 }
@@ -453,7 +454,7 @@ MessageQueue::PushFront(Message & msg, bool haveLock)
     this->Unlock();
 }
 
-/// Push a message at the back of the queue, without checking replacement 
+/// Push a message at the back of the queue, without checking replacement
 /// rules or size limits.
 /// This method is used internally to insert most messages.
 /// The caller may have already called Lock() on this queue
@@ -566,7 +567,7 @@ MessageQueue::Pop()
   for(el = this->head; el; el = el->next)
   {
     if(resp_el ||
-       ((!this->filter_on || this->Filter(*el->msg)) && 
+       ((!this->filter_on || this->Filter(*el->msg)) &&
         (!this->pull || this->data_requested)))
     {
       if(el == resp_el)
@@ -583,7 +584,7 @@ MessageQueue::Pop()
   }
 
   // queue is empty.  if that data had been requested in pull mode, and
-  // some has been delivered, then mark the end of this frame with a 
+  // some has been delivered, then mark the end of this frame with a
   // sync message
   if(this->pull && this->data_requested && this->data_delivered)
   {
@@ -650,7 +651,7 @@ QueuePointer::QueuePointer(bool _Replace, size_t _Maxlen)
 
   this->RefCount = new unsigned int;
   assert(this->RefCount);
-  *this->RefCount = 1;		
+  *this->RefCount = 1;
 }
 
 /// Destroy our reference to the message queue.
@@ -667,7 +668,7 @@ QueuePointer::QueuePointer(const QueuePointer & rhs)
   {
     Lock = NULL;
     RefCount = NULL;
-    Queue = NULL;      	
+    Queue = NULL;
   }
   else
   {
@@ -681,19 +682,19 @@ QueuePointer::QueuePointer(const QueuePointer & rhs)
     Queue = rhs.Queue;
     RefCount = rhs.RefCount;
     (*RefCount)++;
-    pthread_mutex_unlock(Lock);	
+    pthread_mutex_unlock(Lock);
   }
 }
-	
+
 /// assign reference to our message queue
 QueuePointer & QueuePointer::operator = (const QueuePointer & rhs)
 {
   // first remove our current reference
   DecRef();
-  
+
   if (rhs.Queue == NULL)
   	return *this;
-  
+
   // then copy the rhs
   assert(rhs.Lock);
   pthread_mutex_lock(rhs.Lock);
@@ -705,11 +706,11 @@ QueuePointer & QueuePointer::operator = (const QueuePointer & rhs)
   Queue = rhs.Queue;
   RefCount = rhs.RefCount;
   (*RefCount)++;
-  pthread_mutex_unlock(Lock);	
+  pthread_mutex_unlock(Lock);
   return *this;
 }
 
-MessageQueue * QueuePointer::get() const 
+MessageQueue * QueuePointer::get() const
 {
 	return Queue;
 }
@@ -719,45 +720,45 @@ MessageQueue * QueuePointer::get() const
 MessageQueue * QueuePointer::operator -> ()
 {
   assert(Queue);
-  return Queue;		
+  return Queue;
 }
 
 /// retrieve underlying object for use
 MessageQueue & QueuePointer::operator * ()
 {
   assert(Queue);
-  return *Queue;		
+  return *Queue;
 }
 
 /// check if pointers are equal
 bool QueuePointer::operator == (const QueuePointer & rhs)
 {
-  return rhs.Queue == Queue;	
+  return rhs.Queue == Queue;
 }
 
 /// check if pointers are equal
 bool QueuePointer::operator == (void * pointer)
 {
-  return Queue == pointer;	
+  return Queue == pointer;
 }
 
 /// check if pointers are equal
 bool QueuePointer::operator != (const QueuePointer & rhs)
 {
-  return rhs.Queue != Queue;	
+  return rhs.Queue != Queue;
 }
 
 /// check if pointers are equal
 bool QueuePointer::operator != (void * pointer)
 {
-  return Queue != pointer;	
+  return Queue != pointer;
 }
 
 void QueuePointer::DecRef()
 {
   if (Queue == NULL)
     return;
-    
+
   pthread_mutex_lock(Lock);
   (*RefCount)--;
   assert((*RefCount) >= 0);
@@ -776,7 +777,7 @@ void QueuePointer::DecRef()
   {
     Queue = NULL;
     RefCount = NULL;
-    pthread_mutex_unlock(Lock);		
+    pthread_mutex_unlock(Lock);
     Lock = NULL;
   }
 }
