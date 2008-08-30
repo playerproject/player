@@ -8,6 +8,7 @@
 #include <vector>
 #include <netinet/in.h>
 #include <libplayercore/player.h>
+#include <iostream>
 
 #define BUF_SIZE 1024
 
