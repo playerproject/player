@@ -325,6 +325,7 @@ Roomba::Main()
      posdata.pos.px = this->roomba_dev->ox;
      posdata.pos.py = this->roomba_dev->oy;
      posdata.pos.pa = this->roomba_dev->oa;
+     posdata.stall = static_cast<uint8_t>(this->bumplocked);
 
      this->Publish(this->position_addr, 
                    PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE,
