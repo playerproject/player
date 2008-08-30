@@ -614,14 +614,14 @@ int AmtecM5::HandleRequest(QueuePointer &resp_queue, player_msghdr * hdr, void* 
 			pclDevice->getConfig(idModuleList[i],&configword);
 
 			uint8_t hasbrakes=0;
-			if (configword && CONFIGID_MOD_BRAKE_PRESENT) {
+			if (configword & CONFIGID_MOD_BRAKE_PRESENT) {
 				hasbrakes=1;
 			} else {
 				hasbrakes=0;
 			}
 
 			uint8_t type=0;
-			if (configword && CONFIGID_MOD_LINEAR) {
+			if (configword & CONFIGID_MOD_LINEAR) {
 				type=PLAYER_ACTARRAY_TYPE_LINEAR;
 			} else {
 				type=PLAYER_ACTARRAY_TYPE_ROTARY;
