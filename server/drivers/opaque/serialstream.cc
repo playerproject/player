@@ -61,6 +61,9 @@ data command it will write whatever it recieves onto the serial port
 - buffer_size (integer
   - The size of the buffer to be used when reading, this is the maximum that can be read in one read command
   - Default 4096
+ 
+- parity
+ - The parity that you want. Vaid vaules are "none" (default), "even", "odd"
 
 @par Example
 
@@ -394,7 +397,9 @@ int SerialStream::OpenTerm()
   }
 
   // save the current io settings
-  tcgetattr(opaque_fd, &oldtio);
+  if (tcgetattr(opaque_fd, &oldtio) < 0) {
+	PLAYER_WARN("Failed to get old tty attributes");
+  }
 
   // set up new settings
   UpdateFlags();
@@ -420,7 +425,13 @@ void SerialStream::UpdateFlags()
 	// set up new settings
 	struct termios newtio;
 	memset(&newtio, 0,sizeof(newtio));
-	newtio.c_cflag = CS8 | CREAD;
+	
+	if(tcgetattr( this->opaque_fd, &newtio ) < 0 )
+		PLAYER_WARN("Failed to get old tty attribltes");
+	
+	newtio.c_cc[VMIN] = 0;
+	newtio.c_cc[VTIME] = 0;
+	newtio.c_cflag = CS8 | CREAD; 
 	newtio.c_iflag = INPCK;
 	newtio.c_oflag = 0;
 	newtio.c_lflag = 0;
@@ -432,8 +443,9 @@ void SerialStream::UpdateFlags()
 		newtio.c_cflag |= PARENB | PARODD;
 	else
 		PLAYER_WARN("Invalid parity. Defaulting to none.");
-
-	tcsetattr(opaque_fd, TCSANOW, &newtio);
+	
+	if(tcsetattr(opaque_fd, TCSANOW, &newtio) < 0)
+		PLAYER_ERROR("Failed to set new tty device attributes");
 	tcflush(opaque_fd, TCIOFLUSH);
 }
 
