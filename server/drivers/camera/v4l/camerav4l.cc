@@ -174,7 +174,8 @@ binary driver which is a bonus
 #include <errno.h>
 #include <string.h>
 #include <math.h>
-#include <stdlib.h>       // for atoi(3)
+#include <stddef.h>
+#include <stdlib.h>       // for malloc() and free()
 #include <unistd.h>
 #include <time.h>
 
@@ -220,6 +221,10 @@ class CameraV4L : public Driver
   // Pixel depth
   private: int depth;
 
+  // Format
+
+  private: uint32_t format;
+
   // Camera palette
   private: const char *palette;
 
@@ -263,16 +268,13 @@ class CameraV4L : public Driver
 
   private: time_t publish_time;
 
-  // Data to send to server
-  private: player_camera_data_t data;
-
 };
 
 
 // Initialization function
 Driver* CameraV4L_Init( ConfigFile* cf, int section)
 {
-  return ((Driver*) (new CameraV4L( cf, section)));
+  return (reinterpret_cast<Driver *>(new CameraV4L( cf, section)));
 }
 
 
@@ -373,28 +375,28 @@ int CameraV4L::Setup()
   {
     fg_set_format(this->fg, VIDEO_PALETTE_GREY);
     this->frame = frame_new(this->width, this->height, VIDEO_PALETTE_GREY );
-    this->data.format = PLAYER_CAMERA_FORMAT_MONO8;
+    this->format = PLAYER_CAMERA_FORMAT_MONO8;
     this->depth = 8;
   }
   else if (strcasecmp(this->palette, "RGB565") == 0)
   {
     fg_set_format(this->fg, VIDEO_PALETTE_RGB565 );
     this->frame = frame_new(this->width, this->height, VIDEO_PALETTE_RGB565 );
-    this->data.format = PLAYER_CAMERA_FORMAT_RGB565;
+    this->format = PLAYER_CAMERA_FORMAT_RGB565;
     this->depth = 16;
   }
   else if (strcasecmp(this->palette, "RGB888") == 0)
   {
     fg_set_format(this->fg, VIDEO_PALETTE_RGB24 );
     this->frame = frame_new(this->width, this->height, VIDEO_PALETTE_RGB24 );
-    this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
+    this->format = PLAYER_CAMERA_FORMAT_RGB888;
     this->depth = 24;
   }
   else if (strcasecmp(this->palette, "RGB32") == 0)
   {
     fg_set_format(this->fg, VIDEO_PALETTE_RGB32 );
     this->frame = frame_new(this->width, this->height, VIDEO_PALETTE_RGB32 );
-    this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
+    this->format = PLAYER_CAMERA_FORMAT_RGB888;
     this->depth = 32;
   }
   else if (strcasecmp(this->palette, "YUV420P") == 0)
@@ -403,25 +405,23 @@ int CameraV4L::Setup()
     // 1.6.2 and earlier
     fg_set_format(this->fg, VIDEO_PALETTE_YUV420P);
     this->frame = frame_new(this->width, this->height, VIDEO_PALETTE_YUV420P );
-    this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
+    this->format = PLAYER_CAMERA_FORMAT_RGB888;
     this->depth = 24;
     this->rgb_converted_frame = frame_new(this->width,
             this->height, VIDEO_PALETTE_RGB24 );
-    //    this->data.format = PLAYER_CAMERA_FORMAT_MONO8;
-    //    this->depth = 8;
   }
   else if (strcasecmp(this->palette, "YUV420P_GREY") == 0)
   {
     fg_set_format(this->fg, VIDEO_PALETTE_YUV420P);
     this->frame = frame_new(this->width, this->height, VIDEO_PALETTE_YUV420P );
-    this->data.format = PLAYER_CAMERA_FORMAT_MONO8;
+    this->format = PLAYER_CAMERA_FORMAT_MONO8;
     this->depth = 8;
    }
   else if (strcasecmp(this->palette, "JPEG") == 0)
   {
     fg_set_format(this->fg, VIDEO_PALETTE_JPEG );
     this->frame = frame_new(this->width, this->height, VIDEO_PALETTE_JPEG );
-    this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
+    this->format = PLAYER_CAMERA_FORMAT_RGB888;
     this->depth = 24;  
   }
   else
@@ -450,7 +450,7 @@ int CameraV4L::Shutdown()
   // Free resources
   frame_release(this->frame);
   if ((this->frame->format == VIDEO_PALETTE_YUV420P)&&
-      (this->data.format == PLAYER_CAMERA_FORMAT_RGB888))
+      (this->format == PLAYER_CAMERA_FORMAT_RGB888))
        frame_release(this->rgb_converted_frame);
   fg_close(this->fg);
   return 0;
@@ -510,7 +510,7 @@ void CameraV4L::Main()
       //printf("click %d\n", frameno);
       snprintf(filename, sizeof(filename), "click-%04d.ppm", frameno++);
       if ((this->frame->format == VIDEO_PALETTE_YUV420P)&&
-	  (this->data.format == PLAYER_CAMERA_FORMAT_RGB888))
+	  (this->format == PLAYER_CAMERA_FORMAT_RGB888))
 	   {
 		frame_save(this->rgb_converted_frame, filename);
 		//printf("saved converted frame\n");
@@ -528,12 +528,12 @@ int CameraV4L::ProcessMessage(QueuePointer & resp_queue,
                               void * data)
 {
   assert(hdr);
-  assert(data);
 
   /* We currently don't support any messages, but if we do...
   if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
                            PLAYER_CAMERA_REQ_GET_GEOM, this->device_addr))
   {
+    assert(data);
     assert(hdr->size == sizeof(player_position2d_data_t));
     ProcessGetGeom(hdr, *reinterpret_cast<player_camera_data_t *> (data));
     return(0);
@@ -544,60 +544,96 @@ int CameraV4L::ProcessMessage(QueuePointer & resp_queue,
   return -1;
 }
 
+#define IS_JPEG(ptr) ((((ptr)[0]) == 0xff) && (((ptr)[1]) == 0xd8))
+
 ////////////////////////////////////////////////////////////////////////////////
 // Update the device data (the data going back to the client).
 void CameraV4L::RefreshData()
 {
   int i;
-  size_t image_count;
   unsigned char * ptr1, * ptr2;
+  player_camera_data_t * data = reinterpret_cast<player_camera_data_t *>(malloc(sizeof(player_camera_data_t)));
 
-  // Compute size of image
-  image_count = this->width * this->height * this->depth / 8;
+  if (!data)
+  {
+    PLAYER_ERROR("Out of memory!");
+    return;
+  }
 
   // Set the image properties
-  this->data.width       = this->width;
-  this->data.height      = this->height;
-  this->data.bpp         = this->depth;
-  this->data.image_count = image_count;
-  this->data.image       = new unsigned char [image_count];
-  this->data.compression = PLAYER_CAMERA_COMPRESS_RAW;
+  data->width       = this->width;
+  data->height      = this->height;
+  data->bpp         = this->depth;
+  data->format      = this->format;
+  data->fdiv        = 0;
+  data->image_count = 0;
+  data->image       = NULL;
+  data->compression = PLAYER_CAMERA_COMPRESS_RAW;
 
   if (have_ov519)
   {
-    this->data.image_count = (*(unsigned short *)(frame->data))*8;
-    assert(data.image_count > 0);
-    assert(data.image_count <= ((size_t)(this->frame->size)));
-    this->data.compression = PLAYER_CAMERA_COMPRESS_JPEG;
-    memcpy(data.image, &(((char*)frame->data)[2]), data.image_count);
+    data->image_count = (*(reinterpret_cast<unsigned short *>(frame->data))) * 8;
+    assert(data->image_count > 0);
+    assert(data->image_count <= static_cast<size_t>(this->frame->size));
+    data->image = reinterpret_cast<uint8_t *>(malloc(data->image_count));
+    if (!(data->image))
+    {
+      PLAYER_ERROR("Out of memory!");
+      free(data);
+      return;
+    }
+    data->compression = PLAYER_CAMERA_COMPRESS_JPEG;
+    memcpy(data->image, &((reinterpret_cast<char *>(frame->data))[2]), data->image_count);
   }
   else if (this->fg->picture.palette == VIDEO_PALETTE_JPEG)
   {
-    this->data.compression = PLAYER_CAMERA_COMPRESS_JPEG;
     memcpy(&i, this->frame->data, sizeof(int));
-    data.image_count = i;
-    assert(data.image_count > 0);
-    assert(data.image_count <= ((size_t)(this->frame->size)));
-    memcpy(data.image, ((unsigned char *)(this->frame->data)) + sizeof(int), data.image_count);
+    data->image_count = i;
+    assert(data->image_count > 1);
+    assert(data->image_count <= static_cast<size_t>(this->frame->size));
+    if (!(IS_JPEG((reinterpret_cast<unsigned char *>(this->frame->data)) + sizeof(int))))
+    {
+      PLAYER_ERROR("Not an JPEG image...");
+      free(data);
+      return;
+    }
+    data->image = reinterpret_cast<uint8_t *>(malloc(data->image_count));
+    if (!(data->image))
+    {
+      PLAYER_ERROR("Out of memory!");
+      free(data);
+      return;
+    }
+    data->compression = PLAYER_CAMERA_COMPRESS_JPEG;
+    memcpy(data->image, (reinterpret_cast<unsigned char *>(this->frame->data)) + sizeof(int), data->image_count);
   }
   else
   {
+    data->image_count = this->width * this->height * this->depth / 8;
+    assert(data->image_count > 0);
+    data->image = reinterpret_cast<uint8_t *>(malloc(data->image_count));
+    if (!(data->image))
+    {
+      PLAYER_ERROR("Out of memory!");
+      free(data);
+      return;
+    }
     // Copy the image pixels
     if ((this->frame->format == VIDEO_PALETTE_YUV420P) &&
-	(this->data.format == PLAYER_CAMERA_FORMAT_RGB888))
+	(this->format == PLAYER_CAMERA_FORMAT_RGB888))
 	 {// do conversion to RGB (which is bgr at the moment for some reason?)
-	      assert(data.image_count <= (size_t) this->rgb_converted_frame->size);
+	      assert(data->image_count <= static_cast<size_t>(this->rgb_converted_frame->size));
 	      ccvt_420p_bgr24(this->width, this->height,
-		   (unsigned char*) this->frame->data,
-		   (unsigned char*) this->rgb_converted_frame->data);
-	      ptr1 = (unsigned char *)this->rgb_converted_frame->data;
+                   reinterpret_cast<unsigned char *>(this->frame->data),
+                   reinterpret_cast<unsigned char *>(this->rgb_converted_frame->data));
+              ptr1 = reinterpret_cast<unsigned char *>(this->rgb_converted_frame->data);
 	 }
     else
 	 {
-	      assert(data.image_count <= (size_t) this->frame->size);
-	      ptr1 = (unsigned char *)this->frame->data;
+             assert(data->image_count <= static_cast<size_t>(this->frame->size));
+             ptr1 = reinterpret_cast<unsigned char *>(this->frame->data);
 	 }
-    ptr2 = this->data.image;
+    ptr2 = reinterpret_cast<unsigned char *>(data->image);
     switch (this->depth)
     {
     case 24:
@@ -622,7 +658,7 @@ void CameraV4L::RefreshData()
       }
       break;
     default:
-      memcpy(ptr2, ptr1, data.image_count);
+      memcpy(ptr2, ptr1, data->image_count);
     }
   }
 
@@ -630,17 +666,19 @@ void CameraV4L::RefreshData()
   {
     if ((time(NULL) - (this->publish_time)) < (this->publish_interval))
     {
-      this->data.width       = 0;
-      this->data.height      = 0;
-      this->data.bpp         = 0;
-      this->data.image_count = 0;
+      data->width       = 0;
+      data->height      = 0;
+      data->bpp         = 0;
+      data->image_count = 0;
+      free(data->image);
+      data->image       = NULL;
     } else this->publish_time = time(NULL);
   }
 
   Publish(this->device_addr, 
           PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
-          reinterpret_cast<void*>(&this->data));
-  delete [] this->data.image;
+          reinterpret_cast<void *>(data), 0, NULL, false);
+  // copy = false, don't dispose anything here!
 
   return;
 }
