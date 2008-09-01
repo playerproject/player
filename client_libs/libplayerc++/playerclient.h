@@ -154,6 +154,9 @@ class PlayerClient
     /// destructor
     ~PlayerClient();
 
+    /// Are we currently connected?
+    bool Connected() { return (mClient->connected == 1) ? true : false; }
+
     /// A mutex for handling synchronization
     mutex_t mMutex;
 

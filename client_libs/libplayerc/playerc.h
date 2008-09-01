@@ -455,6 +455,10 @@ typedef struct _playerc_client_t
   int transport;
   struct sockaddr_in server;
 
+  /** Whether or not we're currently connected. Set by
+   * playerc_client_connect() and playerc_client_disconnect().  Read-only. */
+  int connected;
+
   /** How many times we'll try to reconnect after a socket error.  Use @ref
    * playerc_client_set_retry_limit() to set this value. Set to -1 for
    * infinite retry. */

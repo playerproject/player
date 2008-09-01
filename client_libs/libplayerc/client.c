@@ -146,6 +146,7 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient, const char *
   client->id = client;
   client->host = strdup(host);
   client->port = port;
+  client->connected = 0;
 
   if (mclient)
     playerc_mclient_addclient(mclient, client);
@@ -392,6 +393,8 @@ int playerc_client_connect(playerc_client_t *client)
   playerc_client_datamode(client, PLAYER_DATAMODE_PULL);
 
   PLAYER_MSG4(3,"[%s] connected on [%s:%d] with sock %d\n", banner, client->host, client->port, client->sock);
+
+  client->connected = 1;
   return 0;
 }
 
@@ -473,6 +476,7 @@ int playerc_client_disconnect(playerc_client_t *client)
     return -1;
   }
   client->sock = -1;
+  client->connected = 0;
   return 0;
 }
 
