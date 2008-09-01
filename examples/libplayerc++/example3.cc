@@ -1,6 +1,7 @@
 #include <libplayerc++/playerc++.h>
 #include <iostream>
 #include <list>
+#include <algorithm>
 
 int main(int argc, char** argv)
 {

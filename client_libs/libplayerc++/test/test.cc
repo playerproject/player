@@ -6,6 +6,7 @@
  **************************************************************************/
 
 #include <unistd.h>
+#include <cstring>
 
 #include <config.h>
 
@@ -153,7 +154,7 @@ int main(int argc, const char *argv[])
       if(strcmp(device, "ptz") == 0 || strcmp(device, "all") == 0)
         test_ptz(&client, index);
 
-      
+
       if(strcmp(device, "speech") == 0 || strcmp(device, "all") == 0)
         test_speech(&client, index);
       /*
@@ -231,7 +232,7 @@ int main(int argc, const char *argv[])
       if(strcmp(device, "actarray") == 0 || strcmp(device, "all") == 0)
         test_actarray(&client, index);
 
-      if(strcmp(device, "aio") == 0 || strcmp(device, "all") == 0) 
+      if(strcmp(device, "aio") == 0 || strcmp(device, "all") == 0)
         test_aio(&client, index);
 
       if(strcmp(device, "ranger") == 0 || strcmp(device, "all") == 0)
@@ -244,7 +245,7 @@ int main(int argc, const char *argv[])
     }
 
     free(arg);
-  } 
+  }
 
   return 0;
 }

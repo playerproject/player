@@ -8,6 +8,7 @@
 
 #include <libplayerc++/playerc++.h>
 #include <iostream>
+#include <cstring>
 
 #include "args.h"
 
@@ -22,9 +23,9 @@ main(int argc, char **argv)
 
     PlayerClient robot(gHostname, gPort);
     Graphics2dProxy gp(&robot, gIndex);
-    
+
     std::cout << robot << std::endl;
-    
+
     player_point_2d_t pts[RAYS];
 
     double r;
@@ -35,8 +36,8 @@ main(int argc, char **argv)
 	  {
 	    pts[p].px = r * cos(p * M_PI/(RAYS/2));
 	    pts[p].py = r * sin(p * M_PI/(RAYS/2));
-	  }	
-	
+	  }
+
 	gp.Color( 255,0,0,0 );
 	gp.DrawPoints( pts, RAYS );
 
@@ -48,7 +49,7 @@ main(int argc, char **argv)
       }
 
     sleep(1);
-    
+
     player_color_t col;
     memset( &col, 0, sizeof(col));
 
@@ -56,7 +57,7 @@ main(int argc, char **argv)
       {
 	col.blue = (int)(r * 255.0);
 	col.red  = (int)(255.0 - r * 255.0);
-	
+
 	player_point_2d_t pts[4];
 	pts[0].px = -r;
 	pts[0].py = -r;
@@ -66,9 +67,9 @@ main(int argc, char **argv)
 	pts[2].py = r;\
 	pts[3].px = -r;
 	pts[3].py = r;
-	
+
 	gp.DrawPolygon( pts, 4, 1, col);
-	
+
 	usleep(300000);
   }
 

@@ -49,6 +49,7 @@
 #include <iomanip>
 #include <vector>
 #include <iostream>
+#include <cstring>
 
 #include "playerc++.h"
 #include "debug.h"
