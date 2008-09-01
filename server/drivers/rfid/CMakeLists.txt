@@ -23,3 +23,7 @@ PLAYERDRIVER_REQUIRE_HEADER (phidgetRFID build_phidgetRFID ${phidgetReqHeader})
 PLAYERDRIVER_ADD_DRIVER (phidgetRFID build_phidgetRFID
     LINKFLAGS ${phidgetExtraLibs} CFLAGS "${phidgetExtraFlags}"
     SOURCES phidgetRFID.cc)
+
+PLAYERDRIVER_OPTION (acr120u build_acr120u ON)
+PLAYERDRIVER_REQUIRE_HEADER (acr120u build_acr120u "usb.h")
+PLAYERDRIVER_ADD_DRIVER (acr120u build_acr120u LINKFLAGS "-lusb" SOURCES acr120u.cc)
