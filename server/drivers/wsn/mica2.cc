@@ -129,6 +129,11 @@ driver
 #include <sys/ioctl.h>
 #include <math.h>
 #include <vector>
+#include <iostream>
+
+//For nanosleep:
+#include <time.h>
+#include <sys/time.h>
 
 // Includes needed for player
 #include <libplayercore/playercore.h>
@@ -158,6 +163,17 @@ class Mica2 : public Driver
 	// Main function for device thread.
 	virtual void Main ();
 	void RefreshData  ();
+
+        //!Time between samples (in mS)
+        float rfidsamplingrate;
+        //!Alarm time (mS)
+        float alarmtime;
+        //Need two timers: one for calculating the sleep time to keep a desired framerate.
+        // The other for measuring the real elapsed time. (And maybe give an alarm)
+        struct timeval tv_realtime_start;
+        struct timeval tv_realtime_end;
+        float real_elapsed;
+        bool send_rfidcmd;
 
 	// Port file descriptor
 	int                fd;
@@ -233,6 +249,12 @@ void mica2_Register (DriverTable* table)
     table->AddDriver ("mica2", Mica2_Init);
 }
 
+//This function returns the difference in mS between two timeval structures
+inline float timediffms(struct timeval start, struct timeval end) {
+    return(end.tv_sec*1000.0 + end.tv_usec/1000.0 - (start.tv_sec*1000.0 + start.tv_usec/1000.0));
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
@@ -270,6 +292,8 @@ Mica2::Mica2 (ConfigFile* cf, int section)
 
     // Filter base node from readings ?
     filterbasenode   = cf->ReadInt (section, "filterbasenode", 0);
+    rfidsamplingrate = cf->ReadInt (section, "rfidsamplingrate", 500);
+        
 
     // Do we create a WSN interface?
     if (cf->ReadDeviceAddr (&wsn_addr, section, "provides",
@@ -351,8 +375,9 @@ int Mica2::Unsubscribe (player_devaddr_t id)
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
 int Mica2::Setup ()
 {
+    real_elapsed=0; 
     // Open serial port
-    fd = open (port_name, O_RDWR | O_NOCTTY);
+    fd = open (port_name, O_RDWR | O_NOCTTY | O_NONBLOCK);
     if (fd < 0)
     {
 	PLAYER_ERROR2 ("> Connecting to MIB510 on [%s]; [%s]...[failed!]",
@@ -425,8 +450,8 @@ int Mica2::Shutdown ()
 // Main function for device thread
 void Mica2::Main ()
 {
-    timespec sleepTime = {0, 0};
-
+    gettimeofday( &tv_realtime_start, NULL );  // NULL -> don't want timezone information
+   
     // The main loop; interact with the device here
     while (true)
     {
@@ -440,8 +465,6 @@ void Mica2::Main ()
 	if (base_node_status != 0) // if the base node is asleep, no serial
         	            	   // data can be read
     	    RefreshData ();
-
-	nanosleep (&sleepTime, NULL);
     }
 }
 
@@ -802,12 +825,24 @@ void Mica2::RefreshData ()
     unsigned char buffer[255];
     // Get the time at which we started reading
     // This will be a pretty good estimate of when the phenomena occured
-    struct timeval time;
-    GlobalTime->GetTime (&time);
 
+    //find out the real elapsed time
+    gettimeofday( &tv_realtime_end, NULL );
+    //calculate the time in mS
+    real_elapsed=timediffms(tv_realtime_start,tv_realtime_end)+real_elapsed;
+    //restart the timer
+    gettimeofday( &tv_realtime_start, NULL );
+    //check if the time was too long
+    if (real_elapsed > rfidsamplingrate) {
+      send_rfidcmd=true;
+      real_elapsed=0;
+    }
+ 
     // In case the RFID interface is enabled, send a "select_tag" command first
-    if ((provideRFID) && (this->rfid_subscriptions > 0))
+    if (((provideRFID) && (this->rfid_subscriptions > 0)) && send_rfidcmd) {
+        send_rfidcmd=false;
         BuildRFIDHeader (0, NULL, 0, 0xFFFF, 1);
+    }
 
 	// Reading from UART
     length = ReadSerial (buffer);
@@ -830,20 +865,26 @@ int Mica2::ReadSerial (unsigned char *buffer)
     int err, i = 0;
 
     buffer[i] = 0x7e;          // serial start byte
-    while (1) {
+    int no_read=0;
+    
+    while (no_read<100) {
 	err = read (fd, &c, 1);
 	if (err < 0)
 	{
-	    PLAYER_ERROR (">> Error reading from serial port !");
-	    return (-1);
+            if (errno!=EAGAIN) {
+  	      PLAYER_ERROR (">> Error reading from serial port !");
+	      return (-1);
+            } else { no_read++;}
 	}
 	if (err == 1)
 	{
+	    no_read=0;
 	    if (++i > 255) return i;
 		buffer[i] = c;
 	    if (c == 0x7e) return i;
 	}
     }
+    return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -883,11 +924,12 @@ int Mica2::WriteSerial (unsigned char *buffer, int length, unsigned char ack)
 NodeCalibrationValues Mica2::FindNodeValues (unsigned int nodeID)
 {
     NodeCalibrationValues n;
-    NCV::iterator it;
 
-    for (it = ncv.begin (); it != ncv.end (); it++)
+    unsigned int i = 0;
+       
+    for (i = 0; i < ncv.size (); i++)
     {
-        n = *it;
+        n = ncv.at (i);
         if (n.node_id == nodeID)
             break;
     }
@@ -902,16 +944,14 @@ int Mica2::DecodeSerial (unsigned char *buffer, int length)
     NodeCalibrationValues node_values;
     player_wsn_data_t  wsn_data;
     player_rfid_data_t rfid_data;
+    rfid_data.tags = new player_rfid_tag_t[1];
+    rfid_data.tags[0].guid = new char[8];
     bool rfidPacket = FALSE;
     bool wsnPacket  = FALSE;
     int  i = 0, o = 2;    // index and offset
 
     if ((this->wsn_subscriptions < 1) && (this->rfid_subscriptions < 1))
 	return -1;
-
-    // Zero data
-    memset (&wsn_data,  0, sizeof (player_wsn_data_t));
-    memset (&rfid_data, 0, sizeof (player_rfid_data_t));
 
     while (i < length)
     {
@@ -1060,9 +1100,6 @@ int Mica2::DecodeSerial (unsigned char *buffer, int length)
 
 	    rfidPacket = TRUE;
 
-	    player_rfid_tag_t RFIDtag;
-	    memset (&RFIDtag, 0, sizeof (RFIDtag));
-
 	    RFIDMsg *rmsg = (RFIDMsg *)buffer;
 	    int dataoffset;
 
@@ -1073,6 +1110,9 @@ int Mica2::DecodeSerial (unsigned char *buffer, int length)
 	        response_code <<= 4;
 	        response_code &= 0xF0;
 	        response_code |= getDigit (rmsg->data[1]);
+                rfid_data.tags_count = 0;
+                rfid_data.tags[0].guid_count=0;
+                rfid_data.tags[0].type=0;
 
 	        if (response_code == 0x14)		// SELECT TAG pass
 	        {
@@ -1080,10 +1120,11 @@ int Mica2::DecodeSerial (unsigned char *buffer, int length)
 		    tag_type <<= 4;
 		    tag_type &= 0xF0;
 		    tag_type |= getDigit (rmsg->data[3]);
-		    RFIDtag.type = tag_type;
+                    rfid_data.tags_count = 1;
+                    rfid_data.tags[0].type = tag_type;
 		    dataoffset = 4;
 
-		    RFIDtag.guid_count = 8;
+                    rfid_data.tags[0].guid_count = 8;
 
 		    int x = 0, cc = 0;
 		    int xlength = 23 - (29 - buffer[4]);
@@ -1096,13 +1137,10 @@ int Mica2::DecodeSerial (unsigned char *buffer, int length)
 			{
 			    char str[3];
 			    sprintf (str, "%c%c", rmsg->data[x], rmsg->data[x+1]);
-			    sscanf (str, "%x", (unsigned int*)&RFIDtag.guid[cc]);
+                            sscanf (str, "%x", (unsigned int*)&rfid_data.tags[0].guid[cc]);
 			    cc++;
 			}
 		    }
-
-		    rfid_data.tags_count = 1;
-		    rfid_data.tags[0] = RFIDtag;
 		}
 	    }
     	    break;
@@ -1121,6 +1159,8 @@ int Mica2::DecodeSerial (unsigned char *buffer, int length)
 	// Write the RFID data
 	Publish (rfid_addr, PLAYER_MSGTYPE_DATA, PLAYER_RFID_DATA_TAGS,
 		&rfid_data, sizeof (player_rfid_data_t), NULL);
+    delete [] rfid_data.tags[0].guid;
+    delete [] rfid_data.tags;
 
     if ((provideWSN) && (wsnPacket))
 	// Write the WSN data
