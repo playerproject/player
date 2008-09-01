@@ -1,12 +1,3 @@
-/* This file was obtained from the nomadics respository on
-   Sourceforge. I understand that it was released under the GPL by the
-   copyright holders. Anyone with more information about the licensing
-   or authorship of this code, please contact Richard Vaughan
-   (vaughan@sfu.ca).
-
-   $Header$
-*/
-
 /*
  * Nclient.c
  *
@@ -16,9 +7,7 @@
  *
  */
 
-/* -- fixed a bug where initializing with an invalid robot id hung because
- *    Nclient tried to initialize sensors anyway -- rak, 16jun99
- */
+char cvsid_host_client_Nclient_c[] = "$Header: /home/cvs/host/client/Nclient.c,v 1.26 1998/05/04 17:32:54 kamason Exp $";
 
 /* defines */
 
@@ -149,7 +138,6 @@
 
 /* includes */
 
-#include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -166,6 +154,7 @@
 #include <netdb.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <unistd.h>
 #include "Nclient.h"
 
 #define DEBUG
@@ -219,8 +208,8 @@ int    SERV_TCP_PORT           = 7019;
 
 char   ROBOT_MACHINE_NAME[80] = "";
 int    CONN_TYPE       = -1;
-char   NOMAD_SERIAL_PORT[256] = "";
-int    NOMAD_SERIAL_BAUD     = -1;
+char   SERIAL_PORT[40] = "";
+int    SERIAL_BAUD     = -1;
 int    ROBOT_TCP_PORT  = -1;
 
 double LASER_CALIBRATION[8];
@@ -253,13 +242,11 @@ static unsigned char voltageMotor;
 
 /* function declaration */
 
-//int gethostname(char *name, int len);
 static int posDataProcess  (long *buffer, int current, PosData *posData);
-static int timeDataProcess (long *buffer, int current, TimeData *theTime );
+static int timeDataProcess (long *buffer, int current, TimeData *time );
 static int voltDataProcess (long *buffer, int current, 
 			    unsigned char *voltCPU, unsigned char *voltMotor);
 static float voltConvert   ( unsigned char reading , float range );
-char *convertAddr ( char *name, char *addr );
 
 /*************************
  *                       *
@@ -295,12 +282,13 @@ static int open_socket_to_send_data(int tcp_port_num)
   char addr[10];
   
   if (!(strcmp(Host_name, "")))
-  {
-    if (!(strcmp(SERVER_MACHINE_NAME,"")))
-      gethostname(Host_name, 100);
-    else 
-      strcpy(Host_name, SERVER_MACHINE_NAME);
-  }
+    {
+      if (!(strcmp(SERVER_MACHINE_NAME,"")))
+	gethostname(Host_name, 100);
+      else 
+	strcpy(Host_name, SERVER_MACHINE_NAME);
+    }
+  
   if ( ((hp = gethostbyname(Host_name)) == NULL) &&
        ((hp = gethostbyaddr(convertAddr(Host_name,addr),4,AF_INET)) == NULL ) )
   {
@@ -698,7 +686,7 @@ static int process_velocity_reply(struct reply_struct *this_reply)
 
 static int process_compass_reply(struct reply_struct *this_reply)
 {
-  int i=0;
+  int i = 0;
 
   if (this_reply->type == ERROR_MSG)
   {
@@ -725,7 +713,7 @@ static int process_compass_reply(struct reply_struct *this_reply)
 
 static int process_bumper_reply(struct reply_struct *this_reply)
 {
-  int i;
+  int i=0;
 
   if (this_reply->type == ERROR_MSG)
   {
@@ -993,7 +981,7 @@ int connect_robot(long robot_id, ...)
 
   if (first)
   {
-    fprintf(stderr, "Nclient version 2.7\n");
+    fprintf(stderr, "Nclient version 2.6.11\n");
     fprintf(stderr, "Copyright 1991-1998, Nomadic Technologies, Inc.\n");
     first = 0;
   }
@@ -1012,11 +1000,6 @@ int connect_robot(long robot_id, ...)
   if (ipc_comm(&the_request, &the_reply))
   {
     error = process_socket_reply(&the_reply);
-
-    /* if there was an error, we must not initialize the sensors,
-     * but return an error immediately instead */
-    if (error == 0)
-      return 0;
 
     /* initialize clients Smask to match the one on the server side */
     init_sensors();
@@ -1114,7 +1097,7 @@ int sp(int t_sp, int s_sp, int r_sp)
   the_request.mesg[0] = t_sp;
   the_request.mesg[1] = s_sp;
   the_request.mesg[2] = r_sp;
-
+  
   if (ipc_comm(&the_request, &the_reply))
   {
     return(process_state_reply(&the_reply));
@@ -1424,7 +1407,7 @@ int lp(void)
 int tk(char *talk_string)
 {
   the_request.type = TK_MSG;
-  the_request.size = (strlen(talk_string)+4)/4;
+  the_request.size = (strlen(talk_string)+3)/4;
   strcpy((char *)the_request.mesg, talk_string);
   
   if (ipc_comm(&the_request, &the_reply))
@@ -3587,9 +3570,9 @@ static int posDataProcess (long *buffer, int current, PosData *posData)
  * CALLS:        
  * CALLED BY:    
  ***************/
-static int timeDataProcess ( long *buffer, int current, TimeData *theTime )
+static int timeDataProcess ( long *buffer, int current, TimeData *time )
 {
-  *theTime = (unsigned long) buffer[current];
+  *time = (unsigned long) buffer[current];
 
   return ( current + 1 );
 }

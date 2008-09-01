@@ -8,7 +8,7 @@
  *
  */
 
-/* $Header$ */
+/* $Header: /home/cvs/host/client/Nclient.h,v 1.25 1998/05/04 17:34:52 kamason Exp $ */
 
 #ifndef _HOST_CLIENT_NCLIENT_H_
 #define _HOST_CLIENT_NCLIENT_H_
@@ -92,9 +92,7 @@ extern "C" {
 #define STATE_CONF_STEER           36
 #define STATE_CONF_TURRET          37
 #define STATE_VEL_TRANS            38
-#define STATE_VEL_RIGHT            38	/* for scout */
 #define STATE_VEL_STEER            39
-#define STATE_VEL_LEFT             39	/* for scout */
 #define STATE_VEL_TURRET           40
 #define STATE_MOTOR_STATUS         41
 #define STATE_LASER                42
@@ -188,12 +186,6 @@ extern "C" {
 #define ARM_WS 41
 #define ARM_MV 42
 
-/*
- * function prototypes for arm
- */
-long arm_mv(long l_mode, long l_v, long g_mode, long g_v);
-long arm_ws(short lift, short grip, long timeout, long *time_remain);
-long arm_zr(short mode);
 
 /*
  * For requesting the PosData the following defines should be used.
@@ -270,14 +262,6 @@ long arm_zr(short mode);
  */
 #define USER_BUFFER_LENGTH	0xFFFF
 
-
-/* these definitions apply to the Scout and SuperScout */
-#define ROTATION_CONSTANT	0.118597  /* inches/degree (known to 100 ppm) */
-
-#define RIGHT(trans, steer)	(trans + (int)((float)steer*ROTATION_CONSTANT))
-#define LEFT(trans, steer)	(trans - (int)((float)steer*ROTATION_CONSTANT))
-
-#define scout_vm(trans, steer)	vm(RIGHT(trans, steer), LEFT(trans, steer), 0)
 
 /********************
  *                  *
@@ -483,8 +467,8 @@ extern int Laser[2*NUM_LASER+1];
  *     ROBOT_MACHINE_NAME
  * usually don't need to be changed:
  *     CONN_TYPE
- *     NOMAD_SERIAL_PORT
- *     NOMAD_SERIAL_BAUD
+ *     SERIAL_PORT
+ *     SERIAL_BAUD
  *     ROBOT_TCP_PORT
  *
  * If an application program should run with Nclient.o and Ndirect.o
@@ -520,12 +504,12 @@ extern int CONN_TYPE;
 /* SERIAL_PORT is a string containing the filename of the serial port you
  * choose to communicate to the robot on.  The default is "/dev/ttyS0".
  */
-//extern char NOMAD_SERIAL_PORT[256];
+extern char SERIAL_PORT[40];
 
 /* SERIAL_BAUD is the baud rate to set the serial communication to.  It
  * defaults to 9600.
  */
-//extern int NOMAD_SERIAL_BAUD;
+extern int SERIAL_BAUD;
 
 /* ROBOT_TCP_PORT is the port number the robot listens on for request of
  * connection.  It defaults (and should always be set) to 65001 for the
@@ -582,6 +566,8 @@ int create_robot(long robot_id);
  *         conn     -- TCP port for TCP, baud rate for serial
  */
 int connect_robot(long robot_id, ...);
+
+int old_connect_robot(long robot_id); /* added by Deryck Morales */
 
 /*
  * disconnect_robot - requests the server to close the connect with robot

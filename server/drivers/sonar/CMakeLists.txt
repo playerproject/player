@@ -1,0 +1,6 @@
+IF (HAVE_STL)
+    PLAYERDRIVER_OPTION (AioToSonar build_AioToSonar ON)
+ELSE (HAVE_STL)
+    PLAYERDRIVER_OPTION (AioToSonar build_AioToSonar OFF "STL not found.")
+ENDIF (HAVE_STL)
+PLAYERDRIVER_ADD_DRIVER (AioToSonar build_AioToSonar SOURCES aiotosonar.cc)

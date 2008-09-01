@@ -1,13 +1,3 @@
-
-/* This file was obtained from the nomadics respository on
-   Sourceforge. I understand that it was released under the GPL by the
-   copyright holders. Anyone with more information about the licensing
-   or authorship of this code, please contact Richard Vaughan
-   (vaughan@sfu.ca).
-
-   $Header$
-*/
-
 /*
  * Ndirect.c
  *
@@ -15,11 +5,10 @@
  * the Nserver program.
  *
  * Copyright 1991-1998, Nomadic Technologies, Inc.
- * Revised 2004 Richard Vaughan (vaughan@sfu.ca)
  *
  */
 
-char cvsid_host_client_Ndirect_c[] = "$Header$";
+char cvsid_host_client_Ndirect_c[] = "$Header: /home/cvs/host/client/Ndirect.c,v 1.16 1998/05/04 17:34:53 kamason Exp $";
 
 /* includes */
 
@@ -37,10 +26,8 @@ char cvsid_host_client_Ndirect_c[] = "$Header$";
 #include <sys/types.h>          
 #include <sys/socket.h>
 #include <sys/time.h>           
-#include <stdlib.h> // for abs(3)
 
 #include "Nclient.h"
-#include <libplayercore/playercore.h>
 
 /* defines */
 
@@ -174,6 +161,14 @@ typedef struct _PosDataAll
  *                  *
  ********************/
 
+/* Added by Deryck Morales 7.2002 */
+extern int ROBOT_MODEL;
+int    CONN_TYPE              = 2;
+char   SERIAL_PORT[40]        = "/dev/ttyS0";
+int    SERIAL_BAUD            = 9600;
+char   ROBOT_MACHINE_NAME[80] = "";
+int    ROBOT_TCP_PORT         = 65001;
+
 long State[NUM_STATE];        /* State reading */
 int  Smask[NUM_MASK];         /* Sensor mask */
 int  Laser[2*NUM_LASER+1];    /* Laser reading */
@@ -185,6 +180,7 @@ int    connect_type           = 1;
 int    model;
 char  *device;
 int    conn_value;
+int    DEFAULT_SERIAL_BAUD    = 38400;
 int    DEFAULT_ROBOT_TCP_PORT = 65001;
 double LASER_CALIBRATION[8]   = { -0.003470,  0.000008, 0.011963,  0.001830,
 				  27.5535913, 0.000428, 0.031102, -0.444624 };
@@ -233,8 +229,6 @@ static int laser_mode = 51;
 
 /* function declarations */
 
-int open_serial(char *port, unsigned short baud);
-int conf_ser(unsigned char port, unsigned short baud);
 static long posLongExtract    ( unsigned char *inbuf );
 static unsigned long posUnsignedLongExtract( unsigned char *inbuf );
 static int posPackageProcess  ( unsigned char *inbuf, PosData *posData );
@@ -460,7 +454,7 @@ static unsigned char GETC(int fd, int conn_type)
  */
 static int Read_Pkg(int fd, int conn_type, unsigned char *inbuf)
 {
-  int i=0, length=0, chk_sum=0;
+  int i, length=0, chk_sum=0;
   unsigned char ichar, ichar2;
 
   if (!(serial_ready (fd, wait_time))) {
@@ -1496,7 +1490,7 @@ int open_serial(char *port, unsigned short baud)
   if ((Fd=open(port, O_RDWR|O_NONBLOCK)) < 0)
     {
       perror("Error opening serial port");
-      return FALSE;
+      return 0;
     }
   
   if (tcgetattr(Fd, &info) < 0) 
@@ -1504,7 +1498,7 @@ int open_serial(char *port, unsigned short baud)
       perror("Error using TCGETS in ioctl.");
       close(Fd);
       Fd = -1;
-      return FALSE;
+      return 0;
     }
   
   /* restore old values to unhang the bastard, if hung */
@@ -1541,9 +1535,9 @@ int open_serial(char *port, unsigned short baud)
     if (baud != 0)
     {
       fprintf(stderr, "Invalid baud rate %d, using %d\n", baud,
-              NOMAD_SERIAL_BAUD);
+              DEFAULT_SERIAL_BAUD);
     }
-    baud = NOMAD_SERIAL_BAUD;
+    baud = DEFAULT_SERIAL_BAUD;
   }
   
   info.c_iflag = 0;
@@ -1582,7 +1576,7 @@ int open_serial(char *port, unsigned short baud)
   
   printf("Robot <-> Host serial communication setup\n");
   printf("(%d baud using %s)\n", baud, port);
-  return 1;
+  return(TRUE); /* ADDED BY DERYCK MORALES <deryck@cmu.edu> */
 }
 
 /*
@@ -1618,11 +1612,13 @@ int connect_robot(long robot_id, ...)
   
   if (first)
   {
-    fprintf(stderr, "Ndirect version 2.7\n");
+    fprintf(stderr, "Ndirect version 2.6.13\n");
     fprintf(stderr, "Copyright 1991-1998, Nomadic Technologies, Inc.\n");
     first = 0;
   }
   
+  if(ROBOT_MODEL == MODEL_N200) return old_connect_robot(robot_id);
+
   va_start(args, robot_id);
   model = va_arg(args, int);
   device = va_arg(args, char *);
@@ -1635,9 +1631,8 @@ int connect_robot(long robot_id, ...)
   
   if (connect_type == 1) 
   {
-    if( !open_serial(device, conn_value) )
-      return FALSE; // fail - rtv
-      
+    open_serial(device, conn_value);
+    
     /* Send init_sensors to make sure that server and robot are synchronized */
     if (model == MODEL_N200)
     {
@@ -1669,7 +1664,7 @@ int connect_robot(long robot_id, ...)
     }
   } else {
     if (device[0] == 0)
-      device = (char*)"localhost";
+      device = "localhost";
     if ( ((hp = gethostbyname(device)) == NULL))
     {
       convertAddr(device, addr);
@@ -1847,6 +1842,231 @@ int connect_robot(long robot_id, ...)
       /* Compass */
       usedSmask[43] = 1;
     }
+  }
+  
+  return TRUE;
+}
+
+
+/*
+ * old_connect_robot - requests the server to connect to the robot
+ *                 with id = robot_id. In order to talk to the server,
+ *                 the SERVER_MACHINE_NAME and SERV_TCP_PORT must be
+ *                 set properly. If a robot with robot_id exists,
+ *                 a connection is established with that robot. If
+ *                 no robot exists with robot_id, no connection is
+ *                 established. In this single robot version, the robot_id
+ *                 is unimportant. You can call connect_robot with any
+ *                 robot_id, it will connect to the robot.
+ *
+ * parameters:
+ *    long robot_id -- robot's id. In this multiple robot version, in order
+ *                     to connect to a robot, you must know it's id.
+ */
+int old_connect_robot(long robot_id)
+{
+  struct termios info;  
+  char *dev_name;
+  struct hostent *hp;
+  struct sockaddr_in serv_addr;
+  int ret, retlen, i;
+  unsigned char ir_mask[16],sn_mask[16],cf_mask[4],vl_mask[3];
+  unsigned char cp_mask,bp_mask,ls_mask,pos_mask, byte;
+  char addr[10];
+
+  if (CONN_TYPE == 0 || CONN_TYPE > 2) {
+    fprintf(stderr, "Communication type selected for robot ID %ld is invalid.\n"
+            "Known types are serial (1) and TCP/IP (2).\n", robot_id);
+    return FALSE;
+  }
+  
+  if (CONN_TYPE == 1) 
+  {
+    dev_name = SERIAL_PORT;
+    
+    if ((Fd = open(dev_name, O_RDWR)) == -1) {
+      perror("Error opening serial port");
+      errorp = SERIAL_OPEN_ERROR;
+      close(Fd);
+      return(FALSE);
+    }
+    
+    if (tcgetattr(Fd,&info) < 0) {
+      perror("Error using TCGETS in ioctl.");
+      errorp = SERIAL_OPEN_ERROR;
+      close(Fd);
+      return(FALSE);
+    }
+    
+    info.c_iflag = 0;
+    info.c_oflag = 0;
+    info.c_lflag = 0;
+    switch (SERIAL_BAUD) { /* serial port rate */
+    case 4800:
+      info.c_cflag = B4800 | CS8 | CREAD | CLOCAL;
+      break;
+    case 9600:
+      info.c_cflag = B9600 | CS8 | CREAD | CLOCAL;
+      break;
+    case 19200:
+      info.c_cflag = B19200 | CS8 | CREAD | CLOCAL;
+      break;
+    default:
+      fprintf(stderr, "Invalid baud rate %d; using 9600.\n",
+	      SERIAL_BAUD);
+      info.c_cflag = B9600 | CS8 | CREAD | CLOCAL;
+      break;
+    }
+    /* set time out on serial read */
+    info.c_cc[VMIN] = 0;
+    info.c_cc[VTIME] = 10; 
+    wait_time = NORMAL_TIMEOUT;
+    
+    if (tcsetattr(Fd,TCSANOW,&info) < 0) { 
+      perror("Error using TCSETS in ioctl.");
+      errorp = SERIAL_OPEN_ERROR;
+      close(Fd);
+      return(FALSE);
+    }
+    
+    printf("Robot <-> Host serial communication setup\n");
+    printf("(%d baud using %s)\n", SERIAL_BAUD, dev_name);
+
+    /* Send init_sensors to make sure that server and robot are synchronized */
+    init_sensors();
+  } else {
+    if (ROBOT_MACHINE_NAME[0] == 0)
+      strcpy(ROBOT_MACHINE_NAME, "localhost");
+    if ( ((hp = gethostbyname(ROBOT_MACHINE_NAME)) == NULL) &&
+	 ((hp = gethostbyaddr(convertAddr(ROBOT_MACHINE_NAME,addr),4,AF_INET)) 
+	  == NULL) ){
+      fprintf(stderr, "Machine %s not valid.\n", ROBOT_MACHINE_NAME);
+      return FALSE;
+    }
+    memset((char *) &serv_addr, 0, sizeof(serv_addr));
+    memcpy((char *) &(serv_addr.sin_addr), hp->h_addr, hp->h_length);
+    serv_addr.sin_family = AF_INET;            /* address family */
+    /* TCP port number */
+    serv_addr.sin_port = htons(ROBOT_TCP_PORT);
+    
+    if ((Fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+      fprintf(stderr, "Error: in open_socket_to_send_data, socket failed.\n");
+      return FALSE;
+    }
+    fcntl(Fd, F_SETFL, O_NDELAY);
+    if (connect(Fd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
+      if (errno == EINPROGRESS) {
+        fd_set          lfdvar;
+        struct timeval  timeout;
+        
+        FD_ZERO(&lfdvar);
+        FD_SET(Fd, &lfdvar);
+        
+        timeout.tv_sec = (long)(NORMAL_TIMEOUT/100);
+        timeout.tv_usec = (long)((NORMAL_TIMEOUT%100)*10000);
+        
+        if (select(Fd+1, NULL, &lfdvar, NULL, &timeout) == 0) {
+          fprintf(stderr, "Error: connect timed out.\n");
+          close(Fd);
+          return FALSE;
+        } else {
+	  errno = 0;
+	  retlen = 4;
+	  if (getsockopt(Fd, SOL_SOCKET, SO_ERROR, (char *)&ret, &retlen) == 0)
+	  {
+	    if (ret != 0)
+	      errno = ret;
+	    if (errno != 0)
+	    {
+	      perror("Error: connect failed");
+	      close(Fd);
+	      return FALSE;
+	    }
+	  }
+	}
+      } else {
+        perror("Error: connect failed");
+        close(Fd);
+        return FALSE;
+      }
+    }
+    
+    wait_time = NORMAL_TIMEOUT;
+    
+    printf("Robot <-> Host TCP/IP communication setup\n");
+    printf("(machine %s on port %d)\n", ROBOT_MACHINE_NAME, ROBOT_TCP_PORT);
+    
+    /* Read configuration data */
+    byte = GETC(Fd, CONN_TYPE);
+    ir_mask[ 0] = byte & (1 << 0) ? 1 : 0;
+    ir_mask[ 1] = byte & (1 << 1) ? 1 : 0;
+    ir_mask[ 2] = byte & (1 << 2) ? 1 : 0;
+    ir_mask[ 3] = byte & (1 << 3) ? 1 : 0;
+    ir_mask[ 4] = byte & (1 << 4) ? 1 : 0;
+    ir_mask[ 5] = byte & (1 << 5) ? 1 : 0;
+    ir_mask[ 6] = byte & (1 << 6) ? 1 : 0;
+    ir_mask[ 7] = byte & (1 << 7) ? 1 : 0;
+    byte = GETC(Fd, CONN_TYPE);
+    ir_mask[ 8] = byte & (1 << 0) ? 1 : 0;
+    ir_mask[ 9] = byte & (1 << 1) ? 1 : 0;
+    ir_mask[10] = byte & (1 << 2) ? 1 : 0;
+    ir_mask[11] = byte & (1 << 3) ? 1 : 0;
+    ir_mask[12] = byte & (1 << 4) ? 1 : 0;
+    ir_mask[13] = byte & (1 << 5) ? 1 : 0;
+    ir_mask[14] = byte & (1 << 6) ? 1 : 0;
+    ir_mask[15] = byte & (1 << 7) ? 1 : 0;
+    byte = GETC(Fd, CONN_TYPE);
+    sn_mask[ 0] = byte & (1 << 0) ? 1 : 0;
+    sn_mask[ 1] = byte & (1 << 1) ? 1 : 0;
+    sn_mask[ 2] = byte & (1 << 2) ? 1 : 0;
+    sn_mask[ 3] = byte & (1 << 3) ? 1 : 0;
+    sn_mask[ 4] = byte & (1 << 4) ? 1 : 0;
+    sn_mask[ 5] = byte & (1 << 5) ? 1 : 0;
+    sn_mask[ 6] = byte & (1 << 6) ? 1 : 0;
+    sn_mask[ 7] = byte & (1 << 7) ? 1 : 0;
+    byte = GETC(Fd, CONN_TYPE);
+    sn_mask[ 8] = byte & (1 << 0) ? 1 : 0;
+    sn_mask[ 9] = byte & (1 << 1) ? 1 : 0;
+    sn_mask[10] = byte & (1 << 2) ? 1 : 0;
+    sn_mask[11] = byte & (1 << 3) ? 1 : 0;
+    sn_mask[12] = byte & (1 << 4) ? 1 : 0;
+    sn_mask[13] = byte & (1 << 5) ? 1 : 0;
+    sn_mask[14] = byte & (1 << 6) ? 1 : 0;
+    sn_mask[15] = byte & (1 << 7) ? 1 : 0;
+    byte = GETC(Fd, CONN_TYPE);
+    bp_mask    = byte & (1 << 0) ? 1 : 0;
+    cf_mask[0] = byte & (1 << 1) ? 1 : 0;
+    cf_mask[1] = byte & (1 << 2) ? 1 : 0;
+    cf_mask[2] = byte & (1 << 3) ? 1 : 0;
+    cf_mask[3] = byte & (1 << 4) ? 1 : 0;
+    vl_mask[0] = byte & (1 << 5) ? 1 : 0;
+    vl_mask[1] = byte & (1 << 6) ? 1 : 0;
+    vl_mask[2] = byte & (1 << 7) ? 1 : 0;
+    byte = GETC(Fd, CONN_TYPE);
+    cp_mask = byte & 1;
+    byte = GETC(Fd, CONN_TYPE);
+    ls_mask = byte & 1;
+    pos_mask = byte >> 1;
+    
+    usedSmask[0] = pos_mask;
+    for (i = 0; i < 16; i++)
+      usedSmask[i+1] = ir_mask[i];
+    for (i = 0; i < 16; i++)
+      usedSmask[i+17] = sn_mask[i];
+    usedSmask[33] = bp_mask;
+    for (i = 0; i < 4; i++)
+      usedSmask[i+34] = cf_mask[i];
+    for (i = 0; i < 3; i++)
+      usedSmask[i+38] = vl_mask[i];
+    usedSmask[42] = ls_mask;
+    usedSmask[43] = cp_mask;
+    
+    /* get laser mode, num_points, processing */
+    byte = GETC(Fd, CONN_TYPE);
+    laser_mode = byte;
+    byte = GETC(Fd, CONN_TYPE);
+    byte = GETC(Fd, CONN_TYPE);
+    byte = GETC(Fd, CONN_TYPE);
   }
   
   return TRUE;
@@ -2079,7 +2299,7 @@ int ct()
   b3 = bits_to_byte (Smask[25], Smask[26], Smask[27], Smask[28],
 		     Smask[29], Smask[30], Smask[31], Smask[32]);
   b4 = bits_to_byte (Smask[33], Smask[34], Smask[35], Smask[36],
-		     Smask[37], Smask[38], Smask[39], Smask[40]);
+		     Smask[37], Smask[38], Smask[39], Smask[30]);
   b5 = bits_to_byte (Smask[42], 0, 0, 0, 0, 0, 0, 0);
   /* we pack the pos mask into b6 */
   b6 = bits_to_byte(Smask[43], 
@@ -2383,20 +2603,20 @@ int conf_tm(unsigned char timeout)
 
 int conf_ser(unsigned char port, unsigned short baud)
 {
-  unsigned char *outbuf, lbuf[BUFSIZE];
+  unsigned char *outbuf, buf[BUFSIZE];
   
   if (model == MODEL_N200)
   {
     return FALSE;
   }
   
-  outbuf=lbuf;
+  outbuf=buf;
   stuff_length_type(5, CONF_SER, outbuf);
   outbuf+=4;
   *outbuf=port;
   outbuf++;
   unsigned_int_to_two_bytes(baud, outbuf);
-  return(Comm_Robot(Fd, lbuf));
+  return(Comm_Robot(Fd, buf));
 }
 
 /*
@@ -3877,7 +4097,7 @@ long arm_zr(short override)
 				user_receive_buffer);
 
   result=extract4byteuint(user_receive_buffer, &b_index);
-  return result;
+  return result; /* ADDED BY DERYCK MORALES <deryck@cmu.edu> */
 }
 
 long arm_ws(short l, short g, long timeout, long *time_remain)
