@@ -1,4 +1,2 @@
-PLAYERDRIVER_OPTION (nomad build_nomad OFF "Disabled by default")
-SET (NOMAD_INTERFACE "Nclient.c" CACHE STRING "Choose a Nomadics interface. The default is for connection via Nserver simulator/visualisation")
-MARK_AS_ADVANCED (NOMAD_INTERFACE)
-PLAYERDRIVER_ADD_DRIVER (nomad build_nomad SOURCES nomad.cc nomad_position.cc nomad_sonar.cc ${NOMAD_INTERFACE})
+PLAYERDRIVER_OPTION (nomad build_nomad ON)
+PLAYERDRIVER_ADD_DRIVER (nomad build_nomad SOURCES nomad.cc Nclient.c)

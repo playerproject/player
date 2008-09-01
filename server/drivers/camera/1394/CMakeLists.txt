@@ -42,4 +42,6 @@ SET (camera1394_h_in "${CMAKE_CURRENT_SOURCE_DIR}/camera1394.h.in")
 SET (camera1394_h "${CMAKE_CURRENT_BINARY_DIR}/camera1394.h")
 CONFIGURE_FILE (${camera1394_h_in} ${camera1394_h})
 
-PLAYERDRIVER_ADD_DRIVER (camera1394 build_camera1394 LINKFLAGS "${c1394LinkFlags}" CFLAGS "${c1394CFlags}" SOURCES ${c1394Sources} ${camera1394_h})
+PLAYERDRIVER_ADD_DRIVER (camera1394 build_camera1394 LINKFLAGS "${c1394LinkFlags}"
+                         CFLAGS "${c1394CFlags} -I${PROJECT_SOURCE_DIR}/server/drivers/blobfinder/cmvision"
+                         SOURCES ${c1394Sources} ${camera1394_h})
