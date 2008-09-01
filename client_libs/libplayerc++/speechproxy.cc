@@ -41,6 +41,7 @@
  * $Id$
  */
 
+#include <cstring>
 #include "playerc++.h"
 
 using namespace PlayerCc;

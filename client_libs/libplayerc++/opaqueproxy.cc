@@ -46,6 +46,7 @@
 #include <cassert>
 #include <sstream>
 #include <iomanip>
+#include <cstring>
 
 #include "playerc++.h"
 #include "debug.h"

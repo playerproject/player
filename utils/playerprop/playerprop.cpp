@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include <iostream>
 #include <string>
+#include <cstring>
 
 #include <libplayerc++/playerc++.h>
 
