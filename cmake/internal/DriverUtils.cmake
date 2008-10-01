@@ -206,6 +206,9 @@ ENDMACRO (PLAYERDRIVER_REQUIRE_PKG)
 # _header:          Name of the header file to look for.
 INCLUDE (CheckIncludeFiles)
 MACRO (PLAYERDRIVER_REQUIRE_HEADER _name _cumulativeVar _header)
+    IF (${PLAYER_EXTRA_INCLUDE_DIRS})
+        LIST (APPEND CMAKE_REQUIRED_HEADERS ${PLAYER_EXTRA_INCLUDE_DIRS})
+    ENDIF (${PLAYER_EXTRA_INCLUDE_DIRS})
     # Check for extra headers
     SET (headers)
     IF (${ARGC} GREATER 3)
@@ -245,6 +248,9 @@ ENDMACRO (PLAYERDRIVER_REQUIRE_HEADER)
 # _header:          Name of the header file to look for.
 INCLUDE (CheckIncludeFileCXX)
 MACRO (PLAYERDRIVER_REQUIRE_HEADER_CPP _name _cumulativeVar _header)
+    IF (${PLAYER_EXTRA_INCLUDE_DIRS})
+        LIST (APPEND CMAKE_REQUIRED_HEADERS ${PLAYER_EXTRA_INCLUDE_DIRS})
+    ENDIF (${PLAYER_EXTRA_INCLUDE_DIRS})
     STRING (TOUPPER ${_header} headerUpper)
     STRING (REGEX REPLACE "[./\\]" "_" headerUpper "${headerUpper}")
     SET (resultVar "HAVE_HDR_${headerUpper}")
@@ -274,7 +280,11 @@ ENDMACRO (PLAYERDRIVER_REQUIRE_HEADER_CPP)
 # _function:        Name of the function to look for.
 INCLUDE (CheckFunctionExists)
 MACRO (PLAYERDRIVER_REQUIRE_FUNCTION _name _cumulativeVar _function)
-    set (foundFunction)
+    IF (${PLAYER_EXTRA_INCLUDE_DIRS})
+        LIST (APPEND CMAKE_REQUIRED_HEADERS ${PLAYER_EXTRA_INCLUDE_DIRS})
+    ENDIF (${PLAYER_EXTRA_INCLUDE_DIRS})
+
+    SET (foundFunction)
     CHECK_FUNCTION_EXISTS (${_function} foundFunction)
     # If not found, disable this driver
     # Dereference cumulativeVar only once because IF will dereference the variable name stored inside itself
@@ -304,7 +314,7 @@ ENDMACRO (PLAYERDRIVER_REQUIRE_FUNCTION)
 # _path:            Location where the library is expected to be.
 INCLUDE (CheckLibraryExists)
 MACRO (PLAYERDRIVER_REQUIRE_LIB _name _cumulativeVar _library _function _path)
-    set (foundLibrary)
+    SET (foundLibrary)
     CHECK_LIBRARY_EXISTS ("${_library}" "${_function}" "${_path}" foundLibrary)
     # If not found, disable this driver
     # Dereference cumulativeVar only once because IF will dereference the variable name stored inside itself
