@@ -27,9 +27,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #define PLAYER_ENABLE_MSG 1
 
@@ -52,7 +50,7 @@ AMCLFiducial::AMCLFiducial(player_device_id_t id)
 {
   this->driver = NULL;
   this->fiducial_id = id;
-  
+
   return;
 }
 
@@ -70,7 +68,7 @@ int AMCLFiducial::Load(ConfigFile* cf, int section)
   // SetupMap().
   cf->ReadDeviceId(&(this->map_id), section, "requires",
                    PLAYER_MAP_CODE, -1, "fiducial");
-  
+
   // Get the map settings
   map_filename = (char*) cf->ReadFilename(section, "fiducial_map", NULL);
   if( read_map_file( map_filename ) < 0 )
@@ -78,7 +76,7 @@ int AMCLFiducial::Load(ConfigFile* cf, int section)
     PLAYER_ERROR( "read_map_file failed" );
   	return -1;
   }
-  
+
   this->laser_pose.v[0] = cf->ReadTupleLength(section, "laser_pose", 0, 0);
   this->laser_pose.v[1] = cf->ReadTupleLength(section, "laser_pose", 1, 0);
   this->laser_pose.v[2] = cf->ReadTupleAngle(section, "laser_pose", 2, 0);
@@ -119,7 +117,7 @@ int AMCLFiducial::read_map_file(const char* map_filename)
     for( int i = 0; i < x; i++ )
     {
 		int x, y, id;
-	
+
         fscanf( map_file, "%d", &id);
 		this->fmap->fiducials[i][2] = (double) id;
         fscanf( map_file, "%d", &(x ));
@@ -137,7 +135,7 @@ int AMCLFiducial::Unload(void)
 {
   //laser_free(this->model);
   //this->model = NULL;
-  
+
   return 0;
 }
 
@@ -194,8 +192,8 @@ AMCLFiducial::SetupMap(void)
   //if(map_load_occ(this->map, map_filename, map_scale, map_negate) != 0)
     //return -1;
 
-  // Fill in the map structure (I'm doing it here instead of in libmap, 
-  // because libmap is written in C, so it'd be a pain to invoke the internal 
+  // Fill in the map structure (I'm doing it here instead of in libmap,
+  // because libmap is written in C, so it'd be a pain to invoke the internal
   // device API from there)
 
   // first, get the map info
@@ -204,14 +202,14 @@ AMCLFiducial::SetupMap(void)
   player_map_info_t info;
   struct timeval ts;
   info.subtype = PLAYER_MAP_REQ_GET_INFO;
-  if((replen = mapdriver->Request(this->map_id, this, 
+  if((replen = mapdriver->Request(this->map_id, this,
                                   &info, sizeof(info.subtype), NULL,
                                   &reptype, &info, sizeof(info), &ts)) == 0)
   {
     PLAYER_ERROR("failed to get map info");
     return(-1);
   }
-  
+
   // copy in the map info
   this->map->origin_x = this->map->origin_y = 0.0;
   this->map->scale = 1/(ntohl(info.scale) / 1e3);
@@ -232,7 +230,7 @@ AMCLFiducial::SetupMap(void)
   int si,sj;
 
   data_req.subtype = PLAYER_MAP_REQ_GET_DATA;
-  
+
   // Tile size
   sy = sx = (int)sqrt(sizeof(data_req.data));
   assert(sx * sy < (int)sizeof(data_req.data));
@@ -249,9 +247,9 @@ AMCLFiducial::SetupMap(void)
 
     reqlen = sizeof(data_req) - sizeof(data_req.data);
 
-    if((replen = mapdriver->Request(this->map_id, this, 
+    if((replen = mapdriver->Request(this->map_id, this,
                                     &data_req, reqlen, NULL,
-                                    &reptype, 
+                                    &reptype,
                                     &data_req, sizeof(data_req), &ts)) == 0)
     {
       PLAYER_ERROR("failed to get map info");
@@ -269,7 +267,7 @@ AMCLFiducial::SetupMap(void)
     {
       for(i=0;i<si;i++)
       {
-        this->map->cells[MAP_INDEX(this->map,oi+i,oj+j)].occ_state = 
+        this->map->cells[MAP_INDEX(this->map,oi+i,oj+j)].occ_state =
                 data_req.data[j*si + i];
         this->map->cells[MAP_INDEX(this->map,oi+i,oj+j)].occ_dist = 0;
       }
@@ -294,7 +292,7 @@ AMCLFiducial::SetupMap(void)
 ////////////////////////////////////////////////////////////////////////////////
 // Shut down the laser
 int AMCLFiducial::Shutdown(void)
-{  
+{
   this->driver->Unsubscribe(this->fiducial_id);
   this->driver = NULL;
   map_free(this->map);
@@ -317,27 +315,27 @@ AMCLSensorData *AMCLFiducial::GetData(void)
   AMCLFiducialData *ndata;
 
   // Get the laser device data.
-  size = this->driver->GetData(this->fiducial_id, (void*) &data, 
+  size = this->driver->GetData(this->fiducial_id, (void*) &data,
                                sizeof(data), &timestamp);
   if (size == 0)
     return NULL;
-  if((timestamp.tv_sec == this->time.tv_sec) && 
+  if((timestamp.tv_sec == this->time.tv_sec) &&
      (timestamp.tv_usec == this->time.tv_usec))
     return NULL;
 
   double ta = (double) timestamp.tv_sec + ((double) timestamp.tv_usec) * 1e-6;
-  double tb = (double) this->time.tv_sec + ((double) this->time.tv_usec) * 1e-6;  
+  double tb = (double) this->time.tv_sec + ((double) this->time.tv_usec) * 1e-6;
   if (ta - tb < 0.100)  // HACK
     return NULL;
 
   this->time = timestamp;
-  
+
   ndata = new AMCLFiducialData;
 
   ndata->sensor = this;
   ndata->tsec = timestamp.tv_sec;
   ndata->tusec = timestamp.tv_usec;
-  
+
   ndata->fiducial_count = ntohs(data.count);
   assert((size_t) ndata->fiducial_count < sizeof(ndata->fiducials) / sizeof(ndata->fiducials[0]));
 
@@ -346,15 +344,15 @@ AMCLSensorData *AMCLFiducial::GetData(void)
   {
     double x = ((int16_t) ntohl(data.fiducials[i].pos[0]))/ 1000.0;
     double y = ((int16_t) ntohl(data.fiducials[i].pos[1]))/ 1000.0;
-    
+
     r = hypot( y, x );
     b = atan2( y, x );
-    
+
     ndata->fiducials[i][0] = r;
     ndata->fiducials[i][1] = b;
     ndata->fiducials[i][2] = ((double) ntohs( data.fiducials[i].id ));
   }
-  
+
   return ndata;
 }
 
@@ -364,12 +362,12 @@ AMCLSensorData *AMCLFiducial::GetData(void)
 bool AMCLFiducial::UpdateSensor(pf_t *pf, AMCLSensorData *data)
 {
   AMCLFiducialData *ndata;
-  
+
   ndata = (AMCLFiducialData*) data;
 
   // Apply the laser sensor model
   pf_update_sensor(pf, (pf_sensor_model_fn_t) SensorModel, data);
-  
+
   return true;
 }
 
@@ -386,7 +384,7 @@ double AMCLFiducial::SensorModel(AMCLFiducialData *data, pf_vector_t pose)
   double map_range, map_bearing;
   double obs_range, obs_bearing;
   int obs_id;
-  
+
   self = (AMCLFiducial*) data->sensor;
 
   // Take account of the laser pose relative to the robot
@@ -401,7 +399,7 @@ double AMCLFiducial::SensorModel(AMCLFiducialData *data, pf_vector_t pose)
     obs_id = (int) data->fiducials[i][2];
 
     int id = -1;
-    
+
     for( int j = 0; j < self->fmap->fiducial_count; j++ )
     {
       if( (int) data->fiducials[i][2] == (int) self->fmap->fiducials[j][2] )
@@ -409,7 +407,7 @@ double AMCLFiducial::SensorModel(AMCLFiducialData *data, pf_vector_t pose)
         id = j;
       }
     }
-    
+
     if( id > -1 )
     {
 
@@ -429,27 +427,27 @@ double AMCLFiducial::SensorModel(AMCLFiducialData *data, pf_vector_t pose)
         c = self->range_var;
         z = obs_range - map_range;
         pz = self->range_bad + (1 - self->range_bad) * exp(-(z*z)/(2*c*c));
-        
+
         v = self->angle_var;
         b = obs_bearing - map_bearing;
         pb = self->angle_bad + (1 - self->angle_bad) * exp(-(b*b)/(2*v*v));
-        
+
       }
 
       //gives the fiducial range greater weight
       p *= pz;
-      
+
       //bearing a little less
       p *= pb;
       p *= pb;
       p *= pb;
       p *= pb;
-      
+
     }
   }
   //printf("%e\n", p);
   //assert(p >= 0);
-  
+
   return p;
 }
 
@@ -460,16 +458,16 @@ double AMCLFiducial::SensorModel(AMCLFiducialData *data, pf_vector_t pose)
 ////////////////////////////////////////////////////////////////////////////////
 // Setup the GUI
 void AMCLFiducial::SetupGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig)
-{  
+{
   this->fig = rtk_fig_create(canvas, robot_fig, 0);
 
   // Draw the laser map
   this->map_fig = rtk_fig_create(canvas, NULL, -50);
   map_draw_occ(this->map, this->map_fig);
-  
+
   char x[3];
   x[2] = '\0';
-  
+
   rtk_fig_color_rgb32( map_fig, 0xFF00FF );
   for( int i = 0; i < fmap->fiducial_count; i++ )
   {
@@ -477,9 +475,9 @@ void AMCLFiducial::SetupGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig)
 	x[1] = '0' + (char) ((int) fmap->fiducials[i][2] % 10);
      rtk_fig_ellipse(this->map_fig, fmap->fiducials[i][0], fmap->fiducials[i][1], 0, 0.1, 0.1, 1 );
 	 rtk_fig_text( this->map_fig, fmap->fiducials[i][0], fmap->fiducials[i][1]+0.2, 0, x );
-  
+
   }
-  
+
   return;
 }
 
@@ -506,7 +504,7 @@ void AMCLFiducial::UpdateGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig, AMCLSen
   AMCLFiducialData *ndata;
 
   ndata = (AMCLFiducialData*) data;
-  
+
   rtk_fig_clear(this->fig);
 
   // Draw the complete scan
@@ -553,12 +551,12 @@ AMCLFiducialMap* fiducial_map_alloc(void)
  AMCLFiducialMap* map;
  map = new AMCLFiducialMap();
  map->fiducial_count = 0;
- 
+
  if( !map )
  {
    PLAYER_ERROR( "map is undefined" );
  }
- 
+
  return map;
 }
 
@@ -575,7 +573,7 @@ double fiducial_map_calc_bearing( AMCLFiducialMap *fmap, double ox, double oy, d
   {
     b += 2*M_PI;
   }
-        
+
   return b;
 }
 #endif

@@ -101,9 +101,7 @@ driver
 */
 /** @} */
 
-#ifdef HAVE_CONFIG_H
-  #include "config.h"
-#endif
+#include "config.h"
 
 #include <unistd.h>
 #include <inttypes.h>
@@ -297,12 +295,12 @@ wbr914::wbr914(ConfigFile* cf, int section)
   _ir_geom.poses[ 7 ].px = 0.200;
   _ir_geom.poses[ 7 ].py = 0.060;
   _ir_geom.poses[ 7 ].pyaw = DTOR( 60 );
-  
+
   _data.ir.ranges_count = NUM_IR_SENSORS;
   _data.ir.voltages_count = _data.ir.ranges_count;
   _data.ir.ranges = new float [_data.ir.ranges_count];
   _data.ir.voltages = new float [_data.ir.voltages_count];
-  
+
 }
 
 /**
@@ -316,7 +314,7 @@ wbr914::~wbr914()
   delete [] _ir_geom.poses;
   delete [] _data.ir.ranges;
   delete [] _data.ir.voltages;
-  
+
 }
 
 int wbr914::Setup()
@@ -445,7 +443,7 @@ int wbr914::Setup()
   {
     printf( "Error setting sign-magnitude mode\n" );
   }
-  
+
   /*  This might be a good time to reset the odometry values */
   if ( _debug )
     printf( "ResetRawPositions\n" );
@@ -883,7 +881,7 @@ void wbr914::GetAllData( void )
   {
     GetPositionData( &_data.position );
   }
-  
+
   if ( ir_subscriptions )
   {
     GetIRData( &_data.ir );
@@ -933,8 +931,8 @@ void wbr914::GetPositionData( player_position2d_data_t* d )
     _yaw -= TWOPI;
 
   // calc current x and y position
-  _x += ( transchange * cos( _yaw )); 
-  _y += ( transchange * sin( _yaw )); 
+  _x += ( transchange * cos( _yaw ));
+  _y += ( transchange * sin( _yaw ));
 
 
   // add code to read in the speed data
@@ -972,7 +970,7 @@ void wbr914::GetIRData(player_ir_data_t * d)
   //  float v80 = 0.25;
   //  float deltaV = 2.25;
   //  float v10 = v80+deltaV;
-  //  float mmPerVolt = (800.0-100.0)/(v80-v10); 
+  //  float mmPerVolt = (800.0-100.0)/(v80-v10);
 
   for (uint32_t i=0; i < d->ranges_count; i++)
   {
@@ -1331,7 +1329,7 @@ int wbr914::WriteBuf(unsigned char* s, size_t len)
       return -1;
     }
   }
-    
+
   printf( "Write timeout; wrote %ld bytes, tried to write %ld\n",
 	  numwritten, len );
 
@@ -1360,8 +1358,8 @@ int wbr914::WriteBuf(unsigned char* s, size_t len)
   return numwritten;
 }
 
-int wbr914::sendCmdCom( unsigned char address, unsigned char c, 
-			int cmd_num, unsigned char* arg, 
+int wbr914::sendCmdCom( unsigned char address, unsigned char c,
+			int cmd_num, unsigned char* arg,
 			int ret_num, unsigned char * ret )
 {
   assert( cmd_num<=4 );
@@ -1369,7 +1367,7 @@ int wbr914::sendCmdCom( unsigned char address, unsigned char c,
   unsigned char cmd[8];
   //bool retry = true;
   unsigned char savecs;
-  
+
   cmd[0] = address;
   cmd[1] = 0;          // checksum. to be overwritten
   cmd[2] = 0x00;
@@ -1413,7 +1411,7 @@ int wbr914::sendCmdCom( unsigned char address, unsigned char c,
     //    if ( _fd_blocking == false )
       usleep( DELAY_US );
 
-    int rc; 
+    int rc;
     if( (rc = ReadBuf( ret, ret_num )) < 0 )
     {
       //      printf( "failed to read response\n" );
@@ -1426,13 +1424,13 @@ int wbr914::sendCmdCom( unsigned char address, unsigned char c,
   return result;
 }
 
-int wbr914::sendCmd0( unsigned char address, unsigned char c, 
+int wbr914::sendCmd0( unsigned char address, unsigned char c,
 		      int ret_num, unsigned char * ret )
 {
   return sendCmdCom( address, c, 0, NULL, ret_num, ret );
 }
 
-int wbr914::sendCmd16( unsigned char address, unsigned char c, 
+int wbr914::sendCmd16( unsigned char address, unsigned char c,
 		       int16_t arg, int ret_num, unsigned char * ret )
 {
 
@@ -1445,7 +1443,7 @@ int wbr914::sendCmd16( unsigned char address, unsigned char c,
   return sendCmdCom( address, c, 2, args, ret_num, ret );
 }
 
-int wbr914::sendCmd32( unsigned char address, unsigned char c, 
+int wbr914::sendCmd32( unsigned char address, unsigned char c,
 		       int32_t arg, int ret_num, unsigned char * ret )
 {
   unsigned char args[4];
@@ -1690,15 +1688,15 @@ void wbr914::SetAccelerationProfile()
 }
 
 void wbr914::Stop( int StopMode ) {
-        
+
   unsigned char ret[8];
-  
+
   if ( _debug )
     printf( "Stop\n" );
 
   /* Start with motor 0*/
   _stopped = true;
-  
+
   if( StopMode == FULL_STOP )
   {
     if (sendCmd16( LEFT_MOTOR, RESETEVENTSTATUS, 0x0000, 2, ret )<0 )

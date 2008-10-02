@@ -27,9 +27,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <sys/types.h> // required by Darwin
 #include <math.h>
@@ -45,7 +43,7 @@ AMCLOdom::AMCLOdom(AdaptiveMCL & aAMCL, player_devaddr_t addr) : AMCLSensor(aAMC
   this->odom_dev = NULL;
   this->action_pdf = NULL;
   this->odom_addr = addr;
-  
+
   return;
 }
 
@@ -60,7 +58,7 @@ int AMCLOdom::Load(ConfigFile* cf, int section)
 
   this->drift.m[0][0] = cf->ReadTupleFloat(section, "odom_drift[0]", 0, 0.20);
   this->drift.m[0][1] = cf->ReadTupleFloat(section, "odom_drift[0]", 1, 0.00);
-  this->drift.m[0][2] = cf->ReadTupleFloat(section, "odom_drift[0]", 2, 0.00); 
+  this->drift.m[0][2] = cf->ReadTupleFloat(section, "odom_drift[0]", 2, 0.00);
 
   this->drift.m[1][0] = cf->ReadTupleFloat(section, "odom_drift[1]", 0, 0.00);
   this->drift.m[1][1] = cf->ReadTupleFloat(section, "odom_drift[1]", 1, 0.20);
@@ -77,7 +75,7 @@ int AMCLOdom::Load(ConfigFile* cf, int section)
 ////////////////////////////////////////////////////////////////////////////////
 // Unload the model
 int AMCLOdom::Unload(void)
-{  
+{
   return 0;
 }
 
@@ -98,7 +96,7 @@ int AMCLOdom::Setup(void)
     PLAYER_ERROR("unable to subscribe to position device");
     return -1;
   }
-  
+
   return 0;
 }
 
@@ -110,7 +108,7 @@ int AMCLOdom::Shutdown(void)
   // Unsubscribe from device
   this->odom_dev->Unsubscribe(AMCL.InQueue);
   this->odom_dev = NULL;
-  
+
   return 0;
 }
 
@@ -119,8 +117,8 @@ int AMCLOdom::Shutdown(void)
 // Get the current odometry reading
 //AMCLSensorData *AMCLOdom::GetData(void)
 // Process message for this interface
-int AMCLOdom::ProcessMessage(QueuePointer &resp_queue, 
-                                     player_msghdr * hdr, 
+int AMCLOdom::ProcessMessage(QueuePointer &resp_queue,
+                                     player_msghdr * hdr,
                                      void * idata)
 {
   pf_vector_t pose;
@@ -139,7 +137,7 @@ int AMCLOdom::ProcessMessage(QueuePointer &resp_queue,
   pose.v[1] = data->pos.py;
   pose.v[2] = data->pos.pa;
 
-  //printf("getdata %.3f %.3f %.3f\n", 
+  //printf("getdata %.3f %.3f %.3f\n",
   	 //pose.v[0], pose.v[1], pose.v[2]);
 
   ndata = new AMCLOdomData;
@@ -153,7 +151,7 @@ int AMCLOdom::ProcessMessage(QueuePointer &resp_queue,
   this->time = hdr->timestamp;
 
   AMCL.Push(ndata);
-    
+
   return 0;
 }
 
@@ -173,10 +171,10 @@ bool AMCLOdom::UpdateAction(pf_t *pf, AMCLSensorData *data)
          ndata->pose.v[0], ndata->pose.v[1], ndata->pose.v[2],
          ndata->delta.v[0], ndata->delta.v[1], ndata->delta.v[2]);
   */
-         
+
   // See how far the robot has moved
   x = ndata->delta;
-  
+
   // Odometric drift model
   // This could probably be improved
   ux = this->drift.m[0][0] * x.v[0];
@@ -191,24 +189,24 @@ bool AMCLOdom::UpdateAction(pf_t *pf, AMCLSensorData *data)
   cx.m[2][2] = ua * ua;
 
   //printf("x = %f %f %f\n", x.v[0], x.v[1], x.v[2]);
-  
+
   // Create a pdf with suitable characterisitics
-  this->action_pdf = pf_pdf_gaussian_alloc(x, cx); 
+  this->action_pdf = pf_pdf_gaussian_alloc(x, cx);
 
   // Update the filter
-  pf_update_action(pf, (pf_action_model_fn_t) ActionModel, this);  
+  pf_update_action(pf, (pf_action_model_fn_t) ActionModel, this);
 
   // Delete the pdf
   pf_pdf_gaussian_free(this->action_pdf);
   this->action_pdf = NULL;
-  
+
   return true;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // The action model function (static method)
-void 
+void
 AMCLOdom::ActionModel(AMCLOdom *self, pf_sample_set_t* set)
 {
   int i;

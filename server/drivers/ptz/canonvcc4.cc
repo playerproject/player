@@ -72,9 +72,7 @@ driver
 
 */
 /** @} */
-#ifdef HAVE_CONFIG_H
-  #include "config.h"
-#endif
+#include "config.h"
 
 #include <fcntl.h>
 #include <stdio.h>

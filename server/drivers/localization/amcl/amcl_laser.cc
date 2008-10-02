@@ -27,9 +27,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #define PLAYER_ENABLE_MSG 1
 
@@ -48,7 +46,7 @@ AMCLLaser::AMCLLaser(AdaptiveMCL & aAMCL, player_devaddr_t addr) : AMCLSensor(aA
 {
   this->laser_dev = NULL;
   this->laser_addr = addr;
-  
+
   return;
 }
 
@@ -61,7 +59,7 @@ int AMCLLaser::Load(ConfigFile* cf, int section)
   // SetupMap().
   cf->ReadDeviceAddr(&(this->map_addr), section, "requires",
                      PLAYER_MAP_CODE, -1, "laser");
-  
+
   this->max_beams = cf->ReadInt(section, "laser_max_beams", 6);
   this->range_var = cf->ReadLength(section, "laser_range_var", 0.10);
   this->range_bad = cf->ReadFloat(section, "laser_range_bad", 0.10);
@@ -78,7 +76,7 @@ int AMCLLaser::Unload(void)
 {
   //laser_free(this->model);
   //this->model = NULL;
-  
+
   return 0;
 }
 
@@ -156,8 +154,8 @@ AMCLLaser::SetupMap(void)
   this->map = map_alloc();
   PLAYER_MSG1(2, "AMCL loading map from map:%d...", this->map_addr.index);
 
-  // Fill in the map structure (I'm doing it here instead of in libmap, 
-  // because libmap is written in C, so it'd be a pain to invoke the internal 
+  // Fill in the map structure (I'm doing it here instead of in libmap,
+  // because libmap is written in C, so it'd be a pain to invoke the internal
   // device API from there)
 
   // first, get the map info
@@ -174,7 +172,7 @@ AMCLLaser::SetupMap(void)
   PLAYER_MSG1(2, "AMCL loading map from map:%d...Done", this->map_addr.index);
 
   player_map_info_t* info = (player_map_info_t*)msg->GetPayload();
-  
+
   // copy in the map info
   this->map->origin_x = info->origin.px + (info->scale * info->width) / 2.0;
   this->map->origin_y = info->origin.py + (info->scale * info->height) / 2.0;
@@ -232,7 +230,7 @@ AMCLLaser::SetupMap(void)
     {
       for(i=0;i<si;i++)
       {
-        this->map->cells[MAP_INDEX(this->map,oi+i,oj+j)].occ_state = 
+        this->map->cells[MAP_INDEX(this->map,oi+i,oj+j)].occ_state =
                 mapdata->data[j*si + i];
         this->map->cells[MAP_INDEX(this->map,oi+i,oj+j)].occ_dist = 0;
       }
@@ -263,7 +261,7 @@ AMCLLaser::SetupMap(void)
 ////////////////////////////////////////////////////////////////////////////////
 // Shut down the laser
 int AMCLLaser::Shutdown(void)
-{  
+{
   this->laser_dev->Unsubscribe(AMCL.InQueue);
   this->laser_dev = NULL;
   map_free(this->map);
@@ -276,8 +274,8 @@ int AMCLLaser::Shutdown(void)
 // Get the current laser reading
 //AMCLSensorData *AMCLLaser::GetData(void)
 // Process message for this interface
-int AMCLLaser::ProcessMessage(QueuePointer &resp_queue, 
-                                     player_msghdr * hdr, 
+int AMCLLaser::ProcessMessage(QueuePointer &resp_queue,
+                                     player_msghdr * hdr,
                                      void * idata)
 {
   int i;
@@ -290,15 +288,15 @@ int AMCLLaser::ProcessMessage(QueuePointer &resp_queue,
 
   this->time = hdr->timestamp;
   player_laser_data_t* data = reinterpret_cast<player_laser_data_t*> (idata);
-  
+
   b = data->min_angle;
   db = data->resolution;
-  
+
   ndata = new AMCLLaserData;
 
   ndata->sensor = this;
   ndata->time = hdr->timestamp;
-  
+
   ndata->range_count = data->ranges_count;
   ndata->range_max = data->max_range;
   ndata->ranges = new double [ndata->range_count][2];
@@ -313,7 +311,7 @@ int AMCLLaser::ProcessMessage(QueuePointer &resp_queue,
   }
 
   AMCL.Push(ndata);
-  
+
   return 0;
 }
 
@@ -323,14 +321,14 @@ int AMCLLaser::ProcessMessage(QueuePointer &resp_queue,
 bool AMCLLaser::UpdateSensor(pf_t *pf, AMCLSensorData *data)
 {
   AMCLLaserData *ndata;
-  
+
   ndata = (AMCLLaserData*) data;
   if (this->max_beams < 2)
     return false;
 
   // Apply the laser sensor model
   pf_update_sensor(pf, (pf_sensor_model_fn_t) SensorModel, data);
-  
+
   return true;
 }
 
@@ -348,11 +346,11 @@ double AMCLLaser::SensorModel(AMCLLaserData *data, pf_sample_set_t* set)
   double total_weight;
   pf_sample_t *sample;
   pf_vector_t pose;
-  
+
   self = (AMCLLaser*) data->sensor;
 
   total_weight = 0.0;
-  
+
   // Compute the sample weights
   for (j = 0; j < set->sample_count; j++)
   {
@@ -418,13 +416,13 @@ double AMCLLaser::SensorModel(AMCLLaserData *data, pf_sample_set_t* set)
 ////////////////////////////////////////////////////////////////////////////////
 // Setup the GUI
 void AMCLLaser::SetupGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig)
-{  
+{
   this->fig = rtk_fig_create(canvas, robot_fig, 0);
 
   // Draw the laser map
   this->map_fig = rtk_fig_create(canvas, NULL, -50);
   map_draw_occ(this->map, this->map_fig);
-  
+
   return;
 }
 
@@ -451,7 +449,7 @@ void AMCLLaser::UpdateGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig, AMCLSensor
   AMCLLaserData *ndata;
 
   ndata = (AMCLLaserData*) data;
-  
+
   rtk_fig_clear(this->fig);
 
   // Draw the complete scan
