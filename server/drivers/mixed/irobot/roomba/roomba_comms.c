@@ -32,9 +32,7 @@
 #include <unistd.h>
 #include <netinet/in.h>
 
-#ifdef HAVE_CONFIG_H
-  #include "config.h"
-#endif
+#include "config.h"
 
 #include <playerconfig.h>
 #include <replace/replace.h>

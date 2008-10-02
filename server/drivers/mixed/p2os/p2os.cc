@@ -305,9 +305,7 @@ driver
 */
 /** @} */
 
-#ifdef HAVE_CONFIG_H
-  #include "config.h"
-#endif
+#include "config.h"
 
 #include "p2os.h"
 #include <libplayerxdr/playerxdr.h>

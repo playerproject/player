@@ -28,9 +28,7 @@
  * might be added later on.
  *           By Tarek Taha and Jonathan Paxman / Centre of Autonomous Systems University of Technology Sydney
  */
-#ifdef HAVE_CONFIG_H
-  #include "config.h"
-#endif
+#include <config.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>

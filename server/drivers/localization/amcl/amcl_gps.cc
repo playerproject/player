@@ -27,9 +27,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "devicetable.h"
 #include "amcl_gps.h"
@@ -41,7 +39,7 @@ AMCLGps::AMCLGps()
 {
   this->device = NULL;
   this->model = NULL;
-  
+
   return;
 }
 
@@ -52,7 +50,7 @@ int AMCLGps::Load(ConfigFile* cf, int section)
 {
   // Device stuff
   this->gps_index = cf->ReadInt(section, "gps_index", -1);
-  
+
   // Create the gps model
   this->model = gps_alloc();
   this->model->utm_base_e = cf->ReadTupleFloat(section, "utm_base", 0, -1);
@@ -68,7 +66,7 @@ int AMCLGps::Unload(void)
 {
   gps_free(this->model);
   this->model = NULL;
-  
+
   return 0;
 }
 
@@ -102,7 +100,7 @@ int AMCLGps::Setup(void)
 ////////////////////////////////////////////////////////////////////////////////
 // Shut down the gps
 int AMCLGps::Shutdown(void)
-{  
+{
   this->device->Unsubscribe(this);
   this->device = NULL;
 
@@ -132,7 +130,7 @@ bool AMCLGps::GetData()
   this->utm_e = ((int32_t) ntohl(data.utm_e)) / 100.0;
   this->utm_n = ((int32_t) ntohl(data.utm_n)) / 100.0;
   this->err_horz = ((int32_t) ntohl(data.err_horz)) / 1000.0;
-  
+
   return true;
 }
 
@@ -145,7 +143,7 @@ bool AMCLGps::InitSensor(pf_t *pf, pf_vector_t mean, pf_matrix_t cov)
   if (!this->GetData())
     return false;
 
-  printf("init gps %f %f %f\n", 
+  printf("init gps %f %f %f\n",
          this->utm_e, this->utm_n, this->err_horz);
 
   // Pick up UTM base coordinate
@@ -162,12 +160,12 @@ bool AMCLGps::InitSensor(pf_t *pf, pf_vector_t mean, pf_matrix_t cov)
 
   // Initialize the initialization routines
   gps_init_init(this->model);
-  
+
   // Draw samples from the gps distribution
   pf_init(pf, (pf_init_model_fn_t) gps_init_model, this->model);
-  
+
   gps_init_term(this->model);
-  
+
   return true;
 }
 
@@ -179,15 +177,15 @@ bool AMCLGps::UpdateSensor(pf_t *pf)
   // Check for new data
   if (!this->GetData())
     return false;
-  
-  printf("update gps %f %f %f\n", 
+
+  printf("update gps %f %f %f\n",
          this->utm_e, this->utm_n, this->err_horz);
-    
+
   // Update the gps sensor model with the latest gps measurements
   gps_set_utm(this->model, this->utm_e, this->utm_n, this->err_horz);
 
   // Apply the gps sensor model
-  pf_update_sensor(pf, (pf_sensor_model_fn_t) gps_sensor_model, this->model);  
+  pf_update_sensor(pf, (pf_sensor_model_fn_t) gps_sensor_model, this->model);
 
   return true;
 }
@@ -199,7 +197,7 @@ bool AMCLGps::UpdateSensor(pf_t *pf)
 void AMCLGps::SetupGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig)
 {
   this->fig = rtk_fig_create(canvas, NULL, 0);
-  
+
   return;
 }
 
@@ -225,7 +223,7 @@ void AMCLGps::UpdateGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig)
                   this->utm_e - this->model->utm_base_e,
                   this->utm_n - this->model->utm_base_n, 0,
                   this->err_horz, this->err_horz, 0);
-  
+
   return;
 }
 

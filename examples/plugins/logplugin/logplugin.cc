@@ -1,9 +1,9 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2003  
+ *  Copyright (C) 2003
  *     Brian Gerkey
- *                      
- * 
+ *
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -25,12 +25,10 @@
  * shared object.
  */
 
-// ONLY if you need something that was #define'd as a result of configure 
+// ONLY if you need something that was #define'd as a result of configure
 // (e.g., HAVE_CFMAKERAW), then #include <config.h>, like so:
 /*
-#if HAVE_CONFIG_H
-  #include <config.h>
-#endif
+#include <config.h>
 */
 
 #include <unistd.h>
@@ -62,7 +60,7 @@ void NewErrorPrint(int msgType, int level, const char *file, int line, const cha
     va_end(ap);
     fprintf(msgFile, "New error print: %s:%d %s", file, line, msgBuf);
   }
-  
+
   return;
 }
 

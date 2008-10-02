@@ -27,9 +27,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "amcl.h"
 
@@ -103,14 +101,14 @@ int AdaptiveMCL::ShutdownWifi(void)
   // If there is no wifi device...
   if (this->wifi_index < 0)
     return 0;
-  
+
   this->wifi->Unsubscribe(this);
   this->wifi = NULL;
 
   // Delete the wifi model
   wifi_free(this->wifi_model);
   this->wifi_model = NULL;
-  
+
   return 0;
 }
 
@@ -124,7 +122,7 @@ void AdaptiveMCL::GetWifiData(amcl_sensor_data_t *data)
   player_wifi_data_t ndata;
   player_wifi_link_t *link;
   amcl_wifi_beacon_t *beacon;
-  
+
   // If there is no wifi device...
   if (this->wifi_index < 0)
   {
@@ -136,7 +134,7 @@ void AdaptiveMCL::GetWifiData(amcl_sensor_data_t *data)
   size = this->wifi->GetData(this, (uint8_t*) &ndata, sizeof(ndata), NULL, NULL);
 
   data->wifi_level_count = this->wifi_beacon_count;
-  
+
   for (i = 0; i < this->wifi_beacon_count; i++)
   {
     beacon = this->wifi_beacons + i;
@@ -145,7 +143,7 @@ void AdaptiveMCL::GetWifiData(amcl_sensor_data_t *data)
     for (j = 0; j < ntohs(ndata.link_count); j++)
     {
       link = ndata.links + j;
-      
+
       if (strcmp(link->ip, beacon->hostname) == 0)
       {
         data->wifi_levels[i] = (int16_t) ntohs(link->level);
@@ -154,7 +152,7 @@ void AdaptiveMCL::GetWifiData(amcl_sensor_data_t *data)
       }
     }
   }
-  
+
   return;
 }
 
@@ -166,12 +164,12 @@ bool AdaptiveMCL::UpdateWifiModel(amcl_sensor_data_t *data)
   // If there is no wifi device...
   if (this->wifi_index < 0)
     return false;
-  
+
   // Update the wifi sensor model with the latest wifi measurements
   wifi_set_levels(this->wifi_model, data->wifi_level_count, data->wifi_levels);
 
   // Apply the wifi sensor model
-  pf_update_sensor(this->pf, (pf_sensor_model_fn_t) wifi_sensor_model, this->wifi_model);  
+  pf_update_sensor(this->pf, (pf_sensor_model_fn_t) wifi_sensor_model, this->wifi_model);
 
   return true;
 }
@@ -200,14 +198,14 @@ void AdaptiveMCL::DrawWifiData(amcl_sensor_data_t *data)
 
   // Get the cell at this pose
   cell = map_get_cell(this->map, pose.v[0], pose.v[1], pose.v[2]);
-    
+
   text[0] = 0;
   for (i = 0; i < data->wifi_level_count; i++)
   {
     hostname = this->wifi_beacons[i].hostname;
     olevel = data->wifi_levels[i];
     mlevel = cell->wifi_levels[i];
-    
+
     snprintf(ntext, sizeof(ntext), "%s %02d [%02d]\n", hostname, olevel, mlevel);
     strcat(text, ntext);
   }
@@ -215,7 +213,7 @@ void AdaptiveMCL::DrawWifiData(amcl_sensor_data_t *data)
   rtk_fig_clear(this->wifi_fig);
   rtk_fig_color_rgb32(this->wifi_fig, 0xFFFF00);
   rtk_fig_text(this->wifi_fig, +1, +1, 0, text);
-  
+
   return;
 }
 

@@ -27,9 +27,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <math.h>
 #include "amcl.h"
@@ -62,7 +60,7 @@ int AdaptiveMCL::SetupSonar(void)
   // If there is no sonar device...
   if (this->sonar_index < 0)
     return 0;
-  
+
   id.code = PLAYER_SONAR_CODE;
   id.index = this->sonar_index;
 
@@ -89,7 +87,7 @@ int AdaptiveMCL::SetupSonar(void)
   this->sonar_pose_count = (int16_t) ntohs(geom.pose_count);
   assert((size_t) this->sonar_pose_count <
          sizeof(this->sonar_poses) / sizeof(this->sonar_poses[0]));
-  
+
   for (i = 0; i < this->sonar_pose_count; i++)
   {
     this->sonar_poses[i].v[0] = ((int16_t) ntohs(geom.poses[i][0])) / 1000.0;
@@ -139,7 +137,7 @@ void AdaptiveMCL::GetSonarData(amcl_sensor_data_t *data)
     data->sonar_range_count = 0;
     return;
   }
-  
+
   // Get the sonar device data.
   size = this->sonar->GetData(this, (uint8_t*) &ndata, sizeof(ndata), NULL, NULL);
 
@@ -163,7 +161,7 @@ void AdaptiveMCL::GetSonarData(amcl_sensor_data_t *data)
 bool AdaptiveMCL::UpdateSonarModel(amcl_sensor_data_t *data)
 {
   int i;
-  
+
   // If there is no sonar device...
   if (this->sonar_index < 0)
     return false;
@@ -188,14 +186,14 @@ void AdaptiveMCL::DrawSonarData(amcl_sensor_data_t *data)
 {
   int i;
   double r, b, ax, ay, bx, by;
-  
+
   // If there is no sonar device...
   if (this->sonar_index < 0)
     return;
 
   rtk_fig_clear(this->sonar_fig);
   rtk_fig_color_rgb32(this->sonar_fig, 0xC0C080);
-  
+
   for (i = 0; i < data->sonar_range_count; i++)
   {
     r = data->sonar_ranges[i];
@@ -206,7 +204,7 @@ void AdaptiveMCL::DrawSonarData(amcl_sensor_data_t *data)
 
     bx = ax + r * cos(b);
     by = ay + r * sin(b);
-    
+
     rtk_fig_line(this->sonar_fig, ax, ay, bx, by);
   }
   return;

@@ -27,9 +27,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "devicetable.h"
 #include "amcl_imu.h"
@@ -41,7 +39,7 @@ AMCLImu::AMCLImu()
 {
   this->device = NULL;
   this->model = NULL;
-  
+
   return;
 }
 
@@ -52,7 +50,7 @@ int AMCLImu::Load(ConfigFile* cf, int section)
 {
   // Device stuff
   this->imu_index = cf->ReadInt(section, "imu_index", -1);
-  
+
   // Create the imu model
   this->model = imu_alloc();
 
@@ -72,7 +70,7 @@ int AMCLImu::Unload(void)
 {
   imu_free(this->model);
   this->model = NULL;
-  
+
   return 0;
 }
 
@@ -106,7 +104,7 @@ int AMCLImu::Setup(void)
 ////////////////////////////////////////////////////////////////////////////////
 // Shut down the imu
 int AMCLImu::Shutdown(void)
-{  
+{
   this->device->Unsubscribe(this);
   this->device = NULL;
 
@@ -135,7 +133,7 @@ bool AMCLImu::GetData()
 
   this->utm_head = ((int32_t) ntohl(data.yaw)) / 3600.0 * M_PI / 180;
   this->utm_head += this->utm_mag_dev;
-  
+
   return true;
 }
 
@@ -147,14 +145,14 @@ bool AMCLImu::UpdateSensor(pf_t *pf)
   // Check for new data
   if (!this->GetData())
     return false;
-  
+
   printf("update imu %f\n", this->utm_head * 180 / M_PI);
-  
+
   // Update the imu sensor model with the latest imu measurements
   imu_set_utm(this->model, this->utm_head);
 
   // Apply the imu sensor model
-  pf_update_sensor(pf, (pf_sensor_model_fn_t) imu_sensor_model, this->model);  
+  pf_update_sensor(pf, (pf_sensor_model_fn_t) imu_sensor_model, this->model);
 
   return true;
 }
@@ -166,7 +164,7 @@ bool AMCLImu::UpdateSensor(pf_t *pf)
 void AMCLImu::SetupGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig)
 {
   this->fig = rtk_fig_create(canvas, NULL, 0);
-  
+
   return;
 }
 
@@ -177,7 +175,7 @@ void AMCLImu::ShutdownGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig)
 {
   rtk_fig_destroy(this->fig);
   this->fig = NULL;
-  
+
   return;
 }
 
@@ -186,12 +184,12 @@ void AMCLImu::ShutdownGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig)
 void AMCLImu::UpdateGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig)
 {
   double ox, oy, oa;
-  
+
   rtk_fig_clear(this->fig);
   rtk_fig_color_rgb32(this->fig, 0xFF00FF);
   rtk_fig_get_origin(robot_fig, &ox, &oy, &oa);
   rtk_fig_arrow(this->fig, ox, oy, this->utm_head + M_PI / 2, 1.0, 0.20);
-  
+
   return;
 }
 

@@ -93,9 +93,7 @@
  */
 /** @} */
 
-#if HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <assert.h>
 #include <math.h>
@@ -143,10 +141,10 @@ private:
 
 	int Initialise();
 	bool Initialised;
-	
+
 	// set device to positioning mode and set positioning mode parameters
 	int EnterPositioning();
-	
+
 	// Get device to map reflectors.
 	void UpdateMap();
 	// Get the reflector positions from the device.
@@ -202,10 +200,10 @@ protected:
 
 	// number of values for slifing mean
 	IntProperty SmoothingInput;
-	
+
 	// radius of the reflectors in meters
 	DoubleProperty ReflectorRadius;
-	
+
 	// storage for outgoing data
 	player_position2d_data_t data_packet;
 
@@ -225,7 +223,7 @@ protected:
 	// Odometry Device info
 	Device *odometry;
 	player_devaddr_t odometry_addr;
-		
+
 	// Opaque Device info
 	Device *opaque;
 	player_devaddr_t opaque_id;
@@ -267,7 +265,7 @@ void sicknav200_Register(DriverTable* table) {
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 SickNAV200::SickNAV200(ConfigFile* cf, int section) :
-	Driver(cf, section, false), 
+	Driver(cf, section, false),
 	Initialised(false),
 	mode("mode", DEFAULT_SICKNAV200_MODE, false, this, cf, section),
 	Nearest("nearest", 0, false, this, cf, section),
@@ -352,16 +350,16 @@ SickNAV200::SickNAV200(ConfigFile* cf, int section) :
 	memset(&this->odometry_addr, 0, sizeof(this->odometry_addr));
 	cf->ReadDeviceAddr(&this->odometry_addr, section, "requires",
 			PLAYER_POSITION2D_CODE, -1, "odometry");
-	
-	
+
+
 	PLAYER_MSG0(2, "reading reflector map id now");
 	this->reflector_map = NULL;
 	memset(&this->reflector_map_id, 0, sizeof(this->reflector_map_id));
 	cf->ReadDeviceAddr(&this->reflector_map_id, section, "requires",
 			PLAYER_VECTORMAP_CODE, -1, NULL);
 
-	
-	
+
+
 	return;
 }
 
@@ -405,7 +403,7 @@ int SickNAV200::Setup() {
 			return (-1);
 		}
 	}
-	
+
 	if (this->reflector_map_id.interf == PLAYER_VECTORMAP_CODE) // Reflector positions are provided.
 	{
 		if (!(this->reflector_map
@@ -485,8 +483,8 @@ int SickNAV200::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr,
 		odo_pos = recv->pos;
 		return 0;
 	}
-	
-	
+
+
 	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
 			PLAYER_POSITION2D_REQ_GET_GEOM, this->position_addr)) {
 		player_position2d_geom_t geom= { { 0 } };
@@ -727,7 +725,7 @@ void SickNAV200::Main() {
 			}
 		}
 	}
-	
+
 	LaserPos Reading;
 	for (;;) {
 		// test if we are supposed to cancel
@@ -762,9 +760,9 @@ void SickNAV200::Main() {
 			usleep(1000);
 			continue;
 		}
-		
+
 		player_pose2d_t nav_vel_WCF = {0,0,0};
-		if (velocity) 
+		if (velocity)
 		{
 			nav_vel_WCF = GetNavVelocityInWRF();
 			short pa_in_bdeg = static_cast<short> (nav_vel_WCF.pa * 32768.0 / M_PI);
@@ -807,7 +805,7 @@ void SickNAV200::Main() {
 				// Log the following data:
 				// TIMESTAMP, UPDATE_PERIOD, REQUEST_DELTA, POSE, NAV_POSE, QUALITY,NUM_REFLECTORS, VELOCITY_DELTA, VELOCITY, VELOCITY_NAV_WRF
 				fprintf(TimingLogFile, "%f %f %f %f %f %f %d %d %d %d %d %f %f %f %f %f %f %f\n",
-						time_double(now), 
+						time_double(now),
 						-static_cast<double> (usec_diff(now, last_nav_position_time))/1e6,
 						static_cast<double> (usec_diff(last_nav_position_time, last_nav_request_time))/1e6,
 						data_packet.pos.px,data_packet.pos.py,data_packet.pos.pa,
@@ -819,8 +817,8 @@ void SickNAV200::Main() {
 				fflush(TimingLogFile);
 			}
 			last_nav_position_time = now;
-			
-			
+
+
 			//printf("Got reading: quality %d\n", Reading.quality);
 			if (Reading.quality==0xFF || Reading.quality==0xFE
 					|| Reading.quality<=QualityThreshold) {
@@ -849,7 +847,7 @@ void SickNAV200::Main() {
 				PLAYER_MSG0(4,"NAV200 using odometry to try recover position\n");
 				Laser.ChangeLayerDefPosition(0,static_cast<int> (odo_pos.px*1000),static_cast<int> (odo_pos.py*1000),pa_in_bdeg);
 			}
-			
+
 		} else {
 			PLAYER_WARN("Failed to get reading from laser scanner\n");
 			Initialised = false;

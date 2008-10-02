@@ -181,9 +181,7 @@ driver
 
 #include "erratic.h"
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 bool debug_mode = FALSE;
 
