@@ -16,10 +16,10 @@
  */
 
 #include <unistd.h>
-#include <string>
+#include <string.h>
 #include <libplayercore/playercore.h>
-#include <cmath>
-#include <iostream>
+#include <math.h>
+#include <stddef.h>
 #include "Nclient.h"
 
 /** @ingroup drivers */
@@ -120,9 +120,6 @@ driver
 
 //TODO add gripper support
 
-using std::cout;
-using std::endl;
-
 //constants used in the code
 const double nomadRadius = 0.225; //nomad radius in meters - measured
 const double PI = 3.14159265; // aproximate value of pi
@@ -220,13 +217,13 @@ void NomadDriver::zeroOnStartup(){
 
     //stabilish connection
     if(! connect_robot(1)) {
-      cout << "couldn't connect in order to 'zero' the robot... aborting..." << endl;
+      PLAYER_ERROR ("couldn't connect in order to 'zero' the robot... aborting...");
       return;
     };
-    cout << " zeroing the robot position...";
+    PLAYER_WARN (" zeroing the robot position...");
     zr();
     ws(TRUE,TRUE,TRUE,0);
-    cout << " done" << endl;
+    PLAYER_WARN (" done");
 
     //close connection to the server
     disconnect_robot(1);
@@ -329,10 +326,9 @@ NomadDriver::NomadDriver (ConfigFile * cf, int section):
 */
 int NomadDriver::Setup ()
 {
-  cout << endl << "Nomad 200 :: Driver initialising" << endl;
-  cout << "Nomad 200:: WARNING!!! - make sure there's enough free space around the robot"
-       << endl;
-  cout << endl << "Nomad 200 :: Connecting...";
+  PLAYER_WARN ("Nomad 200 :: Driver initialising");
+  PLAYER_WARN ("Nomad 200:: WARNING!!! - make sure there's enough free space around the robot");
+  PLAYER_WARN ("Nomad 200 :: Connecting...");
 
   //setup connection parameters
   SERV_TCP_PORT = PORT;
@@ -340,13 +336,13 @@ int NomadDriver::Setup ()
 
   //stabilish connection
   if(! connect_robot(1)) {
-    cout << "Nomad 200 :: couldn't connect... aborting..." << endl;
+    PLAYER_ERROR ("Nomad 200 :: couldn't connect... aborting...");
     return -1;
   };
-  cout << " done" << endl;
+  PLAYER_WARN (" done");
 
   //setup nomad atributes
-  cout << "Nomad 200:: Configuring...";
+  PLAYER_WARN ("Nomad 200:: Configuring...");
   if (REAL_ROBOT!=3) {
     if (REAL_ROBOT) {
       real_robot();
@@ -377,7 +373,7 @@ int NomadDriver::Setup ()
 /// Shutdown the device
 int NomadDriver::Shutdown ()
 {
-  cout << endl << "Nomad 200 :: Shutting driver down";
+  PLAYER_WARN ("Nomad 200 :: Shutting driver down");
   //! Stop and join the driver thread
   StopThread ();
   //making sure that the robot stops when shutting down the device
@@ -386,7 +382,7 @@ int NomadDriver::Shutdown ()
 
   disconnect_robot(1);
 
-  cout << endl << "Nomad 200 :: Shutting driver down - DONE" << endl;
+  PLAYER_WARN ("Nomad 200 :: Shutting driver down - DONE");
 
   return (0);
 };

@@ -102,7 +102,6 @@ driver(
 
 #include <unistd.h>
 #include <string.h>
-#include <iostream>
 #include <time.h>
 
 #include <libplayercore/playercore.h>
