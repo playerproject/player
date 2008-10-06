@@ -143,7 +143,8 @@ void fakelocalize_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 FakeLocalize::FakeLocalize( ConfigFile* cf, int section)
-  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
+  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN),
+  model (NULL)
 {
   // Must have an input sim
   if (cf->ReadDeviceAddr(&this->sim_id, section, "requires",
@@ -182,9 +183,17 @@ FakeLocalize::FakeLocalize( ConfigFile* cf, int section)
     return;
   }
 
-  if(!(this->model = strdup(cf->ReadString(section, "model", NULL))))
+  const char * str = cf->ReadString(section, "model", NULL);
+  if(str == NULL)
   {
     PLAYER_ERROR("must specify non-NULL model name");
+    this->SetError(-1);
+    return;
+  }
+  this->model = strdup(str);
+  if (this->model == NULL)
+  {
+    PLAYER_ERROR("failed to duplicate model string");
     this->SetError(-1);
     return;
   }
@@ -194,7 +203,8 @@ FakeLocalize::FakeLocalize( ConfigFile* cf, int section)
 
 FakeLocalize::~FakeLocalize()
 {
-  free(this->model);
+  if(this->model != NULL)
+    free(this->model);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
