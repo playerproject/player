@@ -223,7 +223,6 @@ position devices that use watchdog timers.
 #include <replace/replace.h> // for poll(2)
 #include <libplayercore/playercore.h>
 #include <libplayercore/error.h>
-#include <iostream>
 
 extern PlayerTime *GlobalTime;
 
@@ -412,42 +411,18 @@ int LinuxJoystick::Setup()
 
   this->position = NULL;
   // If we're asked, open the position2d device
-  if(this->cmd_position_addr.interf)
+  if (this->cmd_position_addr.interf)
   {
-    if(!(this->position = deviceTable->GetDevice(this->cmd_position_addr)))
+    if (!(this->position = deviceTable->GetDevice(this->cmd_position_addr)))
     {
       PLAYER_ERROR("unable to locate suitable position2d device");
       return -1;
     }
-    if(this->position->Subscribe(this->InQueue) != 0)
+    if (this->position->Subscribe(this->InQueue) != 0)
     {
       PLAYER_ERROR("unable to subscribe to position2d device");
       return -1;
     }
-
-    // Enable the motors
-    player_position2d_power_config_t motorconfig;
-    motorconfig.state = 1;
-    Message* msg;
-    if(!(msg = this->position->Request(this->InQueue,
-                                       PLAYER_MSGTYPE_REQ, 
-                                       PLAYER_POSITION2D_REQ_MOTOR_POWER,
-                                       (void*)&motorconfig,
-                                       sizeof(motorconfig),NULL,false)))
-    {
-      PLAYER_WARN("failed to enable motors");
-    }
-    else
-      delete msg;
-
-    // Stop the robot
-    player_position2d_cmd_vel_t cmd;
-    memset(&cmd,0,sizeof(cmd));
-    this->position->PutMsg(this->InQueue,
-                           PLAYER_MSGTYPE_CMD,
-                           PLAYER_POSITION2D_CMD_VEL,
-                           (void*)&cmd, sizeof(player_position2d_cmd_vel_t),
-                           NULL);
   }
   this->gripper = NULL;
   // If we're asked, open the gripper device
@@ -503,6 +478,33 @@ int LinuxJoystick::Shutdown()
 // Main function for device thread
 void LinuxJoystick::Main() 
 {
+  if (this->cmd_position_addr.interf)
+  {
+    // Enable the motors
+    player_position2d_power_config_t motorconfig;
+    memset(&motorconfig, 0, sizeof motorconfig);
+    motorconfig.state = 1;
+    Message* msg;
+    if (!(msg = this->position->Request(this->InQueue,
+                                        PLAYER_MSGTYPE_REQ, 
+                                        PLAYER_POSITION2D_REQ_MOTOR_POWER,
+                                        reinterpret_cast<void *>(&motorconfig),
+                                        sizeof motorconfig, NULL)))
+    {
+      PLAYER_WARN("failed to enable motors");
+    }
+    else
+      delete msg;
+
+    // Stop the robot
+    player_position2d_cmd_vel_t cmd;
+    memset(&cmd, 0, sizeof cmd);
+    this->position->PutMsg(this->InQueue,
+                           PLAYER_MSGTYPE_CMD,
+                           PLAYER_POSITION2D_CMD_VEL,
+                           reinterpret_cast<void *>(&cmd), sizeof cmd,
+                           NULL);
+  }
   // The main loop; interact with the device here
   while (true)
   {
