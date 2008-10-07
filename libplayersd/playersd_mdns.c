@@ -163,7 +163,7 @@ player_sd_init(void)
   itable_init();
 
   // Pick a default debug level
-  ErrorInit(1);
+  ErrorInit(1,NULL);
 
   return(sd);
 }

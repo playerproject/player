@@ -114,7 +114,7 @@ void
 PlayerTCP::InitGlobals(void)
 {
   player_globals_init();
-  ErrorInit(1);
+  ErrorInit(1,NULL);
   playerxdr_ftable_init();
 }
 

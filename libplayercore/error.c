@@ -38,10 +38,10 @@ void (*ErrorPrint)(int msgType, int level, const char *file, int line, const cha
 
 // Initialize error logging
 void 
-ErrorInit(int _msgLevel)
+ErrorInit(int _msgLevel, FILE * logfile)
 {
   msgLevel = _msgLevel;
-  msgFile = fopen(".player", "a+");
+  msgFile = logfile;
 }
 
 #define MSG_MAX 1024

@@ -157,7 +157,7 @@ wbr914::wbr914(ConfigFile* cf, int section)
   // Baud rate
   _baud = 416666;
 
-  ErrorInit( 9 );
+  ErrorInit( 9, NULL );
 
   // zero ids, so that we'll know later which interfaces were
   // requested

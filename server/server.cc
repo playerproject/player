@@ -62,6 +62,7 @@ more output.  Default: 1.
 - -p \<port\> : Establish the default TCP port, which will be assigned to
 any devices in the configuration file without an explicit port assignment.
 Default: 6665.
+- -l <logfile>: File to log messages to (default stdout only)
 - \<cfgfile\> : The configuration file to read.
 
 @section Example
@@ -110,7 +111,7 @@ void PrintVersion();
 void PrintCopyrightMsg();
 void PrintUsage();
 int ParseArgs(int* port, int* debuglevel,
-              char** cfgfilename, int* gz_serverid,
+              char** cfgfilename, int* gz_serverid, char** logfilename,
               int argc, char** argv);
 void Quit(int signum);
 void Cleanup();
@@ -133,6 +134,7 @@ main(int argc, char** argv)
   int* new_ports;
   int num_ports;
   char* cfgfilename;
+  char * logfileName = NULL;
 
   if(signal(SIGINT, Quit) == SIG_ERR)
   {
@@ -158,13 +160,16 @@ main(int argc, char** argv)
   assert(pudp);
 
   PrintVersion();
-  if(ParseArgs(&port, &debuglevel, &cfgfilename, &gz_serverid, argc, argv) < 0)
+  if(ParseArgs(&port, &debuglevel, &cfgfilename, &gz_serverid, &logfileName, argc, argv) < 0)
   {
     PrintUsage();
     exit(-1);
   }
 
-  ErrorInit(debuglevel);
+  FILE* logfile = NULL;
+  if (logfileName)
+    logfile = fopen(logfileName,"a");
+  ErrorInit(debuglevel,logfile);
 
   PrintCopyrightMsg();
 
@@ -399,7 +404,7 @@ PrintUsage()
 
 
 int
-ParseArgs(int* port, int* debuglevel, char** cfgfilename, int* gz_serverid,
+ParseArgs(int* port, int* debuglevel, char** cfgfilename, int* gz_serverid, char **logfilename,
           int argc, char** argv)
 {
   int ch;
@@ -415,6 +420,9 @@ ParseArgs(int* port, int* debuglevel, char** cfgfilename, int* gz_serverid,
         break;
       case 'd':
         *debuglevel = atoi(optarg);
+        break;
+      case 'l':
+        *logfilename = optarg;
         break;
       case 'p':
         *port = atoi(optarg);
