@@ -1012,6 +1012,7 @@ int GarminNMEA::ParseGPRMC(const char *buf)
   char tmp[8];
   struct tm tms;
   time_t utc;
+  static bool short_time_field = 0;
   
   //printf("got RMC (%s)\n", buf);
   //fflush(stdout);
@@ -1023,9 +1024,17 @@ int GarminNMEA::ParseGPRMC(const char *buf)
 
   if (strlen(field) < 6)
   {
-    PLAYER_WARN("short time field; ignoring");
+    /* This can happen while indoors. Prevent the screen from being flooded
+       with these messages */
+    if (!short_time_field)
+    {
+        PLAYER_WARN("short time field; ignoring");
+        short_time_field = 1;
+    }
     return -1;
   }
+  /* else */
+  short_time_field = 0;
 
   // first field is time of day. HHMMSS
   strncpy(tmp,field,2);

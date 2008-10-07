@@ -436,7 +436,7 @@ void ServiceAdvMDNS_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_FAKELOCALIZE
-void FakeLocalize_Register(DriverTable* table);
+void fakelocalize_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_STAGECLIENT
@@ -909,7 +909,7 @@ player_register_drivers()
 #endif
 
 #ifdef INCLUDE_FAKELOCALIZE
-  FakeLocalize_Register(driverTable);
+  fakelocalize_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_NOMAD
