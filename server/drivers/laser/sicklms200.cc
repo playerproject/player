@@ -1660,43 +1660,6 @@ ssize_t SickLMS200::ReadFromLaser(uint8_t *data, ssize_t maxlen, bool ack, int t
   if(timeout_header == -1)
     timeout_header = timeout;
 
-  // If the timeout is infinite,
-  // go to blocking io
-  //
-  if (timeout < 0)
-  {
-    //PLAYER_MSG0(2, "using blocking io");
-    int flags = ::fcntl(this->laser_fd, F_GETFL);
-    if (flags < 0)
-    {
-      PLAYER_ERROR("unable to get device flags");
-      return 0;
-    }
-    if (::fcntl(this->laser_fd, F_SETFL, flags & (~O_NONBLOCK)) < 0)
-    {
-      PLAYER_ERROR("unable to set device flags");
-      return 0;
-    }
-  }
-  //
-  // Otherwise, use non-blocking io
-  //
-  else
-  {
-    //PLAYER_MSG0(2, "using non-blocking io");
-    int flags = ::fcntl(this->laser_fd, F_GETFL);
-    if (flags < 0)
-    {
-      PLAYER_ERROR("unable to get device flags");
-      return 0;
-    }
-    if (::fcntl(this->laser_fd, F_SETFL, flags | O_NONBLOCK) < 0)
-    {
-      PLAYER_ERROR("unable to set device flags");
-      return 0;
-    }
-  }
-
   int64_t start_time = GetTime();
   int64_t stop_time = start_time + timeout;
   int64_t stop_time_header = start_time + timeout_header;
@@ -1713,10 +1676,42 @@ ssize_t SickLMS200::ReadFromLaser(uint8_t *data, ssize_t maxlen, bool ack, int t
   while (true)
   {
     if (timeout >= 0)
-      usleep(1000);
+    {
+      fd_set rfds, efds;
+      FD_ZERO(&rfds);
+      FD_SET(this->laser_fd, &rfds);
+      FD_ZERO(&efds);
+      FD_SET(this->laser_fd, &efds);
+      int64_t delay = stop_time_header - GetTime();
+      if (delay < 0) delay = 0;
+      struct timeval tv;
+      tv.tv_usec = (delay % 1000) * 1000;
+      tv.tv_sec = delay / 1000;
+      int retval = ::select(this->laser_fd + 1, &rfds, 0, &efds, &tv);
+      if (retval < 0)
+      {
+        PLAYER_ERROR("error on select (1)");
+        return 0;
+      }
+      if (!retval)
+      {
+        PLAYER_MSG0(2, "timeout on select (1)");
+        return 0;
+      }
+    }
 
     //printf("reading %d\n", timeout); fflush(stdout);
     bytes = ::read(this->laser_fd, header + sizeof(header) - 1, 1);
+    if (bytes < 0)
+    {
+      PLAYER_ERROR("error on read (1)");
+      return 0;
+    }
+    if (!bytes)
+    {
+      PLAYER_MSG0(2, "eof on read (1)");
+      return 0;
+    }
     //printf("bytes read %d\n", bytes); fflush(stdout);
 
     if (header[0] == STX && header[1] == 0x80)
@@ -1727,12 +1722,6 @@ ssize_t SickLMS200::ReadFromLaser(uint8_t *data, ssize_t maxlen, bool ack, int t
         break;
     }
     memmove(header, header + 1, sizeof(header) - 1);
-    if (timeout >= 0 && GetTime() >= stop_time_header)
-    {
-      //PLAYER_MSG2(2, "%Ld %Ld", GetTime(), stop_time);
-      PLAYER_MSG0(2, "timeout on read (1)");
-      return 0;
-    }
   }
 
   // Determine data length
@@ -1754,13 +1743,41 @@ ssize_t SickLMS200::ReadFromLaser(uint8_t *data, ssize_t maxlen, bool ack, int t
   while (bytes < len)
   {
     if (timeout >= 0)
-      usleep(1000);
-    bytes += ::read(this->laser_fd, data + bytes, len - bytes);
-    if (timeout >= 0 && GetTime() >= stop_time)
     {
-      //PLAYER_MSG2(2, "%Ld %Ld", GetTime(), stop_time);
-      RETURN_ERROR(0, "timeout on read (3)");
+      fd_set rfds, efds;
+      FD_ZERO(&rfds);
+      FD_SET(this->laser_fd, &rfds);
+      FD_ZERO(&efds);
+      FD_SET(this->laser_fd, &efds);
+      int64_t delay = stop_time - GetTime();
+      if (delay < 0) delay = 0;
+      struct timeval tv;
+      tv.tv_usec = (delay % 1000) * 1000;
+      tv.tv_sec = delay / 1000;
+      int retval = ::select(this->laser_fd + 1, &rfds, 0, &efds, &tv);
+      if (retval < 0)
+      {
+        PLAYER_ERROR("error on select (3)");
+        return 0;
+      }
+      if (!retval)
+      {
+        PLAYER_MSG0(2, "timeout on select (3)");
+        return 0;
+      }
     }
+    int retval = ::read(this->laser_fd, data + bytes, len - bytes);
+    if (retval < 0)
+    {
+      PLAYER_ERROR("error on read (3)");
+      return 0;
+    }
+    if (!retval)
+    {
+      PLAYER_MSG0(2, "eof on read (3)");
+      return 0;
+    }
+    bytes += retval;
   }
 
   // Read in footer
@@ -1769,13 +1786,41 @@ ssize_t SickLMS200::ReadFromLaser(uint8_t *data, ssize_t maxlen, bool ack, int t
   while (bytes < 3)
   {
     if (timeout >= 0)
-      usleep(1000);
-    bytes += ::read(this->laser_fd, footer + bytes, 3 - bytes);
-    if (timeout >= 0 && GetTime() >= stop_time)
     {
-      //PLAYER_MSG2(2, "%Ld %Ld", GetTime(), stop_time);
-      RETURN_ERROR(0, "timeout on read (4)");
+      fd_set rfds, efds;
+      FD_ZERO(&rfds);
+      FD_SET(this->laser_fd, &rfds);
+      FD_ZERO(&efds);
+      FD_SET(this->laser_fd, &efds);
+      int64_t delay = stop_time - GetTime();
+      if (delay < 0) delay = 0;
+      struct timeval tv;
+      tv.tv_usec = (delay % 1000) * 1000;
+      tv.tv_sec = delay / 1000;
+      int retval = ::select(this->laser_fd + 1, &rfds, 0, &efds, &tv);
+      if (retval < 0)
+      {
+        PLAYER_ERROR("error on select (4)");
+        return 0;
+      }
+      if (!retval)
+      {
+        PLAYER_MSG0(2, "timeout on select (4)");
+        return 0;
+      }
     }
+    int retval = ::read(this->laser_fd, footer + bytes, 3 - bytes);
+    if (retval < 0)
+    {
+      PLAYER_ERROR("error on read (4)");
+      return 0;
+    }
+    if (!retval)
+    {
+      PLAYER_MSG0(2, "eof on read (4)");
+      return 0;
+    }
+    bytes += retval;
   }
 
   // Construct entire packet

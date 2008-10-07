@@ -57,7 +57,8 @@ main(int argc, char **argv)
     for( r=3; r>0; r-=0.1 )
       {
 	col.blue = (int)(r * 255.0 /3);
-	col.red  = (int)((255.0 - r * 255.0)/3);
+	col.red  = 255 - col.blue;
+	gp.Color( col );
 
 	player_point_3d_t pts[4];
 	pts[0].px = -r;

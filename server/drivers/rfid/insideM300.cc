@@ -22,6 +22,7 @@
  Author: Radu Bogdan Rusu
  Date: 25 Jan 2006
  CVS: $Id$
+ Fixes by Alexis Maldonado <maldonad //at// cs.tum.edu>. April/2008.
 */
 
 /** @ingroup drivers */
@@ -225,7 +226,6 @@ InsideM300::InsideM300 (ConfigFile* cf, int section)
 // Destructor.
 InsideM300::~InsideM300()
 {
-	free(Data.tags);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -380,6 +380,14 @@ int InsideM300::Shutdown ()
 	tcsetattr (this->fd, TCSANOW, &this->initial_options);
 	close (this->fd);
 
+	for (unsigned int i=0; i != allocated_tags; ++i) {
+		delete [] Data.tags[i].guid;
+	}
+	
+	free(Data.tags);
+	Data.tags=NULL;
+	allocated_tags=0;
+	
 	PLAYER_MSG0 (1, "> InsideM300 driver shutting down... [done]");
 	return (0);
 }
@@ -459,7 +467,7 @@ int InsideM300::ProcessMessage (QueuePointer & resp_queue,
 // RefreshData function
 void InsideM300::RefreshData ()
 {
-	memset (&this->Data, 0, sizeof (player_rfid_data_t));
+	memset (&this->Data, 0, sizeof (Data));
 
 	// Get the time at which we started reading
 	// This will be a pretty good estimate of when the phenomena occured
@@ -680,10 +688,12 @@ int InsideM300::SelectTags ()
 				if (this->Data.tags_count >= this->allocated_tags)
 				{
 					this->allocated_tags = this->Data.tags_count+1;
-					this->Data.tags = (player_rfid_tag_t*)realloc(this->Data.tags,sizeof(this->Data.tags[0])*this->allocated_tags);
+					this->Data.tags = (player_rfid_tag_t*)realloc(this->Data.tags,sizeof(player_rfid_tag_t)*this->allocated_tags);
+					this->Data.tags[this->Data.tags_count].guid_count = 8;
+					this->Data.tags[this->Data.tags_count].guid=new char[8];
+
 				}
 				this->Data.tags[this->Data.tags_count].type = chipAnswer[1];
-				this->Data.tags[this->Data.tags_count].guid_count = 8;
 				int j;
 				for (j = 0; j < 8; j++)
 					this->Data.tags[this->Data.tags_count].guid[j] =
@@ -760,10 +770,11 @@ void InsideM300::InsideInventory (int maskLength, int chipMask,
 			if (this->Data.tags_count >= this->allocated_tags)
 			{
 				this->allocated_tags = this->Data.tags_count+1;
-				this->Data.tags = (player_rfid_tag_t*)realloc(this->Data.tags,sizeof(this->Data.tags[0])*this->allocated_tags);
+				this->Data.tags = (player_rfid_tag_t*)realloc(this->Data.tags,sizeof(player_rfid_tag_t)*this->allocated_tags);
+				this->Data.tags[this->Data.tags_count].guid_count = 8;
+				this->Data.tags[this->Data.tags_count].guid=new char[8];
 			}
 			this->Data.tags[this->Data.tags_count].type = chipAnswer[1];
-			this->Data.tags[this->Data.tags_count].guid_count = 8;
 			int j;
 			for (j = 0; j < 8; j++)
 				this->Data.tags[this->Data.tags_count].guid[j] = chipAnswer [9-j];
