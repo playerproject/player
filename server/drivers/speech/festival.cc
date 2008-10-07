@@ -79,8 +79,12 @@ driver
 */
 /** @} */
 
+#include "config.h"
+
+#include <stddef.h>
 #include <stdio.h>
 #include <errno.h>
+#include <assert.h>
 #include <unistd.h> /* close(2),fcntl(2),getpid(2),usleep(3),execlp(3),fork(2)*/
 #include <netdb.h> /* for gethostbyname(3) */
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
@@ -229,9 +233,8 @@ Festival::Setup()
 
   char* festival_args[8];
 
-  static struct sockaddr_in server;
+  struct sockaddr_in server;
   char host[] = "localhost";
-  struct hostent* entp;
 
   // start out with a clean slate
   //queue->Flush();
@@ -286,28 +289,43 @@ Festival::Setup()
   }
   else
   {
-    /* in parent */
-    /* fill in addr structure */
-    server.sin_family = PF_INET;
+    memset(&server, 0, sizeof (server));
+    server.sin_family = AF_INET;
+    server.sin_port = htons(portnum);
+#if HAVE_GETADDRINFO
+    struct addrinfo* addr_ptr = NULL;
+    if (getaddrinfo(host, NULL, NULL, &addr_ptr))
+    {
+      PLAYER_ERROR("getaddrinfo() failed with error");
+      KillFestival();
+      return(1);
+    }
+    assert(addr_ptr);
+    assert(addr_ptr->ai_addr);
+    if ((addr_ptr->ai_addr->sa_family) != AF_INET)
+    {
+      PLAYER_ERROR("unsupported internet address family");
+      KillFestival();
+      return(1);
+    }
+    server.sin_addr.s_addr = (reinterpret_cast<struct sockaddr_in *>(addr_ptr->ai_addr))->sin_addr.s_addr;
+    freeaddrinfo(addr_ptr);
+    addr_ptr = NULL;
+#else
     /*
      * this is okay to do, because gethostbyname(3) does no lookup if the
      * 'host' * arg is already an IP addr
      */
+    struct hostent* entp;
     if((entp = gethostbyname(host)) == NULL)
     {
-      fprintf(stderr, "Festival::Setup(): \"%s\" is unknown host; "
+      PLAYER_ERROR1("Festival::Setup(): \"%s\" is unknown host; "
                       "can't connect to Festival\n", host);
       /* try to kill Festival just in case it's running */
       KillFestival();
       return(1);
     }
-
-    memcpy(&server.sin_addr, entp->h_addr_list[0], entp->h_length);
-
-
-    server.sin_port = htons(portnum);
-
-
+#endif
 
     /* ok, we'll make this a bit smarter.  first, we wait a baseline amount
      * of time, then try to connect periodically for some predefined number
@@ -328,7 +346,7 @@ Festival::Setup()
       /*
       * hook it up
        */
-      if(connect(sock, (struct sockaddr*)&server, sizeof(server)) == 0)
+      if(connect(sock, reinterpret_cast<struct sockaddr*> (&server), sizeof(server)) == 0)
         break;
       usleep(FESTIVAL_STARTUP_INTERVAL_USEC);
     }

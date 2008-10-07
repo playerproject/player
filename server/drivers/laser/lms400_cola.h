@@ -4,6 +4,10 @@
  Date: 7 Feb 2007
  CVS: $Id$
 */
+
+#include "config.h"
+
+#include <netdb.h>
 #include <sys/types.h>
 #include <vector>
 #include <netinet/in.h>
@@ -86,7 +90,11 @@ class lms400_cola
     const char* hostname;
     int sockfd, portno, n;
     struct sockaddr_in serv_addr;
+#if defined (HAVE_GETADDRINFO)
+    struct addrinfo *addr_ptr;
+#else
     struct hostent *server;
+#endif
 
     // Internal Parameters:
     int verbose;

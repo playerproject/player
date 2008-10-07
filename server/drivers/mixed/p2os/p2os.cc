@@ -717,22 +717,37 @@ int P2OS::Setup()
       return(1);
     }
     //printf("created socket %d.\nLooking up hostname...\n", this->psos_fd);
+    struct sockaddr_in addr;
+    memset(&addr, 0, sizeof addr);
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(this->psos_tcp_port);
+#if HAVE_GETADDRINFO
+    struct addrinfo * addr_ptr = NULL;
+    if (getaddrinfo(this->psos_tcp_host, NULL, NULL, &addr_ptr))
+    {
+      PLAYER_ERROR("Error looking up hostname or address");
+      return 1;
+    }
+    assert(addr_ptr);
+    assert(addr_ptr->ai_addr);
+    assert((addr_ptr->ai_addr->sa_family) == AF_INET);
+    addr.sin_addr.s_addr = (reinterpret_cast<struct sockaddr_in *>(addr_ptr->ai_addr))->sin_addr.s_addr;
+    freeaddrinfo(addr_ptr);
+    addr_ptr = NULL;
+#else
     struct hostent* h = gethostbyname(this->psos_tcp_host);
     if(!h)
     {
       perror("Error looking up hostname or address %s:");
       return(1);
     }
-    struct sockaddr_in addr;
-    assert((size_t)h->h_length <= sizeof(addr.sin_addr));
+    assert(static_cast<size_t> (h->h_length) <= sizeof(addr.sin_addr));
     //printf("gethostbyname returned address %d length %d.\n", * h->h_addr, h->h_length);
     memcpy(&(addr.sin_addr), h->h_addr, h->h_length);
     //printf("copied address to addr.sin_addr.s_addr=%d\n", addr.sin_addr.s_addr);
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(this->psos_tcp_port);
-    printf("Found host address, connecting...");
-    fflush(stdout);
-    if(connect(this->psos_fd, (struct sockaddr*) &addr, sizeof(addr)) < 0)
+#endif
+    PLAYER_WARN("Found host address, connecting...");
+    if(connect(this->psos_fd, reinterpret_cast<struct sockaddr*> (&addr), sizeof(addr)) < 0)
     {
       perror("Error Connecting to remote host (P2OS::Setup()::connect()):");
       return(1);
@@ -746,7 +761,7 @@ int P2OS::Setup()
       return(1);
     }
     assert(flags & O_NONBLOCK);
-    printf("TCP socket connection is OK... ");
+    PLAYER_WARN("TCP socket connection is OK... ");
     fflush(stdout);
   }
   else

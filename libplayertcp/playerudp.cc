@@ -1262,7 +1262,7 @@ _create_and_bind_udp_socket(char blocking, unsigned int host, int portnum)
    *
    * Specifying sin_port = 0 would allow the system to choose the port.
    */
-  serverp.sin_family = PF_INET;
+  serverp.sin_family = AF_INET;
   serverp.sin_addr.s_addr = INADDR_ANY;
 
   if(bind(sock, (struct sockaddr*)&serverp, sizeof(serverp)) == -1)

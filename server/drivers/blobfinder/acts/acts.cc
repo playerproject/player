@@ -139,7 +139,10 @@ driver
 
 /** @} */
 
+#include "config.h"
+
 #include <assert.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <unistd.h> /* close(2),fcntl(2),getpid(2),usleep(3),execvp(3),fork(2)*/
 #include <netdb.h> /* for gethostbyname(3) */
@@ -479,7 +482,6 @@ Acts::Setup()
 
   static struct sockaddr_in server;
   char host[] = "localhost";
-  struct hostent* entp;
 
   printf("ACTS vision server connection initializing...");
   fflush(stdout);
@@ -671,13 +673,33 @@ Acts::Setup()
   }
   else
   {
-    /* in parent */
-    /* fill in addr structure */
-    server.sin_family = PF_INET;
+    memset(&server, 0, sizeof server);
+    server.sin_port = htons(portnum);
+    server.sin_family = AF_INET;
+#if HAVE_GETADDRINFO
+    struct addrinfo* addr_ptr = NULL;
+    if (getaddrinfo(host, NULL, NULL, &addr_ptr))
+    {
+      PLAYER_ERROR("getaddrinfo() failed with error");
+      KillACTS();
+      return(1);
+    }
+    assert(addr_ptr);
+    assert(addr_ptr->ai_addr);
+    if ((addr_ptr->ai_addr->sa_family) != AF_INET)
+    {
+      PLAYER_ERROR("unsupported internet address family");
+      KillACTS();
+     return(1);
+    }
+    server.sin_addr.s_addr = (reinterpret_cast<struct sockaddr_in *>(addr_ptr->ai_addr))->sin_addr.s_addr;
+    freeaddrinfo(addr_ptr); addr_ptr = NULL;
+#else
     /*
      * this is okay to do, because gethostbyname(3) does no lookup if the
      * 'host' * arg is already an IP addr
      */
+    struct hostent* entp;
     if((entp = gethostbyname(host)) == NULL)
     {
       fprintf(stderr, "Acts::Setup(): \"%s\" is unknown host; "
@@ -688,9 +710,7 @@ Acts::Setup()
     }
 
     memcpy(&server.sin_addr, entp->h_addr_list[0], entp->h_length);
-
-    server.sin_port = htons(portnum);
-
+#endif
     /* ok, we'll make this a bit smarter.  first, we wait a baseline amount
      * of time, then try to connect periodically for some predefined number
      * of times
@@ -710,7 +730,7 @@ Acts::Setup()
         KillACTS();
         return(1);
       }
-      if(connect(sock,(struct sockaddr*)&server, sizeof(server)) == 0)
+      if(connect(sock,reinterpret_cast<struct sockaddr*> (&server), sizeof(server)) == 0)
         break;
       usleep(ACTS_STARTUP_INTERVAL_USEC);
     }
