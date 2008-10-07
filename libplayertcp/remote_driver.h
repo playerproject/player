@@ -63,6 +63,7 @@ class TCPRemoteDriver : public Driver
 
     virtual int Setup();
     virtual int Shutdown();
+    virtual void Update();
     virtual int ProcessMessage(QueuePointer & resp_queue,
                                player_msghdr * hdr,
                                void * data);

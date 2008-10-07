@@ -136,13 +136,12 @@ class PlayerTCP
     /** Total size of @p decode_readbuffer */
     int decode_readbuffersize;
 
-    void Lock();
-    void Unlock();
-
   public:
     PlayerTCP();
     ~PlayerTCP();
 
+    void Lock();
+    void Unlock();
 
     static void InitGlobals(void);
 

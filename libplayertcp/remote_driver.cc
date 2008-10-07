@@ -363,6 +363,21 @@ TCPRemoteDriver::Shutdown()
   return(0);
 }
 
+void 
+TCPRemoteDriver::Update()
+{
+  if(this->ptcp->thread == pthread_self())
+  {
+    //this->ptcp->Read(0,true);
+    this->ptcp->Lock();
+    this->ptcp->ReadClient(this->queue);
+    this->ptcp->Unlock();
+  }
+  this->ProcessMessages();
+  if(this->ptcp->thread == pthread_self())
+    this->ptcp->Write(false);
+}
+
 int
 TCPRemoteDriver::ProcessMessage(QueuePointer &resp_queue,
                                 player_msghdr * hdr,
