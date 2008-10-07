@@ -124,7 +124,7 @@ public:
 
     int ConnectRemote();
     int DisconnectRemote();
-    
+
     virtual int ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, void * data);
 
 private:
@@ -136,15 +136,15 @@ private:
     player_devaddr_t srcAddr;
     //the device that this server connects to to get data
     Device *srcDevice;
-    
+
     // properties
     StringProperty RemoteHost;
     IntProperty RemotePort;
     IntProperty RemoteIndex;
-    
+
     IntProperty Connect;
     int Connected;
-    
+
 
 };
 
@@ -206,7 +206,7 @@ int PassThrough::Setup() {
         int ret = ConnectRemote();
         if (ret)
             return ret;
-        
+
     }
 
     StartThread();
@@ -222,7 +222,7 @@ int PassThrough::Shutdown() {
     StopThread();
 
     DisconnectRemote();
-    
+
     PLAYER_MSG0(1,"PassThrough driver has been shutdown");
 
     return(0);
@@ -232,7 +232,7 @@ int PassThrough::ConnectRemote()
 {
     if (Connected)
         return 0;
-    
+
     if (RemoteHost.GetValue()[0] != '\0')
     {
         PLAYER_MSG1(3,"Overriding remote hostname to %s", RemoteHost.GetValue());
@@ -275,7 +275,7 @@ int PassThrough::DisconnectRemote()
         return 0;
     //Our clients disconnected, so let's disconnect from our SRC interface
     srcDevice->Unsubscribe(this->InQueue);
-    
+
     Connected = 0;
     return 0;
 }
@@ -289,19 +289,19 @@ int PassThrough::ProcessMessage(QueuePointer & resp_queue,
     bool inspected(false);
 
     // let our properties through
-    if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SET_STRPROP_REQ)) 
+    if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SET_STRPROP_REQ))
     {
         player_strprop_req_t req = *reinterpret_cast<player_strprop_req_t*> (data);
-        if (strcmp("remote_host", req.key) == 0) 
+        if (strcmp("remote_host", req.key) == 0)
             return -1;
     }
-    
-    if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SET_INTPROP_REQ)) 
+
+    if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SET_INTPROP_REQ))
     {
         player_intprop_req_t req = *reinterpret_cast<player_intprop_req_t*> (data);
-        if (strcmp("remote_port", req.key) == 0) 
+        if (strcmp("remote_port", req.key) == 0)
             return -1;
-        if (strcmp("remote_index", req.key) == 0) 
+        if (strcmp("remote_index", req.key) == 0)
             return -1;
         if (strcmp("connect", req.key) == 0)
         {
@@ -318,11 +318,11 @@ int PassThrough::ProcessMessage(QueuePointer & resp_queue,
             	DisconnectRemote();
             	ConnectRemote();
             }
-        	
+
             return -1;
         }
     }
-    
+
     // silence warning etc while we are not connected
     if (!Connected)
     {
@@ -332,7 +332,7 @@ int PassThrough::ProcessMessage(QueuePointer & resp_queue,
         }
         return 0;
     }
-        
+
 
     PLAYER_MSG0(9,"PassThrough::ProcessMessage: Received a packet!");
 
@@ -342,7 +342,7 @@ int PassThrough::ProcessMessage(QueuePointer & resp_queue,
          (hdr->type == PLAYER_MSGTYPE_SYNCH) ||
          (hdr->type == PLAYER_MSGTYPE_RESP_NACK)))
     {
-        PLAYER_MSG7(8,"PassThrough: Forwarding SRC->DST Interface code=%d  %d:%d:%d -> %d:%d:%d",hdr->addr.interf, hdr->addr.host,hdr->addr.robot, hdr->addr.index, dstAddr.host, dstAddr.robot, dstAddr.index);
+        //PLAYER_MSG7(8,"PassThrough: Forwarding SRC->DST Interface code=%d  %d:%d:%d -> %d:%d:%d",hdr->addr.interf, hdr->addr.host,hdr->addr.robot, hdr->addr.index, dstAddr.host, dstAddr.robot, dstAddr.index);
 
         hdr->addr=dstAddr; //will send to my clients, making it seem like it comes from my DST interface
 
@@ -353,7 +353,7 @@ int PassThrough::ProcessMessage(QueuePointer & resp_queue,
     if (Device::MatchDeviceAddress(hdr->addr,dstAddr) &&
         (hdr->type == PLAYER_MSGTYPE_CMD))
     {
-        PLAYER_MSG7(8,"PassThrough: Forwarding DST->SRC Interface code=%d  %d:%d:%d -> %d:%d:%d",hdr->addr.interf, hdr->addr.host,hdr->addr.robot, hdr->addr.index, srcAddr.host, srcAddr.robot, srcAddr.index);
+        //PLAYER_MSG7(8,"PassThrough: Forwarding DST->SRC Interface code=%d  %d:%d:%d -> %d:%d:%d",hdr->addr.interf, hdr->addr.host,hdr->addr.robot, hdr->addr.index, srcAddr.host, srcAddr.robot, srcAddr.index);
 
 
         hdr->addr=srcAddr;  //send to the device to which I subscribed, making it seem like it comes from my original interface
@@ -410,7 +410,7 @@ int PassThrough::ProcessMessage(QueuePointer & resp_queue,
 
 void PassThrough::Main() {
     //The forwarding is done in the ProcessMessage method. Called once per each message by ProcessMessages()
-    while (true) 
+    while (true)
     {
         InQueue->Wait();
         ProcessMessages();
