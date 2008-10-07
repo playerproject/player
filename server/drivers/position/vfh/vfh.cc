@@ -1171,6 +1171,12 @@ VFH_Class::VFH_Class( ConfigFile* cf, int section)
       this->SetError(-1);
       return;
     }
+
+    /* Initialize planner data */
+    this->planner_data.done = 1;
+    this->planner_data.valid = 0;
+    this->planner_data.waypoint_idx = -1; /* Not supported */
+    this->planner_data.waypoints_count = -1; /* Not supported */
   }
 
   memset(&this->position_id, 0, sizeof(player_devaddr_t));
