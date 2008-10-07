@@ -95,7 +95,7 @@ TCPRemoteDriver::Setup()
     return(-1);
   }
 
-  server.sin_family = PF_INET;
+  server.sin_family = AF_INET;
   server.sin_addr.s_addr = this->device_addr.host;
   server.sin_port = htons(this->device_addr.robot);
 

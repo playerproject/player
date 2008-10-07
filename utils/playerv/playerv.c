@@ -314,7 +314,7 @@ int main(int argc, char **argv)
   // start out timer if in pull mode
   if(rate > 0.0)
     gettimeofday(&tv, NULL);
-  
+
   while (!quit)
   {
     // Let gui process messages

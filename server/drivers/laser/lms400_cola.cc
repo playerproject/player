@@ -4,13 +4,17 @@
  Date: 7 Feb 2007
  CVS: $Id$
 */
+
+#include "config.h"
+
+#include <stddef.h>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <libplayercore/playercore.h>
 
 #include "lms400_cola.h"
 #include <unistd.h>
-#include <strings.h>
+#include <string.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor.
@@ -35,20 +39,35 @@ int
     return (-1);
 
   // Get the network host entry
-  server = gethostbyname ((const char *)hostname);
-  if (server == NULL)
-    return (-1);
-
-  // Fill in the sockaddr_in structure values
-  memset ((char *) &serv_addr, 0, sizeof (serv_addr));
+  memset (&serv_addr, 0, sizeof (serv_addr));
+  serv_addr.sin_port = htons(portno);
   serv_addr.sin_family = AF_INET;
-  serv_addr.sin_port   = htons (portno);
-  memcpy ((char *)&serv_addr.sin_addr.s_addr,
-		  (char *)server->h_addr,
-          server->h_length);
+#if defined (HAVE_GETADDRINFO)
+  addr_ptr = NULL;
+  if (getaddrinfo (hostname, NULL, NULL, &(addr_ptr)))
+  {
+    PLAYER_ERROR ("getaddrinfo() failed with error");
+    return (-1);
+  }
+  assert (addr_ptr);
+  assert (addr_ptr->ai_addr);
+  if ((addr_ptr->ai_addr->sa_family) != AF_INET)
+  {
+    PLAYER_ERROR ("unsupported internet address family");
+    return (-1);
+  }
+  serv_addr.sin_addr.s_addr = (reinterpret_cast<struct sockaddr_in*> (addr_ptr->ai_addr))->sin_addr.s_addr;
+  freeaddrinfo (addr_ptr);
+  addr_ptr = NULL;
+#else
+  server = gethostbyname (hostname);
+  if ((server) == NULL)
+    return (-1);
+  memcpy (&(serv_addr.sin_addr.s_addr), server->h_addr, server->h_length);
+#endif
 
   // Attempt to connect
-  if (connect (sockfd, (const sockaddr*)&serv_addr, sizeof (serv_addr)) < 0)
+  if (connect (sockfd, reinterpret_cast<struct sockaddr*> (&serv_addr), sizeof (serv_addr)) < 0)
     return (-1);
 
   return (0);

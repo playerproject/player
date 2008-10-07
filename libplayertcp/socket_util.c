@@ -1,8 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -59,10 +59,10 @@
 #include "socket_util.h"
 
 /*
- * this function creates a socket of the indicated type and binds it to 
+ * this function creates a socket of the indicated type and binds it to
  * the indicated port.
  *
- * NOTE: we pick the IP address (and thus network interface) for binding 
+ * NOTE: we pick the IP address (and thus network interface) for binding
  *       by calling gethostname() and then stripping it down to the first
  *       component (i.e. no domain name).  if this process won't
  *       result in the IP address that you want, tough luck.
@@ -75,14 +75,14 @@
  *            PLAYER_TRANSPORT_TCP (for TCP)
  *  backlog: number of waiting connections to be allowed (TCP only)
  *
- * RETURN: 
- *  On success, the fd of the new socket is returned.  Otherwise, -1 
+ * RETURN:
+ *  On success, the fd of the new socket is returned.  Otherwise, -1
  *  is returned and an explanatory note is dumped to stderr.
  */
 
 
 int
-create_and_bind_socket(char blocking, unsigned int host, int* portnum, 
+create_and_bind_socket(char blocking, unsigned int host, int* portnum,
                        int playersocktype, int backlog)
 {
   int sock;                   /* socket we're creating */
@@ -108,11 +108,11 @@ create_and_bind_socket(char blocking, unsigned int host, int* portnum,
   serverp.sin_addr.s_addr = host;
   serverp.sin_port = htons(*portnum);
 
-  /* 
-   * Create the INET socket.  
-   * 
+  /*
+   * Create the INET socket.
+   *
    */
-  if((sock = socket(PF_INET, socktype, 0)) == -1) 
+  if((sock = socket(PF_INET, socktype, 0)) == -1)
   {
     perror("create_and_bind_socket:socket() failed; socket not created.");
     return(-1);
@@ -135,14 +135,14 @@ create_and_bind_socket(char blocking, unsigned int host, int* portnum,
      * get the current access flags
      */
     if((flags = fcntl(sock, F_GETFL)) == -1)
-    { 
+    {
       perror("create_and_bind_socket():fcntl() while getting socket "
                       "access flags; socket not created.");
       close(sock);
       return(-1);
     }
     /*
-     * OR the current flags with O_NONBLOCK (so we won't block), 
+     * OR the current flags with O_NONBLOCK (so we won't block),
      * and write them back
      */
     if(fcntl(sock, F_SETFL, flags | O_NONBLOCK ) == -1)
@@ -157,7 +157,7 @@ create_and_bind_socket(char blocking, unsigned int host, int* portnum,
   if(socktype == SOCK_STREAM)
   {
     /* make sure we can reuse the port soon after */
-    if(setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&one, 
+    if(setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&one,
                   sizeof(one)))
     {
       perror("create_and_bind_socket(): setsockopt(2) failed");
@@ -166,18 +166,18 @@ create_and_bind_socket(char blocking, unsigned int host, int* portnum,
   }
 
 
-  /* 
+  /*
    * Bind it to the port indicated
    * INADDR_ANY indicates that any network interface (IP address)
-   * for the local host may be used (presumably the OS will choose the 
+   * for the local host may be used (presumably the OS will choose the
    * right one).
    *
    * Specifying sin_port = 0 would allow the system to choose the port.
    */
-  serverp.sin_family = PF_INET;
+  serverp.sin_family = AF_INET;
   serverp.sin_addr.s_addr = INADDR_ANY;
 
-  if(bind(sock, (struct sockaddr*)&serverp, sizeof(serverp)) == -1) 
+  if(bind(sock, (struct sockaddr*)&serverp, sizeof(serverp)) == -1)
   {
     perror ("create_and_bind_socket():bind() failed; socket not created.");
     close(sock);
@@ -209,7 +209,7 @@ create_and_bind_socket(char blocking, unsigned int host, int* portnum,
 
 
   /*
-   * return the fd for the newly bound socket 
+   * return the fd for the newly bound socket
    */
   return(sock);
 }
