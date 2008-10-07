@@ -164,7 +164,6 @@ void playerc_laser_putmsg(playerc_laser_t *device,
   {
     player_laser_data_scanpose_t* scan_data =
             (player_laser_data_scanpose_t*)data;
-    assert(scan_data->scan.ranges_count <= sizeof(device->scan) / sizeof(device->scan[0]));
 
     b = scan_data->scan.min_angle;
     db = scan_data->scan.resolution;
@@ -282,7 +281,7 @@ playerc_laser_get_geom(playerc_laser_t *device)
   device->size[0] = config->size.sl;
   device->size[1] = config->size.sw;
   player_laser_geom_t_free(config);
-  
+
   return 0;
 }
 
