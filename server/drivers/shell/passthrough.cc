@@ -334,7 +334,7 @@ int PassThrough::ProcessMessage(QueuePointer & resp_queue,
     }
 
 
-    PLAYER_MSG0(9,"PassThrough::ProcessMessage: Received a packet!");
+    //PLAYER_MSG0(9,"PassThrough::ProcessMessage: Received a packet!");
 
     if (Device::MatchDeviceAddress(hdr->addr,srcAddr) &&
         ((hdr->type == PLAYER_MSGTYPE_DATA) ||
