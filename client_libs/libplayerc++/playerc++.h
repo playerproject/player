@@ -53,6 +53,7 @@
 #include <string>
 #include <list>
 #include <vector>
+#include <cstring>
 
 #include "libplayerc/playerc.h"
 #include "libplayerc++/utility.h"
