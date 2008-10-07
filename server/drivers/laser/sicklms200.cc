@@ -273,11 +273,28 @@ class SickLMS200 : public Driver
 
     // Set the laser configuration
     // Returns 0 on success
-    int SetLaserConfig(bool intensity);
+    int SetLaserConfig(bool intensity, bool high_avail);
+
+    // Get the current configuration of the laser
+    // Returns 0 on success
+    int GetLaserConfig(uint8_t* packet, ssize_t packet_size);
+
+    // Compare the laser configs to the desired configs
+    // Returns 0 if they are equal
+    int CheckLaserConfig(uint8_t* packet, ssize_t packet_size,
+			 int intensity, int high_avail);
 
     // Change the resolution of the laser
     int SetLaserRes(int angle, int res);
 
+    // Get the current status of the laser
+    // Returns 0 on success
+    int GetLaserStatus(uint8_t* packet, ssize_t packet_size);
+
+    // Compare the laser resolution to the desired resolution
+    // Returns 0 if they are equal
+    int CheckLaserRes(uint8_t* packet, ssize_t packet_size,
+		      int width, int res);
 
     // RequestLaserStopStream()
     // Returns 0 on success
@@ -340,6 +357,10 @@ class SickLMS200 : public Driver
 
     // Turn intensity data on/off
     bool intensity;
+
+    // Set high availability mode -- if the unit continues after being
+    // dazzled by sunlight
+    bool high_avail;
 
     // Is the laser upside-down? (if so, we'll reverse the ordering of the
     // readings)
@@ -486,6 +507,7 @@ SickLMS200::SickLMS200(ConfigFile* cf, int section)
   this->intensity = true;
   this->range_res = cf->ReadInt(section, "range_res", 1);
   this->invert = cf->ReadInt(section, "invert", 0);
+  this->high_avail = cf->ReadInt(section, "high_avail", 0);
 
   if (this->CheckScanConfig() != 0)
     PLAYER_ERROR("invalid scan configuration");
@@ -571,7 +593,8 @@ int SickLMS200::Setup()
   // Configure the laser
   if (SetLaserRes(this->scan_width, this->scan_res))
     return 1;
-  if (SetLaserConfig(this->intensity))
+
+  if (SetLaserConfig(this->intensity, this->high_avail))
     return 1;
 
   this->scan_id = 0;
@@ -595,6 +618,8 @@ int SickLMS200::Shutdown()
 
   // switch to connect rate just in case
   if (this->connect_rate != this->current_rate)
+  // PBeeson -- This doesn't do anything.  Once Setup() completes,
+  // these are equal, and if setup() fails, Shutdown() isn't run.
     if (SetLaserSpeed(this->connect_rate))
       PLAYER_WARN1("Cannot throttle back to %d bauds", this->connect_rate);
 
@@ -620,8 +645,6 @@ SickLMS200::ProcessMessage(QueuePointer & resp_queue,
   {
     player_laser_config_t * config =
             reinterpret_cast<player_laser_config_t *> (data);
-    int old_scan_width = this->scan_width;
-    int old_scan_res = this->scan_res;
 
     this->intensity = config->intensity;
     this->scan_res = (int) rint(RTOD(config->resolution)*100);
@@ -639,14 +662,11 @@ SickLMS200::ProcessMessage(QueuePointer & resp_queue,
       PLAYER_ERROR("request for config mode failed");
     else
     {
-      if(old_scan_width != this->scan_width  || old_scan_res != this->scan_res) {
-       if (SetLaserRes(this->scan_width, this->scan_res) != 0)
-         PLAYER_ERROR("failed setting resolution [SetLaserRes()]");
-       /* This call fails for me, but I've only tested with one laser - BPG
-        * */
-      }
-      if(SetLaserConfig(this->intensity) != 0)
-        PLAYER_ERROR("failed setting intensity [SetLaserConfig()]");
+      if (SetLaserRes(this->scan_width, this->scan_res) != 0)
+	PLAYER_ERROR("failed setting resolution [SetLaserRes()]");
+      
+      if(SetLaserConfig(this->intensity, this->high_avail) != 0)
+        PLAYER_ERROR("failed setting configuration [SetLaserConfig()]");
     }
 
     // Issue a new request for data
@@ -1227,14 +1247,55 @@ int SickLMS200::GetLaserType(char *buffer, size_t bufflen)
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Set the laser configuration
+// Compare Laser configuration to desired configuration
 // Returns 0 on success
 //
-int SickLMS200::SetLaserConfig(bool intensity)
+int SickLMS200::CheckLaserConfig(uint8_t* packet, ssize_t packet_size,
+				 int intensity, int high_avail)
+{
+
+  // Set high-availability level 3 mode
+  if (packet[5] != high_avail)
+    return 1;
+  
+  // Return intensity in top 3 data bits
+  if (packet[6] != intensity)
+    return 1;
+  
+  // Set the units for the range reading
+  if (this->range_res == 1)
+  {
+    if (packet[7] != 0x01)
+      return 1;
+  }
+  else if (this->range_res == 10)
+  {
+    if (packet[7] != 0x00)
+      return 1;
+  }
+  else if (this->range_res == 100)
+  {
+    if (packet[7] != 0x02)
+      return 1;
+  }
+  else
+    if (packet[7] != 0x01)
+      return 1;
+  
+  return 0;
+
+}
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Get the laser configuration
+// Returns 0 on success
+//
+int SickLMS200::GetLaserConfig(uint8_t* packet, ssize_t packet_size)
 {
   int tries;
   ssize_t len;
-  uint8_t packet[512];
 
   for (tries = 0; tries < DEFAULT_LASER_RETRIES; tries++)
   {
@@ -1247,36 +1308,64 @@ int SickLMS200::SetLaserConfig(bool intensity)
 
     // Wait for laser to return data
     //PLAYER_MSG0(2, "waiting for reply");
-    len = ReadFromLaser(packet, sizeof(packet), false, 25000, 5000);
+    len = ReadFromLaser(packet, packet_size, false, 25000, 5000);
     if (len < 0)
       return 1;
     else if (len < 1)
     {
-      PLAYER_WARN("SetLaserConfig(): timeout in ReadFromLaser() [1]");
+      PLAYER_WARN("GetLaserConfig(): timeout in ReadFromLaser() [1]");
       continue;
     }
     else if (packet[0] == NACK)
     {
-      PLAYER_ERROR("SetLaserConfig(): request denied by laser [1]");
+      PLAYER_ERROR("GetLaserConfig(): request denied by laser [1]");
       return 1;
     }
     else if (packet[0] != 0xF4)
     {
-      PLAYER_ERROR("SetLaserConfig(): unexpected packet type [1]");
+      PLAYER_ERROR("GetLaserConfig(): unexpected packet type [1]");
       return 1;
     }
     break;
   }
-  if (tries >= DEFAULT_LASER_RETRIES)
+
+  return (tries >= DEFAULT_LASER_RETRIES);
+
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Set the laser configuration
+// Returns 0 on success
+//
+int SickLMS200::SetLaserConfig(bool intensity, bool high_avail)
+{
+  int tries;
+  ssize_t len;
+  uint8_t packet[512];
+
+  if (GetLaserConfig(packet,sizeof(packet)))
     return 1;
+
+  if (CheckLaserConfig(packet,sizeof(packet),
+		       intensity,high_avail) == 0)
+  {
+    PLAYER_MSG0(2,"No need to flash redundant configuration to device.");
+    return 0;
+  }
 
   //PLAYER_MSG0(2, "get configuration request ok");
   //PLAYER_TRACE1("laser units [%d]", (int) packet[7]);
+
+  PLAYER_MSG0(2,"Flashing new configuration to device.");
 
   for (tries = 0; tries < DEFAULT_LASER_RETRIES; tries++)
   {
     // Modify the configuration and send it back
     packet[0] = 0x77;
+
+    // Set high-availability level 3 mode
+    packet[5] = (high_avail ? 0x01 : 0x00);
 
     // Return intensity in top 3 data bits
     packet[6] = (intensity ? 0x01 : 0x00);
@@ -1290,6 +1379,8 @@ int SickLMS200::SetLaserConfig(bool intensity)
       packet[7] = 0x02;
     else
       packet[7] = 0x01;
+
+    len=8;
 
     //PLAYER_MSG0(2, "sending set configuration request to laser");
     if (WriteToLaser(packet, len) < 0)
@@ -1325,15 +1416,94 @@ int SickLMS200::SetLaserConfig(bool intensity)
 
 
 ////////////////////////////////////////////////////////////////////////////////
+// Compare Laser Resolution to desired resolution
+// Returns 0 on success
+//
+int SickLMS200::CheckLaserRes(uint8_t* packet, ssize_t packet_size,
+			      int width, int res)
+{
+
+  if ((packet[107] != (width & 0xFF)) ||
+      (packet[108] != (width >> 8)))
+    return 1;
+
+  if ((packet[109] != (res & 0xFF)) ||
+      (packet[110] != (res >> 8)))
+    return 1;
+
+  return 0;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Get the laser status
+// Returns 0 on success
+//
+int SickLMS200::GetLaserStatus(uint8_t* packet, ssize_t packet_size)
+{
+  int tries;
+  ssize_t len;
+
+  for (tries = 0; tries < DEFAULT_LASER_RETRIES; tries++)
+  {
+    packet[0] = 0x31;
+    len = 1;
+
+    //PLAYER_MSG0(2, "sending get status request to laser");
+    if (WriteToLaser(packet, len) < 0)
+      return 1;
+
+    // Wait for laser to return data
+    //PLAYER_MSG0(2, "waiting for reply");
+
+    len = ReadFromLaser(packet, packet_size, false, 25000, 5000);
+    if (len < 0)
+      return 1;
+    else if (len < 1)
+    {
+      PLAYER_WARN("GetLaserStatus(): timeout in ReadFromLaser() [1]");
+      continue;
+    }
+    else if (packet[0] == NACK)
+    {
+      PLAYER_ERROR("GetLaserStatus(): request denied by laser [1]");
+      return 1;
+    }
+    else if (packet[0] != 0xB1)
+    {
+      PLAYER_ERROR("GetLaserStatus(): unexpected packet type [1]");
+      return 1;
+    }
+    break;
+  }
+
+  return (tries >= DEFAULT_LASER_RETRIES);
+
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
 // Change the resolution of the laser
 // Valid widths are: 100, 180 (degrees)
-// Valid resolitions are: 25, 50, 100 (1/100 degree)
+// Valid resolutions are: 25, 50, 100 (1/100 degree)
 //
 int SickLMS200::SetLaserRes(int width, int res)
 {
   int tries;
   ssize_t len;
   uint8_t packet[512];
+
+  if (GetLaserStatus(packet,sizeof(packet)))
+    return 1;
+
+  if (CheckLaserRes(packet,sizeof(packet),
+		    width, res) == 0)
+  {
+    PLAYER_MSG0(2,"No need to send redundant resolution to device.");
+    return 0;
+  }
+
+  PLAYER_MSG0(2,"Sending new resolution to device.");
 
   for (tries = 0; tries < DEFAULT_LASER_RETRIES; tries++)
   {
@@ -1406,12 +1576,12 @@ int SickLMS200::RequestLaserStopStream()
     // This could take a while...
     //
     PLAYER_MSG0(2, "waiting for acknowledge");
-    len = ReadFromLaser(packet, sizeof(packet), true, 2500, 500);
+    len = ReadFromLaser(packet, sizeof(packet), true, 3000, 1000);
     if (len < 0)
       return 1;
     else if (len < 1)
     {
-      PLAYER_WARN("RequestLaserStopStream(): timeout in ReadFromLaser");
+      PLAYER_MSG0(2,"RequestLaserStopStream(): timeout in ReadFromLaser -- may be using wrong baud rate.");
       continue;
     }
     else if (packet[0] == NACK)
@@ -1690,6 +1860,8 @@ ssize_t SickLMS200::ReadFromLaser(uint8_t *data, ssize_t maxlen, bool ack, int t
       int retval = ::select(this->laser_fd + 1, &rfds, 0, &efds, &tv);
       if (retval < 0)
       {
+        if (errno == EINTR)
+	      continue;
         PLAYER_ERROR("error on select (1)");
         return 0;
       }
@@ -1704,6 +1876,8 @@ ssize_t SickLMS200::ReadFromLaser(uint8_t *data, ssize_t maxlen, bool ack, int t
     bytes = ::read(this->laser_fd, header + sizeof(header) - 1, 1);
     if (bytes < 0)
     {
+      if (errno == EINTR)
+	continue;
       PLAYER_ERROR("error on read (1)");
       return 0;
     }
@@ -1732,7 +1906,7 @@ ssize_t SickLMS200::ReadFromLaser(uint8_t *data, ssize_t maxlen, bool ack, int t
   // Check for buffer overflows
   //
   if (len > maxlen)
-    RETURN_ERROR(0, "buffer overflow (len > max_len)");
+    RETURN_ERROR(0, "buffer overflow (len > maxlen)");
 
   // Read in the data
   // Note that we smooge the packet type from the header
@@ -1757,6 +1931,8 @@ ssize_t SickLMS200::ReadFromLaser(uint8_t *data, ssize_t maxlen, bool ack, int t
       int retval = ::select(this->laser_fd + 1, &rfds, 0, &efds, &tv);
       if (retval < 0)
       {
+        if (errno == EINTR)
+	      continue;
         PLAYER_ERROR("error on select (3)");
         return 0;
       }
@@ -1769,7 +1945,9 @@ ssize_t SickLMS200::ReadFromLaser(uint8_t *data, ssize_t maxlen, bool ack, int t
     int retval = ::read(this->laser_fd, data + bytes, len - bytes);
     if (retval < 0)
     {
-      PLAYER_ERROR("error on read (3)");
+      if (errno == EINTR)
+	    continue;
+	  PLAYER_ERROR("error on read (3)");
       return 0;
     }
     if (!retval)
@@ -1800,6 +1978,8 @@ ssize_t SickLMS200::ReadFromLaser(uint8_t *data, ssize_t maxlen, bool ack, int t
       int retval = ::select(this->laser_fd + 1, &rfds, 0, &efds, &tv);
       if (retval < 0)
       {
+        if (errno == EINTR)
+	      continue;
         PLAYER_ERROR("error on select (4)");
         return 0;
       }
@@ -1812,6 +1992,8 @@ ssize_t SickLMS200::ReadFromLaser(uint8_t *data, ssize_t maxlen, bool ack, int t
     int retval = ::read(this->laser_fd, footer + bytes, 3 - bytes);
     if (retval < 0)
     {
+      if (errno == EINTR)
+        continue;
       PLAYER_ERROR("error on read (4)");
       return 0;
     }
