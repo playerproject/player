@@ -34,7 +34,7 @@ extern "C" {
 #endif
 
 /// @internal Initialize error logging
-void ErrorInit(int _msgLevel);
+void ErrorInit(int _msgLevel, FILE * logfile);
 
 /// @internal Function for print and logging errors.  Do not call this
 /// function directly; use the macros below.

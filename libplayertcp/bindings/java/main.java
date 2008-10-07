@@ -58,7 +58,7 @@ public class main
     // Initialization stuff
 
     playercore_java.player_register_drivers();
-    playercore_java.ErrorInit(9);
+    playercore_java.ErrorInit(9,NULL);
     playertcp_java.playerxdr_ftable_init();
 
     // Convert "localhost" to a 32-bit address.  It will be used to
