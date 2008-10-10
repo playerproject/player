@@ -663,7 +663,6 @@ int playerc_client_read_nonblock_withproxy(playerc_client_t *client, void ** pro
       if((ret = playerc_client_readpacket (client, &header, client->data)) < 0)
         return ret;
     }
-
     // One way or another, we got a new packet into (header,client->data),
     // so process it
     switch(header.type)
