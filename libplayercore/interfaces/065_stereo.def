@@ -1,0 +1,46 @@
+description {
+ * @brief Stereo imagery (left-right channels, disparity and a 3-D stereo point cloud)
+
+The @p stereo interface is used to get synchronized access to the data
+provided by a stereo camera, namely the left and right image channels,
+the disparity image and the 3-D stereo point cloud. Image data can be
+in many formats (see the camera interface).
+}
+
+message { DATA, STATE, 1, player_stereo_data_t };
+
+typedef struct player_pointcloud3d_stereo_element
+{
+  /** X [m] */
+  float px;
+  /** Y [m] */
+  float py;
+  /** Z [m] */
+  float pz;
+  /** Red color channel */
+  uint8_t red;
+  /** Green color channel */
+  uint8_t green;
+  /** Blue color channel */
+  uint8_t blue;
+} player_pointcloud3d_stereo_element_t;
+
+/** @brief Data: state (@ref PLAYER_STEREO_DATA_STATE) */
+typedef struct player_stereo_data
+{
+  /* Left channel image */
+  player_camera_data_t left_channel;
+  /* Right channel image */
+  player_camera_data_t right_channel;
+
+  /* Disparity image */
+  player_camera_data_t disparity;
+  
+  /* 3-D stereo point cloud */
+  uint32_t points_count;
+  player_pointcloud3d_stereo_element_t *points;
+//  player_pointcloud3d_data_t pointcloud;
+
+  /* Special mode flags: define what images are being sent */
+  uint32_t mode;
+} player_stereo_data_t;
