@@ -3413,6 +3413,53 @@ int playerc_pointcloud3d_unsubscribe (playerc_pointcloud3d_t *device);
 
 /**************************************************************************/
 /** @ingroup playerc_proxies
+    @defgroup playerc_proxy_stereo stereo
+
+The stereo proxy provides an interface to a stereo device.
+
+@{
+*/
+/** @brief Structure describing a single 3D pointcloud element. */
+typedef player_pointcloud3d_stereo_element_t playerc_pointcloud3d_stereo_element_t;
+
+/** @brief stereo proxy data. */
+typedef struct
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  /* Left channel image */
+  playerc_camera_t left_channel;
+  /* Right channel image */
+  playerc_camera_t right_channel;
+
+  /* Disparity image */
+  playerc_camera_t disparity;
+  
+  /* 3-D stereo point cloud */
+  uint32_t points_count;
+  playerc_pointcloud3d_stereo_element_t *points;
+//  player_pointcloud3d_data_t pointcloud;
+} playerc_stereo_t;
+
+
+/** @brief Create a stereo proxy. */
+playerc_stereo_t *playerc_stereo_create (playerc_client_t *client, int index);
+
+/** @brief Destroy a stereo proxy. */
+void playerc_stereo_destroy (playerc_stereo_t *device);
+
+/** @brief Subscribe to the stereo device. */
+int playerc_stereo_subscribe (playerc_stereo_t *device, int access);
+
+/** @brief Un-subscribe from the stereo device. */
+int playerc_stereo_unsubscribe (playerc_stereo_t *device);
+
+/** @} */
+/***************************************************************************/
+
+/**************************************************************************/
+/** @ingroup playerc_proxies
     @defgroup playerc_proxy_imu imu
 
 The imu proxy provides an interface to an Inertial Measurement Unit.
