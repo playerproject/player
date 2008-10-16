@@ -288,12 +288,11 @@ Device::Request(QueuePointer &resp_queue,
   Message* msg = NULL;
   if(threaded)
   {
-    // HACK: this loop should not be neccesary!
     // pthread_cond_wait does not garuntee no false wake up, so maybe it is.
     // test driver is still subscribed to prevent deadlocks on server shutdown
     while(driver->subscriptions > 0 && !(msg = resp_queue->Pop()))
     {
-      PLAYER_WARN("empty queue after waiting!");
+      //PLAYER_WARN("empty queue after waiting!");
       resp_queue->Wait(); // this is a cancelation point
     }
   }
