@@ -32,8 +32,16 @@ foreach fname $argv {
       continue
     }
     set name [lindex $line 0]
+    if {![string compare $name "Section"]} { continue; }
     if {![string compare $name "SonarUnit"]} {incr sonarnum; continue; }
     set value [lindex $line 1]
+
+    # If we determine the value to begin with ;, then the file doesn't give
+    # a value (a apparently newly allowed syntatic construct in a .p file).
+    # So we'll assume that an empty string is appropriate.
+    if {![string compare [string index $value 0] "\;"]} {
+      set value ""
+    }
 
     set vars($name) $value
   }
@@ -64,6 +72,7 @@ foreach name [lsort [array names vars]] {
   if {![string compare $name Class] || 
       ![string compare $name LaserPort] ||
       ![string compare $name LaserIgnore] ||
+      ![string compare $name Map] ||
       ![string compare $name Subclass]} {
     puts "  char* ${name};"
   } elseif {![string compare $value true] ||
