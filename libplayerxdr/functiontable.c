@@ -53,7 +53,7 @@
 // dependency
 //#include <libplayercore/error.h>
 
-#include "playerxdr.h"
+#include "libplayerxdr/playerxdr.h"
 #include "functiontable.h"
 
 #ifndef HAVE_XDR_LONGLONG_T
