@@ -6,25 +6,11 @@ IF (NOT PYTHONINTERP_FOUND)
     MESSAGE (FATAL_ERROR "No Python interpreter found. Cannot continue.")
 ENDIF (NOT PYTHONINTERP_FOUND)
 
-SET (interfaceDefs interfaces/001_player.def interfaces/002_power.def interfaces/003_gripper.def
-                    interfaces/004_position2d.def interfaces/005_sonar.def interfaces/006_laser.def
-                    interfaces/007_blobfinder.def interfaces/008_ptz.def interfaces/009_audio.def
-                    interfaces/010_fiducial.def interfaces/012_speech.def interfaces/013_gps.def
-                    interfaces/014_bumper.def interfaces/020_dio.def interfaces/021_aio.def
-                    interfaces/022_ir.def interfaces/023_wifi.def interfaces/025_localize.def
-                    interfaces/026_mcom.def interfaces/030_position3d.def
-                    interfaces/031_simulation.def interfaces/033_blinkenlight.def
-                    interfaces/040_camera.def interfaces/042_map.def interfaces/044_planner.def
-                    interfaces/045_log.def interfaces/049_joystick.def
-                    interfaces/050_speech_recognition.def interfaces/051_opaque.def
-                    interfaces/052_position1d.def interfaces/053_actarray.def
-                    interfaces/054_limb.def interfaces/055_graphics2d.def interfaces/056_rfid.def
-                    interfaces/057_wsn.def interfaces/058_graphics3d.def interfaces/059_health.def
-                    interfaces/060_imu.def interfaces/061_pointcloud3d.def interfaces/062_ranger.def
-                    interfaces/063_vectormap.def interfaces/064_blackboard.def)
+FILE (GLOB interfaceFiles ${PROJECT_SOURCE_DIR}/libplayercore/interfaces/*.def)
+
 SET (player_interfaces_h "${CMAKE_CURRENT_BINARY_DIR}/player_interfaces.h")
 SET (interface_table_h "${CMAKE_CURRENT_BINARY_DIR}/interface_table.h")
-PROCESS_INTERFACES ("" ${CMAKE_CURRENT_SOURCE_DIR}/interfaces ${player_interfaces_h} ${interfaceDefs})
+PROCESS_INTERFACES ("" ${CMAKE_CURRENT_SOURCE_DIR}/interfaces ${player_interfaces_h} ${interfaceFiles})
 ADD_CUSTOM_TARGET (player_interfaces ALL
     DEPENDS ${player_interfaces_h}
     COMMENT "Generating player_interfaces.h")
