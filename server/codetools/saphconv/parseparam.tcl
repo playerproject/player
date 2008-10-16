@@ -33,6 +33,7 @@ foreach fname $argv {
       continue
     }
     set name [lindex $line 0]
+    if {![string compare $name "Section"]} { continue; }
     if {![string compare $name "SonarUnit"]} {incr sonarnum; continue; }
     set value [lindex $line 1]
 
@@ -107,6 +108,7 @@ foreach fname $argv {
       if {![string compare $name Class] || 
           ![string compare $name Subclass] ||
           ![string compare $name LaserPort] ||
+          ![string compare $name Map] ||
           ![string compare $name LaserIgnore]} {
         puts -nonewline "\""
       }
@@ -117,6 +119,7 @@ foreach fname $argv {
       if {![string compare $name Class] || 
           ![string compare $name Subclass] ||
           ![string compare $name LaserPort] ||
+          ![string compare $name Map] ||
           ![string compare $name LaserIgnore]} {
         puts -nonewline "\""
       }
