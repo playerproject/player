@@ -877,6 +877,9 @@ bool AdaptiveMCL::UpdateFilter(void)
           {
             data = this->Pop();
             assert(data);
+            // Catch the pose and timestamp of the discarded action data
+            pose = ((AMCLOdomData*) data)->pose;
+            ts = data->time;
             delete data;
           }
           // avoid a busy loop while waiting for a sensor reading to
@@ -1324,7 +1327,11 @@ void AdaptiveMCL::DrawPoseEst()
   pf_vector_t pose;
 
   this->Lock();
+  pthread_mutex_lock(&this->best_hyp_lock);
+  pose = this->best_hyp;
+  pthread_mutex_unlock(&this->best_hyp_lock);
 
+  /*
   max_weight = -1;
   for (i = 0; i < this->hyp_count; i++)
   {
@@ -1336,11 +1343,14 @@ void AdaptiveMCL::DrawPoseEst()
       pose = hyp->pf_pose_mean;
     }
   }
+  */
 
   this->Unlock();
 
+  /*
   if (max_weight < 0.0)
     return;
+    */
 
   // Shift the robot figure
   rtk_fig_origin(this->robot_fig, pose.v[0], pose.v[1], pose.v[2]);
