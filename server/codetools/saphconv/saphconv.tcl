@@ -47,7 +47,7 @@ foreach fname $argv {
   puts $fdc " *    $fname"
 }
 puts $fdc "*/
-#include <robot_params.h>
+#include \"robot_params.h\"
 "
 
 puts $fdh "/*
