@@ -201,7 +201,12 @@ if __name__ == '__main__':
     process_for_utils(targetfile)
   else:
     if os.path.isdir(targetfile):
-      for file in glob.glob(os.path.join(targetfile ,"*.def")):
+      files = glob.glob(os.path.join(targetfile ,"*.def"))
+      # It is important that we sort this file list, to ensure that the
+      # structure definitions are output in increasing numerical order, to
+      # support the use of earlier messages structures in later ones.
+      files.sort()
+      for file in files:
         if not os.path.isdir(file):
           processfile(mode, file, plugin)
     else:
