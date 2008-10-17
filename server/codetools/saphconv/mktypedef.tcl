@@ -17,11 +17,13 @@ if {$argc < 1} {
 # replacing old ones.  this way we'll get the union of all variable names
 array set vars {}
 set maxsonarnum 0
+set maxbumpernum 0
 foreach fname $argv {
 
   set fd [open $fname r]
   
   set sonarnum 0
+  set bumpernum 0
   while {![eof $fd]} {
     set line [gets $fd]
     if {![string length $line] || 
@@ -35,13 +37,8 @@ foreach fname $argv {
     if {![string compare $name "Section"]} { continue; }
     if {![string compare $name "SonarUnit"]} {incr sonarnum; continue; }
     set value [lindex $line 1]
-
-    # If we determine the value to begin with ;, then the file doesn't give
-    # a value (a apparently newly allowed syntatic construct in a .p file).
-    # So we'll assume that an empty string is appropriate.
-    if {![string compare [string index $value 0] "\;"]} {
-      set value ""
-    }
+    if {![string compare $name "NumFrontBumpers"]} {incr bumpernum $value; }
+    if {![string compare $name "NumRearBumpers"]} {incr bumpernum $value; }
 
     set vars($name) $value
   }
@@ -49,6 +46,7 @@ foreach fname $argv {
   close $fd
 
   if {$sonarnum > $maxsonarnum} {set maxsonarnum $sonarnum}
+  if {$bumpernum > $maxbumpernum} {set maxbumpernum $bumpernum}
 }
 
 # they took this one out for some reason, and only give the info in the manual
@@ -62,6 +60,14 @@ puts "  double x;"
 puts "  double y;"
 puts "  double th;"
 puts "\} sonar_pose_t;\n\n"
+
+puts "typedef struct\n\{"
+puts "  double x;"
+puts "  double y;"
+puts "  double th;"
+puts "  double length;"
+puts "  double radius;"
+puts "\} bumper_def_t;\n\n"
 
 puts "typedef struct\n\{"
 # write each variable name out, inferring its type
@@ -86,6 +92,7 @@ foreach name [lsort [array names vars]] {
   }
 }
 puts "  sonar_pose_t sonar_pose\[$maxsonarnum\];"
+puts "  bumper_def_t bumper_geom\[$maxbumpernum\];"
 puts "\} RobotParams_t;"
 
 puts "\n\nextern RobotParams_t PlayerRobotParams\[\];"
