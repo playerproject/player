@@ -5,7 +5,6 @@ SET (sampleConfigFiles  amigobot.cfg
                         cvcam.cfg
                         dummy.cfg
                         erratic.cfg
-                        gazebo.cfg
                         hokuyo_aist.cfg
                         iwspy.cfg
                         joystick.cfg
