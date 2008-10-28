@@ -31,6 +31,26 @@ ENDMACRO (PLAYER_ADD_EXECUTABLE)
 
 
 ###############################################################################
+# PLAYER_ADD_INCLUDE_DIR (dir1 [dir2 ...])
+# Add include directories for stuff that uses the core libraries.
+MACRO (PLAYER_ADD_INCLUDE_DIR)
+    SET (tempList ${PLAYER_EXTRA_INCLUDE_DIRS})
+    LIST (APPEND tempList ${ARGN})
+    SET (PLAYER_EXTRA_INCLUDE_DIRS ${tempList} CACHE INTERNAL "Extra include directories" FORCE)
+ENDMACRO (PLAYER_ADD_INCLUDE_DIR)
+
+
+###############################################################################
+# PLAYER_ADD_LINK_DIR (dir1 [dir2 ...])
+# Add link directories for stuff that links to the core libraries.
+MACRO (PLAYER_ADD_LINK_DIR)
+    SET (tempList ${PLAYER_EXTRA_LINK_DIRS})
+    LIST (APPEND tempList ${ARGN})
+    SET (PLAYER_EXTRA_LINK_DIRS ${tempList} CACHE INTERNAL "Library directories to link in" FORCE)
+ENDMACRO (PLAYER_ADD_LINK_DIR)
+
+
+###############################################################################
 # PLAYER_ADD_LINK_LIB (library1 [library2 ...])
 # Add libraries to the link line for stuff that links to the core libraries.
 MACRO (PLAYER_ADD_LINK_LIB)
@@ -41,18 +61,58 @@ ENDMACRO (PLAYER_ADD_LINK_LIB)
 
 
 ###############################################################################
+# PLAYERC_ADD_INCLUDE_DIR (dir1 [dir2 ...])
+# Add include directories for stuff that uses the playerc libraries.
+MACRO (PLAYERC_ADD_INCLUDE_DIR)
+    SET (tempList ${PLAYERC_EXTRA_INCLUDE_DIRS})
+    LIST (APPEND tempList ${ARGN})
+    SET (PLAYERC_EXTRA_INCLUDE_DIRS ${tempList} CACHE INTERNAL "Extra include directories when using playerc" FORCE)
+ENDMACRO (PLAYERC_ADD_INCLUDE_DIR)
+
+
+###############################################################################
+# PLAYERC_ADD_LINK_DIR (dir1 [dir2 ...])
+# Add link directories for stuff that links to the playerc libraries.
+MACRO (PLAYERC_ADD_LINK_DIR)
+    SET (tempList ${PLAYERC_EXTRA_LINK_DIRS})
+    LIST (APPEND tempList ${ARGN})
+    SET (PLAYERC_EXTRA_LINK_DIRS ${tempList} CACHE INTERNAL "Library directories to link in when using playerc" FORCE)
+ENDMACRO (PLAYERC_ADD_LINK_DIR)
+
+
+###############################################################################
 # PLAYERC_ADD_LINK_LIB (library1 [library2 ...])
-# Add libraries to the link line for stuff that links to the core libraries.
+# Add libraries to the link line for stuff that links to the playerc libraries.
 MACRO (PLAYERC_ADD_LINK_LIB)
     SET (tempList ${PLAYERC_EXTRA_LINK_LIBRARIES})
     LIST (APPEND tempList ${ARGN})
-    SET (PLAYERC_EXTRA_LINK_LIBRARIES ${tempList} CACHE INTERNAL "Libs to link to for playerc" FORCE)
+    SET (PLAYERC_EXTRA_LINK_LIBRARIES ${tempList} CACHE INTERNAL "Libs to link to for using playerc" FORCE)
 ENDMACRO (PLAYERC_ADD_LINK_LIB)
 
 
 ###############################################################################
+# PLAYERCC_ADD_INCLUDE_DIR (dir1 [dir2 ...])
+# Add include directories for stuff that uses the playerc++ libraries.
+MACRO (PLAYERCC_ADD_INCLUDE_DIR)
+    SET (tempList ${PLAYERCC_EXTRA_INCLUDE_DIRS})
+    LIST (APPEND tempList ${ARGN})
+    SET (PLAYERCC_EXTRA_INCLUDE_DIRS ${tempList} CACHE INTERNAL "Extra include directories when using playercc" FORCE)
+ENDMACRO (PLAYERCC_ADD_INCLUDE_DIR)
+
+
+###############################################################################
+# PLAYERCC_ADD_LINK_DIR (dir1 [dir2 ...])
+# Add link directories for stuff that links to the playerc++ libraries.
+MACRO (PLAYERCC_ADD_LINK_DIR)
+    SET (tempList ${PLAYERCC_EXTRA_LINK_DIRS})
+    LIST (APPEND tempList ${ARGN})
+    SET (PLAYERCC_EXTRA_LINK_DIRS ${tempList} CACHE INTERNAL "Library directories to link in when using playercc" FORCE)
+ENDMACRO (PLAYERCC_ADD_LINK_DIR)
+
+
+###############################################################################
 # PLAYERCC_ADD_LINK_LIB (library1 [library2 ...])
-# Add libraries to the link line for stuff that links to the core libraries.
+# Add libraries to the link line for stuff that links to the playerc++ libraries.
 MACRO (PLAYERCC_ADD_LINK_LIB)
     SET (tempList ${PLAYERCC_EXTRA_LINK_LIBRARIES})
     LIST (APPEND tempList ${ARGN})
