@@ -878,8 +878,8 @@ bool AdaptiveMCL::UpdateFilter(void)
             data = this->Pop();
             assert(data);
             // Catch the pose and timestamp of the discarded action data
-            pose = ((AMCLOdomData*) data)->pose;
-            ts = data->time;
+            //pose = ((AMCLOdomData*) data)->pose;
+            //ts = data->time;
             delete data;
           }
           // avoid a busy loop while waiting for a sensor reading to
