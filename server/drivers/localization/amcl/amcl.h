@@ -181,6 +181,7 @@ class AdaptiveMCL : public Driver
 
   // Has the filter been initialized?
   private: bool pf_init;
+  private: bool pf_init_internal;
 
   // Initial pose estimate; used for filter initialization
   private: pf_vector_t pf_init_pose_mean;

@@ -663,6 +663,8 @@ void AdaptiveMCL::Main(void)
   // filter has not yet been initialized
   this->pf_init = false;
 
+  this->pf_init_internal = false;
+
   // Initial hypothesis list
   this->hyp_count = 0;
 
@@ -711,8 +713,11 @@ void AdaptiveMCL::Main(void)
 #endif
 
     // Initialize the filter if we havent already done so
-    if (!this->pf_init)
+    if (!this->pf_init && !this->pf_init_internal)
+    {
       this->InitFilter();
+      this->pf_init_internal = true;
+    }
 
     // Update the filter
     if (this->UpdateFilter())
@@ -1128,6 +1133,7 @@ AdaptiveMCL::ProcessMessage(QueuePointer & resp_queue,
     this->pf_init_pose_mean = pose;
     this->pf_init_pose_cov = cov;
     this->pf_init = false;
+    this->pf_init_internal = false;
 
     // Send an ACK
     this->Publish(this->localize_addr, resp_queue,
