@@ -290,7 +290,8 @@ int playerc_client_connect(playerc_client_t *client)
   }
   assert(addr_ptr);
   assert(addr_ptr->ai_addr);
-  if ((addr_ptr->ai_addr->sa_family) != AF_INET)
+  if (((addr_ptr->ai_addr->sa_family) != AF_INET) &&
+      ((addr_ptr->ai_addr->sa_family) != AF_INET6))
   {
     playerc_client_disconnect(client);
     PLAYERC_ERR("unsupported internet address family");
