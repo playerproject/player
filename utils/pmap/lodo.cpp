@@ -38,7 +38,11 @@
 #include "lodo.h"
 
 #ifdef GLUT_FOUND
-#include <GL/glut.h>
+#ifdef __APPLE__ 
+  #include <glut.h>
+#else
+  #include <GL/glut.h>
+#endif
 #endif
 
 
