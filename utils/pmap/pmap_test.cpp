@@ -157,7 +157,11 @@ $ pmap_test -g --num_samples 500 --grid_width 50 --grid_height 25 <logfile>
 #include <sys/time.h>
 
 #ifdef GLUT_FOUND
-#include <GL/glut.h>
+#ifdef __APPLE__ 
+  #include <glut.h>
+#else
+  #include <GL/glut.h>
+#endif
 #endif
 
 #include "logfile.h"
