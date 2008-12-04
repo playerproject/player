@@ -996,7 +996,7 @@ ND::Main()
   //NDparametros.enlarge = NDparametros.dsmin/2.0F;
   this->NDparametros.enlarge = this->NDparametros.dsmin*0.2F;
 
-  this->NDparametros.discontinuity = this->NDparametros.left;  // Discontinuity (check whether it fits)
+  this->NDparametros.discontinuity = 2.0 * this->NDparametros.left;  // Discontinuity (check whether it fits)
 
   this->NDparametros.T = 0.1F;  // Sample rate of the SICK
 
