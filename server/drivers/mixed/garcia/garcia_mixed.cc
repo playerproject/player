@@ -357,9 +357,7 @@ GarciaDriver::ProcessMessage(QueuePointer & resp_queue,
                              player_msghdr* hdr,
                              void* data)
 {
-  assert(resp_queue);
   assert(hdr);
-  assert(data);
 
   if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD,
                            PLAYER_POSITION2D_CMD_POS, mPos2dAddr))
@@ -378,14 +376,12 @@ GarciaDriver::ProcessMessage(QueuePointer & resp_queue,
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD,
                                 PLAYER_SPEECH_CMD_SAY, mSpeechAddr))
   {
-    assert(hdr->size == sizeof(player_speech_cmd_t));
     ProcessSpeechCommand(hdr, *reinterpret_cast<player_speech_cmd_t *>(data));
     return(0);
   }
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA,
                                 PLAYER_DIO_CMD_VALUES, mDioAddr))
   {
-    assert(hdr->size == sizeof(player_dio_cmd_t));
     ProcessDioCommand(hdr, *reinterpret_cast<player_dio_cmd_t *>(data));
     return(0);
   }

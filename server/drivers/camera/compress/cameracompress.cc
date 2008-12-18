@@ -204,10 +204,10 @@ int CameraCompress::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hd
                                void * data)
 {
   assert(hdr);
-  assert(data);
 
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, camera_id))
   {
+	assert(data);
     player_camera_data_t * recv = reinterpret_cast<player_camera_data_t * > (data);
     ProcessImage(*recv);
     return 0;

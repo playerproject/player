@@ -9,4 +9,4 @@ PLAYERDRIVER_ADD_DRIVER (postgis build_postgis
 
 PLAYERDRIVER_OPTION (vec2map build_vec2map ON)
 PLAYERDRIVER_REQUIRE_HEADER (vec2map build_vec2map geos_c.h)
-PLAYERDRIVER_ADD_DRIVER (postgis build_postgis LINKFLAGS "-lgeos" SOURCES vec2map.cc)
+PLAYERDRIVER_ADD_DRIVER (vec2map build_vec2map LINKFLAGS "-lgeos" SOURCES vec2map.cc)

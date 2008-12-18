@@ -429,7 +429,6 @@ int SR3000::ProcessMessage (QueuePointer &resp_queue,
                             void * data)
 {
   assert (hdr);
-  assert (data);
 
   if (provideStereo)
     ProcessMessageCamera (resp_queue, hdr, data, stereo_addr);

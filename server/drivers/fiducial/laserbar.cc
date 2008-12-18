@@ -287,7 +287,6 @@ int LaserBar::ProcessMessage(QueuePointer &resp_queue, player_msghdr *hdr, void 
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA,
                             PLAYER_LASER_DATA_SCAN, this->laser_addr))
   {
-  	//assert(hdr->size == sizeof(player_laser_data_t));
   	player_laser_data_t *laser_data = reinterpret_cast<player_laser_data_t * > (data);
 
   	this->Lock();

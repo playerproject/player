@@ -120,13 +120,13 @@ int ImageBase::Shutdown()
 int ImageBase::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data)
 {
   uint32_t new_image_count;
-  player_camera_data_t * compdata = reinterpret_cast<player_camera_data_t *>(data);
 
   assert(hdr);
-  assert(compdata);
 
   if(Message::MatchMessage (hdr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, camera_addr))
   {
+	assert(data);
+	player_camera_data_t * compdata = reinterpret_cast<player_camera_data_t *>(data);
   	Lock();
   	if (!HaveData)
   	{

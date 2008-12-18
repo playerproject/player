@@ -949,7 +949,6 @@ canonvcc4::Main()
 int canonvcc4::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, void * data)
 {
   assert(hdr);
-  assert(data);
 
   if (Message::MatchMessage(hdr,
 			    PLAYER_MSGTYPE_REQ,

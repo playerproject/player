@@ -394,11 +394,9 @@ int LaserVisualBW::Shutdown()
 int LaserVisualBW::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data)
 {
   assert(hdr);
-  assert(data);
 
   if(Message::MatchMessage (hdr, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN, laser_id))
   {
-    assert(hdr->size == sizeof(player_laser_data_t));
     player_laser_data_t * l_data = reinterpret_cast<player_laser_data_t * > (data);
 
     UpdateLaser(l_data, hdr->timestamp);
@@ -408,14 +406,12 @@ int LaserVisualBW::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr
 
   if(Message::MatchMessage (hdr, PLAYER_MSGTYPE_DATA, PLAYER_PTZ_DATA_STATE, ptz_id))
   {
-    assert(hdr->size == sizeof(player_ptz_data_t));
     UpdatePtz(reinterpret_cast<player_ptz_data_t * > (data), hdr->timestamp);
     return 0;
   }
 
   if(Message::MatchMessage (hdr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, camera_id))
   {
-    assert(hdr->size == sizeof(player_camera_data_t));
     UpdateCamera(reinterpret_cast<player_camera_data_t * > (data), hdr->timestamp);
     return 0;
   }

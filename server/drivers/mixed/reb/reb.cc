@@ -738,9 +738,6 @@ int REB::ProcessCommand(player_position_cmd_t * poscmd)
 int REB::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len)
 {
   assert(hdr);
-  assert(data);
-  assert(resp_data);
-  assert(resp_len);
 
   if (MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, position_id))
   {
@@ -752,7 +749,6 @@ int REB::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data
 
   if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_IR_REQ_POWER, ir_id))
   {
-  	assert(hdr->size == sizeof(player_ir_power_req_t));
   	player_ir_power_req_t * powreq = reinterpret_cast<player_ir_power_req_t *> (data);
 
     if (powreq->state)
@@ -766,7 +762,6 @@ int REB::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data
 
   if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_IR_REQ_POSE, ir_id))
   {
-  	assert(*resp_len >= sizeof(player_ir_pose_t));
   	player_ir_pose_t & irpose = *reinterpret_cast<player_ir_pose_t *> (resp_data);
 
     uint16_t numir = PlayerUBotRobotParams[param_index].NumberIRSensors;

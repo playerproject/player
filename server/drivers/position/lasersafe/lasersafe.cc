@@ -274,8 +274,6 @@ bool LaserSafe::ScanInRange (double scanDistance, double scanAngle)
 int LaserSafe::ProcessMessage (QueuePointer & resp_queue, player_msghdr * hdr, void * data)
 {
   assert(hdr);
-  assert(data);
-
   if (hdr->type==PLAYER_MSGTYPE_SYNCH)
   {
     return 0;

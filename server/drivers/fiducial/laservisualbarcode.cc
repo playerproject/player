@@ -412,11 +412,9 @@ int LaserVisualBarcode::Shutdown()
 int LaserVisualBarcode::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data)
 {
   assert(hdr);
-  assert(data);
 
   if(Message::MatchMessage (hdr, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN, laser_id))
   {
-    assert(hdr->size == sizeof(player_laser_data_t));
     player_laser_data_t * l_data = reinterpret_cast<player_laser_data_t * > (data);
 
     UpdateLaser(l_data, hdr->timestamp);
@@ -426,14 +424,12 @@ int LaserVisualBarcode::ProcessMessage (QueuePointer &resp_queue, player_msghdr 
 
   if(Message::MatchMessage (hdr, PLAYER_MSGTYPE_DATA, PLAYER_PTZ_DATA_STATE, ptz_id))
   {
-    assert(hdr->size == sizeof(player_ptz_data_t));
     UpdatePtz(reinterpret_cast<player_ptz_data_t * > (data), hdr->timestamp);
     return 0;
   }
 
   if(Message::MatchMessage (hdr, PLAYER_MSGTYPE_DATA, PLAYER_BLOBFINDER_DATA_BLOBS, blobfinder_id))
   {
-    assert(hdr->size == sizeof(player_blobfinder_data_t));
     UpdateBlobfinder(reinterpret_cast<player_blobfinder_data_t * > (data), hdr->timestamp);
     return 0;
   }

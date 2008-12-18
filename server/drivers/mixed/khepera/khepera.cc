@@ -162,7 +162,6 @@ khepera_Register(DriverTable *table)
 int Khepera::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, void * data)
 {
 	assert(hdr);
-	assert(data);
 
 	if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_IR_REQ_POSE, ir_addr))
 	{

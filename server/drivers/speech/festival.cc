@@ -402,9 +402,6 @@ Festival::Unsubscribe(player_devaddr_t device)
 
 int Festival::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, void * data)
 {
-	assert(hdr);
-	assert(data);
-
 	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_SPEECH_CMD_SAY, device_addr))
 	{
 		player_speech_cmd_t * cmd = (player_speech_cmd_t *) data;

@@ -203,9 +203,6 @@ int
                               player_msghdr* hdr,
                               void* data)
 {
-  assert (hdr);
-  assert (data);
-
   return (-1);
 }
 

@@ -278,11 +278,9 @@ int LaserBarcode::Shutdown()
 int LaserBarcode::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data)
 {
   assert(hdr);
-  assert(data);
 
   if(Message::MatchMessage (hdr, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN, laser_id))
   {
-    assert(hdr->size == sizeof(player_laser_data_t));
     laser_data = *reinterpret_cast<player_laser_data_t * > (data);
 
     // Analyse the laser data
