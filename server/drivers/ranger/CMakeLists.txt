@@ -18,3 +18,7 @@ PLAYERDRIVER_ADD_DRIVER (lasertoranger build_lasertoranger SOURCES toranger.cc l
 
 PLAYERDRIVER_OPTION (sonartoranger build_sonartoranger ON)
 PLAYERDRIVER_ADD_DRIVER (sonartoranger build_sonartoranger SOURCES toranger.cc sonartoranger.cc)
+
+PLAYERDRIVER_OPTION (rangertolaser build_rangertolaser ON)
+PLAYERDRIVER_ADD_DRIVER (rangertolaser build_rangertolaser SOURCES fromranger.cc rangertolaser.cc)
+

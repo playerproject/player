@@ -86,7 +86,6 @@ driver
 
 #include "toranger.h"
 
-// Driver for computing the free c-space from a sonar scan.
 class SonarToRanger : public ToRanger
 {
 	public:

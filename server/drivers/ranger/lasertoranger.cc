@@ -88,7 +88,6 @@ driver
 
 #include "toranger.h"
 
-// Driver for computing the free c-space from a laser scan.
 class LaserToRanger : public ToRanger
 {
 	public:
