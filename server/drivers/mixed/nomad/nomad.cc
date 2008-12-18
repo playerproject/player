@@ -1,8 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,13 +22,13 @@
 
 /*
  * $Id$
- * 
+ *
  * Driver for the Nomadics Nomad 200 robot. Should be easily adapted for other Nomads.
  * Authors: Richard Vaughan (vaughan@sfu.ca), Pawel Zebrowski (pzebrows@sfu.ca)
  *
  * Notes: this driver is an example of an alternative way to implement
  * a multi-interface driver. It is quite different to the P2OS driver.
- * 
+ *
  */
 
 /** @ingroup drivers */
@@ -70,19 +70,19 @@ for example configfiles.
 @par Configuration requests
 
 - none
-  
+
 @par Configuration file options
 
 - serial_device (string)
   - Default: "/dev/ttyS0"
-  - the serial port to which the Nomad is connected. This should match the setting on 
+  - the serial port to which the Nomad is connected. This should match the setting on
     the robot.
 
 - serial_speed (integer)
   - Default: 9600
   - sets the speed (baud rate) of the serial port. This should match the setting on the robot.
 
-@par Example 
+@par Example
 
 @verbatim
 driver
@@ -161,16 +161,16 @@ int mmToInches(int mm)
 }
 
 
-class Nomad:public Driver 
+class Nomad:public Driver
 {
   public:
 
   Nomad( ConfigFile* cf, int section);
   virtual ~Nomad();
-  
+
   /* the main thread */
   virtual void Main();
-  
+
   // MessageHandler
   int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
 
@@ -213,12 +213,12 @@ int Nomad::Setup()
 {
   printf("Nomad Setup: connecting to robot... ");
   fflush(stdout);
-  
-  // connect to the robot 
-  int success = FALSE;  
+
+  // connect to the robot
+  int success = FALSE;
   if( SERV_TCP_PORT > 0 ) // if we were compiled using Nclient
     {
-      printf( "TCP: %s:%d... ", SERVER_MACHINE_NAME, SERV_TCP_PORT ); 
+      printf( "TCP: %s:%d... ", SERVER_MACHINE_NAME, SERV_TCP_PORT );
       fflush(stdout);
       success = connect_robot(1); // uses default parameters
     }
@@ -228,32 +228,32 @@ int Nomad::Setup()
       fflush(stdout);
       success = connect_robot(1, MODEL_N200, this->serial_device, this->serial_speed );
     }
-  
+
   if( !success )
     {
       printf( "Nomad setup failed!\n" );
-      return( 1 ); 
+      return( 1 );
     }
-  
+
   // set the robot timeout, in seconds.  The robot will stop if no commands
   // are sent before the timeout expires.
   conf_tm(5);
 
   // zero all counters
   zr();
-  
+
   // set the robots acceleration for translation, steering, and turret
-  // ac (translation acc, steering acc, turret ac), which is measure 
-  // in 0.1inches/s/s, where the maximum is 300 = 30inches/s/s for 
+  // ac (translation acc, steering acc, turret ac), which is measure
+  // in 0.1inches/s/s, where the maximum is 300 = 30inches/s/s for
   // all axes.
   ac(300, 300, 300);
-  
+
   // set the robots maximum speed in each axis
   // sp(translation speed, steering speed, turret speed)
   // measured in 0.1inches/s for translation and 0.1deg/s for steering
   // and turret.  Maximum values are (200, 450, 450)
   sp(200, 450, 450);
-  
+
   /* now spawn reading thread */
   StartThread();
 
@@ -274,48 +274,45 @@ int Nomad::Shutdown()
 int Nomad::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len)
 {
   assert(hdr);
-  assert(data);
-  assert(resp_data);
-  assert(resp_len);
-	
+
   if (MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, device_id))
   {
   	assert(hdr->size == sizeof(player_nomad_cmd_t));
   	player_nomad_cmd_t & command = *reinterpret_cast<player_nomad_cmd_t *> (data);
 
-    /* write the command to the robot */      
+    /* write the command to the robot */
     int v = ntohl(command.vel_trans);
     int w = ntohl(command.vel_steer);
     int turret = ntohl(command.vel_turret);
-    printf( "command: vel_trans:%d vel_steer:%d turret:%d\n", v,w,turret ); 
+    printf( "command: vel_trans:%d vel_steer:%d turret:%d\n", v,w,turret );
 
     // set the speed
     vm(mmToInches(v), w*10, turret*10);
-    
+
     *resp_len = 0;
     return 0;
   }
-  
+
   *resp_len = 0;
   return -1;
 }
 
-void 
+void
 Nomad::Main()
-{  
+{
   for(;;)
     {
     	ProcessMessages();
-     
+
        // produce data-------------------------------------------------------
 
       /* read the latest data from the robot */
       //printf( "read data from robot" );
       gs(); // fills the structure 'State'
-      
+
       player_nomad_data_t data;
       memset(&data,0,sizeof(data));
-      
+
       data.x = inchesToMM( State[ STATE_CONF_X ] );
       data.y = inchesToMM( State[ STATE_CONF_Y ] );
       data.a = State[ STATE_CONF_STEER ] / 10;
@@ -337,13 +334,13 @@ Nomad::Main()
       for( int i=0; i<PLAYER_NOMAD_SONAR_COUNT; i++ )
 	{
 	  //printf( " %d", State[ STATE_SONAR_0 + i ] );
-	  data.sonar[i] 
+	  data.sonar[i]
 	    = htons((uint16_t)(sonar_scale*State[STATE_SONAR_0+i]));
 	}
 	  //puts("");
 
       PutMsg(device_id,NULL,PLAYER_MSGTYPE_DATA,0,(uint8_t*)&data, sizeof(data),NULL);
-      
+
       //usleep(1);
 
     }

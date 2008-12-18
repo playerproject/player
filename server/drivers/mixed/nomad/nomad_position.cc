@@ -1,8 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,11 +22,11 @@
 
 /*
  * $Id$
- * 
+ *
  * Driver for the Nomadics Nomad 200 robot. Should be easily adapted for other Nomads.
  * Authors: Richard Vaughan (vaughan@sfu.ca)
  * Based on Brian Gerkey et al's P2OS driver.
- * 
+ *
  */
 
 /** @ingroup drivers */
@@ -54,7 +54,7 @@ information and an example.
 @par Configuration requests
 
 - PLAYER_POSITION2D_REQ_GET_GEOM
-  
+
 @par Configuration file options
 
 - none
@@ -86,23 +86,23 @@ information and an example.
 #include "error.h"
 #include "nomad.h"
 
-class NomadPosition:public Driver 
+class NomadPosition:public Driver
 {
   public:
 
   NomadPosition( ConfigFile* cf, int section);
   virtual ~NomadPosition();
-  
+
   // MessageHandler
   int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
-  
+
   virtual int Setup();
   virtual int Shutdown();
-  
+
 protected:
   Driver* nomad;
   player_device_id_t nomad_id;
-  
+
 };
 
 // a factory creation function
@@ -127,7 +127,7 @@ NomadPosition::NomadPosition( ConfigFile* cf, int section)
   if (cf->ReadDeviceId(&this->nomad_id, section, "requires",
                        PLAYER_NOMAD_CODE, -1, NULL) != 0)
   {
-    this->SetError(-1);    
+    this->SetError(-1);
     return;
   }
 }
@@ -141,12 +141,12 @@ int NomadPosition::Setup()
 {
   printf("NomadPosition Setup.. ");
   fflush(stdout);
-  
+
   // if we didn't specify a port for the nomad, use the same port as
   // this device
   if( this->nomad_id.port == 0 )
     this->nomad_id.port = device_id.port;
-  
+
   printf( "finding Nomad (%d:%d:%d).. ",
 	  this->nomad_id.port,
 	  this->nomad_id.code,
@@ -160,9 +160,9 @@ int NomadPosition::Setup()
     PLAYER_ERROR("unable to find nomad device");
     return(-1);
   }
-  
+
   else printf( " OK.\n" );
- 
+
   puts( "NomadPosition setup done" );
   return(0);
 }
@@ -181,10 +181,7 @@ int NomadPosition::Shutdown()
 int NomadPosition::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len)
 {
   assert(hdr);
-  assert(data);
-  assert(resp_data);
-  assert(resp_len);
-	
+
   if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_GET_GEOM, device_id))
   {
   	assert(*resp_len >= sizeof(player_position_geom_t));
@@ -195,7 +192,7 @@ int NomadPosition::ProcessMessage(ClientData * client, player_msghdr * hdr, uint
     geom.pose[1] = htons((short) (0)); // y offset
     geom.pose[2] = htons((short) (0)); // a offset
     geom.size[0] = htons((short) (2 * NOMAD_RADIUS_MM )); // x size
-    geom.size[1] = htons((short) (2 * NOMAD_RADIUS_MM )); // y size   
+    geom.size[1] = htons((short) (2 * NOMAD_RADIUS_MM )); // y size
 
     return PLAYER_MSGTYPE_RESP_ACK;
   }
@@ -212,7 +209,7 @@ int NomadPosition::ProcessMessage(ClientData * client, player_msghdr * hdr, uint
     cmd.vel_trans = (command.xspeed);
     cmd.vel_steer = (command.yawspeed);
     cmd.vel_turret = (command.yspeed);
-      
+
     // command the Nomad device
     nomad->ProcessMessage(PLAYER_MSGTYPE_CMD,0,device_id,sizeof(cmd),(uint8_t*)&cmd);
     *resp_len =0;
@@ -223,20 +220,20 @@ int NomadPosition::ProcessMessage(ClientData * client, player_msghdr * hdr, uint
   {
   	assert(hdr->size == sizeof(player_nomad_data_t));
   	player_nomad_data_t & nomad_data = *reinterpret_cast<player_nomad_data_t *> (data);
-  
+
     // extract the position data from the Nomad packet
     player_position_data_t pos;
     memset(&pos,0,sizeof(pos));
-      
+
     pos.xpos = nomad_data.x;
     pos.ypos = nomad_data.y;
     pos.yaw = nomad_data.a;
     pos.xspeed = nomad_data.vel_trans;
     pos.yawspeed = nomad_data.vel_steer;
-      
+
     PutMsg(device_id,NULL,PLAYER_MSGTYPE_DATA,0,(void*)&pos, sizeof(pos), NULL);
   }
-      
+
   *resp_len = 0;
   return -1;
 }

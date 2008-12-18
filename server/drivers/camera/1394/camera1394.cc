@@ -32,7 +32,7 @@
  * @brief Firewire camera capture
 
 The camera1394 driver captures images from IEEE1394 (Firewire, iLink)
-cameras.  
+cameras.
 
 @par Compile-time dependencies
 
@@ -79,29 +79,29 @@ cameras.
     - "1280x960_mono"
     - "1280x960_yuv422" - will be rescaled to 640x480
     - "FORMAT7_MODE0" - only available with libdc1394 >= 2.0
-  - Currently, all mono modes will produce 8-bit monochrome images unless 
+  - Currently, all mono modes will produce 8-bit monochrome images unless
   a color decoding option is provided (see bayer).
   - All yuv422 modes are converted to RGB24
-  
+
 - force_raw (integer)
   - Default: 0
   - Force the driver to use (slow) memory capture instead of DMA transfer
   (for buggy 1394 drivers).
-  
+
 - save (integer)
   - Default: 0
   - Debugging option: set this to write each frame as an image file on disk.
 
 - bayer (string)
   - Default: None.
-  - Bayer color decoding options for cameras such as the Point Grey Dragonfly and Bummblebee. 
+  - Bayer color decoding options for cameras such as the Point Grey Dragonfly and Bummblebee.
   Option activates color decoding and specifies the Bayer color pattern. Valid modes are:
     - "BGGR"
     - "GRBG"
     - "RGGB"
     - "GBRG"
 
-- method (string)    
+- method (string)
   - Default: None (or "DownSample" if bayer option is specified)
   - Determines the algorithm used for Bayer coloro decoding. Valid modes are:
     - "DownSample"
@@ -135,7 +135,7 @@ cameras.
 - whitebalance (string)
   - Default: None
   - Sets the manual camera white balance setting. Only valid option:
-    - a string containing two suitable blue and red value unsigned integers 
+    - a string containing two suitable blue and red value unsigned integers
 
 - dma_buffers
   - Default: 4
@@ -144,7 +144,7 @@ cameras.
 - iso_speed (unsigned int)
   - Default: 400
   - Sets the data rate of the 1394 bus. Valid rates are 100, 200, 400, 800, 1600, 3200.
-@par Example 
+@par Example
 
 @verbatim
 driver
@@ -326,7 +326,7 @@ class Camera1394 : public Driver
   // Camera features
   private: dc1394featureset_t features;
   private: dc1394format7modeset_t modeset;
-#else  
+#else
   private: dc1394_cameracapture camera;
   // Camera features
   private: dc1394_feature_set features;
@@ -358,7 +358,7 @@ class Camera1394 : public Driver
 
   // Capture timestamp
   private: double frameTime;
-  
+
   // Data to send to server
   private: player_camera_data_t * data;
 
@@ -430,10 +430,10 @@ Camera1394::Camera1394(ConfigFile* cf, int section)
 
   // Get uncompressed video
   this->format = FORMAT_VGA_NONCOMPRESSED;
-    
+
   // Image size. This determines the capture resolution. There are a limited
   // number of options available. At 640x480, a camera can capture at
-  // _RGB or _MONO or _MONO16.  
+  // _RGB or _MONO or _MONO16.
   const char* str;
   str =  cf->ReadString(section, "mode", "640x480_yuv422");
   /*
@@ -514,8 +514,8 @@ Camera1394::Camera1394(ConfigFile* cf, int section)
   }
 
   // Many cameras such as the Pt Grey Dragonfly and Bumblebee devices
-  // don't do onchip colour conversion. Various Bayer colour encoding 
-  // patterns and decoding methods exist. They are now presented to the 
+  // don't do onchip colour conversion. Various Bayer colour encoding
+  // patterns and decoding methods exist. They are now presented to the
   // user as config file options.
   // check Bayer colour decoding option
   str =  cf->ReadString(section, "bayer", "NONE");
@@ -586,7 +586,7 @@ Camera1394::Camera1394(ConfigFile* cf, int section)
 
   // Allow the user to set useful camera setting options
   // brightness, exposure, redBalance, blueBalance, shutter and gain
-  // Parse camera settings - default is to leave them alone. 
+  // Parse camera settings - default is to leave them alone.
   str =  cf->ReadString(section, "brightness", "NONE");
   if (strcmp(str,"NONE"))
        if (!strcmp(str,"auto"))
@@ -598,7 +598,7 @@ Camera1394::Camera1394(ConfigFile* cf, int section)
 	    {
 		 this->setBrightness=true;
 		 this->autoBrightness=false;
-		 this->brightness = atoi(str);		 
+		 this->brightness = atoi(str);
 	    }
   str =  cf->ReadString(section, "exposure", "NONE");
   if (strcmp(str,"NONE"))
@@ -611,7 +611,7 @@ Camera1394::Camera1394(ConfigFile* cf, int section)
 	    {
 		 this->setExposure=true;
 		 this->autoExposure=false;
-		 this->exposure = atoi(str);		 
+		 this->exposure = atoi(str);
 	    }
   str =  cf->ReadString(section, "shutter", "NONE");
   if (strcmp(str,"NONE"))
@@ -624,7 +624,7 @@ Camera1394::Camera1394(ConfigFile* cf, int section)
 	    {
 		 this->setShutter=true;
 		 this->autoShutter=false;
-		 this->shutter = atoi(str);		 
+		 this->shutter = atoi(str);
 	    }
   str =  cf->ReadString(section, "gain", "NONE");
   if (strcmp(str,"NONE"))
@@ -637,7 +637,7 @@ Camera1394::Camera1394(ConfigFile* cf, int section)
 	    {
 		 this->setGain=true;
 		 this->autoGain=false;
-		 this->gain = atoi(str);		 
+		 this->gain = atoi(str);
 	    }
   str =  cf->ReadString(section, "whitebalance", "NONE");
   if (strcmp(str,"NONE"))
@@ -648,7 +648,7 @@ Camera1394::Camera1394(ConfigFile* cf, int section)
 
   // Force into raw mode
   this->forceRaw = cf->ReadInt(section, "force_raw", 0);
- 
+
   // Save frames?
   this->save = cf->ReadInt(section, "save", 0);
 
@@ -746,7 +746,7 @@ void Camera1394::SafeCleanup()
 // Set up the device (called by server thread).
 int Camera1394::Setup()
 {
-  
+
 
 #if LIBDC1394_VERSION == 0200
   dc1394speed_t speed;
@@ -766,7 +766,7 @@ int Camera1394::Setup()
   err = dc1394_camera_enumerate (d, &list);
   if (err != DC1394_SUCCESS)
   {
-    PLAYER_ERROR1("Could not get Camera List: %d\n", err);	
+    PLAYER_ERROR1("Could not get Camera List: %d\n", err);
     return -1;
   }
 
@@ -778,7 +778,7 @@ int Camera1394::Setup()
 
   // we just use the first one returned and then free the rest
   camera = dc1394_camera_new (d, list->ids[0].guid);
-  
+
   if (!camera)
   {
     PLAYER_ERROR1("Failed to initialize camera with guid %llx",
@@ -930,7 +930,7 @@ int Camera1394::Setup()
   if (DC1394_SUCCESS != dc1394_feature_get_all(camera, &this->features))
 #else
   if (DC1394_SUCCESS != dc1394_get_camera_feature_set(this->handle,
-                                                      this->camera.node, 
+                                                      this->camera.node,
                                                       &this->features))
 #endif
   {
@@ -947,12 +947,12 @@ int Camera1394::Setup()
   if (FORMAT_7==this->format && DC1394_SUCCESS!=dc1394_format7_get_modeset(camera, &modeset))
   {
     bool HasMode7 = false;
-    for (unsigned int i=0;i<DC1394_VIDEO_MODE_FORMAT7_NUM;i++) 
+    for (unsigned int i=0;i<DC1394_VIDEO_MODE_FORMAT7_NUM;i++)
     {
-      if (modeset.mode[i].present!=0) 
+      if (modeset.mode[i].present!=0)
       {
         HasMode7 = true;
-        break;	
+        break;
       }
     }
     if (!HasMode7)
@@ -968,7 +968,7 @@ int Camera1394::Setup()
 #if LIBDC1394_VERSION == 0200
   if (DC1394_SUCCESS != dc1394_video_get_iso_speed(this->camera, &speed))
 #else
-  if (DC1394_SUCCESS != dc1394_get_iso_channel_and_speed(this->handle, this->camera.node, 
+  if (DC1394_SUCCESS != dc1394_get_iso_channel_and_speed(this->handle, this->camera.node,
                                                          &channel, &speed))
 #endif
   {
@@ -1013,7 +1013,7 @@ int Camera1394::Setup()
 		PLAYER_WARN("1394 failed to set mode");
 		DMA_Success = false;
 	}
-  	
+
   	// now start capture
 	if (DC1394_SUCCESS != dc1394_capture_setup(camera, this->num_dma_buffers, DC1394_CAPTURE_FLAGS_DEFAULT))
   		DMA_Success = false;
@@ -1022,13 +1022,13 @@ int Camera1394::Setup()
 #else
   if (0)
 #endif
-  {    
+  {
     this->method = methodVideo;
   }
   else
   {
     PLAYER_WARN("DMA capture failed; falling back on RAW method");
-          
+
     // Set camera to use RAW method (fallback)
 #if LIBDC1394_VERSION == 0200
     if (0)
@@ -1062,7 +1062,7 @@ int Camera1394::Setup()
 
   // Start the driver thread.
   this->StartThread();
-  
+
   return 0;
 }
 
@@ -1079,7 +1079,7 @@ int Camera1394::Shutdown()
   if (DC1394_SUCCESS != dc1394_video_set_transmission(this->camera, DC1394_OFF)
       || DC1394_SUCCESS != dc1394_capture_stop(this->camera))
 #else
-  if (dc1394_stop_iso_transmission(this->handle, this->camera.node) != DC1394_SUCCESS) 
+  if (dc1394_stop_iso_transmission(this->handle, this->camera.node) != DC1394_SUCCESS)
 #endif
     PLAYER_WARN("unable to stop camera");
 
@@ -1092,7 +1092,7 @@ int Camera1394::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
-void Camera1394::Main() 
+void Camera1394::Main()
 {
   char filename[255];
   int frameno;
@@ -1101,9 +1101,9 @@ void Camera1394::Main()
   //struct timeval now,old;
   while (true)
   {
-    
+
     // Go to sleep for a while (this is a polling loop).
-    // We shouldn't need to sleep if GrabFrame is blocking.    
+    // We shouldn't need to sleep if GrabFrame is blocking.
     //nanosleep(&NSLEEP_TIME, NULL);
 
     // Test if we are supposed to cancel this thread.
@@ -1134,7 +1134,7 @@ void Camera1394::Main()
     */
  }
   printf("Camera1394::main() exited\n");
-  
+
 }
 
 
@@ -1145,7 +1145,6 @@ int Camera1394::ProcessMessage(QueuePointer & resp_queue,
                               void * data)
 {
   assert(hdr);
-  assert(data);
 
   /* We currently don't support any messages, but if we do...
   if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
@@ -1184,7 +1183,7 @@ int Camera1394::GrabFrame()
   case methodVideo:
 #if LIBDC1394_VERSION == 0200
     dc1394_capture_dequeue (camera, DC1394_CAPTURE_POLICY_WAIT, &frame);
-    if (!frame) 
+    if (!frame)
 #else
     if (dc1394_dma_single_capture(&this->camera) != DC1394_SUCCESS)
 #endif
@@ -1257,20 +1256,20 @@ int Camera1394::GrabFrame()
       this->data->width = frame_width;
       this->data->height = frame_height;
       memcpy(this->data->image, capture_buffer, this->data->image_count);
-    } 
+    }
     else
     {
       this->data->bpp = 24;
       this->data->format = PLAYER_CAMERA_FORMAT_RGB888;
       switch (this->BayerMethod)
       {
-      
+
       case BAYER_DECODING_DOWNSAMPLE:
         // quarter of the image but 3 bytes per pixel
 	this->data->image_count = (frame_width / 2) * (frame_height / 2) * 3;
         this->data->image = reinterpret_cast<uint8_t *>(malloc(this->data->image_count));
 	assert(this->data->image);
-	BayerDownsample(reinterpret_cast<unsigned char *>(capture_buffer), 
+	BayerDownsample(reinterpret_cast<unsigned char *>(capture_buffer),
 	                reinterpret_cast<unsigned char *>(this->data->image),
 			frame_width / 2, frame_height / 2,
 			this->BayerPattern);
@@ -1301,7 +1300,7 @@ int Camera1394::GrabFrame()
       {
         this->data->width = frame_width;
         this->data->height = frame_height;
-      } 
+      }
       else
       {    //image is half the size of grabbed frame
         this->data->width = frame_width / 2;
@@ -1333,7 +1332,7 @@ void Camera1394::RefreshData()
     return;
   }
   assert(this->data->image);
-  Publish(this->device_addr, 
+  Publish(this->device_addr,
           PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
           reinterpret_cast<void *>(this->data),
 #if LIBDC1394_VERSION == 0200
@@ -1352,7 +1351,7 @@ void Camera1394::RefreshData()
 int Camera1394::SaveFrame(const char *filename)
 {
   FILE * fp;
-  
+
   assert(this->data);
   if (!(this->data->image_count))
   {

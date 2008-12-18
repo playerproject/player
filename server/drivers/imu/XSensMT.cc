@@ -27,8 +27,8 @@
 /** @defgroup driver_xsensmt xsensmt
  * @brief XSens MTx/MTi Inertial Measurement Unit driver
 
-The xsensmt driver controls the XSens MTx/MTi Inertial Measurement Unit. It 
-provides Kalman filtered orientation information (pitch, roll, yaw) via its 
+The xsensmt driver controls the XSens MTx/MTi Inertial Measurement Unit. It
+provides Kalman filtered orientation information (pitch, roll, yaw) via its
 internal 3-axis accelerometer, 3-axis gyroscope and 3-axis magnetometer.
 
 @par Compile-time dependencies
@@ -57,14 +57,14 @@ internal 3-axis accelerometer, 3-axis gyroscope and 3-axis magnetometer.
 
 - data_packet_type (integer)
   - Default: 4. Possible values: 1, 2, 3, 4.
-   (1 = 3D pose as X, Y, Z and + orientation/Euler angles as Roll, Pitch, Yaw; 
+   (1 = 3D pose as X, Y, Z and + orientation/Euler angles as Roll, Pitch, Yaw;
     2 = calibrated IMU data: accel, gyro, magnetometer;
     3 = quaternions + calibrated IMU data;
     4 = Euler angles + calibrated IMU data.)
-  - Specify the type of data packet to send (can be set using 
+  - Specify the type of data packet to send (can be set using
     PLAYER_IMU_REQ_SET_DATATYPE as well).
 
-@par Example 
+@par Example
 
 @verbatim
 driver
@@ -145,7 +145,7 @@ Driver* XSensMT_Init (ConfigFile* cf, int section)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Registers the driver in the driver table. Called from the 
+// Registers the driver in the driver table. Called from the
 // player_driver_init function that the loader looks for
 void XSensMT_Register (DriverTable* table)
 {
@@ -156,7 +156,7 @@ void XSensMT_Register (DriverTable* table)
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 XSensMT::XSensMT (ConfigFile* cf, int section)
-    : Driver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, 
+    : Driver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
               PLAYER_IMU_CODE)
 {
     portName = cf->ReadString (section, "port", DEFAULT_PORT);
@@ -248,7 +248,7 @@ int XSensMT::Shutdown ()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
-void XSensMT::Main () 
+void XSensMT::Main ()
 {
     timespec sleepTime = {0, 0};
 
@@ -278,12 +278,11 @@ int XSensMT::ProcessMessage (QueuePointer &resp_queue,
                              void * data)
 {
     assert (hdr);
-    assert (data);
-    
+
     // this holds possible error messages returned by mtcomm.writeMessage
     int err;
-    
-    if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, 
+
+    if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ,
         PLAYER_IMU_REQ_SET_DATATYPE, device_addr))
     {
         // Change the data type according to the user's preferences
@@ -293,7 +292,7 @@ int XSensMT::ProcessMessage (QueuePointer &resp_queue,
         if ((datatype->value > 0) && (datatype->value < 5))
         {
             dataType = datatype->value;
-	    
+
 	    int outputSettings = OUTPUTSETTINGS_ORIENTMODE_EULER;
 	    switch (dataType)
 	    {
@@ -320,7 +319,7 @@ int XSensMT::ProcessMessage (QueuePointer &resp_queue,
 		{
 		    outputSettings = OUTPUTSETTINGS_ORIENTMODE_EULER;
 		}
-		
+
 	    }
 	    // Put MTi/MTx in Config State
 	    if (mtcomm.writeMessage (MID_GOTOCONFIG) != MTRV_OK)
@@ -330,7 +329,7 @@ int XSensMT::ProcessMessage (QueuePointer &resp_queue,
                      hdr->subtype);
 		return (-1);
 	    }
-	    
+
 	    int outputMode = OUTPUTMODE_CALIB + OUTPUTMODE_ORIENT;
 	    // Set output mode and output settings for the MTi/MTx
 	    if (mtcomm.setDeviceMode (outputMode, outputSettings, BID_MASTER) != MTRV_OK) {
@@ -340,7 +339,7 @@ int XSensMT::ProcessMessage (QueuePointer &resp_queue,
 
 	    // Put MTi/MTx in Measurement State
 	    mtcomm.writeMessage (MID_GOTOMEASUREMENT);
-            
+
 	    Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK,
                      hdr->subtype);
         }
@@ -350,7 +349,7 @@ int XSensMT::ProcessMessage (QueuePointer &resp_queue,
 
         return 0;
     }
-    else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, 
+    else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ,
         PLAYER_IMU_REQ_RESET_ORIENTATION, device_addr))
     {
         // Change the data type according to the user's preferences
@@ -366,8 +365,8 @@ int XSensMT::ProcessMessage (QueuePointer &resp_queue,
         {
 	    // Force <global reset> until further tests.
             rconfig->value = 2;
-	    
-	    if ((err = mtcomm.writeMessage (MID_RESETORIENTATION, 
+
+	    if ((err = mtcomm.writeMessage (MID_RESETORIENTATION,
 		RESETORIENTATION_GLOBAL, LEN_RESETORIENTATION, BID_MASTER)) != MTRV_OK)
 	    {
     		PLAYER_ERROR1 ("Could not put reset orientation on device! Error 0x%x\n", err);
@@ -375,7 +374,7 @@ int XSensMT::ProcessMessage (QueuePointer &resp_queue,
                      hdr->subtype);
 		return (-1);
 	    }
-	    
+
             Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK,
                      hdr->subtype);
         }
@@ -437,7 +436,7 @@ void XSensMT::RefreshData ()
             float quaternion_data[4] = {0};
             // Parse and get value (quaternion orientation)
             imu_data_quat.calib_data = GetCalibValues (data);
-	    
+
             mtcomm.getValue (VALUE_ORIENT_QUAT, quaternion_data, data, BID_MASTER);
             imu_data_quat.q0 = quaternion_data[0];
             imu_data_quat.q1 = quaternion_data[1];

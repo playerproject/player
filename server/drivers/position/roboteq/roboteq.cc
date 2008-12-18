@@ -23,7 +23,7 @@
 /** @{ */
 /** @defgroup driver_roboteq roboteq
  * @brief Motor control driver for Roboteq AX2550
- 
+
 Provides position2d interface to the Roboteq AX2550 motor controller
 http://www.roboteq.com/ax2550-folder.html
 This driver ignores all configuration requests and produces no data
@@ -77,7 +77,7 @@ could be implemented by integrating dead-reckoning devices.
 driver
 (
   name "roboteq"
-  provides ["position2d:0"] 
+  provides ["position2d:0"]
   devicepath "/dev/ttyS0"
   max_trans_spd 6.0
   max_rot_spd 4.0
@@ -95,15 +95,15 @@ driver
 #include <termios.h>
 #include <sys/ioctl.h> // ioctl
 #include <unistd.h> // close(2),fcntl(2),getpid(2),usleep(3),execvp(3),fork(2)
-#include <netdb.h> // for gethostbyname(3) 
-#include <netinet/in.h>  // for struct sockaddr_in, htons(3) 
-#include <sys/types.h>  // for socket(2) 
-#include <sys/socket.h>  // for socket(2) 
-#include <signal.h>  // for kill(2) 
-#include <fcntl.h>  // for fcntl(2) 
-#include <string.h>  // for strncpy(3),memcpy(3) 
-#include <stdlib.h>  // for atexit(3),atoi(3) 
-#include <pthread.h>  // for pthread stuff 
+#include <netdb.h> // for gethostbyname(3)
+#include <netinet/in.h>  // for struct sockaddr_in, htons(3)
+#include <sys/types.h>  // for socket(2)
+#include <sys/socket.h>  // for socket(2)
+#include <signal.h>  // for kill(2)
+#include <fcntl.h>  // for fcntl(2)
+#include <string.h>  // for strncpy(3),memcpy(3)
+#include <stdlib.h>  // for atexit(3),atoi(3)
+#include <pthread.h>  // for pthread stuff
 #include <math.h>
 
 #include <libplayercore/playercore.h>
@@ -112,7 +112,7 @@ driver
 #define SERIAL_BUFF_SIZE		128
 #define MAX_MOTOR_SPEED			127
 #define ROBOTEQ_CON_TIMEOUT		10      // seconds to time-out on setting RS-232 mode
-#define ROBOTEQ_DEFAULT_BAUD	9600 
+#define ROBOTEQ_DEFAULT_BAUD	9600
 
 #ifndef CRTSCTS
 #ifdef IHFLOW
@@ -165,8 +165,8 @@ class roboteq:public Driver
 
   public:
     roboteq( ConfigFile* cf, int section);
-    
-    virtual int ProcessMessage(QueuePointer &resp_queue, 
+
+    virtual int ProcessMessage(QueuePointer &resp_queue,
 						player_msghdr * hdr, void * data);
     virtual int Setup();
     virtual int Shutdown();
@@ -191,7 +191,7 @@ void roboteq_Register(DriverTable* table)
 
 ///////////////////////////////////////////////////////////////////////////
 roboteq::roboteq( ConfigFile* cf, int section) : Driver(cf, section)
-{  
+{
 	memset (&this->position2d_id, 0, sizeof (player_devaddr_t));
 
     // Outgoing position 2d interface
@@ -199,12 +199,12 @@ roboteq::roboteq( ConfigFile* cf, int section) : Driver(cf, section)
 	               PLAYER_POSITION2D_CODE, -1, NULL) == 0){
 		if(this->AddInterface(this->position2d_id) != 0){
 			this->SetError(-1);
-			return;		
+			return;
 	}   }
 
     double max_trans_spd, max_rot_spd;
 
-  // required parameter(s)   
+  // required parameter(s)
   if(!(this->devicepath = (char*)cf->ReadString(section, "devicepath", NULL))){
     PLAYER_ERROR("must specify devicepath");
     this->SetError(-1);
@@ -244,10 +244,10 @@ roboteq::Setup()
   roboteq_fd = open(devicepath, O_RDWR|O_NDELAY);
   if (roboteq_fd == -1){
     fputs("Unable to configure serial port for RoboteQ!", stderr);
-    return 0; 
+    return 0;
   }else{
       struct termios options;
-      
+
       tcgetattr(roboteq_fd, &options);
 
       // default is 9600 unless otherwise specified
@@ -287,7 +287,7 @@ roboteq::Setup()
 
   // initialize RoboteQ to RS-232 mode
   strcpy(serialout_buff, "\r");
-  for (i=0; i<10; i++){ 
+  for (i=0; i<10; i++){
     write(roboteq_fd, serialout_buff, 1);
     tcdrain(roboteq_fd);
 	usleep(25000);
@@ -311,9 +311,9 @@ roboteq::Setup()
 	else
 		fputs("Successfully initialized Roboteq connection.\n", stderr);
 
-	fputs("Done.\n", stderr); 
+	fputs("Done.\n", stderr);
 
-  // now spawn reading thread 
+  // now spawn reading thread
   StartThread();
 
   return(0);
@@ -346,11 +346,11 @@ int roboteq::Shutdown()
 			// no 'W's for ROBOTEQ_CON_TIMEOUT seconds
 			//		means we're probably in RC mode again
 
-			// 07-09-07 
+			// 07-09-07
 			// this test may need to change since the reset
 			// appears to fail quite often. is it really
 			// failing or is the test bad?
-			return 0; 
+			return 0;
 		}
 		memset(serialin_buff, 0, SERIAL_BUFF_SIZE);
 		ret = read(roboteq_fd, serialin_buff, SERIAL_BUFF_SIZE);
@@ -358,7 +358,7 @@ int roboteq::Shutdown()
 	fputs("Unable to reset Roboteq to RC mode!", stderr);
 
     close(roboteq_fd);
-  
+
   return(0);
 }
 
@@ -368,22 +368,21 @@ int roboteq::Shutdown()
 int roboteq::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data)
 {
     assert(hdr);
-	assert(data);
 /*
-    fprintf(stderr, "ProcessMessage: type=%d subtype=%d\n", 
+    fprintf(stderr, "ProcessMessage: type=%d subtype=%d\n",
             hdr->type, hdr->subtype);
-  */      
-	if (Message::MatchMessage(hdr, PLAYER_POSITION2D_REQ_MOTOR_POWER, 
-                                PLAYER_POSITION2D_CMD_VEL, position2d_id)){         
+  */
+	if (Message::MatchMessage(hdr, PLAYER_POSITION2D_REQ_MOTOR_POWER,
+                                PLAYER_POSITION2D_CMD_VEL, position2d_id)){
         assert(hdr->size == sizeof(player_position2d_cmd_vel_t));
 
-        player_position2d_cmd_vel_t & command 
+        player_position2d_cmd_vel_t & command
             = *reinterpret_cast<player_position2d_cmd_vel_t *> (data);
-        
+
         // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        // convert from the generic position interface 
+        // convert from the generic position interface
         // to the Roboteq-specific command
-        // assumes "Mixed Mode" -- 
+        // assumes "Mixed Mode" --
         // channel 1 : FW/BW speed
         // channel 2 : rotation
         // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -392,7 +391,7 @@ int roboteq::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void
         float vel_yawspd = command.vel.pa;
 
         //fprintf(stderr, "ProcessMessage: trans=%f, steer=%f\n", vel_trans, vel_turret);
-        
+
         // scale and translate to Roboteq command
         vel_xtrans = (double)vel_xtrans * speed_scaling_factor;
         vel_yawspd = (double)vel_yawspd * rot_scaling_factor;
@@ -409,7 +408,7 @@ int roboteq::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void
         */
         return 0;
     }
-      
+
   return -1;
 }
 
@@ -419,20 +418,20 @@ int roboteq::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void
 void roboteq::Main()
 {
   double position_time=0;
-    
+
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED,NULL);
 
   for(;;){
     ProcessMessages();
 	pthread_testcancel();
     // publish dummy data
-    Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE, 
+    Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE,
 			  (unsigned char*) &data, sizeof(data), &position_time);
     usleep(10);
   }
 
   pthread_exit(NULL);
-  
+
   return;
 }
 
@@ -447,22 +446,22 @@ int roboteq::FormMotorCmd(char* cmd_str, short trans_command, short rot_command)
   else if (trans_command < -MAX_MOTOR_SPEED) trans_command = -MAX_MOTOR_SPEED;
   if (rot_command > MAX_MOTOR_SPEED) rot_command = MAX_MOTOR_SPEED;
   else if (rot_command < -MAX_MOTOR_SPEED) rot_command = -MAX_MOTOR_SPEED;
-  
+
   if (trans_command > 0)
     strcpy(speed, FORWARD);
   else strcpy(speed, REVERSE);
   if (rot_command > 0)
     strcpy(heading, LEFT);
   else strcpy(heading, RIGHT);
-  
+
   // form motor cmd string
   strcpy(cmd_str, speed);
   snprintf(cmd_str+2, 4, "%.2x", abs(trans_command)); // start at char 3
-  strcat(cmd_str, "\r");	
+  strcat(cmd_str, "\r");
   strcat(cmd_str, heading);
   snprintf(cmd_str + strlen(cmd_str), 4, "%.2x", abs(rot_command));
   strcat(cmd_str, "\r");
-  
+
   return 0;
 }
 

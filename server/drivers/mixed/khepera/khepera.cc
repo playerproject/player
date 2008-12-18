@@ -1,6 +1,6 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
  *
  *
@@ -30,13 +30,13 @@
 /** @defgroup driver_khepera khepera
  * @brief K-Team Khepera mobile robot
 
-The khepera driver is used to interface to the K-Team khepera robot. 
+The khepera driver is used to interface to the K-Team khepera robot.
 
 This driver is experimental and should be treated with caution. At
-this point it supports the @ref interface_position2d and 
+this point it supports the @ref interface_position2d and
 @ref interface_ir interfaces.
 
-TODO: 
+TODO:
  - Add support for position control (currently only velocity control)
  - Add proper calibration for IR sensors
 
@@ -90,7 +90,7 @@ TODO:
   - Default: [10 24 90 19 17 45 25 6 0 25 -6 0 19 -17 -45 10 -24 -90 -24 -10 180 -24 10 180]
   - Poses of the IRs (mm mm deg for each one)
 
-@par Example 
+@par Example
 
 @verbatim
 driver
@@ -151,10 +151,10 @@ Khepera_Init(ConfigFile *cf, int section)
 
 /* register the Khepera IR driver in the drivertable
  *
- * returns: 
+ * returns:
  */
 void
-Khepera_Register(DriverTable *table) 
+Khepera_Register(DriverTable *table)
 {
   table->AddDriver("khepera", Khepera_Init);
 }
@@ -162,7 +162,6 @@ Khepera_Register(DriverTable *table)
 int Khepera::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, void * data)
 {
 	assert(hdr);
-	assert(data);
 
 	if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_IR_REQ_POSE, ir_addr))
 	{
@@ -180,9 +179,9 @@ int Khepera::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, void
 		int rightvel = transvel + rotvel;
 
 		// now we set the speed
-		if (this->motors_enabled) 
+		if (this->motors_enabled)
 			SetSpeed(leftvel,rightvel);
-		else 
+		else
 			SetSpeed(0,0);
 		return 0;
 	}
@@ -226,23 +225,23 @@ Khepera::Khepera(ConfigFile *cf, int section) : Driver(cf, section)
   this->position_subscriptions = this->ir_subscriptions = 0;
 
   // Do we create a robot position interface?
-  if(cf->ReadDeviceAddr(&(this->position_addr), section, "provides", 
+  if(cf->ReadDeviceAddr(&(this->position_addr), section, "provides",
                       PLAYER_POSITION2D_CODE, -1, NULL) == 0)
   {
     if(this->AddInterface(this->position_addr) != 0)
     {
-      this->SetError(-1);    
+      this->SetError(-1);
       return;
     }
   }
 
   // Do we create an ir interface?
-  if(cf->ReadDeviceAddr(&(this->ir_addr), section, "provides", 
+  if(cf->ReadDeviceAddr(&(this->ir_addr), section, "provides",
                       PLAYER_IR_CODE, -1, NULL) == 0)
   {
     if(this->AddInterface(this->ir_addr) != 0)
     {
-      this->SetError(-1);    
+      this->SetError(-1);
       return;
     }
   }
@@ -320,7 +319,7 @@ Khepera::Khepera(ConfigFile *cf, int section) : Driver(cf, section)
       geometry->ir.poses[i].px = cf->ReadTupleFloat(section,"ir_poses",3*i,0)*geometry->scale;
       geometry->ir.poses[i].py = cf->ReadTupleFloat(section,"ir_poses",3*i+1,0)*geometry->scale;
       geometry->ir.poses[i].pyaw = cf->ReadTupleFloat(section,"ir_poses",3*i+2,0);
-    }				
+    }
   }
   // laod ir calibration from config file
   geometry->ir_calib_a = new double[geometry->ir.poses_count];
@@ -337,8 +336,8 @@ Khepera::Khepera(ConfigFile *cf, int section) : Driver(cf, section)
   last_x_f=0;
   last_y_f=0;
   last_theta = 0.0;
-  
-  
+
+
 }
 
 Khepera::~Khepera()
@@ -349,7 +348,7 @@ Khepera::~Khepera()
   delete geometry;
 }
 
-int 
+int
 Khepera::Subscribe(player_devaddr_t addr)
 {
   int setupResult;
@@ -372,7 +371,7 @@ Khepera::Subscribe(player_devaddr_t addr)
   return(setupResult);
 }
 
-int 
+int
 Khepera::Unsubscribe(player_devaddr_t addr)
 {
   int shutdownResult;
@@ -399,10 +398,10 @@ Khepera::Unsubscribe(player_devaddr_t addr)
  *
  * returns: 0 on success
  */
-int 
+int
 Khepera::Setup()
 {
-  // open and initialize the serial to -> Khepera  
+  // open and initialize the serial to -> Khepera
   printf("Khepera: connection initializing (%s)...", this->khepera_serial_port);
   fflush(stdout);
   Serial = new KheperaSerial(geometry->PortName,KHEPERA_BAUDRATE);
@@ -425,7 +424,7 @@ Khepera::Setup()
 }
 
 
-int 
+int
 Khepera::Shutdown()
 {
   printf("Khepera: SHUTDOWN\n");
@@ -443,17 +442,17 @@ Khepera::Shutdown()
   return(0);
 }
 
-void 
+void
 Khepera::Main()
 {
   int last_position_subscrcount=0;
 
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED,NULL);
 
-  while (1) 
+  while (1)
   {
-    // we want to reset the odometry and enable the motors if the first 
-    // client just subscribed to the position device, and we want to stop 
+    // we want to reset the odometry and enable the motors if the first
+    // client just subscribed to the position device, and we want to stop
     // and disable the motors if the last client unsubscribed.
     if(!last_position_subscrcount && this->position_subscriptions)
     {
@@ -462,7 +461,7 @@ Khepera::Main()
       SetSpeed(0,0);
       ResetOdometry();
 
-    } 
+    }
     else if(last_position_subscrcount && !(this->position_subscriptions))
     {
       // last sub just unsubbed
@@ -515,7 +514,7 @@ Khepera::UpdateData()
 /* this will update the IR part of the client data
  * it entails reading the currently active IR sensors
  * and then changing their state to off and turning on
- * 2 new IRs.  
+ * 2 new IRs.
  *
  * returns:
  */
@@ -524,16 +523,16 @@ Khepera::UpdateIRData(player_ir_data_t * d)
 {
   ReadAllIR(d);
 
-  for (unsigned int i =0; i < geometry->ir.poses_count; i++) 
+  for (unsigned int i =0; i < geometry->ir.poses_count; i++)
   {
     d->ranges[i] = geometry->scale * geometry->ir_calib_a[i] * pow(d->voltages[i],geometry->ir_calib_b[i]);
     d->voltages[i] = d->voltages[i];
   }
 }
 
-  
+
 /* this will update the position data.  this entails odometry, etc
- */ 
+ */
 void
 Khepera::UpdatePosData(player_position2d_data_t *d)
 {
@@ -553,7 +552,7 @@ Khepera::UpdatePosData(player_position2d_data_t *d)
 
   if (transchange == 0)
   {
-    Theta = 360 * rotchange/(2 * M_PI * r);	
+    Theta = 360 * rotchange/(2 * M_PI * r);
     dx = dy= 0;
   }
   else if (rotchange == 0)
@@ -596,7 +595,7 @@ Khepera::UpdatePosData(player_position2d_data_t *d)
 /* this will set the odometry to a given position
  * ****NOTE: assumes that the arguments are in network byte order!*****
  *
- * returns: 
+ * returns:
  */
 int
 Khepera::ResetOdometry()
@@ -625,20 +624,20 @@ Khepera::ResetOdometry()
  * returns: the value of the AD channel
  */
 /*unsigned short
-REB::ReadAD(int channel) 
+REB::ReadAD(int channel)
 {
   char buf[64];
 
   sprintf(buf, "I,%d\r", channel);
   write_command(buf, strlen(buf), sizeof(buf));
-  
+
   return atoi(&buf[2]);
 }*/
 
 /* reads all the IR values at once.  stores them
  * in the uint16_t array given as arg ir
  *
- * returns: 
+ * returns:
  */
 int
 Khepera::ReadAllIR(player_ir_data_t* d)
@@ -647,7 +646,7 @@ Khepera::ReadAllIR(player_ir_data_t* d)
 
   Values = new int [geometry->ir.poses_count];
   if(Serial->KheperaCommand('N',0,NULL,geometry->ir.poses_count,Values) < 0)
-    return -1;			
+    return -1;
   for (unsigned int i=0; i< geometry->ir.poses_count; ++i)
   {
     d->voltages[i] = static_cast<short> (Values[i]);
@@ -692,7 +691,7 @@ Khepera::ReadSpeed(int * left,int * right)
 REB::SetPos(int mn, int pos)
 {
   char buf[64];
-  
+
   sprintf(buf,"C,%c,%d\r", '0'+mn,pos);
 
   write_command(buf, strlen(buf), sizeof(buf));
@@ -734,7 +733,7 @@ Khepera::ReadPos(int * pos1, int * pos2)
  */
 /*void
 REB::ConfigPosPID(int mn, int kp, int ki, int kd)
-{ 
+{
   char buf[64];
 
   sprintf(buf, "F,%c,%d,%d,%d\r", '0'+mn, kp,ki,kd);
@@ -749,9 +748,9 @@ REB::ConfigPosPID(int mn, int kp, int ki, int kd)
 REB::ConfigSpeedPID(int mn, int kp, int ki, int kd)
 {
   char buf[64];
-  
+
   sprintf(buf, "A,%c,%d,%d,%d\r", '0'+mn, kp,ki,kd);
-  
+
   write_command(buf, strlen(buf), sizeof(buf));
 }*/
 
@@ -764,7 +763,7 @@ REB::ConfigSpeedPID(int mn, int kp, int ki, int kd)
 REB::ConfigSpeedProfile(int mn, int speed, int acc)
 {
   char buf[64];
-  
+
   sprintf(buf, "J,%c,%d,%d\r", '0'+mn, speed,acc);
   write_command(buf, strlen(buf), sizeof(buf));
 }*/

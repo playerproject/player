@@ -144,7 +144,7 @@ class LaserBarcode : public Driver
   public: virtual int Setup();
   public: virtual int Shutdown();
 
-  // Process incoming messages from clients 
+  // Process incoming messages from clients
   int ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data);
 
   // Main function for device thread
@@ -161,13 +161,13 @@ class LaserBarcode : public Driver
   private: int IdentBeacon(int a, int b, double ox, double oy, double oth,
                            const player_laser_data_t *laser_data);
 
-  // Write fidicual data 
+  // Write fidicual data
   private: void WriteFiducial();
 
   // Pointer to laser to get data from
   private: player_devaddr_t laser_id;
   private: Device *laser;
-  
+
   // Magic numbers
   private: int bit_count;
   private: double bit_width;
@@ -177,7 +177,7 @@ class LaserBarcode : public Driver
   // Current laser data
   private: player_laser_data_t laser_data;
   private: struct timeval laser_timestamp;
-  
+
   // Current fiducial data
   private: player_fiducial_data_t data;
   unsigned int fdata_allocated;
@@ -206,14 +206,14 @@ LaserBarcode::LaserBarcode( ConfigFile* cf, int section)
   if (cf->ReadDeviceAddr(&this->laser_id, section, "requires",
                        PLAYER_LASER_CODE, -1, NULL) != 0)
   {
-    this->SetError(-1);    
+    this->SetError(-1);
     return;
   }
 
   // Get beacon settings.
   this->bit_count = cf->ReadInt(section, "bit_count", 8);
   this->bit_width = cf->ReadLength(section, "bit_width", 0.05);
-  
+
   // Maximum variance in the flatness of the beacon
   this->max_depth = cf->ReadLength(section, "max_depth", 0.05);
 
@@ -250,7 +250,7 @@ int LaserBarcode::Setup()
     return -1;
   }
 
-  
+
   PLAYER_MSG2(2, "laserbarcode device: bitcount [%d] bitwidth [%fm]",
               this->bit_count, this->bit_width);
   return 0;
@@ -278,11 +278,9 @@ int LaserBarcode::Shutdown()
 int LaserBarcode::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data)
 {
   assert(hdr);
-  assert(data);
-  
+
   if(Message::MatchMessage (hdr, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN, laser_id))
   {
-    assert(hdr->size == sizeof(player_laser_data_t));
     laser_data = *reinterpret_cast<player_laser_data_t * > (data);
 
     // Analyse the laser data
@@ -293,7 +291,7 @@ int LaserBarcode::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr,
 
     return 0;
   }
- 
+
   return -1;
 }
 
@@ -316,7 +314,7 @@ void LaserBarcode::FindBeacons(const player_laser_data_t *laser_data,
 
   ax = ay = 0;
   bx = by = 0;
-    
+
   // Find the beacons in this scan
   for (unsigned int i = 0; i < laser_data->ranges_count; i++)
   {
@@ -326,7 +324,7 @@ void LaserBarcode::FindBeacons(const player_laser_data_t *laser_data,
 
     double px = range * cos(bearing);
     double py = range * sin(bearing);
-        
+
     if (intensity > 0)
     {
       if (ai < 0)
@@ -374,7 +372,7 @@ void LaserBarcode::FindBeacons(const player_laser_data_t *laser_data,
       this->fdata_allocated = this->data.fiducials_count+1;
       this->data.fiducials = (player_fiducial_item_t*)realloc(this->data.fiducials, sizeof(this->data.fiducials[0])*this->fdata_allocated);
     }
-    
+
     double ox = (bx + ax) / 2;
     double oy = (by + ay) / 2;
     range = sqrt(ox * ox + oy * oy);
@@ -454,16 +452,16 @@ int LaserBarcode::IdentBeacon(int a, int b, double ox, double oy, double oth,
         assert(0);
 
       //printf("prob : %f %f %f %f %f\n", ax, bx, a, b, p);
-            
+
       if (intensity == 0)
       {
-        assert(bit >= 0 && bit < ARRAYSIZE(prob));            
+        assert(bit >= 0 && bit < ARRAYSIZE(prob));
         prob[bit][0] += p;
         prob[bit][1] += 0;
       }
       else
       {
-        assert(bit >= 0 && bit < ARRAYSIZE(prob));            
+        assert(bit >= 0 && bit < ARRAYSIZE(prob));
         prob[bit][0] += 0;
         prob[bit][1] += p;
       }
@@ -477,7 +475,7 @@ int LaserBarcode::IdentBeacon(int a, int b, double ox, double oy, double oth,
     double pn = prob[bit][0] + prob[bit][1];
     double p0 = prob[bit][0] / pn;
     double p1 = prob[bit][1] / pn;
-       
+
     if (pn < this->accept_thresh)
       id = -1;
     else if (p0 > this->zero_thresh)
@@ -493,18 +491,18 @@ int LaserBarcode::IdentBeacon(int a, int b, double ox, double oy, double oth,
 
   if (id < 0)
     id = 0;
-    
+
   return id;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Write fidicual data 
+// Write fidicual data
 void LaserBarcode::WriteFiducial()
 {
   // Write the data with the laser timestamp
   this->Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_FIDUCIAL_DATA_SCAN, &this->data);
-  
+
   return;
 }
 

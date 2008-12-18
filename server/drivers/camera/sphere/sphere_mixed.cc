@@ -421,7 +421,6 @@ int SphereDriver::ProcessMessage(QueuePointer & resp_queue,
                                  void* data)
 {
   assert(hdr);
-  assert(data);
 
   if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD,
                            PLAYER_PTZ_CMD_STATE, mPtzAddr))
@@ -514,11 +513,11 @@ void SphereDriver::RefreshData()
     memcpy(mCameraData.image, mRGBFrame->data, image_size);
   }
 
-  Publish(mCameraAddr, 
+  Publish(mCameraAddr,
           PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
           reinterpret_cast<void*>(&mCameraData));
 
-  Publish(mPtzAddr, 
+  Publish(mPtzAddr,
           PLAYER_MSGTYPE_DATA, PLAYER_PTZ_DATA_STATE,
           reinterpret_cast<void*>(&mPtzData));
 

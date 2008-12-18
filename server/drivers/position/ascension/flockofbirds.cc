@@ -492,9 +492,6 @@ FlockOfBirds_Device::Shutdown()
 
 int FlockOfBirds_Device::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, void * data)
 {
-  assert(hdr);
-  assert(data);
-
   return -1;
 }
 

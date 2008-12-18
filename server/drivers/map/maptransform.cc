@@ -1,6 +1,6 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2004  Brian Gerkey gerkey@stanford.edu    
+ *  Copyright (C) 2004  Brian Gerkey gerkey@stanford.edu
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -40,9 +40,9 @@ MapTransform::MapTransform(ConfigFile* cf, int section)
                         PLAYER_MAP_CODE, -1,NULL) != 0)
   {
     PLAYER_ERROR("must specify source map");
-    return;  	
+    return;
   }
-	
+
   this->source_data = this->new_data = NULL;
 }
 
@@ -96,7 +96,7 @@ MapTransform::GetMap()
 
   // copy in the map info
   source_map = *(player_map_info_t*)msg->GetPayload();
-  
+
   delete msg;
 
   // allocate space for map cells
@@ -155,7 +155,7 @@ MapTransform::GetMap()
     {
       for(i=0;i<si;i++)
       {
-        source_data[MAP_IDX(source_map,oi+i,oj+j)] = 
+        source_data[MAP_IDX(source_map,oi+i,oj+j)] =
                 mapcells->data[j*si + i];
 //        mapdata[MAP_IDX(source_map,oi+i,oj+j)].occ_dist = 0;
       }
@@ -199,15 +199,14 @@ int MapTransform::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, 
   PLAYER_MSG0(9,"ProcessMessage called for MapTransform Driver");
 
   assert(hdr);
-  assert(data);
- 
+
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_MAP_REQ_GET_INFO, device_addr))
   {
     PLAYER_MSG0(9,"ProcessMessage called for MapTransform Driver: PLAYER_MAP_REQ_GET_INFO");
   	Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_MAP_REQ_GET_INFO, &new_map, sizeof(new_map), NULL);
   	return 0;
   }
-  
+
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_MAP_REQ_GET_DATA, device_addr))
   {
     PLAYER_MSG0(9,"ProcessMessage called for MapTransform Driver: PLAYER_MAP_REQ_GET_DATA");

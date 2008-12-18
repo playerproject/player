@@ -105,8 +105,8 @@ class SR3000:public Driver
     int Shutdown ();
 
     // MessageHandler
-    virtual int ProcessMessage (QueuePointer &resp_queue, 
-                                player_msghdr * hdr, 
+    virtual int ProcessMessage (QueuePointer &resp_queue,
+                                player_msghdr * hdr,
                                 void * data);
 
   private:
@@ -166,12 +166,12 @@ void
 // pre-Setup() setup.
 SR3000::SR3000 (ConfigFile* cf, int section)
 	: Driver (cf, section),
-	auto_illumination ("auto_illumination", 0, 0), 
-	integration_time ("integration_time", 0, 0), 
+	auto_illumination ("auto_illumination", 0, 0),
+	integration_time ("integration_time", 0, 0),
 	modulation_freq ("modulation_freq", 0, 0),
-	sat_threshold ("sat_threshold", 0, 0), 
-	amp_threshold ("amp_threshold", 0, 0), 
-	static_delay ("static_delay", 0, 0), 
+	sat_threshold ("sat_threshold", 0, 0),
+	amp_threshold ("amp_threshold", 0, 0),
+	static_delay ("static_delay", 0, 0),
 	dynamic_delay ("dynamic_delay", 0, 0)
 {
   memset (&this->pcloud_addr, 0, sizeof (player_devaddr_t));
@@ -301,7 +301,7 @@ int
 ////////////////////////////////////////////////////////////////////////////////
 // Process messages from/for a camera interface
 int
-    SR3000::ProcessMessageCamera (QueuePointer &resp_queue, 
+    SR3000::ProcessMessageCamera (QueuePointer &resp_queue,
                                   player_msghdr * hdr,
                                   void * data,
                                   player_devaddr_t cam_addr)
@@ -482,12 +482,11 @@ int
 
 ////////////////////////////////////////////////////////////////////////////////
 // ProcessMessage
-int SR3000::ProcessMessage (QueuePointer &resp_queue, 
+int SR3000::ProcessMessage (QueuePointer &resp_queue,
                             player_msghdr * hdr,
                             void * data)
 {
   assert (hdr);
-  assert (data);
 
   ProcessMessageCamera (resp_queue, hdr, data, d_cam_addr);
   ProcessMessageCamera (resp_queue, hdr, data, i_cam_addr);
@@ -550,7 +549,7 @@ void SR3000::RefreshData ()
     }
     // Write the Pointcloud3d data
     Publish (pcloud_addr, PLAYER_MSGTYPE_DATA, PLAYER_POINTCLOUD3D_DATA_STATE,
-             &pcloud_data, 4 + pcloud_data.points_count*sizeof (player_pointcloud3d_element_t), 
+             &pcloud_data, 4 + pcloud_data.points_count*sizeof (player_pointcloud3d_element_t),
              NULL);
     delete [] pcloud_data.points;
 

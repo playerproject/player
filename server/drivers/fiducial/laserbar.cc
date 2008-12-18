@@ -36,7 +36,7 @@
 /** @{ */
 /** @defgroup driver_laserbar laserbar
  * @brief Laser bar detector.
- 
+
 The laser bar detector searches for retro-reflective targets in the
 laser range finder data.  Targets can be either planar or cylindrical,
 as shown below. For planar targets, the range, bearing and orientation
@@ -48,7 +48,7 @@ The range at which targets can be detected is dependant on the target
 size, the angular resolution of the laser and the quality of the
 retro-reflective material used on the target.
 
-See also the @ref driver_laserbarcode and 
+See also the @ref driver_laserbarcode and
 @ref driver_laservisualbarcode drivers.
 
 @image html laservisualbeacon.jpg "A sample laser bar (ignore the colored bands)"
@@ -126,7 +126,7 @@ class LaserBar : public Driver
   public: virtual int Setup();
   public: virtual int Shutdown();
 
-  // Process incoming messages from clients 
+  // Process incoming messages from clients
   int ProcessMessage(QueuePointer &resp_queue, player_msghdr *hdr, void *data);
 
   // Main function for device thread.
@@ -136,7 +136,7 @@ class LaserBar : public Driver
   /*public: virtual size_t GetData(player_device_id_t id,
                                  void* dest, size_t len,
                                  struct timeval* timestamp);
-  public: virtual int PutConfig(player_device_id_t id, void *client, 
+  public: virtual int PutConfig(player_device_id_t id, void *client,
                                 void *src, size_t len,
                                 struct timeval* timestamp);*/
 
@@ -159,7 +159,7 @@ class LaserBar : public Driver
   // Add a item into the fiducial list.
   private: void Add(double pr, double pb, double po,
                     double ur, double ub, double uo);
-  
+
   // Pointer to laser to get data from.
   private:
   Device *laser_device;
@@ -168,7 +168,7 @@ class LaserBar : public Driver
   // Reflector properties.
   private: double reflector_width;
   private: double reflector_tol;
-  
+
   // Local copy of the current laser data.
   private: player_laser_data_t ldata;
 
@@ -196,14 +196,14 @@ void LaserBar_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 LaserBar::LaserBar( ConfigFile* cf, int section)
-  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_FIDUCIAL_CODE) 
+  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_FIDUCIAL_CODE)
 {
 
   // Must have an input laser
   if (cf->ReadDeviceAddr(&this->laser_addr, section, "requires",
                        PLAYER_LASER_CODE, -1, NULL) != 0)
   {
-    this->SetError(-1);    
+    this->SetError(-1);
     return;
   }
 
@@ -232,7 +232,7 @@ int LaserBar::Setup()
     PLAYER_ERROR("unable to subscribe to laser device");
     return -1;
   }
-    
+
   // Subscribe to the laser device, but fail if it fails
 /*  if (BaseClient->Subscribe(this->laser_id) != 0)
   {
@@ -258,7 +258,7 @@ int LaserBar::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
-void LaserBar::Main() 
+void LaserBar::Main()
 {
   while (true)
   {
@@ -284,10 +284,9 @@ void LaserBar::Main()
 int LaserBar::ProcessMessage(QueuePointer &resp_queue, player_msghdr *hdr, void *data)
 {
 
-  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 
+  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA,
                             PLAYER_LASER_DATA_SCAN, this->laser_addr))
   {
-  	//assert(hdr->size == sizeof(player_laser_data_t));
   	player_laser_data_t *laser_data = reinterpret_cast<player_laser_data_t * > (data);
 
   	this->Lock();
@@ -313,14 +312,14 @@ int LaserBar::ProcessMessage(QueuePointer &resp_queue, player_msghdr *hdr, void 
 
     printf("Count[%d]\n",this->fdata.fiducials_count);
 
-    this->Publish(this->device_addr, 
-                  PLAYER_MSGTYPE_DATA, PLAYER_FIDUCIAL_DATA_SCAN, 
+    this->Publish(this->device_addr,
+                  PLAYER_MSGTYPE_DATA, PLAYER_FIDUCIAL_DATA_SCAN,
                   reinterpret_cast<void*>(&this->fdata),0, &hdr->timestamp);
 
   	return 0;
   }
- 
-  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
+
+  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
                             PLAYER_FIDUCIAL_REQ_GET_GEOM, this->device_addr))
   {
     Message *msg;
@@ -345,8 +344,8 @@ int LaserBar::ProcessMessage(QueuePointer &resp_queue, player_msghdr *hdr, void 
 
     delete msg;
 
-    this->Publish(this->device_addr, resp_queue, 
-                  PLAYER_MSGTYPE_RESP_ACK, PLAYER_FIDUCIAL_REQ_GET_GEOM, 
+    this->Publish(this->device_addr, resp_queue,
+                  PLAYER_MSGTYPE_RESP_ACK, PLAYER_FIDUCIAL_REQ_GET_GEOM,
                   (void*)&fgeom);
 
     return 0;
@@ -369,14 +368,14 @@ void LaserBar::Find()
 
   // Empty the fiducial list.
   this->fdata.fiducials_count = 0;
-  
+
   // Initialise patch statistics.
   mn = 0.0;
   mr = 0.0;
   mb = 0.0;
   mrr = 0.0;
   mbb = 0.0;
-    
+
   // Look for a candidate patch in scan.
   for (i = 0; i < this->ldata.ranges_count; i++)
   {
@@ -402,7 +401,7 @@ void LaserBar::Find()
       mb /= mn;
       mrr = mrr / mn - mr * mr;
       mbb = mbb / mn - mb * mb;
-      
+
       // Apply tests to see if this is a sensible looking patch.
       if (this->TestMoments(mn, mr, mb, mrr, mbb))
       {
@@ -412,7 +411,7 @@ void LaserBar::Find()
         // Fill in the fiducial data structure.
         this->Add(pr, pb, po, ur, ub, uo);
       }
-      
+
       mn = 0.0;
       mr = 0.0;
       mb = 0.0;
@@ -429,7 +428,7 @@ void LaserBar::Find()
 bool LaserBar::TestMoments(double mn, double mr, double mb, double mrr, double mbb)
 {
   double dr, db;
-  
+
   //printf("Testing moments %.0f %f %f %f %f\n", mn, mr, mb, mrr, mbb);
 
   if (mn < 2.0)
@@ -442,7 +441,7 @@ bool LaserBar::TestMoments(double mn, double mr, double mb, double mrr, double m
     return false;
   if (mbb > db * db)
     return false;
-  
+
   return true;
 }
 
@@ -482,10 +481,10 @@ void LaserBar::FitCircle(int first, int last,
   *po = 0.0;
 
   // TODO: put in proper uncertainty estimates.
-  *ur = 0.02;  
+  *ur = 0.02;
   *ub = this->ldata.resolution;
   *uo = 1e6;
-  
+
   return;
 }
 
@@ -503,7 +502,7 @@ void LaserBar::Add(double pr, double pb, double po,
     this->fdata_allocated = this->fdata.fiducials_count;
     this->fdata.fiducials = (player_fiducial_item_t*)realloc(this->fdata.fiducials, sizeof(this->fdata.fiducials[0])*this->fdata_allocated);
   }
-  fiducial = &this->fdata.fiducials[fdata.fiducials_count-1]; 
+  fiducial = &this->fdata.fiducials[fdata.fiducials_count-1];
   fiducial->id = (int16_t) -1;
 
   fiducial->pose.px = pr * cos(pb);

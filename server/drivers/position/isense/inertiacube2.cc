@@ -140,7 +140,7 @@ class InertiaCube2 : public Driver
   // Main function for device thread.
   private: virtual void Main();
 
-  // Process incoming messages from clients 
+  // Process incoming messages from clients
   int ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data);
 
   // Update the InertiaCube.
@@ -454,7 +454,6 @@ void InertiaCube2::Main()
 int InertiaCube2::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data)
 {
   assert(hdr);
-  assert(data);
 
   if(Message::MatchMessage (hdr, PLAYER_MSGTYPE_DATA , PLAYER_POSITION2D_DATA_STATE, position_id))
   {

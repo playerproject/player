@@ -28,7 +28,7 @@
 /** @defgroup driver_rcore_xbridge rcore_xbridge
  * @brief TeCo Particle Router Core (XBridge) sensor node
 
-The rcore_xbridge driver controls the TeCo Particle Router Core sensor node, 
+The rcore_xbridge driver controls the TeCo Particle Router Core sensor node,
 using the XBridge. The SSimp Full board is supported.
 
 @par Compile-time dependencies
@@ -76,11 +76,11 @@ using the XBridge. The SSimp Full board is supported.
 
 - readppacket (integer)
   - Default: 8.
-  - How many readings does the Particle send in one packet? (using multiple readings 
-    per packet, will increase the sample rate). Note: Use 0 as a special value for 
+  - How many readings does the Particle send in one packet? (using multiple readings
+    per packet, will increase the sample rate). Note: Use 0 as a special value for
     enabling the standard TeCo SSIMP mode (multiple tuples).
 
-@par Example 
+@par Example
 
 @verbatim
 driver
@@ -145,7 +145,7 @@ class RCore_XBridge : public Driver
         int Shutdown ();
 
         // This method will be invoked on each incoming message
-        virtual int ProcessMessage (QueuePointer &resp_queue, 
+        virtual int ProcessMessage (QueuePointer &resp_queue,
                                     player_msghdr * hdr,
                                     void * data);
     private:
@@ -159,7 +159,7 @@ class RCore_XBridge : public Driver
 
         // Does the user want RAW or converted values?
         int               raw_or_converted;
-	
+
 	// How many readings per packet does the sensor node sends ?
 	int               readppacket;
 
@@ -197,7 +197,7 @@ Driver* RCore_XBridge_Init (ConfigFile* cf, int section)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-//Registers the driver in the driver table. Called from the 
+//Registers the driver in the driver table. Called from the
 // player_driver_init function that the loader looks for
 void RCore_XBridge_Register (DriverTable* table)
 {
@@ -208,15 +208,15 @@ void RCore_XBridge_Register (DriverTable* table)
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 RCore_XBridge::RCore_XBridge (ConfigFile* cf, int section)
-	: Driver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, 
+	: Driver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
               PLAYER_WSN_CODE)
 {
     int i = 0;
     int j = 0;
-	
+
     port_number = cf->ReadInt (section, "port", DEFAULT_XBRIDGE_PORT);
     nodes_count = cf->ReadInt (section, "nodes", 0);
-	
+
     for (i = 0; i < nodes_count; i++)
     {
     	char node_nr[7];
@@ -234,7 +234,7 @@ RCore_XBridge::RCore_XBridge (ConfigFile* cf, int section)
 
     // How many readings per packet does the sensor node sends ?
     readppacket = cf->ReadInt (section, "readppacket", 8);
-    
+
     return;
 }
 
@@ -274,20 +274,20 @@ int RCore_XBridge::Shutdown ()
 
     // Close the Particle socket
     p_socket_close (sockd);
-	
+
     PLAYER_MSG0 (1, "> RCore_XBridge driver shutting down... [done]");
     return (0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
-void RCore_XBridge::Main () 
+void RCore_XBridge::Main ()
 {
     // Zero data
     memset (&data, 0, sizeof (player_wsn_data_t));
-	
+
     timespec sleepTime = {0, 0};
-	
+
     // The main loop; interact with the device here
     while (true)
     {
@@ -305,39 +305,36 @@ void RCore_XBridge::Main ()
 
 ////////////////////////////////////////////////////////////////////////////////
 // ProcessMessage function
-int RCore_XBridge::ProcessMessage (QueuePointer &resp_queue, 
+int RCore_XBridge::ProcessMessage (QueuePointer &resp_queue,
                            player_msghdr * hdr,
                            void * data)
-{	
-    assert (hdr);
-    assert (data);
-	
-    if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, 
+{
+    if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ,
         PLAYER_WSN_REQ_POWER, device_addr))
     {
         return 0;
     }
-    else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, 
+    else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ,
              PLAYER_WSN_REQ_DATATYPE, device_addr))
     {
 	// Change the data type to RAW or converted metric units
-        player_wsn_datatype_config *datatype = 
+        player_wsn_datatype_config *datatype =
                 (player_wsn_datatype_config*)data;
 	unsigned int val = datatype->value;
-	
+
         if ((val >= 0) && (val < 3))
         {
             raw_or_converted = val;
-            Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, 
+            Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK,
                      hdr->subtype);
         }
         else
-            Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, 
+            Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK,
                      hdr->subtype);
 
         return 0;
     }
-    else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, 
+    else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ,
              PLAYER_WSN_REQ_DATAFREQ, device_addr))
     {
         return 0;
@@ -346,7 +343,7 @@ int RCore_XBridge::ProcessMessage (QueuePointer &resp_queue,
     {
         return -1;
     }
-	
+
     return 0;
 }
 
@@ -355,12 +352,12 @@ int RCore_XBridge::ProcessMessage (QueuePointer &resp_queue,
 void RCore_XBridge::RefreshData ()
 {
     memset (&data, 0, sizeof (player_wsn_data_t));
-	
+
     // Get the time at which we started reading
     // This will be a pretty good estimate of when the phenomena occured
     struct timeval time;
     GlobalTime->GetTime(&time);
-	
+
     // Get the TCP packet
     packet = p_socket_recv (sockd, sockd);
     if (packet == NULL)
@@ -396,7 +393,7 @@ player_wsn_data_t RCore_XBridge::DecodePacket (struct p_packet *pkt)
     uint8_t *acl_data;
     const uint8_t *acl_type;
     uint16_t acl_len;
-    
+
     char gid[12];
     char nid[12];
     sprintf (gid, "%d%d%d%d", srcid[0], srcid[1], srcid[2], srcid[3] );
@@ -420,13 +417,13 @@ player_wsn_data_t RCore_XBridge::DecodePacket (struct p_packet *pkt)
     temp_data.data_packet.magn_z      = -1;
     temp_data.data_packet.temperature = -1;
     temp_data.data_packet.battery     = -1;
-    
+
     // Parse all the tuples
     for (tuple = p_acl_first (pkt); tuple != NULL; tuple = p_acl_next (pkt, tuple))
     {
       acl_type = p_acl_get_type (tuple);
       acl_len  = p_acl_get_data (tuple, &acl_data);
-      
+
       if (readppacket == 0)	// Assume normal, standard SSIMP mode
       {
         if ((acl_type[0] == 234) && (acl_type[1] == 128))	// SGX
@@ -466,13 +463,13 @@ player_wsn_data_t RCore_XBridge::DecodePacket (struct p_packet *pkt)
 	    if (raw_or_converted != 0)
     	    {
 		node_values = FindNodeValues (temp_data.node_id);
-    		temp_data.data_packet.accel_x = ConvertAccel (accelX[i], 
-        	    node_values.c_values[0], node_values.c_values[1], 
+    		temp_data.data_packet.accel_x = ConvertAccel (accelX[i],
+        	    node_values.c_values[0], node_values.c_values[1],
             	    raw_or_converted);
-        	temp_data.data_packet.accel_y = ConvertAccel (accelY[i], 
+        	temp_data.data_packet.accel_y = ConvertAccel (accelY[i],
 	            node_values.c_values[2], node_values.c_values[3],
     	            raw_or_converted);
-		temp_data.data_packet.accel_z = ConvertAccel (accelZ[i], 
+		temp_data.data_packet.accel_z = ConvertAccel (accelZ[i],
         	    node_values.c_values[4], node_values.c_values[5],
             	    raw_or_converted);
 	    }
@@ -482,7 +479,7 @@ player_wsn_data_t RCore_XBridge::DecodePacket (struct p_packet *pkt)
     		temp_data.data_packet.accel_y = accelY[i];
         	temp_data.data_packet.accel_z = accelZ[i];
     	    }
-    
+
 	    // Publish the WSN data (each packet goes separately)
 	    Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_WSN_DATA_STATE,
 	         &temp_data, sizeof (player_wsn_data_t), NULL);
@@ -496,30 +493,30 @@ player_wsn_data_t RCore_XBridge::DecodePacket (struct p_packet *pkt)
 NodeCalibrationValues RCore_XBridge::FindNodeValues (unsigned int nodeID)
 {
     NodeCalibrationValues n;
-	
+
     unsigned int i = 0;
-	
+
     for (i = 0; i < ncv.size (); i++)
     {
         n = ncv.at (i);
-	
+
         if (n.node_id == nodeID)
             break;
     }
-	
+
     return n;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // ConvertAccel function - convert RAW accel. data to metric units (m/s^2)
-float RCore_XBridge::ConvertAccel (unsigned short raw_accel, 
+float RCore_XBridge::ConvertAccel (unsigned short raw_accel,
                                    int neg_1g, int pos_1g, int converted)
 {
     if (neg_1g == 0)
 	neg_1g = 450;
     if (pos_1g == 0)
 	pos_1g = 550;
-	
+
     float sensitivity  = (pos_1g - neg_1g) / 2.0f;
     float offset       = (pos_1g + neg_1g) / 2.0f;
     float acceleration = (raw_accel - offset) / sensitivity;
