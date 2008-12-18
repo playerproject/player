@@ -124,7 +124,7 @@ int ImageBase::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, vo
 
   if(Message::MatchMessage (hdr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, camera_addr))
   {
-	assert(compdata);
+	assert(data);
 	player_camera_data_t * compdata = reinterpret_cast<player_camera_data_t *>(data);
   	Lock();
   	if (!HaveData)
