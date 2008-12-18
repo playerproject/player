@@ -249,7 +249,6 @@ int PlayerNIMU::ProcessMessage (QueuePointer &resp_queue,
 							 void * data)
 {
 	assert (hdr);
-	assert (data);
 
 	return -1;
 }

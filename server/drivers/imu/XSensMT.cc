@@ -278,7 +278,6 @@ int XSensMT::ProcessMessage (QueuePointer &resp_queue,
                              void * data)
 {
     assert (hdr);
-    assert (data);
 
     // this holds possible error messages returned by mtcomm.writeMessage
     int err;

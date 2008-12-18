@@ -1157,7 +1157,6 @@ int Camera1394::ProcessMessage(QueuePointer & resp_queue,
                               void * data)
 {
   assert(hdr);
-  assert(data);
 
   /* We currently don't support any messages, but if we do...
   if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,

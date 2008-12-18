@@ -999,7 +999,6 @@ AmtecPowerCube::SetTiltVel(short tiltspeed)
 int AmtecPowerCube::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, void * data)
 {
   assert(hdr);
-  assert(data);
 
 	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_PTZ_CMD_STATE, device_addr))
 	{

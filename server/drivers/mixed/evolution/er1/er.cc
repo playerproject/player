@@ -790,7 +790,6 @@ int ER::ProcessMessage(QueuePointer & resp_queue,
                       void * data)
 {
   assert(hdr);
-  assert(data);
 
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_GET_GEOM, position_id))
   {

@@ -391,7 +391,6 @@ int
                               void* data)
 {
   assert (hdr);
-//  assert (data);
 
   // ---[ Get geometry
   if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ,

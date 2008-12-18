@@ -274,9 +274,6 @@ LinuxWiFi::Shutdown()
 
 int LinuxWiFi::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, void * data)
 {
-	assert(hdr);
-	assert(data);
-
 	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_WIFI_REQ_MAC, device_addr))
 	{
 		player_wifi_mac_req_t req;

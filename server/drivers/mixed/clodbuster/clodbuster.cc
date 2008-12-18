@@ -255,7 +255,6 @@ int ClodBuster::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, v
 {
 
   assert(hdr);
-  assert(data);
 
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_SET_ODOM, device_addr))
   {

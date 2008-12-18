@@ -1,6 +1,6 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2004  Brian Gerkey gerkey@stanford.edu    
+ *  Copyright (C) 2004  Brian Gerkey gerkey@stanford.edu
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -57,7 +57,7 @@
   - Default: ""
   - Do not draw feature with that name on final grid map
 
-@par Example 
+@par Example
 
 @verbatim
 driver
@@ -103,7 +103,7 @@ using namespace std;
 
 class Vec2Map : public Driver
 {
-  public:    
+  public:
     // Constructor; need that
     Vec2Map(ConfigFile * cf, int section);
 
@@ -114,7 +114,7 @@ class Vec2Map : public Driver
     virtual int Shutdown();
 
     // This method will be invoked on each incoming message
-    virtual int ProcessMessage(QueuePointer & resp_queue, 
+    virtual int ProcessMessage(QueuePointer & resp_queue,
                                player_msghdr * hdr,
                                void * data);
 
@@ -223,7 +223,7 @@ Vec2Map::~Vec2Map()
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
 int Vec2Map::Setup()
-{  
+{
   // Retrieve the handle to the vectormap device.
   this->vectormap_dev = deviceTable->GetDevice(this->vectormap_addr);
   if (!(this->vectormap_dev))
@@ -251,7 +251,7 @@ int Vec2Map::Shutdown()
 {
   // Stop and join the driver thread
   StopThread();
-    
+
   // Unsubscribe from the vectormap
   this->vectormap_dev->Unsubscribe(this->InQueue);
 
@@ -260,7 +260,7 @@ int Vec2Map::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
-void Vec2Map::Main() 
+void Vec2Map::Main()
 {
   struct timespec tspec;
 
@@ -271,7 +271,7 @@ void Vec2Map::Main()
     this->InQueue->Wait();
 
     pthread_testcancel();
-    
+
     // Process incoming messages
     ProcessMessages();
 
@@ -411,10 +411,10 @@ void Vec2Map::line(int a, int b, int c, int d, int8_t * cells, int width, int he
 	if (over(static_cast<int>(x), 0, width)) break;
 	if (over(static_cast<int>(y), 0, height)) break;
 	cells[(static_cast<int>(y) * width) + (static_cast<int>(x))] = 1;
-    } 
+    }
 }
 
-int Vec2Map::ProcessMessage(QueuePointer & resp_queue, 
+int Vec2Map::ProcessMessage(QueuePointer & resp_queue,
                             player_msghdr * hdr,
                             void * data)
 {
@@ -768,7 +768,7 @@ Driver * Vec2Map_Init(ConfigFile * cf, int section)
 // that it can be invoked without object context.  In this function, we add
 // the driver into the given driver table, indicating which interface the
 // driver can support and how to create a driver instance.
-void Vec2Map_Register(DriverTable * table)
+void vec2map_Register(DriverTable * table)
 {
   table->AddDriver("vec2map", Vec2Map_Init);
 }

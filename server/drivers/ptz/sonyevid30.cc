@@ -1377,7 +1377,6 @@ int SonyEVID30::ProcessMessage(QueuePointer &resp_queue,
 							   player_msghdr * hdr, void *data)
 {
   assert(hdr);
-  assert(data);
 
 	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
 							PLAYER_PTZ_REQ_GENERIC, device_addr)) {

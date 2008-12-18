@@ -7,7 +7,7 @@ This driver implements the metric-based ICP scan-matching algorithm.
 
 J. Minguez, L. Montesano, and F. Lamiraux, "Metric-based iterative
 closest point scan matching for sensor displacement estimation," IEEE
-Transactions on Robotics, vol. 22, no. 5, pp. 1047 \u2013 1054, 2006. 
+Transactions on Robotics, vol. 22, no. 5, pp. 1047 \u2013 1054, 2006.
 
 @par Compile-time dependencies
 
@@ -20,7 +20,7 @@ Transactions on Robotics, vol. 22, no. 5, pp. 1047 \u2013 1054, 2006.
 @par Requires
 
 - @ref interface_position2d : source of pose and velocity information
-- @ref interface_laser : Pose-stamped laser scans (subtype 
+- @ref interface_laser : Pose-stamped laser scans (subtype
 PLAYER_LASER_DATA_SCANPOSE)
 
 @par Configuration requests
@@ -30,111 +30,111 @@ PLAYER_LASER_DATA_SCANPOSE)
 @par Configuration file options
 
 - max_laser_range (float)
-  - Default: 7.9 m    
+  - Default: 7.9 m
   - Maximum laser range.
 
 - laserPose_x (float)
-  - Default: 0.16 m    
+  - Default: 0.16 m
   - Offset of the laser on the edge x (in the robot's system of reference).
 
 - laserPose_y (float)
-  - Default: 0.0 m    
+  - Default: 0.0 m
   - Offset of the laser on the edge y (in the robot's system of reference).
-  
+
 - laserPose_th (float)
-  - Default: 0.0 rad    
+  - Default: 0.0 rad
   - Offset of the laser on th (in the robot's system of reference).
 
 - radial_window	(float)
-  - Default: 0.3 m    
-  - Maximum distance difference between points of different scans. Points 
+  - Default: 0.3 m
+  - Maximum distance difference between points of different scans. Points
     with greater Br cannot be correspondent (eliminate spurius asoc.).
- 
+
 - angular_window (float)
   - Default: 0.523333333 rad
-  - Maximum angle diference between points of different scans. Points 
-    with greater Bw cannot be correspondent (eliminate spurius asoc.). 
-  
+  - Maximum angle diference between points of different scans. Points
+    with greater Bw cannot be correspondent (eliminate spurius asoc.).
+
 - L (float)
-  - Default: 3.00   
-  - Value of the metric. When L tends to infinity you are using the 
-    standart ICP. When L tends to 0 you use the metric (more importance 
+  - Default: 3.00
+  - Value of the metric. When L tends to infinity you are using the
+    standart ICP. When L tends to 0 you use the metric (more importance
     to rotation), when L tends to infinity you are using Euclidian metric.
 
 - laserStep (integer)
-  - Default: 1   
+  - Default: 1
   - Selects points of each scan with an step laserStep.
     When laserStep=1 uses all the points of the scans
-    When laserStep=2 uses one each two ... 
-    This is an speed up parameter. 
-    
+    When laserStep=2 uses one each two ...
+    This is an speed up parameter.
+
 - MaxDistInter (float)
-  - Default: 0.5 m   
-  - Maximum distance to interpolate between points in the ref scan. Consecutive 
-    points with less Euclidean distance than MaxDistInter are considered 
+  - Default: 0.5 m
+  - Maximum distance to interpolate between points in the ref scan. Consecutive
+    points with less Euclidean distance than MaxDistInter are considered
     to be a segment.
 
 - filter (float)
-  - Default: 0.95   
-  - In [0,1] sets the % of asociations NOT considered spurious. E.g. if 
-    filter=0.9 you use 90% of the associations. The associations 
-    are ordered by distance and the (1-filter) with greater distance 
+  - Default: 0.95
+  - In [0,1] sets the % of asociations NOT considered spurious. E.g. if
+    filter=0.9 you use 90% of the associations. The associations
+    are ordered by distance and the (1-filter) with greater distance
     are not used. This type of filtering is called "trimmed-ICP".
-    
+
 - ProjectionFilter (int)
-  - Default: 1   
-  - Eliminate the points that cannot be seen given the two scans 
-    (see Lu&Millios 97). It works well for angles < 45 deg. 
+  - Default: 1
+  - Eliminate the points that cannot be seen given the two scans
+    (see Lu&Millios 97). It works well for angles < 45 deg.
     1 : activates the filter.
     0 : desactivates the filter.
 
 - AsocError (float)
-  - Default: 0.1   
+  - Default: 0.1
   - In [0,1]. Sets the % of minimun associations to run the algorithm.
-    One way to check if the algorithm diverges is to supervise 
-    if the number of associatios goes below a thresold. When the number 
+    One way to check if the algorithm diverges is to supervise
+    if the number of associatios goes below a thresold. When the number
     of associations is below AsocError, the main function will return
     error in associations step.
- 
+
 - MaxIter (int)
-  - Default: 50   
-  - Sets the maximum number of iterations for the algorithm to exit. The 
+  - Default: 50
+  - Sets the maximum number of iterations for the algorithm to exit. The
     more iterations, the more chance you give the algorithm to be more accurate.
 
 - errorRatio (float)
   - Default: 0.0001 m
-  - In [0,1] sets the maximum error ratio between iterations to exit. In 
-    iteration K, let be errorK the residual of the minimization. 
-    Error_th=(errorK-1/errorK). When error_th tends to 1 more precise is 
+  - In [0,1] sets the maximum error ratio between iterations to exit. In
+    iteration K, let be errorK the residual of the minimization.
+    Error_th=(errorK-1/errorK). When error_th tends to 1 more precise is
     the solution of the scan matching.
 
 - IterSmoothConv (int)
-  - Default: 2   
-  - Number of consecutive iterations that satisfity the error criteria 
+  - Default: 2
+  - Number of consecutive iterations that satisfity the error criteria
     (the two above criteria) (error_th) OR (errorx_out && errory_out && errt_out).
-    With this parameter >1 avoids random solutions and estabilices the algorithm. 
+    With this parameter >1 avoids random solutions and estabilices the algorithm.
 
 - errx_out (float)
-  - Default: 0.0001 m   
-  - Minimum error in x of the asociations to exit. In each iteration, the error 
-    is the residual of the minimization in each component. The condition is 
-    (errorKx<errx_out && errorKx<erry_out && errorKx<errt_out). When errorK 
+  - Default: 0.0001 m
+  - Minimum error in x of the asociations to exit. In each iteration, the error
+    is the residual of the minimization in each component. The condition is
+    (errorKx<errx_out && errorKx<erry_out && errorKx<errt_out). When errorK
     tends to 0 the more precise is the solution of the scan matching
-    
+
 - erry_out (float)
-  - Default: 0.0001 m   
-  - Minimum error in x of the asociations to exit. In each iteration, the error 
-    is the residual of the minimization in each component. The condition is 
-    (errorKx<errx_out && errorKx<erry_out && errorKx<errt_out). When errorK 
+  - Default: 0.0001 m
+  - Minimum error in x of the asociations to exit. In each iteration, the error
+    is the residual of the minimization in each component. The condition is
+    (errorKx<errx_out && errorKx<erry_out && errorKx<errt_out). When errorK
     tends to 0 the more precise is the solution of the scan matching
 
 - errt_out (float)
-  - Default: 0.0001 m   
-  - Minimum error in x of the asociations to exit. In each iteration, the error 
-    is the residual of the minimization in each component. The condition is 
-    (errorKx<errx_out && errorKx<erry_out && errorKx<errt_out). When errorK 
+  - Default: 0.0001 m
+  - Minimum error in x of the asociations to exit. In each iteration, the error
+    is the residual of the minimization in each component. The condition is
+    (errorKx<errx_out && errorKx<erry_out && errorKx<errt_out). When errorK
     tends to 0 the more precise is the solution of the scan matching
-    
+
 @par Example
 
 @verbatim
@@ -148,23 +148,23 @@ driver
   laserPose_x			0.16
   laserPose_y			0
   laserPose_th			0
-  
-  radial_window  	       	0.3    
-  angular_window 	       	0.523333333	
-  
-  L		       		3.00    
-  laserStep	       		1       
-  MaxDistInter	       		0.5     
-  filter 	       		0.95    
-  ProjectionFilter	       	1       
-  AsocError	      		0.1     
-  MaxIter	       		50      
-  
-  errorRatio	       		0.0001  
-  errx_out	       		0.0001  
-  erry_out	       		0.0001  
-  errt_out	       		0.0001  
-  IterSmoothConv 	       	2       
+
+  radial_window  	       	0.3
+  angular_window 	       	0.523333333
+
+  L		       		3.00
+  laserStep	       		1
+  MaxDistInter	       		0.5
+  filter 	       		0.95
+  ProjectionFilter	       	1
+  AsocError	      		0.1
+  MaxIter	       		50
+
+  errorRatio	       		0.0001
+  errx_out	       		0.0001
+  erry_out	       		0.0001
+  errt_out	       		0.0001
+  IterSmoothConv 	       	2
 )
 
 @endverbatim
@@ -185,7 +185,7 @@ class mbicp : public Driver
 {
 
 public:
-    
+
     mbicp( ConfigFile* cf, int section);
     virtual ~mbicp();
 
@@ -213,7 +213,7 @@ private:
 	float	errt_out;
 	int	IterSmoothConv;
  	Tsc	laserPoseTsc;
- 
+
 	player_pose2d_t		lastPoseOdom,
 				currentPose,
     				previousPose,
@@ -221,7 +221,7 @@ private:
 
 	player_laser_data_t	currentScan,
     				previousScan;
-				
+
 	bool		havePrevious;
 
 	//Compute scanMatching
@@ -300,21 +300,21 @@ int mbicp::Setup(){
 ////////////////////////////////////////////////////////////////////////////////
 void mbicp::setupScanMatching(){
 
-Init_MbICP_ScanMatching( 
+Init_MbICP_ScanMatching(
 			this->max_laser_range,
-			this->Bw,	 
- 			this->Br,	 
-			this->L,	 
+			this->Bw,
+ 			this->Br,
+			this->L,
 			this->laserStep,
 			this->MaxDistInter,
-			this->filter,	 
+			this->filter,
 			this->ProjectionFilter,
 			this->AsocError,
-			this->MaxIter,  
+			this->MaxIter,
 			this->errorRatio,
-			this->errx_out, 
-			this->erry_out,  
-			this->errt_out,  
+			this->errx_out,
+			this->erry_out,
+			this->errt_out,
 			this->IterSmoothConv);
 }
 
@@ -420,7 +420,7 @@ int mbicp::ShutdownDevice(){
    cmd.vel.px = 0;
    cmd.vel.py = 0;
    cmd.vel.pa = 0;
- 
+
    odom->PutMsg(InQueue, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_VEL,
                 (void*)&cmd,sizeof(cmd),NULL);
 
@@ -436,7 +436,7 @@ void mbicp::Main(){
 	while (true){
       		// Wait till we get new data
       		Wait();
-      		
+
 		// Test if we are supposed to cancel this thread.
       		pthread_testcancel();
 
@@ -452,7 +452,6 @@ int mbicp::ProcessMessage(QueuePointer &resp_queue,player_msghdr * hdr, void * d
    	// PLAYER_LASER_DATA_SCANPOSE
    	if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA,PLAYER_LASER_DATA_SCANPOSE, laser_addr))
 	{
-      		assert(hdr->size == sizeof(player_laser_data_scanpose_t));
       		ProcessSubtypeLaser(hdr, *reinterpret_cast<player_laser_data_scanpose_t *> (data));
    	}else
 
@@ -469,7 +468,7 @@ int mbicp::ProcessMessage(QueuePointer &resp_queue,player_msghdr * hdr, void * d
       		player_msghdr_t newhdr = *hdr;
       		newhdr.addr = device_addr;
       		Publish(&newhdr, (void*)&data);
-   	}else 
+   	}else
 
    	if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD,/*PLAYER_POSITION2D_CMD_VEL*/ -1, device_addr))
 	{
@@ -479,7 +478,7 @@ int mbicp::ProcessMessage(QueuePointer &resp_queue,player_msghdr * hdr, void * d
       		newhdr.addr = odom_addr;
       		odom->PutMsg(InQueue, &newhdr, (void*)data);
    	}else
-	{ 
+	{
       		if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, -1, device_addr)){
 	        	// Pass the request on to the underlying position device and wait for
          		// the reply.
@@ -505,14 +504,14 @@ int mbicp::ProcessMessage(QueuePointer &resp_queue,player_msghdr * hdr, void * d
 void mbicp::ProcessOdom(player_msghdr_t* hdr,player_position2d_data_t &data)
 {
 
-	
+
 	Tsc	outComposicion1,
 		outComposicion2,
 		outInversion1;
-			
+
 	Tsc	lastPoseOdomTsc,
 		previousPoseTsc,
-		scanmatchingPoseTsc;		
+		scanmatchingPoseTsc;
 
 
 	lastPoseOdom.px = data.pos.px;
@@ -528,15 +527,15 @@ void mbicp::ProcessOdom(player_msghdr_t* hdr,player_position2d_data_t &data)
 		inversion_sis(&previousPoseTsc, &outInversion1);
 		composicion_sis(&outInversion1, &lastPoseOdomTsc, &outComposicion1);
 		composicion_sis(&scanmatchingPoseTsc, &outComposicion1, &outComposicion2);
-	
+
 
 		data.pos.px	= outComposicion2.x;
 		data.pos.py	= outComposicion2.y;
 		data.pos.pa	= outComposicion2.tita;
 
 
-	}	
-	
+	}
+
 	player_msghdr_t newhdr = *hdr;
    	newhdr.addr = device_addr;
    	Publish(&newhdr, (void*)&data);
@@ -552,20 +551,20 @@ void mbicp::ProcessSubtypeLaser(player_msghdr_t* hdr,player_laser_data_scanpose_
 
 	currentPose	= lastPoseOdom;
 
-	currentScan.min_angle		= data.scan.min_angle;		
-	currentScan.max_angle		= data.scan.max_angle;	
+	currentScan.min_angle		= data.scan.min_angle;
+	currentScan.max_angle		= data.scan.max_angle;
 	currentScan.resolution		= data.scan.resolution;
-	currentScan.max_range		= data.scan.max_range;	
+	currentScan.max_range		= data.scan.max_range;
 	currentScan.ranges_count	= data.scan.ranges_count;
-	currentScan.intensity_count	= data.scan.intensity_count;	
+	currentScan.intensity_count	= data.scan.intensity_count;
 	currentScan.id					= data.scan.id;
-	
+
 	for (unsigned int i=0; i < currentScan.ranges_count; i++){
 		currentScan.ranges[i] = data.scan.ranges[i];
 		currentScan.intensity[i] = data.scan.intensity[i];
 	}
 
-	if (havePrevious && (	currentPose.px != previousPose.px || 
+	if (havePrevious && (	currentPose.px != previousPose.px ||
 				currentPose.py != previousPose.py ||
 				currentPose.pa != previousPose.pa))
 	{
@@ -578,7 +577,7 @@ void mbicp::ProcessSubtypeLaser(player_msghdr_t* hdr,player_laser_data_scanpose_
 		previousPose		= currentPose;
 		scanmatchingPose	= currentPose;
 		havePrevious		= true;
-	}					
+	}
 }
 
 
@@ -589,7 +588,7 @@ void mbicp::compute()
 		currentPoseTsc,
 		scanmatchingPoseTsc,
 		solutionTsc;
-	
+
 	Tsc	outComposicion1,
 		outComposicion2,
 		outComposicion3,
@@ -598,12 +597,12 @@ void mbicp::compute()
 		outComposicion11,
 		outInversion1,
 		outInversion4;
-			
+
 	Tpfp	previousScanTpfp[LASER_MAX_SAMPLES],
 		currentScanTpfp[LASER_MAX_SAMPLES];
-			
-	int	salidaMbicp;		
-			
+
+	int	salidaMbicp;
+
 
 	currentPoseTsc		= playerPose2Tsc(currentPose);
 	previousPoseTsc 	= playerPose2Tsc(previousPose);
@@ -618,7 +617,7 @@ void mbicp::compute()
 	playerLaser2Tpfp(previousScan,previousScanTpfp);
 	playerLaser2Tpfp(currentScan,currentScanTpfp);
 
-	salidaMbicp = MbICPmatcher(previousScanTpfp,currentScanTpfp,&outComposicion3, &solutionTsc);	
+	salidaMbicp = MbICPmatcher(previousScanTpfp,currentScanTpfp,&outComposicion3, &solutionTsc);
 
 	if (salidaMbicp == 1){
 
@@ -635,7 +634,7 @@ void mbicp::compute()
 	else{
 
 		if (salidaMbicp == 2)
-			fprintf(stderr,"2 : Everything OK but reached the Maximum number of iterations\n");		
+			fprintf(stderr,"2 : Everything OK but reached the Maximum number of iterations\n");
 		else{
 			if (salidaMbicp == -1)
 				fprintf(stderr,"Failure in the association step\n");
@@ -663,7 +662,7 @@ void mbicp::compute()
 Tsc mbicp::playerPose2Tsc(player_pose2d_t posicion)
 {
 	Tsc	posicionTsc;
-	
+
 	posicionTsc.x = posicion.px;
   	posicionTsc.y = posicion.py;
   	posicionTsc.tita = posicion.pa;
@@ -675,7 +674,7 @@ Tsc mbicp::playerPose2Tsc(player_pose2d_t posicion)
 player_pose2d_t mbicp::Tsc2playerPose(Tsc posicion)
 {
 	player_pose2d_t	posicionPlayer;
-	
+
 	posicionPlayer.px = posicion.x;
   	posicionPlayer.py = posicion.y;
   	posicionPlayer.pa = posicion.tita;

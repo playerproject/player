@@ -474,9 +474,6 @@ int Mica2::ProcessMessage (QueuePointer & resp_queue,
 			   player_msghdr * hdr,
 			   void * data)
 {
-    assert (hdr);
-    assert (data);
-
     if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD,
 	PLAYER_WSN_CMD_DEVSTATE, wsn_addr))
     {

@@ -297,9 +297,6 @@ int Accel_Calib::ProcessMessage (QueuePointer &resp_queue,
     player_wsn_data_t  new_wsn_data;
     player_wsn_data_t* original_wsn_data;
 
-    assert (hdr);
-    assert (data);
-
     // Handle new data from the WSN device
     if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_DATA, PLAYER_WSN_DATA_STATE,
        wsn_addr))

@@ -124,8 +124,6 @@ void lifomcom_Register(DriverTable* t) {
 int LifoMCom::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len)
 {
   assert(hdr);
-  assert(data);
-  assert(resp_len);
   if (hdr->size < sizeof(player_mcom_config_t))
     return -1;
 

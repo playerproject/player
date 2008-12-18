@@ -309,7 +309,6 @@ int Cmucam2::ProcessMessage (QueuePointer & resp_queue,
 								void * data)
 {
 	assert(hdr);
-	assert(data);
 
 	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_PTZ_CMD_STATE, ptz_id))
 	{

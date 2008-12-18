@@ -198,10 +198,10 @@ int CameraUncompress::ProcessMessage(QueuePointer &resp_queue, player_msghdr * h
                                void * data)
 {
   assert(hdr);
-  assert(data);
 
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, camera_id))
   {
+	assert(data);
     if(hdr->size < sizeof(player_camera_data_t))
     {
       PLAYER_WARN("Not enough camera data recieved");

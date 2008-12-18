@@ -632,7 +632,6 @@ int
 PTU46_Device::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data)
 {
     assert (hdr);
-    assert (data);
 
     // No REQ_GENERIC
     if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_PTZ_REQ_GENERIC, device_addr))
