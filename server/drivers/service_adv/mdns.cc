@@ -111,7 +111,7 @@ driver
 
 #define MDNS_SERVICE_TYPE "_player2._tcp."
 
-class SrvAdv_MDNS : public  Driver {
+class SrvAdv_MDNS : public  ThreadedDriver {
   private:
     // MDNS objects
     sw_discovery howl_session;

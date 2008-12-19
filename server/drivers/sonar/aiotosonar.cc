@@ -79,7 +79,7 @@ driver
 (
   name "AioToSonar"
   provides ["sonar:0"]
-  requires ["aio:0"]  
+  requires ["aio:0"]
 
   # Sensor name, AIO Port and Pose (angles in degree) for each sensor
   # Name [port x y z roll pitch yaw]
@@ -103,19 +103,19 @@ driver
 using namespace std;
 
 
-class AioToSonar : public Driver
+class AioToSonar : public ThreadedDriver
 {
 public:
   AioToSonar(ConfigFile *cf, int section);
   virtual ~AioToSonar(void){}
 
-  virtual int Setup(void);
-  virtual int Shutdown(void);
+  virtual int MainSetup(void);
+  virtual void MainQuit(void);
 
   virtual void Main(void);
 
   virtual int ProcessMessage(QueuePointer &resp_queue,
-			     player_msghdr *hdr, 
+			     player_msghdr *hdr,
 			     void *data);
 
 
@@ -156,7 +156,7 @@ private:
 
 
 
-/** 
+/**
  * Factory function to create an object of this driver.
  *
  * This functionality is not object specific but class specific. It
@@ -173,7 +173,7 @@ Driver *AioToSonar_Init(ConfigFile *cf, int section)
 }
 
 
-/** 
+/**
  * Registers the driver with its initialisation function in the
  * driver table. Should be called once on start up.
  *
@@ -192,11 +192,11 @@ void AioToSonar_Register(DriverTable *table)
 
 
 
-/** 
- * Initialise the driver object by reading the configuration file. 
+/**
+ * Initialise the driver object by reading the configuration file.
  */
 AioToSonar::AioToSonar(ConfigFile *cf, int section)
-  : Driver(cf, 
+  : ThreadedDriver(cf,
 	   section,
 	   true,               // Do new commands overwrite old ones?
 	   PLAYER_MSGQUEUE_DEFAULT_MAXLEN, // Max length of the incomming queue
@@ -207,10 +207,10 @@ AioToSonar::AioToSonar(ConfigFile *cf, int section)
 
 
   /* Read the address of the AIO device to connect to */
-  if (cf->ReadDeviceAddr(&aioDevAddr, 
-			 section, 
-			 "requires", 
-			 PLAYER_AIO_CODE, 
+  if (cf->ReadDeviceAddr(&aioDevAddr,
+			 section,
+			 "requires",
+			 PLAYER_AIO_CODE,
 			 -1, NULL) != 0){
     PLAYER_ERROR("Could not read the address of the AIO device from the config file.");
   }
@@ -236,10 +236,10 @@ AioToSonar::AioToSonar(ConfigFile *cf, int section)
       sensorConfig.pose.proll = cf->ReadTupleAngle(section, sensorName, 4, 0.0);
       sensorConfig.pose.ppitch = cf->ReadTupleAngle(section, sensorName, 5, 0.0);
       sensorConfig.pose.pyaw = cf->ReadTupleAngle(section, sensorName, 6, 0.0);
-      
+
       sensorList.push_back(sensorConfig);
     }
-        
+
     ++sensorNumber;
     if (sensorNumber < 100){
       sprintf(sensorName, "sonar%02i", sensorNumber);
@@ -255,18 +255,18 @@ AioToSonar::AioToSonar(ConfigFile *cf, int section)
   samplingperiod = static_cast<long>(
       cf->ReadFloat(section, "samplingperiod", 0.02) * 1000000
   );
-  
+
   /* Read the conversion factor from the configuration file. */
   voltagetometers = cf->ReadFloat(section, "voltagetometers", 2.5918);
 }
 
 
-/** 
+/**
  * Connect to the aio device and start the thread.
  *
  * @return 0 if everything has been set up well
  */
-int AioToSonar::Setup(void)
+int AioToSonar::MainSetup(void)
 {
   PLAYER_MSG0(2, "Connect to the aio device and start the thread");
 
@@ -279,10 +279,7 @@ int AioToSonar::Setup(void)
     PLAYER_ERROR("Could not subscribe to the aio device");
   }
 
-  StartThread();
   PLAYER_MSG0(2, "AioToSonar has been set up");
-
-  return 0;
 }
 
 
@@ -291,17 +288,14 @@ int AioToSonar::Setup(void)
  *
  * @return 0 if everything has been released well
  */
-int AioToSonar::Shutdown(void)
+void AioToSonar::MainQuit(void)
 {
   PLAYER_MSG0(2, "Stop the thread and disconnect from the aio device.");
-
-  StopThread();
-
   if (aioDev->Unsubscribe(InQueue)){
     PLAYER_WARN("Could not unsubscribe from the AIO device device");
   }
 
-  /* For debugging the control algorithm 
+  /* For debugging the control algorithm
 
   long mean = 0;
   for (list<long>::iterator it = allCycleDurations.begin();
@@ -315,13 +309,12 @@ int AioToSonar::Shutdown(void)
 
   PLAYER_MSG0(2, "AioToSonar has been shut down");
 
-  return 0;
 }
 
 
 /**
  * Main loop of the driver's thread. Processes all messages, publishes
- * new sensor values and maintains the thread. 
+ * new sensor values and maintains the thread.
  */
 void AioToSonar::Main(void) {
   timespec sleepDuration = {0, 0};  // Seconds and nanoseconds
@@ -338,7 +331,7 @@ void AioToSonar::Main(void) {
   while (true){
     // Should this thread stop?
     pthread_testcancel();
-    
+
     // Handle messages in the queue
     ProcessMessages();
 
@@ -354,15 +347,15 @@ void AioToSonar::Main(void) {
 }
 
 
-/** 
+/**
  * A simple control algorithm for the sampling period. It implements
- * the loop controller for the (controlled) sampling system. 
- * 
+ * the loop controller for the (controlled) sampling system.
+ *
  * System description: The controller is an IIR (infinite impulse
  * response) system with one internal state (weightedError).
  * Inputs:
  *   c: The period of the last cycle (lastCycleDuration)
- *   p: The duration of the processing in the current cycle 
+ *   p: The duration of the processing in the current cycle
  *      (processingDuration)
  *
  * State:
@@ -374,28 +367,28 @@ void AioToSonar::Main(void) {
  * Computation:
  *   x[i] = 0.6 x[i-1] + 0.4 (samplingperiod - c[i])
  *   s[i] = x[i] - p + samplingperiod
- */ 
-timespec AioToSonar::ComputeSleepDuration(const timeval &tLastStart, 
-					  const timeval &tLastEnd, 
+ */
+timespec AioToSonar::ComputeSleepDuration(const timeval &tLastStart,
+					  const timeval &tLastEnd,
 					  const timeval &tNow)
 {
-  long lastCycleDuration = 
+  long lastCycleDuration =
     (tLastEnd.tv_sec - tLastStart.tv_sec) * 1000000
     + tLastEnd.tv_usec - tLastStart.tv_usec;
   // When modifying the weightings please look in the Main method too.
-  weightedError = 
-    0.6 * weightedError 
+  weightedError =
+    0.6 * weightedError
     + 0.4 * static_cast<double>(samplingperiod - lastCycleDuration);
   PLAYER_MSG1(8, "lastCycleDuration %i", lastCycleDuration);
 
   // To debug the control algorithm
   // allCycleDurations.push_back(lastCycleDuration);
 
-  long processingDuration = 
+  long processingDuration =
     (tNow.tv_sec - tLastEnd.tv_sec) * 1000000
     + tNow.tv_usec - tLastEnd.tv_usec;
 
-  long sleepDuration = 
+  long sleepDuration =
     static_cast<long>(weightedError)
     + samplingperiod
     - processingDuration;
@@ -409,7 +402,7 @@ timespec AioToSonar::ComputeSleepDuration(const timeval &tLastStart,
   cout << "e/c/p/s: " << weightedError
        << " / " << lastCycleDuration
        << " / " << processingDuration
-       << " / " << sleepDurationTs.tv_sec << " " << sleepDurationTs.tv_nsec 
+       << " / " << sleepDurationTs.tv_sec << " " << sleepDurationTs.tv_nsec
        << endl;
   */
 
@@ -418,7 +411,7 @@ timespec AioToSonar::ComputeSleepDuration(const timeval &tLastStart,
 
 
 /**
- * Processes the messages of the sonar interface. 
+ * Processes the messages of the sonar interface.
  *
  * Depending on the message this method currently does the following:
  *
@@ -430,8 +423,8 @@ timespec AioToSonar::ComputeSleepDuration(const timeval &tLastStart,
  * @return  0 if the message has been handled
  *         -1 otherwise.
  */
-int AioToSonar::ProcessMessage(QueuePointer &resp_queue, 
-			       player_msghdr *hdr, 
+int AioToSonar::ProcessMessage(QueuePointer &resp_queue,
+			       player_msghdr *hdr,
 			       void *data)
 {
   assert(hdr);
@@ -449,14 +442,14 @@ int AioToSonar::ProcessMessage(QueuePointer &resp_queue,
     geometry.poses = new player_pose3d[geometry.poses_count];
 
     player_pose3d *poseIt = geometry.poses;
-    for (list<SensorConfiguration>::iterator it=sensorList.begin(); 
-	 it!=sensorList.end(); 
+    for (list<SensorConfiguration>::iterator it=sensorList.begin();
+	 it!=sensorList.end();
 	 ++it, ++poseIt){
 
       *poseIt = it->pose;
     }
 
-    Publish(device_addr, 
+    Publish(device_addr,
 	    resp_queue,
 	    PLAYER_MSGTYPE_RESP_ACK,
 	    PLAYER_SONAR_REQ_GET_GEOM,
@@ -473,9 +466,9 @@ int AioToSonar::ProcessMessage(QueuePointer &resp_queue,
 
     PLAYER_MSG0(4, "PLAYER_SONAR_REQ_POWER received");
 
-    Publish(device_addr, 
+    Publish(device_addr,
 	    resp_queue,
-	    PLAYER_MSGTYPE_RESP_NACK, 
+	    PLAYER_MSGTYPE_RESP_NACK,
 	    hdr->subtype);
 
     return 0;
@@ -487,31 +480,31 @@ int AioToSonar::ProcessMessage(QueuePointer &resp_queue,
 
     PLAYER_MSG0(6, "PLAYER_AIO_DATA_STATE");
 
-    player_aio_data *received_data = 
+    player_aio_data *received_data =
       reinterpret_cast<player_aio_data *>(data);
     player_sonar_data sonarData;
     sonarData.ranges_count = sensorList.size();
     sonarData.ranges = new float[sonarData.ranges_count];
 
     float *rangesIt = sonarData.ranges;
-    for (list<SensorConfiguration>::iterator it=sensorList.begin(); 
-	 it!=sensorList.end(); 
+    for (list<SensorConfiguration>::iterator it=sensorList.begin();
+	 it!=sensorList.end();
 	 ++it, ++rangesIt){
       if (it->port < received_data->voltages_count){
 	*rangesIt = received_data->voltages[it->port] * voltagetometers;
-	
-	Publish(device_addr,  
-		PLAYER_MSGTYPE_DATA, 
+
+	Publish(device_addr,
+		PLAYER_MSGTYPE_DATA,
 		PLAYER_SONAR_DATA_RANGES,
 		(void *) &sonarData);
-	
+
       } else {
 	*rangesIt = 0;
       }
     }
 
     delete[] sonarData.ranges;
- 
+
     return 0;
   }
 

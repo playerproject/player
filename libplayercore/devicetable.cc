@@ -65,20 +65,10 @@ DeviceTable::~DeviceTable()
 {
   Device* thisentry;
   Device* tmpentry;
-  // First, shutdown each active driver
-  thisentry=head;
-  while(thisentry)
-  {
-    if(thisentry->driver->subscriptions)
-    {
-      thisentry->driver->Shutdown();
-      thisentry->driver->subscriptions = 0;
-      thisentry->driver->alwayson = 0;
-      // wake up anything waiting on the drivers queue, so they can notice it is dead
-      thisentry->driver->InQueue->DataAvailable();
-    }
-    thisentry = thisentry->next;
-  }
+  // First, Terminate each active driver
+  for (thisentry=head;thisentry;thisentry = thisentry->next)
+    thisentry->driver->Terminate();
+
   pthread_mutex_lock(&mutex);
   // Second, delete each device
   thisentry=head;
@@ -254,7 +244,7 @@ DeviceTable::UpdateDevices()
   for(thisentry=head;thisentry;thisentry=thisentry->next)
   {
     dri = thisentry->driver;
-    if((dri->subscriptions > 0) || dri->alwayson)
+    if((dri->HasSubscriptions()) || dri->alwayson)
       dri->Update();
   }
 }

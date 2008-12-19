@@ -139,7 +139,7 @@ LogDevice::~LogDevice() {
 // Main Class
 //
 
-class KartoLogger : public Driver
+class KartoLogger : public ThreadedDriver
 {
 private:
 
@@ -179,8 +179,8 @@ public:
 	virtual ~KartoLogger();
 	virtual void Main();
 
-	int Setup();
-	int Shutdown();
+	int MainSetup();
+	void MainQuit();
 
 	const char* getUID(player_devaddr_t dev);
 	virtual int Unsubscribe(Device* pId);
@@ -193,15 +193,13 @@ void KartoLogger::Main()
 {
 	while(true)
 	{
-		usleep(20000);
-
-		pthread_testcancel();
+		Wait(1);
 
 		this->ProcessMessages();
-			if(!this->enableLogger)
-				{
-					break;
-				}
+		if(!this->enableLogger)
+		{
+			break;
+		}
 	}
 	printf("exiting...\n");
 }
@@ -363,13 +361,12 @@ int KartoLogger::ProcessMessage(QueuePointer &pQueue, player_msghdr* pHdr, void*
 //
 
 
-int KartoLogger::Shutdown()
+void KartoLogger::MainQuit()
 {
 	// Stop the driver thread.
 	this->enableLogger=false;
 	CloseLog();
 	printf("KartoWriter  has been shutdown\n");
-	return 0;
 }
 
 //
@@ -410,7 +407,7 @@ int KartoLogger::CloseLog() {
 //KartoLogger::Setup Initialize KartoLogger using the KartoLoggerInit function
 // return code is 0 everything is fine, -1 error
 //
-int	KartoLogger::Setup()
+int	KartoLogger::MainSetup()
 {
 	int ret;
 	ret = OpenLog();
@@ -435,8 +432,6 @@ int	KartoLogger::Setup()
 		this->WriteGeometry((*iter));
 	}
 	fprintf(this->kartoFile,"</DeviceList>\n<DeviceStates>\n");
-// Start device thread
-	this->StartThread();
 	return ret;
 }
 
@@ -451,7 +446,7 @@ KartoLogger::~KartoLogger()
 //
 // KartoLogger:KartoLogger constructor
 // TODO:initialize all variables
-KartoLogger::KartoLogger( ConfigFile* cf, int section) : Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,PLAYER_LOG_CODE ),
+KartoLogger::KartoLogger( ConfigFile* cf, int section) : ThreadedDriver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,PLAYER_LOG_CODE ),
                                                          kartoFile(NULL), debug(false),enableLogger(false),
 		                                                     compress(false), startTime(0.0)
 {

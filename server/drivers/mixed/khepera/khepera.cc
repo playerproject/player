@@ -216,7 +216,7 @@ int Khepera::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, void
 	return -1;
 }
 
-Khepera::Khepera(ConfigFile *cf, int section) : Driver(cf, section)
+Khepera::Khepera(ConfigFile *cf, int section) : ThreadedDriver(cf, section)
 {
   // zero ids, so that we'll know later which interfaces were requested
   memset(&position_addr, 0, sizeof(this->position_addr));
@@ -399,7 +399,7 @@ Khepera::Unsubscribe(player_devaddr_t addr)
  * returns: 0 on success
  */
 int
-Khepera::Setup()
+Khepera::MainSetup()
 {
   // open and initialize the serial to -> Khepera
   printf("Khepera: connection initializing (%s)...", this->khepera_serial_port);
@@ -418,17 +418,14 @@ Khepera::Setup()
 
   desired_heading = 0;
 
-  /* now spawn reading thread */
-  StartThread();
   return(0);
 }
 
 
-int
-Khepera::Shutdown()
+void
+Khepera::MainQuit()
 {
   printf("Khepera: SHUTDOWN\n");
-  StopThread();
 
   // Killing the thread seems to leave out serial
   // device in a bad state, need to fix this,
@@ -439,7 +436,6 @@ Khepera::Shutdown()
   delete Serial;
   Serial = NULL;
 
-  return(0);
 }
 
 void

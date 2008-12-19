@@ -327,7 +327,7 @@ void amcl_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 AdaptiveMCL::AdaptiveMCL( ConfigFile* cf, int section)
-    : Driver(cf, section)
+    : ThreadedDriver(cf, section)
 {
   int i;
   double u[3];
@@ -500,7 +500,7 @@ AdaptiveMCL::~AdaptiveMCL(void)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device (called by server thread).
-int AdaptiveMCL::Setup(void)
+int AdaptiveMCL::MainSetup(void)
 {
   PLAYER_MSG0(2, "setup");
 
@@ -520,35 +520,11 @@ int AdaptiveMCL::Setup(void)
 
 
   // Start the driver thread.
-  PLAYER_MSG0(2, "running");
-  this->StartThread();
-
+  PLAYER_MSG0(2, "AMCL running");
   return 0;
 }
 
 
-////////////////////////////////////////////////////////////////////////////////
-// Shutdown the device (called by server thread).
-int AdaptiveMCL::Shutdown(void)
-{
-  int i;
-
-  PLAYER_MSG0(2, "shutting down");
-
-  // Stop the driver thread.
-  this->StopThread();
-
-  // Stop sensors
-  for (i = 0; i < this->sensor_count; i++)
-    this->sensors[i]->Shutdown();
-
-  // Delete the particle filter
-  pf_free(this->pf);
-  this->pf = NULL;
-
-  PLAYER_MSG0(2, "shutdown done");
-  return 0;
-}
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -595,19 +571,14 @@ void AdaptiveMCL::Push(AMCLSensorData *data)
 {
   int i;
 
-  this->Lock();
-
   if (this->q_len >= this->q_size)
   {
-    this->Unlock();
     PLAYER_ERROR("queue overflow");
     return;
   }
   i = (this->q_start + this->q_len++) % this->q_size;
 
   this->q_data[i] = data;
-
-  this->Unlock();
   return;
 }
 
@@ -618,16 +589,11 @@ AMCLSensorData *AdaptiveMCL::Peek(void)
 {
   int i;
 
-  this->Lock();
-
   if (this->q_len == 0)
   {
-    this->Unlock();
     return NULL;
   }
   i = this->q_start % this->q_size;
-
-  this->Unlock();
   return this->q_data[i];
 }
 
@@ -638,17 +604,13 @@ AMCLSensorData *AdaptiveMCL::Pop(void)
 {
   int i;
 
-  this->Lock();
-
   if (this->q_len == 0)
   {
-    this->Unlock();
     return NULL;
   }
   i = this->q_start++ % this->q_size;
   this->q_len--;
 
-  this->Unlock();
   return this->q_data[i];
 }
 
@@ -758,6 +720,19 @@ void AdaptiveMCL::MainQuit()
   fclose(this->outfile);
 #endif
 
+  int i;
+
+  PLAYER_MSG0(2, "shutting down");
+  // Stop sensors
+  for (i = 0; i < this->sensor_count; i++)
+    this->sensors[i]->Shutdown();
+
+  // Delete the particle filter
+  pf_free(this->pf);
+  this->pf = NULL;
+
+  PLAYER_MSG0(2, "shutdown done");  
+  
   return;
 }
 
@@ -1332,7 +1307,6 @@ void AdaptiveMCL::DrawPoseEst()
   amcl_hyp_t *hyp;
   pf_vector_t pose;
 
-  this->Lock();
   pthread_mutex_lock(&this->best_hyp_lock);
   pose = this->best_hyp;
   pthread_mutex_unlock(&this->best_hyp_lock);
@@ -1350,8 +1324,6 @@ void AdaptiveMCL::DrawPoseEst()
     }
   }
   */
-
-  this->Unlock();
 
   /*
   if (max_weight < 0.0)

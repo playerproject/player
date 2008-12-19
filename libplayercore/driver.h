@@ -89,45 +89,25 @@ class ConfigFile;
 /**
 @brief Base class for all drivers.
 
-This class manages driver subscriptions, threads, and data
-marshalling to/from device interfaces.  All drivers inherit from
-this class, and most will overload the Setup(), Shutdown() and
-Main() methods.
+This class manages driver subscriptions, and data
+marshalling to/from device interfaces.  Non threaded drivers inherit directly from
+this class, and most will overload the Setup(), Shutdown() methods.
 */
 class Driver
 {
   private:
-    /** @brief Mutex used to lock access, via Lock() and Unlock(), to
-    driver internals, like the list of subscribed queues. */
-    pthread_mutex_t accessMutex;
-
     /* @brief Last error value; useful for returning error codes from
     constructors. */
     int error;
 
     PropertyBag propertyBag;
 
+    /** @brief Number of subscriptions to this driver. */
+	int subscriptions;
+  public:
+    bool HasSubscriptions();
+    
   protected:
-
-    /* @brief Start the driver thread
-
-    This method is usually called from the overloaded Setup() method to
-    create the driver thread.  This will call Main(). */
-    virtual void StartThread(void);
-
-    /** @brief Cancel (and wait for termination) of the driver thread
-
-    This method is usually called from the overloaded Shutdown() method
-    to terminate the driver thread. */
-    virtual void StopThread(void);
-
-    /** @brief Dummy main (just calls real main).  This is used to simplify
-    thread creation. */
-    static void* DummyMain(void *driver);
-
-    /** @brief Dummy main cleanup (just calls real main cleanup).  This is
-    used to simplify thread termination. */
-    static void DummyMainQuit(void *driver);
 
     /** @brief Add an interface.
 
@@ -143,7 +123,7 @@ class Driver
     @param addr Pointer to Player device address, this is filled in with the address details.
 
     @returns 0 on success, non-zero otherwise. */
-    int AddInterface(player_devaddr_t *addr, ConfigFile * cf, int section, int code, char * key = NULL);
+    int AddInterface(player_devaddr_t *addr, ConfigFile * cf, int section, int code, const char * key = NULL);
 
 
     /** @brief Set/reset error code */
@@ -158,7 +138,7 @@ class Driver
     If TimeOut is set to a positive value this method will return false if the
     timeout occurs before and update is recieved.
     */
-    bool Wait(double TimeOut=0.0) { return this->InQueue->Wait(TimeOut); }
+    virtual bool Wait(double TimeOut=0.0);
 
     /** @brief Wake up the driver if the specified event occurs on the file descriptor */
     int AddFileWatch(int fd, bool ReadWatch = true, bool WriteWatch = false, bool ExceptWatch = true);
@@ -167,17 +147,31 @@ class Driver
     int RemoveFileWatch(int fd, bool ReadWatch = true, bool WriteWatch = false, bool ExceptWatch = true);
 
 
-  public:
-    /** @brief The driver's thread.
-
-    The driver's thread, when managed by StartThread() and
-    StopThread(). */
-    pthread_t driverthread;
-    /** @brief Lock access to driver internals. */
-    virtual void Lock(void);
+  private:
+    /** @brief Mutex used to lock access, via Lock() and Unlock(), to
+    driver internals, like the list of subscribed queues. */
+    pthread_mutex_t accessMutex;
+    /** @brief Mutex used to protect the subscription count for the driver. */
+    pthread_mutex_t subscriptionMutex;
+  protected:
+    /** @brief Lock access between the server and driver threads. In particular used 
+     * to procect the drivers thread pointer */
+     virtual void Lock(void); 
     /** @brief Unlock access to driver internals. */
     virtual void Unlock(void);
+    
+    /** @brief Lock to protect the subscription count for the driver */
+     virtual void SubscriptionLock(void); 
+    /** @brief Unlock to protect the subscription count for the driver. */
+    virtual void SubscriptionUnlock(void);
 
+    /** enable thread cancellation and test for cancellation 
+     * 
+     * This should only ever be called from the driver thread with *no* locks held*/
+    virtual void TestCancel() {};
+    
+    
+  public:
     /** @brief Last requester's queue.
 
     Pointer to a queue to which this driver owes a reply.  Used mainly
@@ -258,9 +252,6 @@ class Driver
 
     /** @brief Default device address (single-interface drivers) */
     player_devaddr_t device_addr;
-
-    /** @brief Number of subscriptions to this driver. */
-    int subscriptions;
 
     /** @brief Total number of entries in the device table using this driver.
     This is updated and read by the Device class. */
@@ -362,34 +353,29 @@ class Driver
     @returns Returns 0 on success. */
     virtual int Unsubscribe(QueuePointer &queue, player_devaddr_t addr) {return 1;};
 
+    /** @brief Terminate the driver.
+
+    This method doesnt go through the niceities of unsubscribing etc, only use
+    when the server is actually shutting down as it takes a few shortcuts
+
+    @returns Returns 0 on success. */
+    virtual int Terminate();
+    
+    
     /** @brief Initialize the driver.
 
     This function is called with the first client subscribes; it MUST
     be implemented by the driver.
 
     @returns Returns 0 on success. */
-    virtual int Setup() = 0;
+    virtual int Setup() {return 0;};
 
     /** @brief Finalize the driver.
 
-    This function is called with the last client unsubscribes; it MUST
-    be implemented by the driver.
+    This function is called with the last client unsubscribes.
 
     @returns Returns 0 on success. */
-    virtual int Shutdown() = 0;
-
-    /** @brief Main method for driver thread.
-
-    drivers have their own thread of execution, created using
-    StartThread(); this is the entry point for the driver thread,
-    and must be overloaded by all threaded drivers. */
-    virtual void Main(void);
-
-    /** @brief Cleanup method for driver thread (called when main exits)
-
-    Overload this method and to do additional cleanup when the
-    driver thread exits. */
-    virtual void MainQuit(void);
+    virtual int Shutdown() {return 0;};
 
     /** @brief Process pending messages.
 
@@ -421,7 +407,6 @@ class Driver
     /** @brief Update non-threaded drivers. */
     virtual void Update()
     {
-      if(!this->driverthread)
         this->ProcessMessages();
     }
 
@@ -453,6 +438,175 @@ class Driver
     @param section Configuration file section that may define the property value
     @return True if the property was registered, false otherwise */
     virtual bool RegisterProperty(Property *prop, ConfigFile* cf, int section);
+};
+
+typedef enum player_thread_state
+{
+	PLAYER_THREAD_STATE_STOPPED,
+	PLAYER_THREAD_STATE_RUNNING,
+	PLAYER_THREAD_STATE_STOPPING,
+	PLAYER_THREAD_STATE_RESTARTING
+} player_thread_state_t;
+
+
+
+/**
+@brief Base class for drivers which oeprate with a thread.
+
+This class manages driver subscriptions, threads, and data
+marshalling to/from device interfaces.  All drivers inherit from
+this class, and most will overload the MainSetup(), MainQuit() and
+Main() methods.
+
+The ThreadedDriver uses a fairly simple thread model with the only complications
+coming from the deferred cancellation.
+
+The default setup method simply calls StartThread and likewise the default Shutdown method calls
+StopThread. Resources for the driver should be allocated in MainSetup and cleaned up in MainQuit, these 
+two methods will be called in the driver thread before and after the main method respectively.
+
+When StopThread is called it will request the driver thread to be cancelled, this cancellation will be
+deffered until one of three cancellation points, ProcessMessages, Wait or TestCancel. In this way the driver
+has control over when the thread is cancelled.
+
+If a new subscription arrives before the thread has terminated then upon completion of the MainQuit method the thread
+will be relaunched and MainSetup run. In this way it is gaurunteed that there is only ever one thread running for
+the driver and that Main is always proceeded by MainSetup and followed by MainQuit before any new threads are launched.
+
+To manage the thread lifetime a small state machine is implemented, containing four states: STOPPED, RUNNING, STOPPING
+and RESTARTING. Initially the thread is in STOPPED state.
+
+From the STOPPED state the only valid transition is to RUNNING, this is triggered by a call to StartThread.
+
+From the RUNNING state the driver can transition to STOPPING, triggered by a call to StopThread.
+
+In the STOPPING state the driver can transition to STOPPED, triggered by MainQuit running, or to RESTARTING on a call to 
+StartThread.
+
+From RESTARTING the driver can transition to RUNNING once MainQuit has run and the new thread is started, or to STOPPING if
+StopThread is called before the original thread terminates.
+
+*/
+class ThreadedDriver : public Driver
+{
+  protected:
+
+    /* @brief Start the driver thread
+
+    This method is usually called from the overloaded Setup() method to
+    create the driver thread.  This will call Main(). */
+    virtual void StartThread(void);
+
+    /** @brief Cancel (and wait for termination) of the driver thread
+
+    This method is usually called from the overloaded Shutdown() method
+    to terminate the driver thread. */
+    virtual void StopThread(void);
+
+    /** @brief Dummy main (just calls real main).  This is used to simplify
+    thread creation. */
+    static void* DummyMain(void *driver);
+
+    /** @brief Dummy main cleanup (just calls real main cleanup).  This is
+    used to simplify thread termination. */
+    static void DummyMainQuit(void *driver);
+
+  private:
+    /** @brief The driver's thread.
+    The driver's thread, when managed by StartThread() and
+    StopThread(). */
+    pthread_t driverthread;
+    
+    /** @brief TODO: insert state machine here
+    . */
+    player_thread_state_t ThreadState;
+    bool SetupSuccessful;
+    /** @brief barrier to make sure StartThread doesnt return until  
+    * cleanup handlers etc have been installed.*/
+    pthread_barrier_t threadSetupBarrier;
+    
+  protected:
+    /** enable thread cancellation and test for cancellation 
+     * 
+     * This should only ever be called from the driver thread with *no* locks held*/
+    void TestCancel();
+    
+    
+  public:
+	
+	/** @brief Constructor with implicit interface
+	 @param cf Current configuration file
+	 @param section Current section in configuration file
+	 @param overwrite_cmds Do new commands overwrite old ones?
+	 @param queue_maxlen How long can the incoming queue grow? 
+	 @param interface The interface that you want this driver to provide*/
+	 ThreadedDriver(ConfigFile *cf,
+			int section,
+			bool overwrite_cmds,
+			size_t queue_maxlen,
+			int interface);
+	 
+    /** @brief Constructor for multiple-interface drivers.
+
+    Use AddInterface() to specify individual interfaces.
+    @param cf Current configuration file
+    @param section Current section in configuration file
+    @param overwrite_cmds Do new commands overwrite old ones?
+    @param queue_maxlen How long can the incoming queue grow? */
+    ThreadedDriver(ConfigFile *cf,
+           int section,
+           bool overwrite_cmds = true,
+           size_t queue_maxlen = PLAYER_MSGQUEUE_DEFAULT_MAXLEN);
+
+    /** @brief Destructor */
+    virtual ~ThreadedDriver();
+
+    /** @brief Initialize the driver.
+
+    This function is called with the first client subscribes; it MUST
+    be implemented by the driver.
+
+    @returns Returns 0 on success. */
+    virtual int Setup();
+
+    /** @brief Finalize the driver.
+
+    This function is called with the last client unsubscribes; the default version simple stops the
+    driver thread if one is present. In this case resources should be cleaned up in MainQuit.
+
+    @returns Returns 0 on success. */
+    virtual int Shutdown();
+
+    /** @brief Main method for driver thread.
+
+    drivers have their own thread of execution, created using
+    StartThread(); this is the entry point for the driver thread,
+    and must be overloaded by all threaded drivers. */
+    virtual void Main(void) = 0;
+
+    /** @brief Sets up the resources needed by the driver thread */
+    virtual int MainSetup(void) {return 0;};
+    
+    /** @brief Cleanup method for driver thread (called when main exits)
+
+    Overload this method and to do additional cleanup when the
+    driver thread exits. */
+    virtual void MainQuit(void) {};
+
+    /** @brief Wait for new data to arrive on the driver's queue.
+
+    Call this method to block until a new message arrives on
+    Driver::InQueue.  This method will return true immediately if at least
+    one message is already waiting.
+
+    If TimeOut is set to a positive value this method will return false if the
+    timeout occurs before and update is recieved.
+    */
+    bool Wait(double TimeOut=0.0);    
+
+    virtual void Update()
+    {};
+    
 };
 
 

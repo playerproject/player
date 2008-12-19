@@ -530,7 +530,7 @@ char PTU46::GetMode ()
 ///////////////////////////////////////////////////////////////
 // Player Driver Class                                       //
 ///////////////////////////////////////////////////////////////
-class PTU46_Device:public Driver
+class PTU46_Device:public ThreadedDriver
 {
     protected:
 	// this function will be run in a separate thread
@@ -549,7 +549,7 @@ class PTU46_Device:public Driver
 
 	PTU46_Device (ConfigFile* cf, int section);
 
-	virtual int Setup    ();
+	virtual int MainSetup    ();
 	virtual int Shutdown ();
 
 	// MessageHandler
@@ -574,7 +574,7 @@ ptu46_Register (DriverTable* table)
 
 ////////////////////////////////////////////////////////////////////////////////
 PTU46_Device::PTU46_Device (ConfigFile* cf, int section) :
-    Driver (cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_PTZ_CODE)
+    ThreadedDriver (cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_PTZ_CODE)
 {
 
     data.pan = data.tilt = data.zoom = data.panspeed = data.tiltspeed = 0;
@@ -590,7 +590,7 @@ PTU46_Device::PTU46_Device (ConfigFile* cf, int section) :
 
 ////////////////////////////////////////////////////////////////////////////////
 int
-PTU46_Device::Setup ()
+PTU46_Device::MainSetup ()
 {
     printf ("> PTU46 connection initializing (%s)...", ptz_serial_port);
     fflush (stdout);
@@ -609,9 +609,6 @@ PTU46_Device::Setup ()
     cmd.zoom      = 0;
     cmd.panspeed  = 0;
     cmd.tiltspeed = 0;
-
-    // start the thread to talk with the pan-tilt-zoom unit
-    StartThread ();
     return (0);
 }
 

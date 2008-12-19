@@ -118,13 +118,13 @@ using namespace std;
 
 #include <libplayercore/playercore.h>
 
-class GbxSickAcfr : public Driver
+class GbxSickAcfr : public ThreadedDriver
 {
     public:
         GbxSickAcfr (ConfigFile* cf, int section);
         ~GbxSickAcfr (void);
 
-        virtual int Setup (void);
+        virtual int MainSetup (void);
         virtual int Shutdown (void);
         virtual int ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, void *data);
 
@@ -166,7 +166,7 @@ void gbxsickacfr_Register(DriverTable* table)
 }
 
 GbxSickAcfr::GbxSickAcfr (ConfigFile* cf, int section)
-    : Driver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_RANGER_CODE),
+    : ThreadedDriver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_RANGER_CODE),
     ranges (NULL), intensities (NULL), device (NULL), tracer (NULL), status (NULL)
 {
     // Setup config object
@@ -216,7 +216,7 @@ GbxSickAcfr::~GbxSickAcfr (void)
         delete tracer;
 }
 
-int GbxSickAcfr::Setup (void)
+int GbxSickAcfr::MainSetup (void)
 {
     // Validate the configuration
     if (!config.isValid ())
@@ -272,8 +272,6 @@ int GbxSickAcfr::Setup (void)
     }
     data.ranges = rawRanges;
     data.intensities = rawIntensities;
-
-    StartThread();
     return 0;
 }
 

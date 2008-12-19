@@ -162,7 +162,7 @@ garciadriver_Register(DriverTable* table)
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 GarciaDriver::GarciaDriver(ConfigFile* cf, int section)
-    : Driver(cf, section),
+    : ThreadedDriver(cf, section),
       mLength(0.28),
       mWidth(0.20),
       mWheelBase(0.182),
@@ -277,7 +277,7 @@ GarciaDriver::~GarciaDriver()
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
 int
-GarciaDriver::Setup()
+GarciaDriver::MainSetup()
 {
 
   cout << "Setting up Garcia driver" << flush;
@@ -297,10 +297,6 @@ GarciaDriver::Setup()
 
 
   puts("finished!");
-
-  // Start the device thread; spawns a new thread and executes
-  // GarciaDriver::Main(), which contains the main loop for the driver.
-  StartThread();
 
   return(0);
 }

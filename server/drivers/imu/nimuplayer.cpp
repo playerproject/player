@@ -97,7 +97,7 @@ driver
 
 ////////////////////////////////////////////////////////////////////////////////
 // The XSensMT device class.
-class PlayerNIMU : public Driver
+class PlayerNIMU : public ThreadedDriver
 {
 	public:
         // Constructor
@@ -107,8 +107,8 @@ class PlayerNIMU : public Driver
 		~PlayerNIMU ();
 
         // Implementations of virtual functions
-		virtual int Setup ();
-		virtual int Shutdown ();
+		virtual int MainSetup ();
+		virtual void MainQuit ();
 
         // This method will be invoked on each incoming message
 		virtual int ProcessMessage (QueuePointer &resp_queue,
@@ -154,7 +154,7 @@ void nimu_Register (DriverTable* table)
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 PlayerNIMU::PlayerNIMU (ConfigFile* cf, int section)
-	: Driver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
+	: ThreadedDriver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, 
 			  PLAYER_IMU_CODE)
 {
     // raw values
@@ -178,29 +178,21 @@ PlayerNIMU::~PlayerNIMU()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
-int PlayerNIMU::Setup ()
+int PlayerNIMU::MainSetup ()
 {
     // Open the device
 	if (imu.Open() < 0)
 		return -1;
-
-    // Start the device thread
-	StartThread ();
 
 	return (0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-int PlayerNIMU::Shutdown ()
+void PlayerNIMU::MainQuit ()
 {
-    // Stop the driver thread
-	StopThread ();
-
 	// close the device
 	imu.Close();
-
-	return (0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

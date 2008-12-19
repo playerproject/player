@@ -1,8 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -76,7 +76,7 @@
 #define DEFAULT_CLODBUSTER_PORT "/dev/ttyUSB0" // This has to be USB - serial port.
 
 typedef struct clodbuster_encoder_data
-{ 
+{
   uint32_t time_count;
   int32_t left,right;
 } __attribute__ ((packed)) clodbuster_encoder_data_t;
@@ -125,7 +125,7 @@ class PIDGains
      float K3(){return(k3);};
 };
 
-class ClodBuster:public Driver 
+class ClodBuster:public ThreadedDriver
 {
   private:
     player_position2d_data_t position_data;
@@ -133,10 +133,10 @@ class ClodBuster:public Driver
     clodbuster_encoder_data_t ReadEncoders();
 
     int clodbuster_fd;               // clodbuster device file descriptor
-    
+
     // device used to communicate with GRASP IO Board
-    char clodbuster_serial_port[MAX_FILENAME_SIZE]; 
-   
+    char clodbuster_serial_port[MAX_FILENAME_SIZE];
+
     int kp,ki,kd;
 
     // did we initialize the common data segments yet?
@@ -169,10 +169,10 @@ class ClodBuster:public Driver
     // Max motor speeds
     int motor_max_speed;
     int motor_max_turnspeed;
-    
+
     // Bound the command velocities
-    bool use_vel_band; 
-        
+    bool use_vel_band;
+
   short speedDemand, turnRateDemand;
   bool newmotorspeed, newmotorturn;
 
@@ -184,11 +184,11 @@ class ClodBuster:public Driver
     /* the main thread */
     virtual void Main();
 
-    // Process incoming messages from clients 
+    // Process incoming messages from clients
     int ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data);
 
-    virtual int Setup();
-    virtual int Shutdown();
+    virtual int MainSetup();
+    virtual void MainQuit();
 
     unsigned char SetServo(unsigned char chan, int value);
     void SetServo(unsigned char chan, unsigned char cmd);

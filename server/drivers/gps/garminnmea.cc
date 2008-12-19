@@ -168,7 +168,7 @@ driver
 #define UTM_EP2		(UTM_E2/(1-UTM_E2))	// e'^2
 
 
-class GarminNMEA:public Driver
+class GarminNMEA:public ThreadedDriver 
 {
   private:
 
@@ -231,8 +231,8 @@ class GarminNMEA:public Driver
   public:
     GarminNMEA( ConfigFile* cf, int section);
 
-    virtual int Setup();
-    virtual int Shutdown();
+    virtual int MainSetup();
+    virtual void MainQuit();
     virtual void Main();
 };
 
@@ -255,7 +255,7 @@ garminnmea_Register(DriverTable* table)
 
 ///////////////////////////////////////////////////////////////////////////
 GarminNMEA::GarminNMEA( ConfigFile* cf, int section)
-: Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_GPS_CODE)
+: ThreadedDriver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_GPS_CODE)
 {
   memset(&data,0,sizeof(data));
 
@@ -281,7 +281,7 @@ GarminNMEA::GarminNMEA( ConfigFile* cf, int section)
 
 ///////////////////////////////////////////////////////////////////////////
 int
-GarminNMEA::Setup()
+GarminNMEA::MainSetup()
 {
   // Set up the serial port to talk to the GPS unit
   if (SetupSerial() != 0)
@@ -293,23 +293,16 @@ GarminNMEA::Setup()
 
   puts("Done.");
 
-  // start the thread to talk with the GPS unit
-  StartThread();
-
   return(0);
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
-int
-GarminNMEA::Shutdown()
+void
+GarminNMEA::MainQuit()
 {
-  StopThread();
-
   ShutdownSocket();
   ShutdownSerial();
-
-  return(0);
 }
 
 

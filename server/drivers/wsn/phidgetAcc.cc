@@ -23,7 +23,7 @@
 /** @defgroup driver_phidgetACC phidgetACC
  * @brief Phidget ACC
 
-The phidgetACC driver communicates with the PhidgetACC (Part# 1059) accelerometer. 
+The phidgetACC driver communicates with the PhidgetACC (Part# 1059) accelerometer.
 
 @par Compile-time dependencies
 
@@ -45,7 +45,7 @@ The phidgetACC driver communicates with the PhidgetACC (Part# 1059) acceleromete
 
 - serial (integer)
   - Default: -1
-  - This defines which phidget will be controlled if there is more than one connected to the USB bus. 
+  - This defines which phidget will be controlled if there is more than one connected to the USB bus.
     You can obtain the number with lsusb, like this:  "lsusb -v |grep iSerial".
     The default is -1 , and it will connect to the first phidget available.
 
@@ -59,8 +59,8 @@ The phidgetACC driver communicates with the PhidgetACC (Part# 1059) acceleromete
 
 - provides
   - The "wsn" interface with the 3 accelerometers data
-  
-@par Example 
+
+@par Example
 
 @verbatim
 driver
@@ -99,7 +99,7 @@ inline float timediffms(struct timeval start, struct timeval end) {
     return(end.tv_sec*1000.0 + end.tv_usec/1000.0 - (start.tv_sec*1000.0 + start.tv_usec/1000.0));
 }
 
-class PhidgetAcc : public Driver {
+class PhidgetAcc : public ThreadedDriver {
 	public:
 
     // Constructor;
@@ -108,8 +108,8 @@ class PhidgetAcc : public Driver {
     //Destructor
 		~PhidgetAcc();
 
-		virtual int Setup();
-		virtual int Shutdown();
+		virtual int MainSetup();
+		virtual int MainQuit();
 
 		virtual int ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, void * data);
 
@@ -125,7 +125,7 @@ class PhidgetAcc : public Driver {
 
 	        // WSN interface
                 player_wsn_data_t data;
-               
+
 		//! Pointer to the ACC Phidget Handle
 		CPhidgetAccelerometerHandle accel;
 
@@ -146,7 +146,7 @@ class PhidgetAcc : public Driver {
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 PhidgetAcc::PhidgetAcc(ConfigFile* cf, int section)
-        : Driver(cf, section) {
+        : ThreadedDriver(cf, section) {
     //! Start with a clean device
     memset(&wsn_id,0,sizeof(player_devaddr_t));
 
@@ -177,7 +177,7 @@ PhidgetAcc::~PhidgetAcc() {}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
-int PhidgetAcc::Setup() {
+int PhidgetAcc::MainSetup() {
     PLAYER_MSG0(1,"PhidgetAccel driver initialising");
 
     //Use the Phidgets library to communicate with the devices
@@ -200,21 +200,13 @@ int PhidgetAcc::Setup() {
 
     PLAYER_MSG0(1,"PhidgetAcc driver ready");
 
-    // Start the device thread; spawns a new thread and executes
-    // PhidgetAcc::Main(), which contains the main loop for the driver.
-    StartThread();
-
-    return(0);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-int PhidgetAcc::Shutdown() {
+void PhidgetAcc::MainQuit() {
 	PLAYER_MSG0(1,"Shutting PhidgetAcc driver down");
-
-    // Stop and join the driver thread
-    StopThread();
 
     // Turn of the device and delete the Phidget objects
     CPhidget_close((CPhidgetHandle)accel);
@@ -222,8 +214,6 @@ int PhidgetAcc::Shutdown() {
     accel=0;
 
     PLAYER_MSG0(1,"PhidgetAcc driver has been shutdown");
-
-    return(0);
 }
 
 int PhidgetAcc::ProcessMessage(QueuePointer &resp_queue,
@@ -293,7 +283,7 @@ void PhidgetAcc::Main() {
 	data.data_packet.accel_y=p_accel[1];
 	data.data_packet.accel_z=p_accel[2];
 	delete [] p_accel;
-        
+
         //Publishing data.
         if (wsn_id.interf !=0) {
             Publish(wsn_id, PLAYER_MSGTYPE_DATA, PLAYER_WSN_DATA_STATE, (unsigned char*)&data, sizeof(player_wsn_data_t), NULL);

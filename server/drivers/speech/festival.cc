@@ -114,7 +114,7 @@ driver
 #include <deque>
 using namespace std;
 
-class Festival:public Driver
+class Festival:public ThreadedDriver 
 {
   private:
     int pid;      // Festival's pid so we can kill it later (if necessary)
@@ -140,10 +140,8 @@ class Festival:public Driver
     ~Festival();
     virtual void Main();
 
-    int Setup();
-    int Shutdown();
-
-    virtual int Unsubscribe(player_devaddr_t id);
+    int MainSetup();
+    void MainQuit();
 
     // MessageHandler
     int ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, void * data);
@@ -185,7 +183,7 @@ festival_Register(DriverTable* table)
 void QuitFestival(void* speechdevice);
 
 Festival::Festival( ConfigFile* cf, int section) :
-  Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_SPEECH_CODE)
+  ThreadedDriver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_SPEECH_CODE)
 {
 //  int queuelen;
   sock = -1;
@@ -218,7 +216,7 @@ Festival::~Festival()
 }
 
 int
-Festival::Setup()
+Festival::MainSetup()
 {
   char festival_bin_name[] = "festival";
   char festival_server_flag[] = "--server";
@@ -366,9 +364,6 @@ Festival::Setup()
       return(1);
     }
 
-    /* now spawn reading thread */
-    StartThread();
-
     return(0);
   }
 
@@ -376,28 +371,12 @@ Festival::Setup()
   return(0);
 }
 
-int
-Festival::Shutdown()
+void
+Festival::MainQuit()
 {
-  /* if Setup() was never called, don't do anything */
-  if(sock == -1)
-    return(0);
-
-  StopThread();
-
   sock = -1;
+  queue.clear();
   puts("Festival speech server has been shutdown");
-  return(0);
-}
-
-
-int
-Festival::Unsubscribe(player_devaddr_t device)
-{
-	int retval = Driver::Unsubscribe(device);
-	if (subscriptions == 0)
-		queue.clear();
-	return retval;
 }
 
 int Festival::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, void * data)
@@ -408,10 +387,8 @@ int Festival::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, voi
 		// make ABSOLUTELY sure we've got one NULL
 		cmd->string[cmd->string_count] = '\0';
 
-		Lock();
 		/* if there's space, put it in the queue */
 		queue.push_back(strdup(cmd->string));
-		Unlock();
 		return 0;
 	}
 

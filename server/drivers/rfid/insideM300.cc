@@ -125,7 +125,7 @@ driver
 #define EEPROM_RERROR              0x6200
 
 // The InsideM300 device class.
-class InsideM300 : public Driver
+class InsideM300 : public ThreadedDriver
 {
 	public:
 		// Constructor
@@ -135,8 +135,8 @@ class InsideM300 : public Driver
 		~InsideM300 ();
 
 		// Implementations of virtual functions
-		int Setup ();
-		int Shutdown ();
+		int MainSetup ();
+		void MainQuit ();
 
 		// This method will be invoked on each incoming message
 		virtual int ProcessMessage (QueuePointer & resp_queue,
@@ -207,7 +207,7 @@ void insideM300_Register (DriverTable* table)
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 InsideM300::InsideM300 (ConfigFile* cf, int section)
-	: Driver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
+	: ThreadedDriver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, 
 			  PLAYER_RFID_CODE), allocated_tags(0)
 {
 	this->portName  = cf->ReadString (section, "port", DEFAULT_RFID_PORT);
@@ -230,7 +230,7 @@ InsideM300::~InsideM300()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
-int InsideM300::Setup ()
+int InsideM300::MainSetup ()
 {
 	unsigned int status;
 	unsigned char chipAnswer[24];
@@ -363,19 +363,13 @@ int InsideM300::Setup ()
 	if (status != STATUS_OK)
 		PLAYER_WARN1 (">> Error 0x%x while resetting field !", status);
 
-	// Start the device thread
-	StartThread ();
-
 	return (0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-int InsideM300::Shutdown ()
+void InsideM300::MainQuit ()
 {
-	// Stop the driver thread
-	StopThread ();
-
 	// Close the serial port
 	tcsetattr (this->fd, TCSANOW, &this->initial_options);
 	close (this->fd);
@@ -389,7 +383,6 @@ int InsideM300::Shutdown ()
 	allocated_tags=0;
 	
 	PLAYER_MSG0 (1, "> InsideM300 driver shutting down... [done]");
-	return (0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

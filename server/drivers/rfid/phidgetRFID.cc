@@ -115,7 +115,7 @@ int TagFound(CPhidgetRFIDHandle rfid,void *hola, unsigned char *usrchar);
 
 
 
-class Phidgetrfid : public Driver {
+class Phidgetrfid : public ThreadedDriver {
 	public:
 
     // Constructor;
@@ -124,7 +124,7 @@ class Phidgetrfid : public Driver {
     //Destructor
 		~Phidgetrfid();
 
-		virtual int Setup();
+		virtual int MainSetup();
 		virtual int Shutdown();
 
 		virtual int ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, void * data);
@@ -156,7 +156,7 @@ class Phidgetrfid : public Driver {
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 Phidgetrfid::Phidgetrfid(ConfigFile* cf, int section)
-        : Driver(cf, section) {
+        : ThreadedDriver(cf, section) {
     //! Start with a clean device
     memset(&rfid_id,0,sizeof(player_devaddr_t));
     memset(&dio_id,0,sizeof(player_devaddr_t));
@@ -199,7 +199,7 @@ Phidgetrfid::~Phidgetrfid() {}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
-int Phidgetrfid::Setup() {
+int Phidgetrfid::MainSetup() {
     PLAYER_MSG0(1,"PhidgetRFID driver initialising");
 
     //Use the Phidgets library to communicate with the devices
@@ -227,10 +227,6 @@ int Phidgetrfid::Setup() {
     CPhidgetRFID_setLEDOn(rfid,1);
 
     PLAYER_MSG0(1,"PhidgetRFID driver ready");
-
-    // Start the device thread; spawns a new thread and executes
-    // Phidgetrfid::Main(), which contains the main loop for the driver.
-    StartThread();
 
     return(0);
 }

@@ -113,13 +113,13 @@ requires Player to be restarted
 
 #define CYCLE_TIME_US 200000
 
-class Create : public Driver
+class Create : public ThreadedDriver
 {
   public:
     Create(ConfigFile* cf, int section);
     ~Create();
 
-    int Setup();
+    int MainSetup();
     int Shutdown();
 
     // MessageHandler
@@ -163,7 +163,7 @@ void create_Register(DriverTable* table)
 }
 
 Create::Create(ConfigFile* cf, int section)
-        : Driver(cf,section,true,PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
+        : ThreadedDriver(cf,section,true,PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
 {
   memset(&this->position_addr,0,sizeof(player_devaddr_t));
   memset(&this->power_addr,0,sizeof(player_devaddr_t));
@@ -252,7 +252,7 @@ Create::~Create()
 }
 
 int
-Create::Setup()
+Create::MainSetup()
 {
   this->create_dev = create_create(this->serial_port);
 
@@ -263,8 +263,6 @@ Create::Setup()
     PLAYER_ERROR("failed to connect to create");
     return(-1);
   }
-
-  this->StartThread();
 
   return(0);
 }

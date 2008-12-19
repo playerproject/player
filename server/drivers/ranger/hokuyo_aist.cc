@@ -127,14 +127,14 @@ const int DEFAULT_GET_INTENSITIES = 0;
 // Driver object
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class HokuyoDriver : public Driver
+class HokuyoDriver : public ThreadedDriver
 {
 	public:
 		HokuyoDriver (ConfigFile* cf, int section);
 		~HokuyoDriver (void);
 
-		virtual int Setup (void);
-		virtual int Shutdown (void);
+		virtual int MainSetup (void);
+		virtual void MainQuit (void);
 		virtual int ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, void *data);
 
 	private:
@@ -165,7 +165,7 @@ class HokuyoDriver : public Driver
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 HokuyoDriver::HokuyoDriver (ConfigFile* cf, int section) :
-	Driver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_RANGER_CODE),
+	ThreadedDriver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_RANGER_CODE),
 	_baudRate ("baud_rate", DEFAULT_BAUDRATE, false),
 	_speedLevel ("speed_level", DEFAULT_SPEED_LEVEL, false),
 	_highSensitivity ("high_sensitivity", DEFAULT_SENSITIVITY, false),
@@ -246,7 +246,6 @@ void HokuyoDriver::Main (void)
 {
 	while (true)
 	{
-		pthread_testcancel ();
 		ProcessMessages ();
 
 		if (!ReadLaser ())
@@ -529,7 +528,7 @@ bool HokuyoDriver::ReadLaser (void)
 	return true;
 }
 
-int HokuyoDriver::Setup (void)
+int HokuyoDriver::MainSetup (void)
 {
 	try
 	{
@@ -581,21 +580,18 @@ int HokuyoDriver::Setup (void)
 		SetError (e.Code ());
 		return -1;
 	}
-
-	StartThread ();
 	return 0;
 }
 
-int HokuyoDriver::Shutdown (void)
+void HokuyoDriver::MainQuit (void)
 {
-	StopThread ();
-
 	_device.Close ();
 	_data.CleanUp ();
 	if (_ranges != NULL)
+	{
 		delete[] _ranges;
-
-	return 0;
+		_ranges = NULL;
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

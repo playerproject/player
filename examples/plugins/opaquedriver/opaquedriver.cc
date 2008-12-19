@@ -41,16 +41,12 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 // The class for the driver
-class OpaqueDriver : public Driver
+class OpaqueDriver : public ThreadedDriver
 {
   public:
 
     // Constructor; need that
     OpaqueDriver(ConfigFile* cf, int section);
-
-    // Must implement the following methods.
-    virtual int Setup();
-    virtual int Shutdown();
 
     // This method will be invoked on each incoming message
     virtual int ProcessMessage(QueuePointer &resp_queue,
@@ -61,6 +57,8 @@ class OpaqueDriver : public Driver
 
     // Main function for device thread.
     virtual void Main();
+    virtual int MainSetup();
+    virtual void MainQuit();
 
     // Update the data
     virtual void RefreshData();
@@ -96,7 +94,7 @@ void OpaqueDriver_Register(DriverTable* table)
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 OpaqueDriver::OpaqueDriver(ConfigFile* cf, int section)
-    : Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
+    : ThreadedDriver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
              PLAYER_OPAQUE_CODE)
 {
   mData.data_count = sizeof(test_t);
@@ -115,7 +113,7 @@ OpaqueDriver::OpaqueDriver(ConfigFile* cf, int section)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
-int OpaqueDriver::Setup()
+int OpaqueDriver::MainSetup()
 {
   puts("Example driver initialising");
 
@@ -125,29 +123,20 @@ int OpaqueDriver::Setup()
 
   puts("Opaque driver ready");
 
-  // Start the device thread; spawns a new thread and executes
-  // OpaqueDriver::Main(), which contains the main loop for the driver.
-  StartThread();
-
   return(0);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-int OpaqueDriver::Shutdown()
+void OpaqueDriver::MainQuit()
 {
   puts("Shutting opaque driver down");
-
-  // Stop and join the driver thread
-  StopThread();
 
   // Here you would shut the device down by, for example, closing a
   // serial port.
 
   puts("Opaque driver has been shutdown");
-
-  return(0);
 }
 
 int OpaqueDriver::ProcessMessage(QueuePointer & resp_queue,
@@ -169,18 +158,13 @@ void OpaqueDriver::Main()
   // The main loop; interact with the device here
   for(;;)
   {
-    // test if we are supposed to cancel
-    pthread_testcancel();
-
+    Wait(1);
     // Process incoming messages.  OpaqueDriver::ProcessMessage() is
     // called on each message.
     ProcessMessages();
 
     // Interact with the device, and push out the resulting data, using
     RefreshData();
-
-    // Sleep (you might, for example, block on a read() instead)
-    usleep(100000);
   }
 }
 

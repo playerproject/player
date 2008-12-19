@@ -116,7 +116,7 @@ extern PlayerTime* GlobalTime;
 #define DEFAULT_RX_BUFFER_SIZE 500*1024/8
 
 // The laser device class.
-class SickS3000 : public Driver
+class SickS3000 : public ThreadedDriver
 {
   public:
 
@@ -124,8 +124,8 @@ class SickS3000 : public Driver
     SickS3000(ConfigFile* cf, int section);
     ~SickS3000();
 
-    int Setup();
-    int Shutdown();
+    int MainSetup();
+    void MainQuit();
 
     // MessageHandler
     int ProcessMessage(QueuePointer &resp_queue,
@@ -211,7 +211,7 @@ void sicks3000_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 SickS3000::SickS3000(ConfigFile* cf, int section)
-    : Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LASER_CODE), mirror("mirror", 0, 0)
+    : ThreadedDriver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LASER_CODE), mirror("mirror", 0, 0)
 {
 
   rx_count = 0;
@@ -284,7 +284,7 @@ void SickS3000::SetScannerParams(int data_count)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device
-int SickS3000::Setup()
+int SickS3000::MainSetup()
 {
 
   PLAYER_MSG0(2, "Laser initialising");
@@ -309,25 +309,16 @@ int SickS3000::Setup()
 
   PLAYER_MSG0(2, "laser ready");
 
-  // Start the device thread
-  StartThread();
-
   return 0;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-int SickS3000::Shutdown()
+void SickS3000::MainQuit()
 {
-  // shutdown laser device
-  StopThread();
-
   opaque->Unsubscribe(InQueue);
-
   PLAYER_MSG0(2, "laser shutdown");
-
-  return(0);
 }
 
 

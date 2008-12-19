@@ -139,7 +139,7 @@ driver
 #include <libplayercore/playercore.h>
 
 // The Mica2 device class.
-class Mica2 : public Driver
+class Mica2 : public ThreadedDriver
 {
     public:
     	// Constructor
@@ -149,7 +149,7 @@ class Mica2 : public Driver
 	~Mica2 ();
 
 	// Implementations of virtual functions
-	virtual int Setup       ();
+	virtual int MainSetup       ();
 	virtual int Shutdown    ();
 	virtual int Subscribe   (player_devaddr_t id);
 	virtual int Unsubscribe (player_devaddr_t id);
@@ -259,7 +259,7 @@ inline float timediffms(struct timeval start, struct timeval end) {
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 Mica2::Mica2 (ConfigFile* cf, int section)
-	: Driver (cf, section)
+	: ThreadedDriver (cf, section)
 {
     int i = 0;
     int j = 0;
@@ -373,7 +373,7 @@ int Mica2::Unsubscribe (player_devaddr_t id)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
-int Mica2::Setup ()
+int Mica2::MainSetup ()
 {
     real_elapsed=0; 
     // Open serial port
@@ -425,9 +425,6 @@ int Mica2::Setup ()
 
     // Make sure queues are empty before we begin
     tcflush (fd, TCIFLUSH);
-
-    // Start the device thread
-    StartThread ();
 
     return (0);
 }

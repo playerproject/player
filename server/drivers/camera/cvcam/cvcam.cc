@@ -92,13 +92,13 @@ driver
 
 //---------------------------------
 
-class CvCam : public Driver
+class CvCam : public ThreadedDriver
 {
   public: CvCam(ConfigFile * cf, int section);
   public: virtual ~CvCam();
 
-  public: virtual int Setup();
-  public: virtual int Shutdown();
+  public: virtual int MainSetup();
+  public: virtual void MainQuit();
 
   // This method will be invoked on each incoming message
   public: virtual int ProcessMessage(QueuePointer & resp_queue,
@@ -125,7 +125,7 @@ void cvcam_Register(DriverTable *table)
 }
 
 CvCam::CvCam(ConfigFile * cf, int section)
-  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_CAMERA_CODE)
+  : ThreadedDriver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_CAMERA_CODE)
 {
   this->capture = NULL;
   this->camindex = cf->ReadInt(section, "camindex", CV_CAP_ANY);
@@ -145,7 +145,7 @@ CvCam::~CvCam()
   if (this->capture) cvReleaseCapture(&(this->capture));
 }
 
-int CvCam::Setup()
+int CvCam::MainSetup()
 {
   if (this->capture) cvReleaseCapture(&(this->capture));
   this->capture = cvCaptureFromCAM(this->camindex);
@@ -154,16 +154,13 @@ int CvCam::Setup()
     PLAYER_ERROR("Couldn't create capture device. Something is wrong with your OpenCV.");
     return -1;
   }
-  this->StartThread();
   return 0;
 }
 
-int CvCam::Shutdown()
+int CvCam::MainQuit()
 {
-  StopThread();
   if (this->capture) cvReleaseCapture(&(this->capture));
   this->capture = NULL;
-  return 0;
 }
 
 void CvCam::Main()

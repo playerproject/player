@@ -93,7 +93,7 @@ typedef struct
 
 // this is here because we need the above typedef's before including it.
 
-class RFLEX : public Driver 
+class RFLEX : public ThreadedDriver 
 {
   private:
     player_devaddr_t position_id;
@@ -139,28 +139,13 @@ class RFLEX : public Driver
     virtual int Subscribe(player_devaddr_t addr);
     virtual int Unsubscribe(player_devaddr_t addr);
 
-    virtual int Setup();
     virtual int Shutdown();
-
-    /// @brief Start the driver thread
-    ///
-    /// This method is usually called from the overloaded Setup() method to
-    /// create the driver thread.  This will call Main().
-    virtual void StartThread(void);
-
-    /// @brief Cancel (and wait for termination) of the driver thread
-    ///
-    /// This method is usually called from the overloaded Shutdown() method
-    /// to terminate the driver thread.
-    virtual void StopThread(void);
 
     static int joy_control;
 	
 	// MessageHandler
 	int ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, 
                                void * data);
-	
-	bool ThreadAlive;
 };
 
 

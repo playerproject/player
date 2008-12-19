@@ -97,7 +97,7 @@ typedef struct {
 */
 
 
-class REB : public Driver 
+class REB : public ThreadedDriver 
 {
 public:
   
@@ -112,7 +112,7 @@ public:
   virtual int Subscribe(player_device_id_t id);
   virtual int Unsubscribe(player_device_id_t id);
   
-  virtual int Setup();
+  virtual int MainSetup();
   virtual int Shutdown();
 
   void Restart();

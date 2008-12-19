@@ -109,7 +109,7 @@ clodbuster_Register(DriverTable* table)
 
 
 ClodBuster::ClodBuster( ConfigFile* cf, int section)
-        : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION2D_CODE)
+        : ThreadedDriver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION2D_CODE)
 {
   clodbuster_fd = -1;
 
@@ -141,7 +141,7 @@ ClodBuster::~ClodBuster()
   delete Kw;
 }
 
-int ClodBuster::Setup()
+int ClodBuster::MainSetup()
 {
   //  int i;
   // this is the order in which we'll try the possible baud rates. we try 9600
@@ -221,22 +221,12 @@ int ClodBuster::Setup()
   ResetRawPositions();
 
   direct_command_control = true;
-
-  /* now spawn reading thread */
-  StartThread();
   return(0);
 }
 
-int ClodBuster::Shutdown()
+void ClodBuster::MainQuit()
 {
   GRASPPacket packet;
-
-  if(clodbuster_fd == -1)
-    {
-      return(0);
-    }
-
-  StopThread();
 
   packet.Build(SET_SLEEP_MODE,SLEEP_MODE_OFF);
   packet.Send(clodbuster_fd);
@@ -246,7 +236,6 @@ int ClodBuster::Shutdown()
   clodbuster_fd = -1;
   puts("ClodBuster has been shutdown");
 
-  return(0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

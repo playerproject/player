@@ -90,7 +90,7 @@ typedef struct
 
 
 
-class ER : public Driver 
+class ER : public ThreadedDriver 
 {
   private:
     player_er1_data_t er1_data;
@@ -105,7 +105,7 @@ class ER : public Driver
     int SetVelocity(double lvel, double rvel);
     void Stop( int StopMode );
     virtual void Main();
-    virtual int Setup();
+    virtual int MainSetup();
     virtual int Shutdown();
     //void HandleConfig(void);
     //void GetCommand(void);

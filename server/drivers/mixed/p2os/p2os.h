@@ -177,7 +177,7 @@ class SIP;
 // Forward declaration of the KineCalc_Base class declared in kinecalc_base.h
 //class KineCalc;
 
-class P2OS : public Driver
+class P2OS : public ThreadedDriver
 {
   private:
     player_p2os_data_t p2os_data;
@@ -329,7 +329,7 @@ class P2OS : public Driver
     /* the main thread */
     virtual void Main();
 
-    virtual int Setup();
+    virtual int MainSetup();
     virtual int Shutdown();
 
     // MessageHandler

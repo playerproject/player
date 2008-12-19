@@ -244,13 +244,13 @@ extern PlayerTime *GlobalTime;
 
 ////////////////////////////////////////////////////////////////////////////////
 // The class for the driver
-class LinuxJoystick : public Driver
+class LinuxJoystick : public ThreadedDriver
 {
   // Constructor; need that
   public: LinuxJoystick(ConfigFile* cf, int section);
 
   // Must implement the following methods.
-  public: int Setup();
+  public: int MainSetup();
   public: int Shutdown();
 
   // Main function for device thread.
@@ -328,7 +328,7 @@ void linuxjoystick_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
-LinuxJoystick::LinuxJoystick(ConfigFile* cf, int section) : Driver(cf, section)
+LinuxJoystick::LinuxJoystick(ConfigFile* cf, int section) : ThreadedDriver(cf, section)
 {
   // zero ids, so that we'll know later which interfaces were requested
   memset(&(this->cmd_position_addr), 0, sizeof(player_devaddr_t));
@@ -396,7 +396,7 @@ LinuxJoystick::LinuxJoystick(ConfigFile* cf, int section) : Driver(cf, section)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
-int LinuxJoystick::Setup()
+int LinuxJoystick::MainSetup()
 {
   // Open the joystick device
   this->fd = open(this->dev, O_RDONLY);
@@ -446,10 +446,6 @@ int LinuxJoystick::Setup()
   }
 
   this->pos[0] = this->pos[1] = this->pos[2] = 0;
-
-  // Start the device thread; spawns a new thread and executes
-  // LinuxJoystick::Main(), which contains the main loop for the driver.
-  this->StartThread();
 
   return 0;
 }

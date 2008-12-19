@@ -147,7 +147,7 @@ driver
 
 ///////////////////////////////////////////////////////////////////////////
 
-class roboteq:public Driver
+class roboteq:public ThreadedDriver
 {
   private:
       int roboteq_fd;
@@ -168,7 +168,7 @@ class roboteq:public Driver
 
     virtual int ProcessMessage(QueuePointer &resp_queue,
 						player_msghdr * hdr, void * data);
-    virtual int Setup();
+    virtual int MainSetup();
     virtual int Shutdown();
     virtual void Main();
 };
@@ -190,7 +190,7 @@ void roboteq_Register(DriverTable* table)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-roboteq::roboteq( ConfigFile* cf, int section) : Driver(cf, section)
+roboteq::roboteq( ConfigFile* cf, int section) : ThreadedDriver(cf, section)
 {
 	memset (&this->position2d_id, 0, sizeof (player_devaddr_t));
 
@@ -236,7 +236,7 @@ roboteq::roboteq( ConfigFile* cf, int section) : Driver(cf, section)
 
 ///////////////////////////////////////////////////////////////////////////
 int
-roboteq::Setup()
+roboteq::MainSetup()
 {
   int ret, i;
 
@@ -312,9 +312,6 @@ roboteq::Setup()
 		fputs("Successfully initialized Roboteq connection.\n", stderr);
 
 	fputs("Done.\n", stderr);
-
-  // now spawn reading thread
-  StartThread();
 
   return(0);
 }

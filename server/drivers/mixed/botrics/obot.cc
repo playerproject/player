@@ -137,7 +137,7 @@ driver
 
 static void StopRobot(void* obotdev);
 
-class Obot : public Driver
+class Obot : public ThreadedDriver 
 {
   private:
     // this function will be run in a separate thread
@@ -209,8 +209,8 @@ class Obot : public Driver
                        player_msghdr * hdr,
                        void * data);
 
-    virtual int Setup();
-    virtual int Shutdown();
+    virtual int MainSetup();
+    virtual void MainQuit();
 };
 
 
@@ -228,7 +228,7 @@ obot_Register(DriverTable* table)
 }
 
 Obot::Obot( ConfigFile* cf, int section)
-  : Driver(cf,section,true,PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
+  : ThreadedDriver(cf,section,true,PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
 {
   memset(&this->position_addr,0,sizeof(player_devaddr_t));
   memset(&this->power_addr,0,sizeof(player_devaddr_t));
@@ -355,7 +355,7 @@ Obot::OpenTerm()
 }
 
 int
-Obot::Setup()
+Obot::MainSetup()
 {
   int flags;
   int ltics,rtics,lvel,rvel;
@@ -422,21 +422,13 @@ Obot::Setup()
     return(-1);
   }
 
-  // start the thread to talk with the robot
-  StartThread();
-
   return(0);
 }
 
-int
-Obot::Shutdown()
+void
+Obot::MainQuit()
 {
   unsigned char deinitstr[1];
-
-  if(this->fd == -1)
-    return(0);
-
-  StopThread();
 
   usleep(OBOT_DELAY_US);
 
@@ -448,7 +440,6 @@ Obot::Shutdown()
     PLAYER_ERROR1("close() failed:%s",strerror(errno));
   this->fd = -1;
   puts("Botrics Obot has been shutdown");
-  return(0);
 }
 
 void

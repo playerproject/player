@@ -436,7 +436,7 @@ const static evid_cam_t SONY_EVI_CAMERAS[NUM_SONY_EVI_CAMERAS]
  *
  */
 
-class SonyEVID30:public Driver
+class SonyEVID30:public ThreadedDriver
 {
  protected:
   bool command_pending1;  // keep track of how many commands are pending;
@@ -517,7 +517,7 @@ public:
 
   SonyEVID30( ConfigFile* cf, int section);
 
-  virtual int Setup();
+  virtual int MainSetup();
   virtual int Shutdown();
 };
 
@@ -557,7 +557,7 @@ void sonyevid30_Register(DriverTable * table)
 }
 
 SonyEVID30::SonyEVID30( ConfigFile* cf, int section)
-: Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_PTZ_CODE)
+: ThreadedDriver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_PTZ_CODE)
 {
   ptz_fd = -1;
   command_pending1 = false;
@@ -594,7 +594,7 @@ SonyEVID30::SonyEVID30( ConfigFile* cf, int section)
 	InQueue->SetReplace(true);
 }
 
-int SonyEVID30::Setup()
+int SonyEVID30::MainSetup()
 {
   struct termios term;
   short pan,tilt;
@@ -688,9 +688,6 @@ int SonyEVID30::Setup()
 	}
 
   puts("Done.");
-
-  // start the thread to talk with the camera
-  StartThread();
 
   return(0);
 }

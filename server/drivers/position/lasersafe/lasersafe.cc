@@ -285,7 +285,6 @@ int LaserSafe::ProcessMessage (QueuePointer & resp_queue, player_msghdr * hdr, v
     double time = hdr->timestamp;
     bool hit = false;
 
-    Lock ();
     // Dont do anything if this is old data.
     if (time - laser_time < 0.001)
       return 0;
@@ -339,7 +338,6 @@ int LaserSafe::ProcessMessage (QueuePointer & resp_queue, player_msghdr * hdr, v
     if (hit)
     {
       Blocked = true;
-      Unlock ();
       player_position2d_cmd_vel_t NullCmd = {{0}};
 
       position->PutMsg (InQueue, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_VEL, &NullCmd, sizeof (NullCmd), NULL);
@@ -347,7 +345,6 @@ int LaserSafe::ProcessMessage (QueuePointer & resp_queue, player_msghdr * hdr, v
     else
     {
       Blocked = false;
-      Unlock ();
     }
 
     return 0;
@@ -408,14 +405,10 @@ int LaserSafe::ProcessMessage (QueuePointer & resp_queue, player_msghdr * hdr, v
   {
     assert (hdr->size == sizeof (player_position2d_cmd_vel_t));
     bool fwdMove = reinterpret_cast<player_position2d_cmd_vel_t*> (data)->vel.px > 0 ? true : false;
-    Lock ();
     if (!Blocked || (Blocked && front && !fwdMove) || (Blocked && !front && fwdMove))
     {
-      Unlock ();
       position->PutMsg (InQueue, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_VEL, data, hdr->size, &hdr->timestamp);
     }
-    else
-      Unlock ();
     return 0;
   }
 
@@ -423,14 +416,10 @@ int LaserSafe::ProcessMessage (QueuePointer & resp_queue, player_msghdr * hdr, v
   {
     assert (hdr->size == sizeof (player_position2d_cmd_pos_t));
     bool fwdMove = reinterpret_cast<player_position2d_cmd_pos_t*> (data)->pos.px > 0 ? true : false;
-    Lock ();
     if (!Blocked || (Blocked && front && !fwdMove) || (Blocked && !front && fwdMove))
     {
-      Unlock ();
       position->PutMsg (InQueue, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_POS, data, hdr->size, &hdr->timestamp);
     }
-    else
-      Unlock ();
     return 0;
   }
 

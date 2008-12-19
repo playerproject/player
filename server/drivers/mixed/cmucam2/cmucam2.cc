@@ -117,7 +117,7 @@ driver
 
 #define MAX_CHANNELS 32
 
-class Cmucam2:public Driver
+class Cmucam2:public ThreadedDriver
 {
 	private:
 
@@ -169,7 +169,7 @@ class Cmucam2:public Driver
 
 		virtual void Main();
 
-		int Setup();
+		int MainSetup();
 		int Shutdown();
 };
 
@@ -189,7 +189,7 @@ cmucam2_Register(DriverTable* table)
 }
 
 Cmucam2::Cmucam2( ConfigFile* cf, int section)
-	: Driver(cf, section)
+	: ThreadedDriver(cf, section)
 {
 	memset (&this->blobfinder_id, 0, sizeof (player_devaddr_t));
 	memset (&this->ptz_id,        0, sizeof (player_devaddr_t));
@@ -275,7 +275,7 @@ Cmucam2::~Cmucam2()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-int Cmucam2::Setup()
+int Cmucam2::MainSetup()
 {
 	fflush(stdout);
 
@@ -286,9 +286,6 @@ int Cmucam2::Setup()
 		return -1;
 	}
 	auto_servoing(fd, 0);
-
-	/* now spawn reading thread */
-	StartThread();
 
 	return(0);
 }

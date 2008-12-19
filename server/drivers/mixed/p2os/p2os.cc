@@ -339,7 +339,7 @@ void p2os_Register(DriverTable* table)
 }
 
 P2OS::P2OS(ConfigFile* cf, int section)
-        : Driver(cf,section,true,PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
+        : ThreadedDriver(cf,section,true,PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
 {
   // zero ids, so that we'll know later which interfaces were requested
   memset(&this->position_id, 0, sizeof(player_devaddr_t));
@@ -674,7 +674,7 @@ P2OS::P2OS(ConfigFile* cf, int section)
   memset (&lastActArrayPosCmd, 0, sizeof (player_actarray_position_cmd_t));
 }
 
-int P2OS::Setup()
+int P2OS::MainSetup()
 {
   int i;
   // this is the order in which we'll try the possible baud rates. we try 9600
@@ -1279,8 +1279,6 @@ int P2OS::Setup()
                    sizeof(player_position_cmd_t),NULL);
 #endif
 
-  /* now spawn reading thread */
-  this->StartThread();
   return(0);
 }
 
@@ -1540,7 +1538,6 @@ P2OS::Main()
 
     // we want to turn on the sonars if someone just subscribed, and turn
     // them off if the last subscriber just unsubscribed.
-    this->Lock();
     if(!last_sonar_subscrcount && this->sonar_subscriptions)
       this->ToggleSonarPower(1);
     else if(last_sonar_subscrcount && !(this->sonar_subscriptions))
@@ -1568,7 +1565,6 @@ P2OS::Main()
       this->ToggleMotorPower(1);
     }
     last_position_subscrcount = this->position_subscriptions;
-    this->Unlock();
 
     // The Amigo board seems to drop commands once in a while.  This is
     // a hack to restart the serial reads if that happens.

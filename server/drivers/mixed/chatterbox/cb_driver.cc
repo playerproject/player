@@ -44,7 +44,7 @@ const unsigned int LEDCOUNT = 5;
 
 ////////////////////////////////////////////////////////////////////////////////
 // The class for the driver
-class ChatterboxDriver : public Driver
+class ChatterboxDriver : public ThreadedDriver
 {
   public:
 
@@ -52,7 +52,7 @@ class ChatterboxDriver : public Driver
     ChatterboxDriver(ConfigFile* cf, int section);
 
     // Must implement the following methods.
-    virtual int Setup();
+    virtual int MainSetup();
     virtual int Shutdown();
     virtual int ProcessMessage(QueuePointer & resp_queue,
                                player_msghdr * hdr,
@@ -102,27 +102,12 @@ void chatterbox_Register(DriverTable* table)
 }
 
 
-////////////////////////////////////////////////////////////////////////////////
-// Extra stuff for building a shared object.
-
-// plugin code
-
-// /* need the extern to avoid C++ name-mangling  */
-// extern "C"
-// {
-//   int player_driver_init(DriverTable* table)
-//   {
-//     Chatterbox_Register(table);
-//     return(0);
-//   }
-// }
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 ChatterboxDriver::ChatterboxDriver(ConfigFile* cf, int section)
-    : Driver(cf, section)
+    : ThreadedDriver(cf, section)
 {
   puts( "Autolab Chatterbox" );
 
@@ -271,7 +256,7 @@ void ChatterboxDriver::PlayAudioFile( char* wavfile )
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
-int ChatterboxDriver::Setup()
+int ChatterboxDriver::MainSetup()
 {
   puts("Chatterbox: Setup");
 
@@ -279,10 +264,6 @@ int ChatterboxDriver::Setup()
   enableIr( 1 );
 
   puts("Chatterbox: starting thread.");
-
-  // Start the device thread; spawns a new thread and executes
-  // ChatterboxDriver::Main(), which contains the main loop for the driver.
-  this->StartThread();
 
   puts("Chatterbox: setup done.");
 

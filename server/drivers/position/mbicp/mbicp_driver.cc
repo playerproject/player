@@ -181,7 +181,7 @@ driver
 
 #define LASER_MAX_SAMPLES 1024
 
-class mbicp : public Driver
+class mbicp : public ThreadedDriver
 {
 
 public:
@@ -189,7 +189,7 @@ public:
     mbicp( ConfigFile* cf, int section);
     virtual ~mbicp();
 
-    virtual int Setup();
+    virtual int MainSetup();
     virtual int Shutdown();
 
     virtual int ProcessMessage(QueuePointer &resp_queue,
@@ -279,7 +279,7 @@ void mbicp_Register(DriverTable* table){
 
 
 ////////////////////////////////////////////////////////////////////////////////
-int mbicp::Setup(){
+int mbicp::MainSetup(){
 
    havePrevious = false;
 
@@ -290,8 +290,6 @@ int mbicp::Setup(){
    setupScanMatching();
 
    puts("Setup Scanmatching");
-   // Start the driver thread.
-   StartThread();
    return 0;
 
 }
@@ -332,7 +330,7 @@ int mbicp::Shutdown(){
 
 ////////////////////////////////////////////////////////////////////////////////
 mbicp::mbicp( ConfigFile* cf, int section)
-  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
+  : ThreadedDriver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
            PLAYER_POSITION2D_CODE){
 
 

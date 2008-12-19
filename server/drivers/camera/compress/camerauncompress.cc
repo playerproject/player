@@ -86,13 +86,13 @@ driver
 #include <libplayercore/error.h>
 #include <libplayerjpeg/playerjpeg.h>
 
-class CameraUncompress : public Driver
+class CameraUncompress : public ThreadedDriver
 {
   // Constructor
   public: CameraUncompress( ConfigFile* cf, int section);
 
   // Setup/shutdown routines.
-  public: virtual int Setup();
+  public: virtual int MainSetup();
   public: virtual int Shutdown();
 
   // This method will be invoked on each incoming message
@@ -138,7 +138,7 @@ void camerauncompress_Register(DriverTable *table)
 }
 
 CameraUncompress::CameraUncompress( ConfigFile *cf, int section)
-  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_CAMERA_CODE)
+  : ThreadedDriver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_CAMERA_CODE)
 {
   this->frameno = 0;
 
@@ -157,7 +157,7 @@ CameraUncompress::CameraUncompress( ConfigFile *cf, int section)
   return;
 }
 
-int CameraUncompress::Setup()
+int CameraUncompress::MainSetup()
 {
   // Subscribe to the laser.
   if(Device::MatchDeviceAddress(this->camera_id, this->device_addr))
@@ -175,9 +175,6 @@ int CameraUncompress::Setup()
     PLAYER_ERROR("unable to subscribe to camera device");
     return(-1);
   }
-
-  // Start the driver thread.
-  this->StartThread();
 
   return 0;
 }

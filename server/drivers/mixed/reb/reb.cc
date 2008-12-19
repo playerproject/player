@@ -204,7 +204,7 @@ reb_Register(DriverTable *table)
 }
 
 REB::REB(ConfigFile *cf, int section)
-        : Driver(cf,section)
+        : ThreadedDriver(cf,section)
 {
   // zero ids, so that we'll know later which interfaces were requested
   memset(&this->position_id, 0, sizeof(player_device_id_t));
@@ -293,7 +293,7 @@ REB::REB(ConfigFile *cf, int section)
  * returns: 0 on success
  */
 int
-REB::Setup()
+REB::MainSetup()
 {
   struct termios oldtio;
   struct termios params;
@@ -341,8 +341,6 @@ REB::Setup()
   PutData(this->position_id,(void*)&cmd,
           sizeof(player_position_cmd_t),NULL);*/
 
-  /* now spawn reading thread */
-  StartThread();
   return(0);
 }
 

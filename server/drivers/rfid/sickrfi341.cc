@@ -94,7 +94,7 @@ driver
 #define DEFAULT_RFI341_RATE 9600
 
 // The SICK RFI 341 device class.
-class SickRFI341 : public Driver
+class SickRFI341 : public ThreadedDriver
 {
   public:
 
@@ -102,8 +102,8 @@ class SickRFI341 : public Driver
     SickRFI341  (ConfigFile* cf, int section);
     ~SickRFI341 ();
 
-    int Setup    ();
-    int Shutdown ();
+    int MainSetup    ();
+    void MainQuit ();
 
     // MessageHandler
     int ProcessMessage (QueuePointer &resp_queue,
@@ -129,7 +129,7 @@ class SickRFI341 : public Driver
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 SickRFI341::SickRFI341 (ConfigFile* cf, int section)
-    : Driver (cf, section, true,
+    : ThreadedDriver (cf, section, true, 
               PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_RFID_CODE)
 {
   // Read connection settings
@@ -150,7 +150,7 @@ SickRFI341::~SickRFI341 ()
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
 int
-  SickRFI341::Setup ()
+  SickRFI341::MainSetup ()
 {
   // Create a rfi341_protocol object
   rfi341 = new rfi341_protocol (portName, debug);
@@ -170,31 +170,24 @@ int
       current_rate = transfer_rate;
   }
 
-  // Start the device thread
-  StartThread ();
-
   return (0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-int
-  SickRFI341::Shutdown ()
+void
+SickRFI341::MainQuit ()
 {
-  // shutdown rfid device
-  StopThread ();
-
   // Change back to the original speed
   if (current_rate != connect_rate)
     rfi341->SetupSensor (connect_rate);
-
+  
   // Disconnect from the rfid unit
   rfi341->Disconnect ();
-
+  
   PLAYER_MSG0 (1, "> SICK RFI341 driver shutting down... [done]");
-
-  return (0);
 }
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // ProcessMessage

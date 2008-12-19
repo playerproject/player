@@ -59,7 +59,7 @@
 #include <libplayercore/error.h>
 
 // Driver for detecting laser retro-reflectors.
-class ImageBase : public Driver
+class ImageBase : public ThreadedDriver
 {
 	public: 
 		// Constructor
@@ -71,10 +71,6 @@ class ImageBase : public Driver
 		  PLAYER_WARN("image deleted from the memory");
 		}
 
-		// Setup/shutdown routines.
-		virtual int Setup();
-		virtual int Shutdown();
-
 		// Process incoming messages from clients 
 		int ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data);
 
@@ -84,8 +80,9 @@ class ImageBase : public Driver
 
 	protected: 
 		virtual int ProcessFrame() = 0;
-		// Main function for device thread.
+		// Main functions for device thread.
 		virtual void Main();	
+		virtual int MainSetup();
 	
 		// Input camera stuff
   		Device *camera_driver;

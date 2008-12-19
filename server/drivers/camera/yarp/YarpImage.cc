@@ -99,7 +99,7 @@ using namespace yarp::sig;
 
 ////////////////////////////////////////////////////////////////////////////////
 // The Yarp_Image device class.
-class Yarp_Image : public Driver
+class Yarp_Image : public ThreadedDriver
 {
     public:
         // Constructor
@@ -109,7 +109,7 @@ class Yarp_Image : public Driver
         ~Yarp_Image ();
 
         // Implementations of virtual functions
-        virtual int Setup ();
+        virtual int MainSetup ();
         virtual int Shutdown ();
 
         // Camera interface (provides)
@@ -150,7 +150,7 @@ void yarp_image_Register (DriverTable* table)
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 Yarp_Image::Yarp_Image (ConfigFile* cf, int section)
-    : Driver (cf, section)
+    : ThreadedDriver (cf, section)
 {
     memset (&this->cam_id, 0, sizeof (player_devaddr_t));
 
@@ -197,7 +197,7 @@ Yarp_Image::~Yarp_Image()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
-int Yarp_Image::Setup ()
+int Yarp_Image::MainSetup ()
 {
     // Open a local port
     portIn.open (portName);
@@ -207,9 +207,6 @@ int Yarp_Image::Setup ()
     printf ("carrier is %s\n", carrier);
 
     PLAYER_MSG0 (1, "> Yarp_Image starting up... [done]");
-
-    // Start the device thread
-    StartThread ();
 
     return (0);
 }

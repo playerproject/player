@@ -189,13 +189,13 @@ binary driver which is a bonus
 extern PlayerTime *GlobalTime;
 
 // Driver for detecting laser retro-reflectors.
-class CameraV4L : public Driver
+class CameraV4L : public ThreadedDriver
 {
   // Constructor
   public: CameraV4L( ConfigFile* cf, int section);
 
   // Setup/shutdown routines.
-  public: virtual int Setup();
+  public: virtual int MainSetup();
   public: virtual int Shutdown();
 
   // This method will be invoked on each incoming message
@@ -288,7 +288,7 @@ void camerav4l_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 CameraV4L::CameraV4L(ConfigFile* cf, int section)
-  : Driver(cf,
+  : ThreadedDriver(cf,
            section,
            true,
            1, // 1 instead of PLAYER_MSGQUEUE_DEFAULT_MAXLEN
@@ -356,7 +356,7 @@ CameraV4L::CameraV4L(ConfigFile* cf, int section)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device (called by server thread).
-int CameraV4L::Setup()
+int CameraV4L::MainSetup()
 {
   this->fg = fg_open(this->device);
   if (this->fg == NULL)
@@ -432,9 +432,6 @@ int CameraV4L::Setup()
   }
 
   fg_set_capture_window(this->fg, 0, 0, this->width, this->height);
-
-  // Start the driver thread.
-  this->StartThread();
 
   return 0;
 }

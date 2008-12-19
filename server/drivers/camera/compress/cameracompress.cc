@@ -85,13 +85,13 @@ driver
 #include <libplayercore/error.h>
 #include <libplayerjpeg/playerjpeg.h>
 
-class CameraCompress : public Driver
+class CameraCompress : public ThreadedDriver
 {
   // Constructor
   public: CameraCompress( ConfigFile* cf, int section);
 
   // Setup/shutdown routines.
-  public: virtual int Setup();
+  public: virtual int MainSetup();
   public: virtual int Shutdown();
 
   // This method will be invoked on each incoming message
@@ -136,7 +136,7 @@ void cameracompress_Register(DriverTable *table)
 }
 
 CameraCompress::CameraCompress( ConfigFile *cf, int section)
-  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_CAMERA_CODE)
+  : ThreadedDriver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_CAMERA_CODE)
 {
   this->data.image = NULL;
   this->frameno = 0;
@@ -157,7 +157,7 @@ CameraCompress::CameraCompress( ConfigFile *cf, int section)
   return;
 }
 
-int CameraCompress::Setup()
+int CameraCompress::MainSetup()
 {
   // Subscribe to the camera.
   if(Device::MatchDeviceAddress(this->camera_id, this->device_addr))
@@ -175,9 +175,6 @@ int CameraCompress::Setup()
     PLAYER_ERROR("unable to subscribe to camera device");
     return(-1);
   }
-
-  // Start the driver thread.
-  this->StartThread();
 
   return 0;
 }

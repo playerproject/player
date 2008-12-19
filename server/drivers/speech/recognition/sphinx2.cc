@@ -134,7 +134,7 @@ extern "C" {
 
 #define SAMPLE_RATE 16000
 
-class Sphinx2 : public Driver
+class Sphinx2 : public ThreadedDriver 
 {
   public:
     // constructor
@@ -144,8 +144,8 @@ class Sphinx2 : public Driver
 
     virtual void Main();
 
-    int Setup();
-    int Shutdown();
+    int MainSetup();
+    void MainQuit();
 
 	// This method will be invoked on each incoming message
 	virtual int ProcessMessage(QueuePointer & resp_queue,
@@ -180,7 +180,7 @@ void sphinx2_Register(DriverTable* table)
 }
 
 Sphinx2::Sphinx2( ConfigFile *cf, int section )
-: Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_SPEECH_RECOGNITION_CODE)
+: ThreadedDriver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_SPEECH_RECOGNITION_CODE)
 {
   this->hmmDir = cf->ReadFilename( section, "hmm_dir",
       "/usr/local/share/sphinx2/model/hmm/6k");
@@ -205,7 +205,7 @@ Sphinx2::~Sphinx2()
 {
 }
 
-int Sphinx2::Setup()
+int Sphinx2::MainSetup()
 {
   int argc = 70;
 
@@ -256,24 +256,16 @@ int Sphinx2::Setup()
   this->audioDev = ad_open_sps(SAMPLE_RATE);
   if (this->audioDev  == NULL)
     PLAYER_ERROR("ad_open() failed\n");
-
-  /* now spawn reading thread */
-  StartThread();
-
   // shut up compiler!
   return(0);
 }
 
-int Sphinx2::Shutdown()
+void Sphinx2::MainQuit()
 {
   ad_stop_rec( this->audioDev );
 
-  StopThread();
-
   fbs_end();
   ad_close(this->audioDev);
-
-  return(0);
 }
 
 

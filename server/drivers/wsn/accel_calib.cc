@@ -117,7 +117,7 @@ class NodeCalibrationValues
 typedef std::vector<NodeCalibrationValues> NCV;
 
 // The Accel_Calib device class.
-class Accel_Calib : public Driver
+class Accel_Calib : public ThreadedDriver
 {
     public:
         // Constructor
@@ -127,8 +127,8 @@ class Accel_Calib : public Driver
         ~Accel_Calib ();
 
         // Implementations of virtual functions
-        virtual int Setup       ();
-        virtual int Shutdown    ();
+        virtual int MainSetup       ();
+        virtual void MainQuit    ();
         // This method will be invoked on each incoming message
         virtual int ProcessMessage (QueuePointer &resp_queue,
                                     player_msghdr * hdr,
@@ -187,7 +187,7 @@ void accel_calib_Register (DriverTable* table)
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 Accel_Calib::Accel_Calib (ConfigFile* cf, int section)
-    : Driver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
+    : ThreadedDriver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, 
               PLAYER_WSN_CODE)
 {
     int i = 0;
@@ -232,7 +232,7 @@ Accel_Calib::~Accel_Calib()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
-int Accel_Calib::Setup ()
+int Accel_Calib::MainSetup ()
 {
     // Subscribe to the WSN device
     if (!(wsn_device = deviceTable->GetDevice (wsn_addr)))
@@ -246,23 +246,15 @@ int Accel_Calib::Setup ()
         return (-1);
     }
 
-    // Start the device thread
-    StartThread ();
-
     return (0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-int Accel_Calib::Shutdown ()
+void Accel_Calib::MainQuit ()
 {
-    // Stop the driver thread
-    StopThread ();
-
     // Unsubscribe from the WSN device
     wsn_device->Unsubscribe (this->InQueue);
-
-    return (0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

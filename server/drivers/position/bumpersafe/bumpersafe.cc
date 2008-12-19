@@ -172,7 +172,6 @@ int BumperSafe::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr,
     // we got bumper data, we need to deal with this
     double time = hdr->timestamp;
 
-    Lock();
     // Dont do anything if this is old data.
     if (time - bumper_time < 0.001)
       return 0;
@@ -187,7 +186,6 @@ int BumperSafe::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr,
     if (hash)
     {
       Blocked = true;
-      Unlock();
       player_position2d_cmd_vel_t NullCmd = {{0}};
 
         position->PutMsg(InQueue,PLAYER_MSGTYPE_CMD,PLAYER_POSITION2D_CMD_VEL,&NullCmd,sizeof(NullCmd),NULL);
@@ -196,7 +194,6 @@ int BumperSafe::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr,
     {
       Blocked = false;
       SafeState = CurrentState;
-      Unlock();
     }
     return 0;
   }
@@ -207,13 +204,11 @@ int BumperSafe::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr,
     // if motor is switched on then we reset the 'safe state' so robot can move with a bump panel active
       if (((player_position2d_power_config_t *) data)->state == 1)
     {
-      Lock();
       SafeState = CurrentState;
       Blocked = false;
       /*cmd.xspeed = 0;
       cmd.yspeed = 0;
       cmd.yawspeed = 0;*/
-      Unlock();
     }
     Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_MOTOR_POWER);
     return 0;
@@ -264,26 +259,20 @@ int BumperSafe::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr,
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_VEL, device_addr))
   {
     assert(hdr->size == sizeof(player_position2d_cmd_vel_t));
-    Lock();
     if (!Blocked)
     {
-      Unlock();
         position->PutMsg(InQueue,PLAYER_MSGTYPE_CMD,PLAYER_POSITION2D_CMD_VEL,data,hdr->size,&hdr->timestamp);
     }
-    Unlock();
     return 0;
   }
 
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_POS, device_addr))
   {
     assert(hdr->size == sizeof(player_position2d_cmd_pos_t));
-    Lock();
     if (!Blocked)
     {
-      Unlock();
         position->PutMsg(InQueue,PLAYER_MSGTYPE_CMD,PLAYER_POSITION2D_CMD_POS,data,hdr->size,&hdr->timestamp);
     }
-    Unlock();
     return 0;
   }
 

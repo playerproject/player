@@ -175,7 +175,7 @@ struct WriteLogDevice
 
 
 // The logfile driver
-class WriteLog: public Driver
+class WriteLog: public ThreadedDriver
 {
   /// Constructor
   public: WriteLog(ConfigFile* cf, int section);
@@ -189,7 +189,7 @@ class WriteLog: public Driver
                                      void * data);
 
   /// Initialize the driver
-  public: virtual int Setup();
+  public: virtual int MainSetup();
 
   /// Finalize the driver
   public: virtual int Shutdown();
@@ -341,7 +341,7 @@ void writelog_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////
 // Constructor
 WriteLog::WriteLog(ConfigFile* cf, int section)
-    : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LOG_CODE)
+    : ThreadedDriver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LOG_CODE)
 {
   int i;
   player_devaddr_t addr;
@@ -443,7 +443,7 @@ WriteLog::~WriteLog()
 
 ////////////////////////////////////////////////////////////////////////////
 // Initialize driver
-int WriteLog::Setup()
+int WriteLog::MainSetup()
 {
   int i;
   WriteLogDevice *device;
@@ -471,9 +471,6 @@ int WriteLog::Setup()
 
   // Enable/disable logging, according to default set in config file
   this->enable = this->enable_default;
-
-  // Start device thread
-  this->StartThread();
 
   return 0;
 }

@@ -134,7 +134,7 @@ typedef struct
 
 ////////////////////////////////////////////////////////////////////////////////
 // The EEDHController device class.
-class EEDHController : public Driver
+class EEDHController : public ThreadedDriver
 {
   public:
     // Constructor
@@ -144,7 +144,7 @@ class EEDHController : public Driver
     ~EEDHController ();
 
     // Implementations of virtual functions
-    virtual int Setup ();
+    virtual int MainSetup ();
     virtual int Shutdown ();
 
     // This method will be invoked on each incoming message
@@ -224,7 +224,7 @@ void
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 EEDHController::EEDHController (ConfigFile* cf, int section)
-  : Driver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
+  : ThreadedDriver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
             PLAYER_LIMB_CODE)
 {
   unsigned int i, j;
@@ -288,7 +288,7 @@ EEDHController::~EEDHController()
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
 int
-  EEDHController::Setup ()
+  EEDHController::MainSetup ()
 {
   PLAYER_MSG0 (1, "> EEDHController starting up... [done]");
 
@@ -303,9 +303,6 @@ int
       PLAYER_ERROR ("unable to subscribe to the actarray device");
       return (-1);
   }
-
-  // Start the device thread
-  StartThread ();
 
   return (0);
 }

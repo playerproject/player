@@ -44,16 +44,13 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 // The class for the driver
-class MultiDriver : public Driver
+class MultiDriver : public ThreadedDriver
 {
   public:
     
     // Constructor; need that
     MultiDriver(ConfigFile* cf, int section);
 
-    // Must implement the following methods.
-    virtual int Setup();
-    virtual int Shutdown();
     virtual int ProcessMessage(QueuePointer & resp_queue, 
                                player_msghdr * hdr, 
                                void * data);
@@ -61,6 +58,8 @@ class MultiDriver : public Driver
   private:
     // Main function for device thread.
     virtual void Main();
+    virtual int MainSetup();
+    virtual void MainQuit();
 
     // My position interface
     player_devaddr_t m_position_addr;
@@ -111,7 +110,7 @@ extern "C"
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 MultiDriver::MultiDriver(ConfigFile* cf, int section)
-    : Driver(cf, section)
+    : ThreadedDriver(cf, section)
 {
   // Create my position interface
   if (cf->ReadDeviceAddr(&(this->m_position_addr), section, 
@@ -150,7 +149,7 @@ MultiDriver::MultiDriver(ConfigFile* cf, int section)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
-int MultiDriver::Setup()
+int MultiDriver::MainSetup()
 {   
   puts("Example driver initialising");
 
@@ -170,33 +169,21 @@ int MultiDriver::Setup()
   // configure a serial port.
     
   puts("Example driver ready");
-
-  // Start the device thread; spawns a new thread and executes
-  // MultiDriver::Main(), which contains the main loop for the driver.
-  this->StartThread();
-
   return(0);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-int MultiDriver::Shutdown()
+void MultiDriver::MainQuit()
 {
   puts("Shutting example driver down");
-
-  // Stop and join the driver thread
-  this->StopThread();
 
   // Unsubscribe from the laser
   this->laser_dev->Unsubscribe(this->InQueue);
 
   // Here you would shut the device down by, for example, closing a
   // serial port.
-
-  puts("Example driver has been shutdown");
-
-  return(0);
 }
 
 

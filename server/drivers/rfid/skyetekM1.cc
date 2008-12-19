@@ -92,7 +92,7 @@ driver
 #define DEFAULT_RFID_RATE 9600
 
 // The SkyetekM1 device class.
-class SkyetekM1 : public Driver
+class SkyetekM1 : public ThreadedDriver
 {
 	public:
 		// Constructor
@@ -102,8 +102,8 @@ class SkyetekM1 : public Driver
 		~SkyetekM1 ();
 
 		// Implementations of virtual functions
-		int Setup ();
-		int Shutdown ();
+		int MainSetup ();
+		void MainQuit ();
 
 		// This method will be invoked on each incoming message
 		virtual int ProcessMessage (QueuePointer & resp_queue,
@@ -166,7 +166,7 @@ void skyetekM1_Register (DriverTable* table)
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 SkyetekM1::SkyetekM1 (ConfigFile* cf, int section)
-	: Driver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
+	: ThreadedDriver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, 
 			  PLAYER_RFID_CODE), allocated_tags(0)
 {
 	this->portName  = cf->ReadString (section, "port", DEFAULT_RFID_PORT);
@@ -190,7 +190,7 @@ SkyetekM1::~SkyetekM1()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
-int SkyetekM1::Setup ()
+int SkyetekM1::MainSetup ()
 {
 
 	// Open serial port
@@ -266,26 +266,19 @@ int SkyetekM1::Setup ()
 	// Make sure queues are empty before we begin
 	tcflush (this->fd, TCIOFLUSH);
 
-	// Start the device thread
-	StartThread ();
-
 	return (0);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-int SkyetekM1::Shutdown ()
+void SkyetekM1::MainQuit ()
 {
-	// Stop the driver thread
-	StopThread ();
-
 	// Close the serial port
 	tcsetattr (this->fd, TCSANOW, &this->initial_options);
 	close (this->fd);
-
+	
 	PLAYER_MSG0 (1, "> SkyetekM1 driver shutting down... [done]");
-	return (0);
 }
 
 

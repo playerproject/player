@@ -353,22 +353,8 @@ int LocalBB::Unsubscribe(player_devaddr_t addr)
 			qps.erase(*ltr);
 		}
 	}
-	int shutdownResult;
-
-	if(subscriptions == 0)
-		shutdownResult = -1;
-	else if ( subscriptions == 1)
-	{
-		shutdownResult = Shutdown();
-		subscriptions--;
-	}
-	else
-	{
-		subscriptions--;
-		shutdownResult = 0;
-	}
-
-	return shutdownResult;
+	
+	return Driver::Unsubscribe(addr);
 }
 ////////////////////////////////////////////////////////////////////////////////
 // Factory method.

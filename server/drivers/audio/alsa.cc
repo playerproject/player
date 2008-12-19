@@ -2007,7 +2007,7 @@ void Alsa::PrintMixerElements (MixerElement *elements, uint32_t count)
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 Alsa::Alsa (ConfigFile* cf, int section)
-	: Driver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_AUDIO_CODE)
+	: ThreadedDriver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_AUDIO_CODE)
 {
 	pbDevice = mixerDevice = recDevice = NULL;
 	pbHandle = NULL;
@@ -2153,7 +2153,7 @@ Alsa::~Alsa (void)
 }
 
 // Set up the device. Return 0 if things go well, and -1 otherwise.
-int Alsa::Setup (void)
+int Alsa::MainSetup (void)
 {
 	// Clear queue and set to initial values
 	ClearQueue ();
@@ -2191,16 +2191,11 @@ int Alsa::Setup (void)
 	playState = PB_STATE_STOPPED;
 	recState = PB_STATE_STOPPED;
 
-	StartThread ();
 	return 0;
 }
 
-
-// Shutdown the device
-int Alsa::Shutdown (void)
+void Alsa::MainQuit()
 {
-	StopThread ();
-
 	// Clean up PCM file descriptors
 	if (pbFDs)
 		delete[] pbFDs;
@@ -2252,8 +2247,6 @@ int Alsa::Shutdown (void)
 			}
 		}
 	}
-
-	return 0;
 }
 
 

@@ -41,7 +41,7 @@
 // Constructor
 
 ImageBase::ImageBase(ConfigFile *cf, int section, bool overwrite_cmds, size_t queue_maxlen, int interf)
-	: Driver(cf, section, overwrite_cmds, queue_maxlen, interf)
+	: ThreadedDriver(cf, section, overwrite_cmds, queue_maxlen, interf)
 {
   memset(&this->camera_addr, 0, sizeof(player_devaddr_t));
   stored_data.image = NULL;
@@ -60,7 +60,7 @@ ImageBase::ImageBase(ConfigFile *cf, int section, bool overwrite_cmds, size_t qu
 
 
 ImageBase::ImageBase(ConfigFile *cf, int section, bool overwrite_cmds, size_t queue_maxlen)
-	: Driver(cf, section, overwrite_cmds, queue_maxlen)
+	: ThreadedDriver(cf, section, overwrite_cmds, queue_maxlen)
 {
   memset(&this->camera_addr, 0, sizeof(player_devaddr_t));
   stored_data.image = NULL;
@@ -80,7 +80,7 @@ ImageBase::ImageBase(ConfigFile *cf, int section, bool overwrite_cmds, size_t qu
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device (called by server thread).
-int ImageBase::Setup()
+int ImageBase::MainSetup()
 {
   // Subscribe to the camera.
   if (Device::MatchDeviceAddress (camera_addr, device_addr))
@@ -99,16 +99,6 @@ int ImageBase::Setup()
     return -1;
   }
 
-  StartThread();
-
-  return 0;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Shutdown the device (called by server thread).
-int ImageBase::Shutdown()
-{
-  StopThread();
 
   camera_driver->Unsubscribe(InQueue);
 
@@ -127,7 +117,6 @@ int ImageBase::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, vo
   {
 	assert(data);
 	player_camera_data_t * compdata = reinterpret_cast<player_camera_data_t *>(data);
-  	Lock();
   	if (!HaveData)
   	{
 	    this->stored_data.width = (compdata->width);
@@ -186,7 +175,6 @@ int ImageBase::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, vo
 #endif
  	    HaveData = true;
   	}
- 	Unlock();
     return 0;
   }
   return -1;
@@ -202,15 +190,11 @@ void ImageBase::Main()
 
 		ProcessMessages();
 
-		Lock();
 		if (HaveData)
 		{
-			Unlock();
 			ProcessFrame();
-			Lock();
 			HaveData = false;
 		}
-		Unlock();
 	}
 
 }

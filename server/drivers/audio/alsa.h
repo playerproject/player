@@ -79,14 +79,11 @@ const PBState PB_STATE_RECORDING	= 3;	// Recording
 
 ////////////////////////////////////////////////////////////////////////////////
 // The class for the driver
-class Alsa : public Driver
+class Alsa : public ThreadedDriver
 {
 	public:
 		Alsa (ConfigFile* cf, int section);
 		~Alsa (void);
-
-		virtual int Setup (void);
-		virtual int Shutdown (void);
 
 		virtual int ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, void *data);
 
@@ -144,6 +141,8 @@ class Alsa : public Driver
 
 		// Internal functions
 		virtual void Main (void);
+		virtual int MainSetup (void);
+		virtual void MainQuit (void);
 		void SendStateMessage (void);
 
 		// Stored sample functions

@@ -61,9 +61,7 @@ class Driver;
 /// and hence appear more than once in the device table.
 class Device
 {
-  private:
   public:
-  
     /// @brief Constructor
     ///
     /// @param addr : Device address
@@ -177,8 +175,6 @@ class Device
     /// The string name for the underlying driver
     char drivername[PLAYER_MAX_DRIVER_STRING_LEN];
 
-    /// Pointer to the underlying driver
-    Driver* driver;
     
     /// Pointer to the underlying driver's queue
     QueuePointer InQueue;
@@ -188,6 +184,20 @@ class Device
 
     /// Length of @p queues
     size_t len_queues;
+
+    /// Pointer to the underlying driver
+    Driver* driver;
+
+  private:
+    /** @brief Mutex used to lock access, via Lock() and Unlock(), to
+    device internals, like the list of subscribed queues. */
+    pthread_mutex_t accessMutex;
+    /** @brief Lock access to driver internals. */
+    void Lock(void); 
+    /** @brief Unlock access to driver internals. */
+    void Unlock(void);
+  
+    
 };
 
 #endif
