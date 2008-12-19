@@ -61,7 +61,8 @@
      command is received, so this will introduce a slight delay before the data is delivered.
  - portopts (string)
    - Default: "type=serial,device=/dev/ttyACM0,timeout=1"
-   - Options to create the Flexiport port with.
+   - Options to create the Flexiport port with. Note that any baud rate specified in this line
+     should be the scanner's startup baud rate.
  - pose (float 6-tuple: (m, m, m, rad, rad, rad))
    - Default: [0.0 0.0 0.0 0.0 0.0 0.0]
    - Pose (x, y, z, roll, pitch, yaw) of the laser relative to its parent object (e.g. the robot).
@@ -77,8 +78,8 @@
  - power (boolean)
    - Default: true
    - If true, the sensor power will be switched on upon driver activation (i.e. when the first
-   client connects). Otherwise a power request must be made to turn it on before data will be
-   received.
+     client connects). Otherwise a power request must be made to turn it on before data will be
+     received.
  - verbose (boolean)
    - Default: false
    - Enable verbose debugging information in the underlying library.
@@ -88,7 +89,8 @@
  - baud_rate (integer)
    - Default: 19200bps
    - Change the baud rate of the connection to the laser. See hokuyo_aist documentation for valid
-     values.
+     values. This is separate from the scanner's power-on default baud rate, which should be
+     specified in portopts.
  - speed_level (integer, 0 to 10 or 99)
    - Default: 0
    - The speed at which the laser operates, as a level down from maximum speed. See the hokuyo_aist
@@ -533,7 +535,7 @@ int HokuyoDriver::MainSetup (void)
 	try
 	{
 		// Open the laser
-		_device.Open (_portOpts);
+		_device.OpenWithProbing (_portOpts);
 		// Get the sensor information and check _minAngle and _maxAngle are OK
 		hokuyo_aist::HokuyoSensorInfo info;
 		_device.GetSensorInfo (&info);
