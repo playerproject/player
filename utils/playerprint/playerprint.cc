@@ -370,6 +370,7 @@ main(int argc, char **argv)
         break;
       case PLAYER_RANGER_CODE:
         std::cout << *reinterpret_cast<RangerProxy *> (cp);
+        break;
       case PLAYER_SIMULATION_CODE:
         std::cout << *reinterpret_cast<SimulationProxy *> (cp);
         break;
