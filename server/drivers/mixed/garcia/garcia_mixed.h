@@ -28,7 +28,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 // The class for the driver
-class GarciaDriver : public Driver
+class GarciaDriver : public ThreadedDriver
 {
   public:
 
@@ -38,7 +38,7 @@ class GarciaDriver : public Driver
     virtual ~GarciaDriver();
 
     // Must implement the following methods.
-    int Setup();
+    int MainSetup();
     int Shutdown();
     // Main function for device thread.
     virtual void Main();

@@ -121,15 +121,15 @@ extern PlayerTime* GlobalTime;
 const double DEFAULT_NAV_REQUEST_DELAY_USECS = 0.06;
 
 // The laser device class.
-class SickNAV200 : public Driver {
+class SickNAV200 : public ThreadedDriver {
 public:
 
 	// Constructor
 	SickNAV200(ConfigFile* cf, int section);
 	~SickNAV200();
 
-	int Setup();
-	int Shutdown();
+	int MainSetup();
+	void MainQuit();
 
 	// MessageHandler
 	int ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr,
@@ -265,7 +265,7 @@ void sicknav200_Register(DriverTable* table) {
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 SickNAV200::SickNAV200(ConfigFile* cf, int section) :
-	Driver(cf, section, false),
+	ThreadedDriver(cf, section, false), 
 	Initialised(false),
 	mode("mode", DEFAULT_SICKNAV200_MODE, false, this, cf, section),
 	Nearest("nearest", 0, false, this, cf, section),
@@ -370,7 +370,7 @@ SickNAV200::~SickNAV200() {
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device
-int SickNAV200::Setup() {
+int SickNAV200::MainSetup() {
 	PLAYER_MSG0(2, "NAV200 Setup");
 
 	// Subscribe to the opaque device.
@@ -428,19 +428,12 @@ int SickNAV200::Setup() {
 		}
 	}
 
-
-	// Start the device thread
-	StartThread();
-
 	return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-int SickNAV200::Shutdown() {
-	// shutdown laser device
-	StopThread();
-
+void SickNAV200::MainQuit() {
 	opaque->Unsubscribe(InQueue);
 
 	if (TimingLogFile)
@@ -450,8 +443,6 @@ int SickNAV200::Shutdown() {
 	}
 
 	PLAYER_MSG0(2, "laser shutdown");
-
-	return (0);
 }
 
 int SickNAV200::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr,

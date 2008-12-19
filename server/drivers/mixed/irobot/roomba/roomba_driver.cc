@@ -117,12 +117,12 @@ requires Player to be restarted
 
 #define CYCLE_TIME_NS 200000000
 
-class Roomba : public Driver
+class Roomba : public ThreadedDriver
 {
   public:
     Roomba(ConfigFile* cf, int section);
 
-    int Setup();
+    int MainSetup();
     int Shutdown();
 
     // MessageHandler
@@ -173,7 +173,7 @@ void roomba_Register(DriverTable* table)
 }
 
 Roomba::Roomba(ConfigFile* cf, int section)
-        : Driver(cf,section,true,PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
+        : ThreadedDriver(cf,section,true,PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
 {
   memset(&this->position_addr,0,sizeof(player_devaddr_t));
   memset(&this->power_addr,0,sizeof(player_devaddr_t));
@@ -257,7 +257,7 @@ Roomba::Roomba(ConfigFile* cf, int section)
 }
 
 int
-Roomba::Setup()
+Roomba::MainSetup()
 {
   this->roomba_dev = roomba_create(this->serial_port);
 
@@ -272,8 +272,6 @@ Roomba::Setup()
   /*
   roomba_set_leds(this->roomba_dev, 1, 0, 1, 0, 2, 128, 255);
   */
-
-  this->StartThread();
 
   return(0);
 }

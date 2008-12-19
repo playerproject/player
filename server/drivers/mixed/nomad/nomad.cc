@@ -146,15 +146,15 @@ float rad2tenths_deg(float num) {
 
 
 
-class NomadDriver : public Driver
+class NomadDriver : public ThreadedDriver
 {
 public:
   //constructor
   NomadDriver(ConfigFile* cf, int section);
 
   //mandatory functions
-  virtual int Setup(); //called when a client connects to a playe server using this driver
-  virtual int Shutdown(); //called upon driver shutdown
+  virtual int MainSetup(); //called when a client connects to a playe server using this driver
+  virtual void MainQuit(); //called upon driver shutdown
 
   //invoked on each incoming message
   virtual int ProcessMessage(QueuePointer& resp_queue,player_msghdr *hdr,void * data);
@@ -231,7 +231,7 @@ void NomadDriver::zeroOnStartup(){
 
 //constructor
 NomadDriver::NomadDriver (ConfigFile * cf, int section):
-  Driver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
+  ThreadedDriver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
 {
   // Read options from the configuration file
   this->NOMAD_TIMEOUT_S = cf->ReadInt(section,"NOMAD_TIMEOUT_S",5);
@@ -324,7 +324,7 @@ NomadDriver::NomadDriver (ConfigFile * cf, int section):
 /**
     Return 0 if things go well, and -1 otherwise.
 */
-int NomadDriver::Setup ()
+int NomadDriver::MainSetup ()
 {
   PLAYER_WARN ("Nomad 200 :: Driver initialising");
   PLAYER_WARN ("Nomad 200:: WARNING!!! - make sure there's enough free space around the robot");
@@ -355,10 +355,6 @@ int NomadDriver::Setup ()
   ac(NOMAD_MAX_ACC_TRANS,NOMAD_MAX_ACC_STEER,NOMAD_MAX_ACC_STEER);
   sp(NOMAD_MAX_VEL_TRANS,NOMAD_MAX_VEL_STEER,NOMAD_MAX_VEL_STEER);
 
-  //! Start the device thread; spawns a new thread and executes
-  //! NomadDriver::Main(), which contains the main loop for the driver.
-  StartThread ();
-
   // Initialize the holders for desired velocities
   VelTrans = 0;
   VelSteer = 0;
@@ -371,11 +367,9 @@ int NomadDriver::Setup ()
 };
 
 /// Shutdown the device
-int NomadDriver::Shutdown ()
+void NomadDriver::MainQuit ()
 {
   PLAYER_WARN ("Nomad 200 :: Shutting driver down");
-  //! Stop and join the driver thread
-  StopThread ();
   //making sure that the robot stops when shutting down the device
   st();
   ws(TRUE,TRUE,TRUE,0);
@@ -383,8 +377,6 @@ int NomadDriver::Shutdown ()
   disconnect_robot(1);
 
   PLAYER_WARN ("Nomad 200 :: Shutting driver down - DONE");
-
-  return (0);
 };
 
 /// Process messages

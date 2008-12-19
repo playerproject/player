@@ -69,16 +69,12 @@ inline float timediffms(struct timeval start, struct timeval end) {
 ////////////////////////////////////////////
 //This is the class for the Player Driver
 ////////////////////////////////////////////
-class AmtecM5 : public Driver {
+class AmtecM5 : public ThreadedDriver {
 	public:
 
 		// Constructor; need that
 		AmtecM5(ConfigFile* cf, int section);
 		~AmtecM5(void);
-
-		// Must implement the following methods.
-		virtual int Setup();
-		virtual int Shutdown();
 
 		// This method will be invoked on each incoming message
 		virtual int ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, void * data);
@@ -141,6 +137,9 @@ class AmtecM5 : public Driver {
 
 		// Main function for device thread.
 		virtual void Main();
+
+		virtual void MainQuit();
+		virtual int MainSetup();
 
 		player_actarray_data_t actArray;
 		player_actarray_actuator_t *actuators;
@@ -306,7 +305,7 @@ AmtecM5::~AmtecM5(void)
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
 // Usually runs the first time someone connects to the interface
-int AmtecM5::Setup() {
+int AmtecM5::MainSetup() {
 	using namespace std;
 
 	puts("Amtec M5 Powercube driver initialising");
@@ -478,25 +477,12 @@ int AmtecM5::Setup() {
 
 	puts("Amtec M5 powercube driver ready.");
 
-	// Start the device thread; spawns a new thread and executes
-	// AmtecM5::Main(), which contains the main loop for the driver.
-	StartThread();
-
 	return(0);
 }
 
 
-////////////////////////////////////////////////////////////////////////////////
-// Shutdown the device
-int AmtecM5::Shutdown() {
-	puts("Shutting Amtec M5 Powercube driver down");
-
-        //Wait a little to let everything settle
-        sleep(1);  //We've been getting some segfaults at disconnect from the last client without this
-
-	// Stop and join the driver thread
-	StopThread();
-
+void MainQuit()
+{
         if (debug_level) {
                 cout << "About to delete the pclDevice.\n";
         }

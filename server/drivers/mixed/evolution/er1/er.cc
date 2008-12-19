@@ -133,7 +133,7 @@ void
 }
 
 ER::ER(ConfigFile* cf, int section)
-  : Driver(cf, section)
+  : ThreadedDriver(cf, section)
 {
     // zero ids, so that we'll know later which interfaces were requested
   memset(&this->position_id, 0, sizeof(position_id));
@@ -403,7 +403,7 @@ int
 }
 
 int
-    ER::Setup()
+    ER::MainSetup()
 {
   struct termios term;
   int flags;
@@ -478,9 +478,6 @@ int
     this->_fd = -1;
     return -1;
   }
-
-    // start the thread to talk with the robot
-  this->StartThread();
 
   return(0);
 }

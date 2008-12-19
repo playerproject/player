@@ -147,7 +147,7 @@ void wbr914_Register(DriverTable* table)
 }
 
 wbr914::wbr914(ConfigFile* cf, int section)
-  : Driver(cf,section,true,PLAYER_MSGQUEUE_DEFAULT_MAXLEN),
+  : ThreadedDriver(cf,section,true,PLAYER_MSGQUEUE_DEFAULT_MAXLEN),
     _tioChanged( false ),
     _stopped( true ), _motorsEnabled( false ), _lastDigOut( 0 )
 {
@@ -317,7 +317,7 @@ wbr914::~wbr914()
 
 }
 
-int wbr914::Setup()
+int wbr914::MainSetup()
 {
   struct termios term;
   int flags;
@@ -458,7 +458,6 @@ int wbr914::Setup()
   /* now spawn reading thread */
   if ( _debug )
     printf( "Starting Thread...\n" );
-  StartThread();
   return(0);
 }
 
@@ -650,8 +649,6 @@ void wbr914::Main()
       this->EnableMotors( true );
     }
     last_position_subscrcount = this->position_subscriptions;
-
-    this->Unlock();
 
     // handle pending messages
     if(!this->InQueue->Empty())

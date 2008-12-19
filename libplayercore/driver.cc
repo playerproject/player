@@ -72,7 +72,6 @@ Driver::Driver(ConfigFile *cf, int section,
                int interf) : InQueue(overwrite_cmds, queue_maxlen)
 {
   this->error = 0;
-  this->driverthread = 0;
 
   // Look for our default device id
   if(cf->ReadDeviceAddr(&this->device_addr, section, "provides",
@@ -95,6 +94,7 @@ Driver::Driver(ConfigFile *cf, int section,
   }
 
   pthread_mutex_init(&this->accessMutex,NULL);
+  pthread_mutex_init(&this->subscriptionMutex,NULL);
 }
 
 // this is the other constructor, used by multi-interface drivers.
@@ -102,7 +102,6 @@ Driver::Driver(ConfigFile *cf, int section,
                bool overwrite_cmds, size_t queue_maxlen) : InQueue(overwrite_cmds, queue_maxlen)
 {
   this->error = 0;
-  this->driverthread = 0;
 
   this->device_addr.interf = 0xFFFF;
 
@@ -111,6 +110,7 @@ Driver::Driver(ConfigFile *cf, int section,
   this->entries = 0;
 
   pthread_mutex_init(&this->accessMutex,NULL);
+  pthread_mutex_init(&this->subscriptionMutex,NULL);
 }
 
 // destructor, to free up allocated queue.
@@ -132,7 +132,7 @@ Driver::AddInterface(player_devaddr_t addr)
 }
 
 int
-Driver::AddInterface(player_devaddr_t *addr, ConfigFile * cf, int section, int code, char * key)
+Driver::AddInterface(player_devaddr_t *addr, ConfigFile * cf, int section, int code, const char * key)
 {
   assert(addr);
   // Create position interface
@@ -264,10 +264,25 @@ void Driver::Unlock()
   pthread_mutex_unlock(&accessMutex);
 }
 
+void Driver::SubscriptionLock()
+{
+  pthread_mutex_lock(&subscriptionMutex);
+}
+
+void Driver::SubscriptionUnlock()
+{
+  pthread_mutex_unlock(&subscriptionMutex);
+}
+
+bool Driver::HasSubscriptions()
+{
+	return subscriptions > 0;
+}
+
 int Driver::Subscribe(player_devaddr_t addr)
 {
   int setupResult;
-
+  SubscriptionLock();
   if(subscriptions == 0)
   {
     setupResult = Setup();
@@ -279,14 +294,14 @@ int Driver::Subscribe(player_devaddr_t addr)
     subscriptions++;
     setupResult = 0;
   }
-
+  SubscriptionUnlock();
   return(setupResult);
 }
 
 int Driver::Unsubscribe(player_devaddr_t addr)
 {
   int shutdownResult;
-
+  SubscriptionLock();
   if(subscriptions == 0)
     shutdownResult = -1;
   else if ( subscriptions == 1)
@@ -299,8 +314,22 @@ int Driver::Unsubscribe(player_devaddr_t addr)
     subscriptions--;
     shutdownResult = 0;
   }
-
+  SubscriptionUnlock();
   return( shutdownResult );
+}
+
+int Driver::Terminate()
+{
+  SubscriptionLock();
+  if (subscriptions)
+  {
+    Shutdown();
+    subscriptions = 0;
+    alwayson = 0;
+    InQueue->DataAvailable();
+  }
+  SubscriptionUnlock();
+  return 0;
 }
 
 /** @brief Wake up the driver if the specified event occurs on the file descriptor */
@@ -313,64 +342,6 @@ int Driver::AddFileWatch(int fd, bool ReadWatch , bool WriteWatch , bool ExceptW
 int Driver::RemoveFileWatch(int fd, bool ReadWatch , bool WriteWatch , bool ExceptWatch )
 {
   return fileWatcher->RemoveFileWatch(fd,InQueue,ReadWatch,WriteWatch,ExceptWatch);
-}
-
-
-/* start a thread that will invoke Main() */
-void
-Driver::StartThread(void)
-{
-  pthread_create(&driverthread, NULL, &DummyMain, this);
-}
-
-/* cancel (and wait for termination) of the thread */
-void
-Driver::StopThread(void)
-{
-  void* dummy;
-  pthread_cancel(driverthread);
-  // Release the driver thread, in case it's waiting on the message queue
-  // or the driver mutex.
-  this->InQueue->DataAvailable();
-  this->Unlock();
-  if(pthread_join(driverthread,&dummy))
-    perror("Driver::StopThread:pthread_join()");
-}
-
-/* Dummy main (just calls real main) */
-void*
-Driver::DummyMain(void *devicep)
-{
-  // Install a cleanup function
-  pthread_cleanup_push(&DummyMainQuit, devicep);
-
-  // Run the overloaded Main() in the subclassed device.
-  ((Driver*)devicep)->Main();
-
-  // Run the uninstall cleanup function
-  pthread_cleanup_pop(1);
-
-  return NULL;
-}
-
-/* Dummy main cleanup (just calls real main cleanup) */
-void
-Driver::DummyMainQuit(void *devicep)
-{
-  // Run the overloaded MainCleanup() in the subclassed device.
-  ((Driver*)devicep)->MainQuit();
-}
-
-void
-Driver::Main()
-{
-  PLAYER_ERROR("You have called StartThread(), "
-               "but didn't provide your own Main()!");
-}
-
-void
-Driver::MainQuit()
-{
 }
 
 // Default message handler
@@ -390,6 +361,7 @@ void Driver::ProcessMessages(void)
 /// a message with no handler is reached
 void Driver::ProcessMessages(int maxmsgs)
 {
+  TestCancel();
   // See if we have any pending messages and process them
   if(maxmsgs == 0)
     maxmsgs = this->InQueue->GetLength();
@@ -421,7 +393,7 @@ void Driver::ProcessMessages(int maxmsgs)
       }
     }
     delete msg;
-    pthread_testcancel();
+    TestCancel();
     currmsg++;
   }
 }
@@ -505,3 +477,8 @@ bool Driver::RegisterProperty(Property *prop, ConfigFile* cf, int section)
   return RegisterProperty(prop->GetKey(), prop, cf, section);
 }
 
+bool Driver::Wait(double TimeOut) 
+{ 
+	bool ret = this->InQueue->Wait(TimeOut);
+	return ret;
+}

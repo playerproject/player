@@ -126,7 +126,7 @@ driver
 static unsigned int error_code;
 
 
-class canonvcc4:public Driver
+class canonvcc4:public ThreadedDriver
 {
  private:
   bool ptz_fd_blocking;
@@ -171,7 +171,7 @@ class canonvcc4:public Driver
 int ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, void * data);
   // int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
 
-  virtual int Setup();
+  virtual int MainSetup();
   virtual int Shutdown();
 };
 
@@ -197,7 +197,7 @@ canonvcc4_Register(DriverTable* table)
 // : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_PTZ_CODE, PLAYER_OPEN_MODE)
 
 canonvcc4::canonvcc4( ConfigFile* cf, int section)
-: Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_PTZ_CODE)
+: ThreadedDriver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_PTZ_CODE)
 {
   pandemand = 0; tiltdemand = 0; zoomdemand = 0;
   ptz_fd = -1;
@@ -209,7 +209,7 @@ canonvcc4::canonvcc4( ConfigFile* cf, int section)
 
 /************************************************************************/
 int
-canonvcc4::Setup()
+canonvcc4::MainSetup()
 {
   int pan,tilt;
   int flags;
@@ -324,8 +324,6 @@ canonvcc4::Setup()
 
   data.pan = data.tilt = data.zoom = 0;
   cmd.pan = cmd.tilt = cmd.zoom = 0;
-
-  StartThread();
 
   return(0);
 }

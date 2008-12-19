@@ -28,7 +28,7 @@ class rmp_frame_t;
 
 
 // Driver for robotic Segway
-class SegwayRMP : public Driver
+class SegwayRMP : public ThreadedDriver
 {
   public: 
     // Constructors etc
@@ -36,7 +36,7 @@ class SegwayRMP : public Driver
     ~SegwayRMP();
 
     // Setup/shutdown routines.
-    virtual int Setup();
+    virtual int MainSetup();
     virtual int Shutdown();
     virtual int ProcessMessage(QueuePointer & resp_queue,
                                player_msghdr * hdr,

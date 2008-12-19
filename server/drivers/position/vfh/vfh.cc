@@ -206,7 +206,7 @@ driver
 
 /** @} */
 
-class VFH_Class : public Driver
+class VFH_Class : public ThreadedDriver
 {
   public:
     // Constructor
@@ -1063,7 +1063,7 @@ VFH_Class::ProcessCommand(player_msghdr_t* hdr, player_position2d_cmd_pos_t &cmd
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 VFH_Class::VFH_Class( ConfigFile* cf, int section)
-  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
+  : ThreadedDriver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
 {
   double cell_size;
   int window_diameter;

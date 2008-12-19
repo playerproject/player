@@ -91,7 +91,7 @@ extern PlayerTime * GlobalTime;
 #define RTOD(r) ((r) * 180.0 / M_PI)
 #endif
 
-class Bumper2Laser : public Driver
+class Bumper2Laser : public ThreadedDriver
 {
   public:
     // Constructor; need that
@@ -100,7 +100,7 @@ class Bumper2Laser : public Driver
     virtual ~Bumper2Laser();
 
     // Must implement the following methods.
-    virtual int Setup();
+    virtual int MainSetup();
     virtual int Shutdown();
 
     // This method will be invoked on each incoming message
@@ -161,8 +161,7 @@ class Bumper2Laser : public Driver
 // to the bumper interface.
 //
 Bumper2Laser::Bumper2Laser(ConfigFile * cf, int section)
-//  : Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LASER_CODE)
-    : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
+    : ThreadedDriver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
 {
   memset(&(this->bumper_addr), 0, sizeof(player_devaddr_t));
   memset(&(this->laser_addr), 0, sizeof(player_devaddr_t));
@@ -223,7 +222,7 @@ Bumper2Laser::~Bumper2Laser()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
-int Bumper2Laser::Setup()
+int Bumper2Laser::MainSetup()
 {
   // We have not yet received any data
   this->bumper_data_valid = false;
@@ -241,10 +240,6 @@ int Bumper2Laser::Setup()
     PLAYER_ERROR("unable to subscribe to bumper device");
     return -1;
   }
-
-  // Start the device thread; spawns a new thread and executes
-  // Bumper2Laser::Main(), which contains the main loop for the driver.
-  StartThread();
 
   return 0;
 }

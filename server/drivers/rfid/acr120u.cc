@@ -1,6 +1,6 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2007 
+ *  Copyright (C) 2007
  *  Federico Ruiz Ugalde   ruizf /at/ cs.tum.edu, memeruiz /at/ gmail.com
  *  Lorenz Moesenlechner moesenle /at/ in.tum.de
  *
@@ -25,7 +25,7 @@
 /** @defgroup driver_acr120u acr_120u
  * @brief ACR120U RFID reader
 
-The acr120u driver communicates with the ACR120U (Part# ACR120U-TK-R, Firmware V2.2U) reader. (13.56MHz Read-Write multitag, anti-collision and USB Powered). 
+The acr120u driver communicates with the ACR120U (Part# ACR120U-TK-R, Firmware V2.2U) reader. (13.56MHz Read-Write multitag, anti-collision and USB Powered).
 
 @par Compile-time dependencies
 
@@ -46,7 +46,7 @@ The acr120u driver communicates with the ACR120U (Part# ACR120U-TK-R, Firmware V
 @par Configuration file options
 
 - sampling_rate (integer)
-  - Default: 200 
+  - Default: 200
   - How often (in mS) should the phidget produce data. Minimum is around 100mS
 
 - alarmtime (integer)
@@ -56,8 +56,8 @@ The acr120u driver communicates with the ACR120U (Part# ACR120U-TK-R, Firmware V
 - provides
   - The driver supports the "rfid" interface.
   - No support for the buzzer and led yet.
-  
-@par Example 
+
+@par Example
 
 @verbatim
 driver
@@ -94,14 +94,14 @@ inline float timediffms(struct timeval start, struct timeval end) {
     return(end.tv_sec*1000.0 + end.tv_usec/1000.0 - (start.tv_sec*1000.0 + start.tv_usec/1000.0));
 }
 
-class Acr120u : public Driver {
+class Acr120u : public ThreadedDriver {
 	public:
 
 		Acr120u(ConfigFile* cf, int section);
 		~Acr120u();
 
-		virtual int Setup();
-		virtual int Shutdown();
+		virtual int MainSetup();
+		virtual void MainQuit();
 
 		virtual int ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, void * data);
 
@@ -130,7 +130,7 @@ class Acr120u : public Driver {
 		static const int productId = 0x8003;
 		static const int tag_count_position = 20;
 		static const int tag_startoffset = 1;
-		
+
 		//! Player Interfaces
 		player_devaddr_t rfid_id;
 		//player_devaddr_t dio_id; //Use this for the buzzer and led latter
@@ -160,7 +160,7 @@ int Acr120u::intFromHexTuple( char c1, char c2 ) const
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 Acr120u::Acr120u(ConfigFile* cf, int section)
-        : Driver(cf, section) {
+        : ThreadedDriver(cf, section) {
     //! Start with a clean device
     memset(&rfid_id,0,sizeof(player_devaddr_t));
     //memset(&dio_id,0,sizeof(player_devaddr_t)); //For the buzzer and led
@@ -205,7 +205,7 @@ Acr120u::~Acr120u() {}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
-int Acr120u::Setup() {
+int Acr120u::MainSetup() {
     PLAYER_MSG0(1,"ACR120U driver initialising");
     usb_init();
     usb_find_busses();
@@ -234,7 +234,7 @@ int Acr120u::Setup() {
 	PLAYER_MSG0(1,"Device found. Connection granted to the ACR120U.");
     } else {
 	PLAYER_ERROR("There was a problem connecting to the ACR120u. You don't have device access permissions?");
-	return(-1); 
+	return(-1);
     }
 
     //Setting up the device
@@ -256,19 +256,14 @@ int Acr120u::Setup() {
     PLAYER_MSG0(1,"ACR120U driver ready");
     // Start the device thread; spawns a new thread and executes
     // Phidgetrfid::Main(), which contains the main loop for the driver.
-    StartThread();
-
-    return(0);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-int Acr120u::Shutdown() {
+void Acr120u::MainQuit() {
 
     PLAYER_MSG0(1,"Shutting ACR120U driver down");
-    // Stop and join the driver thread
-    StopThread();
     //Turn off the device and delete the ACR120U objects
     //Turn power off. This is missing yet
     //Release interface
@@ -283,8 +278,6 @@ int Acr120u::Shutdown() {
     dev_temp=0;
 
     PLAYER_MSG0(1,"ACR120U driver has been shutdown");
-
-    return(0);
 }
 
 int Acr120u::ProcessMessage(QueuePointer &resp_queue,
@@ -330,7 +323,7 @@ void Acr120u::Main() {
         // Process incoming messages.  Phidgetrfid::ProcessMessage() is
         // called on each message.
         ProcessMessages();
-        
+
         //Get the Tags
         player_rfid_data_t data_rfid;
 	char acrCommand[Acr120uCmdLength];

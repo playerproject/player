@@ -288,9 +288,6 @@ int LaserBar::ProcessMessage(QueuePointer &resp_queue, player_msghdr *hdr, void 
                             PLAYER_LASER_DATA_SCAN, this->laser_addr))
   {
   	player_laser_data_t *laser_data = reinterpret_cast<player_laser_data_t * > (data);
-
-  	this->Lock();
-
     this->ldata.min_angle = laser_data->min_angle;
     this->ldata.max_angle = laser_data->max_angle;
     this->ldata.resolution = laser_data->resolution;
@@ -306,9 +303,6 @@ int LaserBar::ProcessMessage(QueuePointer &resp_queue, player_msghdr *hdr, void 
 
     // Analyse the laser data
     this->Find();
-
-
-  	this->Unlock();
 
     printf("Count[%d]\n",this->fdata.fiducials_count);
 

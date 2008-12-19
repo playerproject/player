@@ -247,11 +247,11 @@ bool is_directory(string fname)
   	if (stat(fname.c_str(),&stat_buf) != 0) return false;
   	return (stat_buf.st_mode & S_IFMT) == S_IFDIR;
 }
-class MrIcp : public Driver
+class MrIcp : public ThreadedDriver
  {
 	// Must implement the following methods.
   	public :
-	    virtual int Setup();
+	    virtual int MainSetup();
 	    virtual int Shutdown();
 	    virtual int ProcessMessage(QueuePointer& resp_queue, player_msghdr * hdr, void * data);
 	// Constructor
@@ -332,7 +332,7 @@ void mricp_Register(DriverTable* table)
   	table->AddDriver("mricp", MrIcp_Init);
 }
 
-MrIcp::MrIcp(ConfigFile* cf, int section)  : Driver(cf, section)
+MrIcp::MrIcp(ConfigFile* cf, int section)  : ThreadedDriver(cf, section)
 {
 	char config_temp[40];
   	this->maxr =             cf->ReadFloat(section,"MAXR",7.8);
@@ -458,7 +458,7 @@ MrIcp::MrIcp(ConfigFile* cf, int section)  : Driver(cf, section)
   	return;
 }
 
-int MrIcp::Setup()
+int MrIcp::MainSetup()
 {
 	char filename[40],command[40];
 	printf("\n- Setting UP MRICP Plugin Driver.");
@@ -503,7 +503,6 @@ int MrIcp::Setup()
 		file=fopen(filename,"wb");
 	}
 	usleep((int)(this->start_in*1e6));
-  	this->StartThread();
 	return(0);
 };
 void MrIcp::SetupPositionDriver()

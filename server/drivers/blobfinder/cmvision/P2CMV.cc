@@ -135,7 +135,7 @@ Ben Grocholsky, Brad Kratochvil
 
 /********************************************************************/
 
-class CMVisionBF: public Driver
+class CMVisionBF: public ThreadedDriver
 {
   private:
     int              mDebugLevel; // debuglevel 0=none,
@@ -160,8 +160,7 @@ class CMVisionBF: public Driver
     void Print();
 
   public:
-    int Setup();
-    int Shutdown();
+
     // constructor
     CMVisionBF(ConfigFile* cf, int section);
     virtual ~CMVisionBF();
@@ -170,6 +169,8 @@ class CMVisionBF: public Driver
                                player_msghdr * hdr,
                                void * data);
     virtual void Main();
+    int MainSetup();
+    
     void ProcessImageData();
 };
 
@@ -188,7 +189,7 @@ cmvision_Register(DriverTable* table)
 }
 
 CMVisionBF::CMVisionBF( ConfigFile* cf, int section)
-  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
+  : ThreadedDriver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
            PLAYER_BLOBFINDER_CODE),
            mWidth(0),
            mHeight(0),
@@ -217,7 +218,7 @@ CMVisionBF::~CMVisionBF()
 }
 
 int
-CMVisionBF::Setup()
+CMVisionBF::MainSetup()
 {
   if (mVision)
   {
@@ -243,20 +244,6 @@ CMVisionBF::Setup()
   memset(&mData,0,sizeof(mData));
   allocated_blobs = 0;
   puts("done.");
-
-  StartThread();
-  return(0);
-}
-
-int
-CMVisionBF::Shutdown()
-{
-  /* if Setup() was never called, don't do anything */
-  if (mVision==NULL)
-    return 0;
-
-  StopThread();
-
   // Unsubscribe from the camera
   this->mCameraDev->Unsubscribe(this->InQueue);
 
@@ -420,7 +407,6 @@ CMVisionBF::ProcessMessage(QueuePointer & resp_queue,
   if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
                            this->mCameraAddr))
   {
-    // Lock();
     // we can't quite do this so easily with camera data
     // because the images are different than the max size
     //assert(hdr->size == sizeof(player_camera_data_t));
@@ -468,7 +454,6 @@ CMVisionBF::ProcessMessage(QueuePointer & resp_queue,
       // we have a new image,
       ProcessImageData();
     }
-    // Unlock();
     return(0);
   }
 

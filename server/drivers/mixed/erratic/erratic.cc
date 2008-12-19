@@ -215,7 +215,7 @@ extern "C" {
 
 // Constructor of the driver from configuration entry
 Erratic::Erratic(ConfigFile* cf, int section)
-  : Driver(cf,section,true,PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
+  : ThreadedDriver(cf,section,true,PLAYER_MSGQUEUE_DEFAULT_MAXLEN) 
 {
   // zero ids, so that we'll know later which interfaces were requested
   memset(&this->position_id, 0, sizeof(player_devaddr_t));
@@ -705,9 +705,7 @@ int Erratic::Connect()
 
 // Called by player when the driver is supposed to disconnect
 int Erratic::Shutdown() {
-  // We don't care, we'll never disconnect
-  // Oh, yes, you will!
-  this->Disconnect();
+  // kill with destructor instead of here
   return 0;
 }
 
@@ -754,7 +752,6 @@ int Erratic::Disconnect() {
 
 // These call the supplied Driver::StartThread() method, but adds additional threads
 void Erratic::StartThreads() {
-  StartThread();
   pthread_create(&send_thread, 0, &SendThreadDummy, this);
   pthread_create(&receive_thread, 0, &ReceiveThreadDummy, this);
 }
@@ -763,7 +760,6 @@ void Erratic::StopThreads() {
   pthread_cancel(receive_thread);
   //TODO destroy threads?
   //TODO tickle threads to cancel point
-  StopThread();
 
   // Cleanup mutexes
   pthread_mutex_trylock(&send_queue_mutex);
@@ -867,8 +863,6 @@ void Erratic::ReceiveThread()
     }
 
     // Process the packet
-    //Lock();
-
     int count, maxcount;
     switch(packet.packet[3])
       {
@@ -976,8 +970,6 @@ void Erratic::ReceiveThread()
 	  packet.Print();
 	}
       }
-
-    //Unlock();
   }
 }
 
@@ -1140,8 +1132,6 @@ void Erratic::Main() {
     //    Wait();
     usleep(10000);              // Wait() blocks too much, doesn't get subscriptions
 
-    this->Lock();
-
     // we want to reset the odometry and enable the motors if the first
     // client just subscribed to the position device, and we want to stop
     // and disable the motors if the last client unsubscribed.
@@ -1174,8 +1164,6 @@ void Erratic::Main() {
     else if(last_sonar_subscriptions && !(this->sonar_subscriptions))
       this->ToggleSonar(0);
     last_sonar_subscriptions = this->sonar_subscriptions;
-
-    this->Unlock();
 
     // handle pending messages
     //printf( "Will look for incoming messages\n" );

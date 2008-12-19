@@ -113,7 +113,7 @@ inline float timediffms(struct timeval start, struct timeval end) {
 
 
 
-class PhidgetIFK : public Driver {
+class PhidgetIFK : public ThreadedDriver {
 public:
 
     // Constructor; need that
@@ -123,7 +123,7 @@ public:
     ~PhidgetIFK();
 
     // Must implement the following methods.
-    virtual int Setup();
+    virtual int MainSetup();
     virtual int Shutdown();
 
     // This method will be invoked on each incoming message
@@ -175,7 +175,7 @@ void phidgetifk_Register(DriverTable* table) {
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 PhidgetIFK::PhidgetIFK(ConfigFile* cf, int section)
-        : Driver(cf, section) {
+        : ThreadedDriver(cf, section) {
 
     memset(&aio_id, 0, sizeof(player_devaddr_t));
     memset(&dio_id, 0, sizeof(player_devaddr_t));
@@ -240,7 +240,7 @@ PhidgetIFK::~PhidgetIFK() {}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
-int PhidgetIFK::Setup() {
+int PhidgetIFK::MainSetup() {
     PLAYER_MSG0(1,"PhidgetIFK driver initialising");
 
     // Here you do whatever is necessary to setup the device, like open and
@@ -281,10 +281,6 @@ int PhidgetIFK::Setup() {
     }
 
     PLAYER_MSG0(1,"PhidgetIFK driver ready");
-
-    // Start the device thread; spawns a new thread and executes
-    // PhidgetIFK::Main(), which contains the main loop for the driver.
-    StartThread();
 
     return(0);
 }

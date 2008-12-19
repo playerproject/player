@@ -198,7 +198,7 @@ void sphere_Register(DriverTable* table)
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 SphereDriver::SphereDriver(ConfigFile* cf, int section)
-    : Driver(cf, section),
+    : ThreadedDriver(cf, section),
     mPanMin(0),
     mPanMax(1),
     mTiltMin(0),
@@ -273,7 +273,7 @@ SphereDriver::SphereDriver(ConfigFile* cf, int section)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
-int SphereDriver::Setup()
+int SphereDriver::MainSetup()
 {
   puts("Setting up sphere driver");
   mFg = fg_open(mDevice);
@@ -352,10 +352,6 @@ int SphereDriver::Setup()
     dump_current_settings(mFg->fd);
 
   puts("Sphere driver ready");
-
-  // Start the device thread; spawns a new thread and executes
-  // SphereDriver::Main(), which contains the main loop for the driver.
-  StartThread();
 
   return(0);
 }

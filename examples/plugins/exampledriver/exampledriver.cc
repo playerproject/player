@@ -38,16 +38,12 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 // The class for the driver
-class ExampleDriver : public Driver
+class ExampleDriver : public ThreadedDriver
 {
   public:
     
     // Constructor; need that
     ExampleDriver(ConfigFile* cf, int section);
-
-    // Must implement the following methods.
-    virtual int Setup();
-    virtual int Shutdown();
 
     // This method will be invoked on each incoming message
     virtual int ProcessMessage(QueuePointer &resp_queue, 
@@ -58,6 +54,8 @@ class ExampleDriver : public Driver
 
     // Main function for device thread.
     virtual void Main();
+    virtual int MainSetup();
+    virtual void MainQuit();
 
     int foop;
 };
@@ -86,7 +84,7 @@ void ExampleDriver_Register(DriverTable* table)
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 ExampleDriver::ExampleDriver(ConfigFile* cf, int section)
-    : Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, 
+    : ThreadedDriver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, 
              PLAYER_POSITION2D_CODE)
 {
   // Read an option from the configuration file
@@ -97,7 +95,7 @@ ExampleDriver::ExampleDriver(ConfigFile* cf, int section)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
-int ExampleDriver::Setup()
+int ExampleDriver::MainSetup()
 {   
   puts("Example driver initialising");
 
@@ -108,29 +106,20 @@ int ExampleDriver::Setup()
     
   puts("Example driver ready");
 
-  // Start the device thread; spawns a new thread and executes
-  // ExampleDriver::Main(), which contains the main loop for the driver.
-  StartThread();
-
   return(0);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-int ExampleDriver::Shutdown()
+void ExampleDriver::MainQuit()
 {
   puts("Shutting example driver down");
-
-  // Stop and join the driver thread
-  StopThread();
 
   // Here you would shut the device down by, for example, closing a
   // serial port.
 
   puts("Example driver has been shutdown");
-
-  return(0);
 }
 
 int ExampleDriver::ProcessMessage(QueuePointer & resp_queue, 

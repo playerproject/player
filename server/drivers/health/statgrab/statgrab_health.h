@@ -9,19 +9,16 @@ extern "C"
 	
 ////////////////////////////////////////////////////////////////////////////////
 // The class for the driver
-class StatGrabDriver : public Driver
+class StatGrabDriver : public ThreadedDriver
 {
   public:
 
     StatGrabDriver(ConfigFile* cf, int section);
     
-    // Must implement the following methods.
-    int Setup();
-    int Shutdown();
- 
   private:
     // Main function for device thread.
     virtual void Main();
+    int MainSetup();
     void RefreshData();
     
     // Structure for specific process data 

@@ -131,7 +131,7 @@ extern "C" {
 #include <libplayercore/playercore.h>
 
 // The RCore_XBridge device class.
-class RCore_XBridge : public Driver
+class RCore_XBridge : public ThreadedDriver
 {
     public:
         // Constructor
@@ -141,8 +141,8 @@ class RCore_XBridge : public Driver
         ~RCore_XBridge ();
 
         // Implementations of virtual functions
-        int Setup ();
-        int Shutdown ();
+        int MainSetup ();
+        void MainQuit ();
 
         // This method will be invoked on each incoming message
         virtual int ProcessMessage (QueuePointer &resp_queue,
@@ -208,7 +208,7 @@ void rcore_xbridge_Register (DriverTable* table)
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 RCore_XBridge::RCore_XBridge (ConfigFile* cf, int section)
-	: Driver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
+	: ThreadedDriver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, 
               PLAYER_WSN_CODE)
 {
     int i = 0;
@@ -247,7 +247,7 @@ RCore_XBridge::~RCore_XBridge()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
-int RCore_XBridge::Setup ()
+int RCore_XBridge::MainSetup ()
 {
     // Create a filter and open the socket
     filter = p_filter_create ("filter");
@@ -259,24 +259,17 @@ int RCore_XBridge::Setup ()
 
     PLAYER_MSG0 (1, "> RCore_XBridge driver initializing... [done]");
 
-    // Start the device thread
-    StartThread ();
-
     return (0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-int RCore_XBridge::Shutdown ()
+void RCore_XBridge::MainQuit ()
 {
-    // Stop the driver thread
-    StopThread ();
-
     // Close the Particle socket
     p_socket_close (sockd);
-
+	
     PLAYER_MSG0 (1, "> RCore_XBridge driver shutting down... [done]");
-    return (0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

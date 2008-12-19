@@ -170,7 +170,7 @@ void segwayrmp_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 SegwayRMP::SegwayRMP(ConfigFile* cf, int section)
-    : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
+    : ThreadedDriver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
 {
   memset(&this->position_id, 0, sizeof(player_devaddr_t));
   memset(&this->position3d_id, 0, sizeof(player_devaddr_t));
@@ -228,7 +228,7 @@ SegwayRMP::~SegwayRMP()
 }
 
 int
-SegwayRMP::Setup()
+SegwayRMP::MainSetup()
 {
   // Clear the command buffers
 #if 0
@@ -263,8 +263,6 @@ SegwayRMP::Setup()
   this->motor_enabled = false;
   this->firstread = true;
   this->timeout_counter = 0;
-
-  this->StartThread();
 
   return(0);
 }

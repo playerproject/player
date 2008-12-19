@@ -97,12 +97,12 @@ driver
 
 extern PlayerTime *GlobalTime;
 
-class Iwspy : public Driver
+class Iwspy : public ThreadedDriver
 {
   public: Iwspy( ConfigFile *cf, int section);
 
   // Initialize driver
-  public: virtual int Setup();
+  public: virtual int MainSetup();
 
   // Finalize driver
   public: virtual int Shutdown();
@@ -177,7 +177,7 @@ void iwspy_Register(DriverTable *table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 Iwspy::Iwspy( ConfigFile *cf, int section)
-  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_WIFI_CODE)
+  : ThreadedDriver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_WIFI_CODE)
 {
   int i;
   char key[64];
@@ -207,7 +207,7 @@ Iwspy::Iwspy( ConfigFile *cf, int section)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Initialize driver
-int Iwspy::Setup()
+int Iwspy::MainSetup()
 {
   // Start pinging
   if (this->StartPing() != 0)
@@ -234,9 +234,6 @@ int Iwspy::Setup()
   // Initialize the watch list
   if (this->InitIwSpy() != 0)
     return -1;
-
-  // Start the device thread
-  StartThread();
 
   return 0;
 }

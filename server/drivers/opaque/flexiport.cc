@@ -95,13 +95,13 @@ const int DEFAULT_OPAQUE_BUFFER_SIZE    = 4096;
 // Driver object
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class Flexiport : public Driver
+class Flexiport : public ThreadedDriver
 {
 	public:
 		Flexiport (ConfigFile* cf, int section);
 		virtual ~Flexiport (void);
 
-		virtual int Setup (void);
+		virtual int MainSetup (void);
 		virtual int Shutdown (void);
 		virtual int ProcessMessage (QueuePointer &respQueue, player_msghdr *hdr, void *data);
 
@@ -124,7 +124,7 @@ class Flexiport : public Driver
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Flexiport::Flexiport (ConfigFile* cf, int section)
-	: Driver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_OPAQUE_CODE),
+	: ThreadedDriver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_OPAQUE_CODE),
 	_bufferSize ("buffer_size", DEFAULT_OPAQUE_BUFFER_SIZE, 0),
 	_portOptions ("portopts", "type=serial,device=/dev/ttyS0,timeout=1", 0),
 	_port (NULL)
@@ -276,12 +276,10 @@ void Flexiport::ReadData (void)
 			reinterpret_cast<void*> (&data));
 }
 
-int Flexiport::Setup (void)
+int Flexiport::MainSetup (void)
 {
 	if (CreatePort () != 0)
 		return 1;
-
-	StartThread();
 
 	return 0;
 }

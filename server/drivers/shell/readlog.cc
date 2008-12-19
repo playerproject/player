@@ -159,7 +159,7 @@ extern ClientManager* clientmanager;
 #endif
 
 // The logfile driver
-class ReadLog: public Driver
+class ReadLog: public ThreadedDriver
 {
   // Constructor
   public: ReadLog(ConfigFile* cf, int section);
@@ -168,7 +168,7 @@ class ReadLog: public Driver
   public: ~ReadLog();
 
   // Initialize the driver
-  public: virtual int Setup();
+  public: virtual int MainSetup();
 
   // Finalize the driver
   public: virtual int Shutdown();
@@ -406,7 +406,7 @@ void readlog_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////
 // Constructor
 ReadLog::ReadLog(ConfigFile* cf, int section)
-    : Driver(cf, section)
+    : ThreadedDriver(cf, section)
 {
   int i,j;
   player_devaddr_t id;
@@ -518,7 +518,7 @@ ReadLog::~ReadLog()
 
 ////////////////////////////////////////////////////////////////////////////
 // Initialize driver
-int ReadLog::Setup()
+int ReadLog::MainSetup()
 {
   // Reset the time
   ReadLogTime_time.tv_sec = 0;
@@ -554,9 +554,6 @@ int ReadLog::Setup()
   this->line_size = PLAYER_MAX_MESSAGE_SIZE;
   this->line = (char*) malloc(this->line_size);
   assert(this->line);
-
-  // Start device thread
-  this->StartThread();
 
   return 0;
 }

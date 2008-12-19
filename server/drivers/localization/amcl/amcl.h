@@ -67,7 +67,7 @@ typedef struct
 
 
 // Incremental navigation driver
-class AdaptiveMCL : public Driver
+class AdaptiveMCL : public ThreadedDriver
 {
   ///////////////////////////////////////////////////////////////////////////
   // Top half methods; these methods run in the server thread (except for
@@ -81,8 +81,7 @@ class AdaptiveMCL : public Driver
   public: virtual ~AdaptiveMCL(void);
 
   // Setup/shutdown routines.
-  public: virtual int Setup(void);
-  public: virtual int Shutdown(void);
+  public: virtual int MainSetup(void);
 
   ///////////////////////////////////////////////////////////////////////////
   // Middle methods: these methods facilitate communication between the top

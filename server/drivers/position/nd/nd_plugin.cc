@@ -168,7 +168,7 @@ driver
 
 extern PlayerTime *GlobalTime;
 
-class ND : public Driver
+class ND : public ThreadedDriver 
 {
   public:
     // Constructor
@@ -178,8 +178,8 @@ class ND : public Driver
     virtual ~ND();
 
     // Setup/shutdown routines.
-    virtual int Setup();
-    virtual int Shutdown();
+    virtual int MainSetup();
+    virtual void MainQuit();
 
     // Process incoming messages from clients
     virtual int ProcessMessage(QueuePointer &resp_queue,
@@ -291,7 +291,7 @@ void nd_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 ND::ND( ConfigFile* cf, int section)
-  : Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION2D_CODE)
+  : ThreadedDriver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION2D_CODE)
 {
   this->dist_eps = cf->ReadTupleLength(section, "goal_tol", 0, 0.5);
   this->ang_eps = cf->ReadTupleAngle(section, "goal_tol", 1, DTOR(10.0));
@@ -376,7 +376,7 @@ ND::~ND()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device (called by server thread).
-int ND::Setup()
+int ND::MainSetup() 
 {
   // Initialise the underlying position device.
   if (this->SetupOdom() != 0)
@@ -399,19 +399,13 @@ int ND::Setup()
 
   this->waiting = false;
 
-  // Start the driver thread.
-  this->StartThread();
-
   return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device (called by server thread).
-int ND::Shutdown()
+void ND::MainQuit() 
 {
-  // Stop the driver thread.
-  this->StopThread();
-
   // Stop the laser
   if(this->laser)
     this->ShutdownLaser();
@@ -422,8 +416,6 @@ int ND::Shutdown()
 
   // Stop the odom device.
   this->ShutdownOdom();
-
-  return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

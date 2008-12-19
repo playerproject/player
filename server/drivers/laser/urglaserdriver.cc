@@ -112,7 +112,7 @@ using namespace std;
 
 #include <libplayercore/playercore.h>
 
-class URGLaserDriver : public Driver
+class URGLaserDriver : public ThreadedDriver
 {
   public:
 
@@ -122,8 +122,8 @@ class URGLaserDriver : public Driver
 	~URGLaserDriver();
 
 	// Implementations of virtual functions
-	int Setup();
-	int Shutdown();
+	int MainSetup();
+	void MainQuit();
 
 	// This method will be invoked on each incoming message
 	virtual int ProcessMessage(QueuePointer & resp_queue,
@@ -152,7 +152,7 @@ class URGLaserDriver : public Driver
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 URGLaserDriver::URGLaserDriver (ConfigFile* cf, int section)
-: Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LASER_CODE)
+: ThreadedDriver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LASER_CODE)
 {
   //init vars
   memset (&Data, 0, sizeof (Data));
@@ -212,7 +212,7 @@ URGLaserDriver::~URGLaserDriver ()
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
 int
-  URGLaserDriver::Setup ()
+  URGLaserDriver::MainSetup ()
 {
   //config data
   if (Laser.Open (Port, UseSerial, BaudRate) < 0)
@@ -271,25 +271,16 @@ int
   Conf.min_angle = (min_i - half_idx) * Conf.resolution;
   Conf.max_angle = (max_i - half_idx) * Conf.resolution;
 
-  // Start the device thread; spawns a new thread and executes
-  // ExampleDriver::Main(), which contains the main loop for the driver.
-  StartThread ();
-
   return (0);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-int
-  URGLaserDriver::Shutdown ()
+void
+URGLaserDriver::MainQuit ()
 {
-  // Stop and join the driver thread
-  StopThread ();
-
   Laser.Close ();
-
-  return (0);
 }
 
 

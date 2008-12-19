@@ -229,7 +229,7 @@ static double get_time(void);
 
 // TODO: monitor localize timestamps, and slow or stop robot accordingly
 
-class Wavefront : public Driver
+class Wavefront : public ThreadedDriver
 {
   private:
     // Main function for device thread.
@@ -352,8 +352,8 @@ class Wavefront : public Driver
     Wavefront( ConfigFile* cf, int section);
 
     // Setup/shutdown routines.
-    virtual int Setup();
-    virtual int Shutdown();
+    virtual int MainSetup();
+    virtual void MainQuit();
 
     // Process incoming messages from clients
     virtual int ProcessMessage(QueuePointer & resp_queue,
@@ -379,7 +379,7 @@ void wavefront_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 Wavefront::Wavefront( ConfigFile* cf, int section)
-  : Driver(cf, section, true,
+  : ThreadedDriver(cf, section, true,
            PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_PLANNER_CODE)
 {
   // Must have a position device to control
@@ -403,7 +403,7 @@ Wavefront::Wavefront( ConfigFile* cf, int section)
     this->SetError(-1);
     return;
   }
-  
+
   // Can use a laser device
   memset(&this->laser_id,0,sizeof(player_devaddr_t));
   cf->ReadDeviceAddr(&this->laser_id, section, "requires",
@@ -460,7 +460,7 @@ Wavefront::Wavefront( ConfigFile* cf, int section)
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device (called by server thread).
 int
-Wavefront::Setup()
+Wavefront::MainSetup()
 {
   this->have_map = false;
   this->new_map = false;
@@ -479,7 +479,7 @@ Wavefront::Setup()
 
   this->waypoint_count = 0;
   this->waypoints_allocated = 8;
-  this->waypoints = (double (*)[2])malloc(this->waypoints_allocated * 
+  this->waypoints = (double (*)[2])malloc(this->waypoints_allocated *
                                           sizeof(this->waypoints[0]));
 
   if(SetupPosition() < 0)
@@ -505,7 +505,7 @@ Wavefront::Setup()
     if(SetupLaser() < 0)
       return(-1);
 
-    this->scans = 
+    this->scans =
             (player_laser_data_scanpose_t*)malloc(this->scans_size *
                                                   sizeof(player_laser_data_scanpose_t));
     assert(this->scans);
@@ -522,19 +522,14 @@ Wavefront::Setup()
       return(-1);
   }
 
-  // Start the driver thread.
-  this->StartThread();
-  return 0;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device (called by server thread).
-int
-Wavefront::Shutdown()
+void
+Wavefront::MainQuit()
 {
-  // Stop the driver thread.
-  this->StopThread();
 
   if(this->plan)
     plan_free(this->plan);
@@ -548,8 +543,6 @@ Wavefront::Shutdown()
     ShutdownLaser();
   if(this->graphics2d_id.interf)
     ShutdownGraphics2d();
-
-  return 0;
 }
 
 void
@@ -579,7 +572,7 @@ Wavefront::ProcessCommand(player_planner_cmd_t* cmd)
 #endif
 }
 
-void 
+void
 Wavefront::ProcessLaserScan(player_laser_data_scanpose_t* data)
 {
   double t0,t1;
@@ -1000,14 +993,14 @@ void Wavefront::Main()
       // compute costs to the new goal.  Try local plan first
       if(new_goal ||
          (this->plan->path_count == 0) ||
-         (plan_do_local(this->plan, this->localize_x, 
+         (plan_do_local(this->plan, this->localize_x,
                          this->localize_y, this->scan_maxrange) < 0))
       {
         if(!new_goal && (this->plan->path_count != 0))
           puts("Wavefront: local plan failed");
 
         // Create a global plan
-        if(plan_do_global(this->plan, this->localize_x, this->localize_y, 
+        if(plan_do_global(this->plan, this->localize_x, this->localize_y,
                           this->target_x, this->target_y) < 0)
         {
           if(!printed_warning)
@@ -1220,7 +1213,7 @@ void Wavefront::Main()
               }
 
               tv = 0.0;
-              av = rotate_dir * (this->avmin + (fabs(ad)/M_PI) * 
+              av = rotate_dir * (this->avmin + (fabs(ad)/M_PI) *
                                  (this->avmax-this->avmin));
             }
             else
@@ -1804,7 +1797,7 @@ Wavefront::angle_diff(double a, double b)
     return(d2);
 }
 
-double 
+double
 static get_time(void)
 {
   struct timeval curr;

@@ -99,7 +99,7 @@ void statgrab_Register(DriverTable* table)
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 StatGrabDriver::StatGrabDriver(ConfigFile* cf, int section)
-    : Driver(cf, section)
+    : ThreadedDriver(cf, section)
 {
 
   // For Health Interface
@@ -135,24 +135,6 @@ int StatGrabDriver::Setup()
   }
 
   puts("Health driver ready");
-
-  StartThread();
-
-  return(0);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Shutdown the device
-int StatGrabDriver::Shutdown()
-{
-
-  puts("Shutting health driver down");
-
-  // Stop and join the driver thread
-  StopThread();
-
-  puts("Health driver has been shutdown");
-
   return(0);
 }
 

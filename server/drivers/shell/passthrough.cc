@@ -114,13 +114,13 @@ any index number. The driver changes the header accordingly.
 
 #include <libplayercore/playercore.h>
 
-class PassThrough : public Driver {
+class PassThrough : public ThreadedDriver {
 public:
 
     PassThrough(ConfigFile* cf, int section);
 
-    virtual int Setup();
-    virtual int Shutdown();
+    virtual int MainSetup();
+    virtual void MainQuit();
 
     int ConnectRemote();
     int DisconnectRemote();
@@ -160,7 +160,7 @@ void passthrough_Register(DriverTable* table) {
 
 
 PassThrough::PassThrough(ConfigFile* cf, int section)
-        : Driver(cf, section),
+        : ThreadedDriver(cf, section),
         RemoteHost("remote_host","",false,this,cf,section),
         RemotePort("remote_port",-1,false,this,cf,section),
         RemoteIndex("remote_index",-1,false,this,cf,section),
@@ -196,11 +196,7 @@ PassThrough::PassThrough(ConfigFile* cf, int section)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
-int PassThrough::Setup() {
-    PLAYER_MSG0(1,"PassThrough driver initialising");
-
-    PLAYER_MSG0(1,"PassThrough driver ready");
-
+int PassThrough::MainSetup() {
     if (Connect)
     {
         int ret = ConnectRemote();
@@ -208,24 +204,11 @@ int PassThrough::Setup() {
             return ret;
 
     }
-
-    StartThread();
-
-    return(0);
+  return 0;
 }
 
-
-int PassThrough::Shutdown() {
-    PLAYER_MSG0(1,"Shutting PassThrough driver down");
-
-
-    StopThread();
-
+void PassThrough::MainQuit() {
     DisconnectRemote();
-
-    PLAYER_MSG0(1,"PassThrough driver has been shutdown");
-
-    return(0);
 }
 
 int PassThrough::ConnectRemote()
@@ -334,7 +317,7 @@ int PassThrough::ProcessMessage(QueuePointer & resp_queue,
     }
 
 
-    PLAYER_MSG0(9,"PassThrough::ProcessMessage: Received a packet!");
+    //PLAYER_MSG0(9,"PassThrough::ProcessMessage: Received a packet!");
 
     if (Device::MatchDeviceAddress(hdr->addr,srcAddr) &&
         ((hdr->type == PLAYER_MSGTYPE_DATA) ||

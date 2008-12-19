@@ -63,13 +63,12 @@
 #include <libplayercore/interface_util.h>
 
 // Constructor
-Device::Device(player_devaddr_t addr, Driver *device)
+Device::Device(player_devaddr_t addr, Driver *device) :
+	next(NULL),
+	addr(addr),
+	driver(device)
 {
-  this->next = NULL;
-
-  this->addr = addr;
-  this->driver = device;
-
+  pthread_mutex_init(&accessMutex,NULL);
   memset(this->drivername, 0, sizeof(this->drivername));
 
   if(this->driver)
@@ -101,6 +100,7 @@ Device::~Device()
       delete this->driver;
   }
   free(this->queues);
+  pthread_mutex_destroy(&accessMutex);
 }
 
 int
@@ -108,9 +108,8 @@ Device::Subscribe(QueuePointer &sub_queue)
 {
   int retval;
   size_t i;
-
-  if(this->driver)
-    this->driver->Lock();
+  
+  Lock();
 
   // find an empty spot to put the new queue
   for(i=0;i<this->len_queues;i++)
@@ -142,19 +141,18 @@ Device::Subscribe(QueuePointer &sub_queue)
     {
       // remove the subscriber's queue, since the subscription failed
       this->queues[i] = QueuePointer();
-      this->driver->Unlock();
+      Unlock();
       return(retval);
     }
     else if(retval == 1 && (retval = this->driver->Subscribe(this->addr)))
     {
       // remove the subscriber's queue, since the subscription failed
       this->queues[i] = QueuePointer();
-      this->driver->Unlock();
+      Unlock();
       return(retval);
     }
-
-    this->driver->Unlock();
   }
+  Unlock();
 
   return(0);
 }
@@ -163,39 +161,32 @@ int
 Device::Unsubscribe(QueuePointer &sub_queue)
 {
   int retval;
-
   if(this->driver)
   {
-    this->driver->Lock();
-
     // first try the new version which passes the queue in
     retval = this->driver->Unsubscribe(sub_queue, this->addr);
     if (retval < 0)
     {
       // remove the subscriber's queue, since the subscription failed
-      this->driver->Unlock();
       return(retval);
     }
     else if(retval == 1 && (retval = this->driver->Unsubscribe(this->addr)))
     {
-      this->driver->Unlock();
       return(retval);
     }
   }
+  Lock();
   // look for the given queue
   for(size_t i=0;i<this->len_queues;i++)
   {
     if(this->queues[i] == sub_queue)
     {
       this->queues[i] = QueuePointer();
-      if(this->driver)
-        this->driver->Unlock();
+      Unlock();
       return(0);
     }
   }
-  //PLAYER_ERROR("tried to unsubscribed not-subscribed queue");
-  if(this->driver)
-    this->driver->Unlock();
+  Unlock();
   return(-1);
 }
 
@@ -258,9 +249,6 @@ Device::Request(QueuePointer &resp_queue,
                 double* timestamp,
                 bool threaded)
 {
-  // check driver still ahs subscriptions, stops deadlocks on server shutdown
-  if (driver->subscriptions == 0)
-    return NULL;
   // Send the request message
   this->PutMsg(resp_queue,
                type, subtype,
@@ -288,12 +276,14 @@ Device::Request(QueuePointer &resp_queue,
   Message* msg = NULL;
   if(threaded)
   {
-    // pthread_cond_wait does not garuntee no false wake up, so maybe it is.
     // test driver is still subscribed to prevent deadlocks on server shutdown
-    while(driver->subscriptions > 0 && !(msg = resp_queue->Pop()))
+    while(driver->HasSubscriptions())
     {
-      //PLAYER_WARN("empty queue after waiting!");
-      resp_queue->Wait(); // this is a cancelation point
+      resp_queue->Wait(1);
+      msg = resp_queue->Pop();
+      // a message is not the only reason a thread can be woken up, so continue to loop if we didn't get a message
+      if (msg)
+        break;
     }
   }
   else
@@ -308,10 +298,9 @@ Device::Request(QueuePointer &resp_queue,
       {
         Driver* dri = dev->driver;
         // don't update the requester
-        //if(dri->InQueue == resp_queue)
         if(!dri || dev->InQueue == resp_queue)
           continue;
-        if(!dri->driverthread && ((dri->subscriptions > 0) || dri->alwayson))
+        if(((dri->HasSubscriptions()) || dri->alwayson))
           dri->Update();
       }
 
@@ -320,7 +309,8 @@ Device::Request(QueuePointer &resp_queue,
     }
   }
 
-  assert(msg);
+  if (!msg)
+    return msg;
 
   player_msghdr_t* hdr;
   hdr = msg->GetHeader();
@@ -352,3 +342,12 @@ Device::Request(QueuePointer &resp_queue,
   }
 }
 
+void Device::Lock()
+{
+  pthread_mutex_lock(&accessMutex);
+}
+
+void Device::Unlock()
+{
+  pthread_mutex_unlock(&accessMutex);
+}

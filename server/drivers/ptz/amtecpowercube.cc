@@ -151,7 +151,7 @@ driver
 #define AMTEC_STATE_HOME_OK   0x02
 #define AMTEC_STATE_HALTED    0x04
 
-class AmtecPowerCube:public Driver
+class AmtecPowerCube:public ThreadedDriver 
 {
   private:
     // this function will be run in a separate thread
@@ -212,8 +212,8 @@ class AmtecPowerCube:public Driver
     // MessageHandler
     int ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, void * data);
 
-    virtual int Setup();
-    virtual int Shutdown();
+    virtual int MainSetup();
+    virtual void MainQuit();
 };
 
 // initialization function
@@ -230,7 +230,7 @@ amtecpowercube_Register(DriverTable* table)
 }
 
 AmtecPowerCube::AmtecPowerCube( ConfigFile* cf, int section)
-        : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_PTZ_CODE)
+        : ThreadedDriver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_PTZ_CODE)
 {
   fd = -1;
 /*  player_ptz_data_t data;
@@ -364,7 +364,7 @@ AmtecPowerCube::Halt()
 }
 
 int
-AmtecPowerCube::Setup()
+AmtecPowerCube::MainSetup()
 {
   struct termios term;
   short pan,tilt;
@@ -462,19 +462,12 @@ AmtecPowerCube::Setup()
     return(-1);
   }
 
-  // start the thread to talk with the camera
-  StartThread();
-
   return(0);
 }
 
-int
-AmtecPowerCube::Shutdown()
+void
+AmtecPowerCube::MainQuit()
 {
-  if(fd == -1)
-    return(0);
-
-  StopThread();
 
   // stop the unit
   if(Halt())
@@ -488,7 +481,6 @@ AmtecPowerCube::Shutdown()
     PLAYER_ERROR1("close() failed:%s",strerror(errno));
   fd = -1;
   puts("Amtec PowerCube has been shutdown");
-  return(0);
 }
 
 ////////////////////////////////////////////////////////////////////////////

@@ -135,7 +135,7 @@ extern bool debug_mode;
 
 class ErraticMotorPacket;
 
-class Erratic : public Driver 
+class Erratic : public ThreadedDriver 
 {
 private:
   int mcount;

@@ -114,13 +114,13 @@ driver
 
 
 // Driver for detecting laser retro-reflectors.
-class InertiaCube2 : public Driver
+class InertiaCube2 : public ThreadedDriver
 {
   // Constructor
   public: InertiaCube2( ConfigFile* cf, int section);
 
   // Setup/shutdown routines.
-  public: virtual int Setup();
+  public: virtual int MainSetup();
   public: virtual int Shutdown();
 
   // Set up the underlying position device.
@@ -195,7 +195,7 @@ void inertiacube2_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 InertiaCube2::InertiaCube2( ConfigFile* cf, int section)
-        : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION2D_CODE)
+        : ThreadedDriver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION2D_CODE)
 {
   this->port = cf->ReadString(section, "port", "/dev/ttyS3");
 
@@ -217,7 +217,7 @@ InertiaCube2::InertiaCube2( ConfigFile* cf, int section)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device (called by server thread).
-int InertiaCube2::Setup()
+int InertiaCube2::MainSetup()
 {
   // Initialise the underlying position device.
   if (this->SetupPosition() != 0)
@@ -226,9 +226,6 @@ int InertiaCube2::Setup()
   // Initialise the cube.
   if (this->SetupImu() != 0)
     return -1;
-
-  // Start the driver thread.
-  this->StartThread();
 
   return 0;
 }

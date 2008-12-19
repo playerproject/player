@@ -134,7 +134,7 @@ typedef struct
 } __attribute__ ((packed)) player_data_t;
 
 
-class wbr914 : public Driver 
+class wbr914 : public ThreadedDriver 
 {
   public:
 
@@ -147,7 +147,7 @@ class wbr914 : public Driver
     /* the main thread */
     virtual void Main();
 
-    virtual int  Setup();
+    virtual int  MainSetup();
     virtual int  Shutdown();
 
     // MessageHandler

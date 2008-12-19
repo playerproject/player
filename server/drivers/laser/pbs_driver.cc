@@ -102,7 +102,7 @@ extern PlayerTime* GlobalTime;
 
 
 // The laser device class.
-class PBSDriver : public Driver
+class PBSDriver : public ThreadedDriver
 {
 
   public:
@@ -111,8 +111,7 @@ class PBSDriver : public Driver
     PBSDriver(ConfigFile* cf, int section);
     ~PBSDriver();
 
-    int Setup();
-    int Shutdown();
+    int MainSetup();
 
     // MessageHandler
     int ProcessMessage(QueuePointer &resp_queue,
@@ -221,7 +220,7 @@ void pbslaser_Register(DriverTable* table)
 /// Constructor
 /** Retrieve options from the configuration file and do any */
 PBSDriver::PBSDriver(ConfigFile* cf, int section)
-    : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LASER_CODE)
+    : ThreadedDriver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LASER_CODE)
 {
 
   // PBS data.
@@ -258,7 +257,7 @@ PBSDriver::~PBSDriver()
 /**
     Return 0 if things go well, and -1 otherwise.
 */
-int PBSDriver::Setup()
+int PBSDriver::MainSetup()
 {
   PLAYER_MSG1(2, "PBS initialising (%s)", this->device_name);
 
@@ -275,26 +274,7 @@ if(InitializeCom(DEFAULT_PBS_PORT))
 			}
 
   PLAYER_MSG0(2, "PBS ready");
-
-   //! Start the device thread; spawns a new thread and executes
-  //! RobotinoDriver::Main(), which contains the main loop for the driver.
-  StartThread();
-
   return 0;
-}
-
-
-/// Shutdown the device
-int PBSDriver::Shutdown()
-{
-   //! Stop and join the driver thread
-  StopThread();
-
- // CNIE: Her mangler en lukning af comporten
-
-  PLAYER_MSG0(2, "PBS shutdown");
-
-  return(0);
 }
 
 /// Process messages

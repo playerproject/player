@@ -134,7 +134,7 @@ void connectionClosedCb (void *data)
   std::cout << std::endl << "Robotino(R) :: Connection closed" << std::endl;
 }
 
-class RobotinoDriver:public Driver
+class RobotinoDriver:public ThreadedDriver
 {
 public:
   
@@ -142,7 +142,7 @@ public:
   RobotinoDriver (ConfigFile * cf, int section);
   
   // Must implement the following methods.
-  virtual int Setup ();
+  virtual int MainSetup ();
   virtual int Shutdown ();
   
   // This method will be invoked on each incoming message
@@ -205,7 +205,7 @@ void RobotinoDriver_Register (DriverTable * table)
 
 /** Retrieve options from the configuration file and do any */
 RobotinoDriver::RobotinoDriver (ConfigFile * cf, int section):
-  Driver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
+  ThreadedDriver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
 {
   // Read options from the configuration file
   this->ROBOTINO_TIMEOUT_MS = cf->ReadInt(section,"ROBOTINO_TIMEOUT_MS",0);
@@ -260,7 +260,7 @@ RobotinoDriver::RobotinoDriver (ConfigFile * cf, int section):
 /** 
     Return 0 if things go well, and -1 otherwise. 
 */
-int RobotinoDriver::Setup ()
+int RobotinoDriver::MainSetup ()
 {
   std::cout << std:: endl << "Robotino(R) :: Driver initialising" << std::endl;
   
@@ -310,10 +310,7 @@ int RobotinoDriver::Setup ()
 	{
 	  PLAYER_ERROR("Robotino(R) :: Failed to receive IO status in setup");
 	}  
-  //! Start the device thread; spawns a new thread and executes
-  //! RobotinoDriver::Main(), which contains the main loop for the driver.
-  StartThread ();
-
+  
   // Initialize the holders for desired velocities
   desiredVelocityX = 0;
   desiredVelocityY = 0;

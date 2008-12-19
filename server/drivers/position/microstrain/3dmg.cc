@@ -90,7 +90,7 @@ driver
 #include <libplayercore/playercore.h>
 
 // MicroStraing 3DM-G IMU driver
-class MicroStrain3DMG : public Driver
+class MicroStrain3DMG : public ThreadedDriver
 {
   ///////////////////////////////////////////////////////////////////////////
   // Top half methods; these methods run in the server thread
@@ -103,7 +103,7 @@ class MicroStrain3DMG : public Driver
   public: virtual ~MicroStrain3DMG();
 
   // Initialise device
-  public: virtual int Setup();
+  public: virtual int MainSetup();
 
   // Shutdown the device
   public: virtual int Shutdown();
@@ -184,7 +184,7 @@ void microstrain_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 MicroStrain3DMG::MicroStrain3DMG(ConfigFile* cf, int section)
-    : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION3D_CODE)
+    : ThreadedDriver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION3D_CODE)
 {
   // Default serial port
   this->port_name = cf->ReadString(section, "port", "/dev/ttyS1");
@@ -203,16 +203,13 @@ MicroStrain3DMG::~MicroStrain3DMG()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device
-int MicroStrain3DMG::Setup()
+int MicroStrain3DMG::MainSetup()
 {
   printf("IMU initialising (%s)\n", this->port_name);
 
   // Open the port
   if (OpenPort())
     return -1;
-
-  // Start driver thread
-  StartThread();
 
   return 0;
 }

@@ -103,14 +103,14 @@ driver
 #define CAM_ROWS 144
 #define CAM_COLS 176
 
-class SR3000:public Driver
+class SR3000:public ThreadedDriver
 {
   public:
 	// constructor
     SR3000 (ConfigFile* cf, int section);
     ~SR3000 ();
 
-    int Setup ();
+    int MainSetup ();
     int Shutdown ();
 
     // MessageHandler
@@ -173,7 +173,7 @@ void
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 SR3000::SR3000 (ConfigFile* cf, int section)
-	: Driver (cf, section),
+	: ThreadedDriver (cf, section),
 	auto_illumination ("auto_illumination", 0, 0),
 	integration_time ("integration_time", 0, 0),
 	modulation_freq ("modulation_freq", 0, 0),
@@ -252,7 +252,7 @@ SR3000::~SR3000 ()
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
 int
-    SR3000::Setup ()
+    SR3000::MainSetup ()
 {
   int res;
   // ---[ Open the camera ]---
@@ -287,7 +287,6 @@ int
   yp = &xp[rows*cols];
   zp = &yp[rows*cols];
 
-  StartThread ();
   return (0);
 }
 

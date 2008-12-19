@@ -402,7 +402,7 @@ double FlockOfBirdsSerial::GetRange()
 // Player Driver Class                                       //
 ///////////////////////////////////////////////////////////////
 
-class FlockOfBirds_Device : public Driver
+class FlockOfBirds_Device : public ThreadedDriver
 {
   protected:
     // this function will be run in a separate thread
@@ -421,7 +421,7 @@ class FlockOfBirds_Device : public Driver
 
     FlockOfBirds_Device( ConfigFile* cf, int section);
 
-    virtual int Setup();
+    virtual int MainSetup();
     virtual int Shutdown();
 
     // MessageHandler
@@ -443,7 +443,7 @@ flockofbirds_Register(DriverTable* table)
 }
 
 FlockOfBirds_Device::FlockOfBirds_Device( ConfigFile* cf, int section)
-        : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION3D_CODE)
+        : ThreadedDriver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION3D_CODE)
 {
   fob = NULL;
 
@@ -455,7 +455,7 @@ FlockOfBirds_Device::FlockOfBirds_Device( ConfigFile* cf, int section)
 }
 
 int
-FlockOfBirds_Device::Setup()
+FlockOfBirds_Device::MainSetup()
 {
 
   printf("FOB connection initializing (%s)...", fob_serial_port);
@@ -468,9 +468,6 @@ FlockOfBirds_Device::Setup()
     printf("Failed\n");
     return -1;
   }
-
-  // start the thread to talk with the camera
-  StartThread();
 
   return(0);
 }

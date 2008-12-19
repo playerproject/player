@@ -185,7 +185,7 @@ driver
 #include <libplayerxdr/playerxdr.h>
 
 // The SICK LMS 400 laser device class.
-class SickLMS400 : public Driver
+class SickLMS400 : public ThreadedDriver
 {
   public:
 
@@ -193,8 +193,8 @@ class SickLMS400 : public Driver
     SickLMS400  (ConfigFile* cf, int section);
     ~SickLMS400 ();
 
-    int Setup    ();
-    int Shutdown ();
+    int MainSetup    ();
+    void MainQuit ();
 
     // MessageHandler
     int ProcessMessage (QueuePointer &resp_queue,
@@ -242,7 +242,7 @@ class SickLMS400 : public Driver
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 SickLMS400::SickLMS400 (ConfigFile* cf, int section)
-    : Driver (cf, section, true,
+    : ThreadedDriver (cf, section, true, 
               PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LASER_CODE)
 {
   // Laser geometry.
@@ -296,7 +296,7 @@ SickLMS400::~SickLMS400 ()
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
 int
-  SickLMS400::Setup ()
+  SickLMS400::MainSetup ()
 {
   // Create a lms400_cola object
   lms400 = new lms400_cola (hostname, port_number, debug);
@@ -355,32 +355,26 @@ int
   else
     PLAYER_MSG0 (1, "> Enabling user values for resolution, frequency and min/max angle... [done]");
 
-  // Start the device thread
-  StartThread ();
 
   return (0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-int
-  SickLMS400::Shutdown ()
+void
+SickLMS400::MainQuit ()
 {
-  // shutdown laser device
-  StopThread ();
-
+ 
   // Stop the measurement process
   lms400->StopMeasurement ();
-
-  // Set back to userlevel 0
+  
+  // Set back to userlevel 0 
   lms400->TerminateConfiguration ();
-
+  
   // Disconnect from the laser unit
   lms400->Disconnect ();
-
+  
   PLAYER_MSG0 (1, "> SICK LMS400 driver shutting down... [done]");
-
-  return (0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

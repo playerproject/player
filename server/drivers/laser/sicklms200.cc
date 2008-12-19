@@ -220,14 +220,14 @@ extern PlayerTime* GlobalTime;
 
 
 // The laser device class.
-class SickLMS200 : public Driver
+class SickLMS200 : public ThreadedDriver
 {
   public:
 
     // Constructor
     SickLMS200(ConfigFile* cf, int section);
 
-    int Setup();
+    int MainSetup();
     int Shutdown();
 
     // MessageHandler
@@ -414,7 +414,7 @@ void sicklms200_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 SickLMS200::SickLMS200(ConfigFile* cf, int section)
-    : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LASER_CODE)
+    : ThreadedDriver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LASER_CODE)
 {
   // Laser geometry.
   this->pose[0] = cf->ReadTupleLength(section, "pose", 0, 0.0);
@@ -518,7 +518,7 @@ SickLMS200::SickLMS200(ConfigFile* cf, int section)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device
-int SickLMS200::Setup()
+int SickLMS200::MainSetup()
 {
   PLAYER_MSG1(2, "Laser initialising (%s)", this->device_name);
 
@@ -601,9 +601,6 @@ int SickLMS200::Setup()
 
   memset(&data,0,sizeof(data));
   PLAYER_MSG0(2, "laser ready");
-
-  // Start the device thread
-  StartThread();
 
   return 0;
 }

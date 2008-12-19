@@ -110,7 +110,7 @@ extern "C"
 */
 
 CameraUvc::CameraUvc(ConfigFile* cf, int section)
-    : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_CAMERA_CODE)
+    : ThreadedDriver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_CAMERA_CODE)
 {
 	ui=new UvcInterface(cf->ReadString(section, "port", "/dev/video0"),
 						cf->ReadTupleInt( section, "size", 0, 320),
@@ -127,7 +127,7 @@ CameraUvc::~CameraUvc()
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
 // Also starts the mainloop.
 ////////////////////////////////////////////////////////////////////////////////
-int CameraUvc::Setup()
+int CameraUvc::MainSetup()
 {
 	printf("CameraUvc: Driver initialising\n");
 
@@ -138,7 +138,6 @@ int CameraUvc::Setup()
 		return -1;
 	}
 
-	StartThread();
 	printf("CameraUvc: Driver initialisation done\n");
 
 	return 0;
@@ -148,15 +147,12 @@ int CameraUvc::Setup()
 // Shutdown the device.
 // Also stops the mainloop.
 ////////////////////////////////////////////////////////////////////////////////
-int CameraUvc::Shutdown()
+void CameraUvc::MainQuit()
 {
 	printf("CameraUvc: Driver shutting down\n");
-
-	StopThread();
 	ui->Close();
 
 	printf("CameraUvc: Driver shutdown complete\n");
-	return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

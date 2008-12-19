@@ -284,18 +284,19 @@ driver
 #endif
 
 // Driver for detecting laser retro-reflectors.
-class Camera1394 : public Driver
+class Camera1394 : public ThreadedDriver
 {
   // Constructor
   public: Camera1394( ConfigFile* cf, int section);
 
   // Setup/shutdown routines.
-  public: virtual int Setup();
-  public: virtual int Shutdown();
   private: void SafeCleanup();
 
   // Main function for device thread.
   private: virtual void Main();
+
+  private: virtual void MainQuit();
+  public: virtual int MainSetup();
 
   // This method will be invoked on each incoming message
   public: virtual int ProcessMessage(QueuePointer & resp_queue,
@@ -390,7 +391,7 @@ void camera1394_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 Camera1394::Camera1394(ConfigFile* cf, int section)
-  : Driver(cf,
+  : ThreadedDriver(cf,
            section,
            true,
            PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
@@ -742,7 +743,7 @@ void Camera1394::SafeCleanup()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device (called by server thread).
-int Camera1394::Setup()
+int Camera1394::MainSetup()
 {
 
 
@@ -1071,20 +1072,11 @@ int Camera1394::Setup()
     this->SafeCleanup();
     return -1;
   }
-
-  // Start the driver thread.
-  this->StartThread();
-
   return 0;
 }
 
-
-////////////////////////////////////////////////////////////////////////////////
-// Shutdown the device (called by server thread).
-int Camera1394::Shutdown()
+void Camera1394::MainQuit()
 {
-  // Stop the driver thread.
-  StopThread();
 
   // Stop transmitting camera data
 #if LIBDC1394_VERSION == 0200
@@ -1097,8 +1089,6 @@ int Camera1394::Shutdown()
 
   // Free resources
   this->SafeCleanup();
-
-  return 0;
 }
 
 

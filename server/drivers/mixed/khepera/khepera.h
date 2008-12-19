@@ -78,7 +78,7 @@ typedef struct player_khepera_geom
 } __attribute__ ((packed)) player_khepera_geom_t;
 
 
-class Khepera : public Driver
+class Khepera : public ThreadedDriver 
 {
 public:
 
@@ -91,8 +91,8 @@ public:
   virtual int Subscribe(player_devaddr_t addr);
   virtual int Unsubscribe(player_devaddr_t addr);
 
-  virtual int Setup();
-  virtual int Shutdown();
+  virtual int MainSetup();
+  virtual void MainQuit();
 
   int ResetOdometry();
 

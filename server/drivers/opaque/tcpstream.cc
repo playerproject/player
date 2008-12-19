@@ -118,7 +118,7 @@ driver
 
 ////////////////////////////////////////////////////////////////////////////////
 // The class for the driver
-class TCPStream : public Driver
+class TCPStream : public ThreadedDriver
 {
   public:
 
@@ -127,7 +127,6 @@ class TCPStream : public Driver
     virtual ~TCPStream();
 
     // Must implement the following methods.
-    virtual int Setup();
     virtual int Shutdown();
 
     // This method will be invoked on each incoming message
@@ -192,7 +191,7 @@ void tcpstream_Register(DriverTable* table)
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 TCPStream::TCPStream(ConfigFile* cf, int section)
-    : Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
+    : ThreadedDriver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
              PLAYER_OPAQUE_CODE),
              buffer_size ("buffer_size", DEFAULT_TCP_OPAQUE_BUFFER_SIZE, 0),
              ip ("ip", DEFAULT_TCP_OPAQUE_IP, 0),
@@ -213,25 +212,6 @@ TCPStream::TCPStream(ConfigFile* cf, int section)
 TCPStream::~TCPStream()
 {
 	delete [] rx_buffer;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Set up the device.  Return 0 if things go well, and -1 otherwise.
-int TCPStream::Setup()
-{
-	PLAYER_MSG2(2, "TCP Opaque Driver initialising (%s:%d)", ip.GetValue(), port.GetValue());
-
-	// Open the terminal
-	if (OpenTerm())
-	    PLAYER_ERROR("Failed to connect to socket");
-	else
-		PLAYER_MSG0(2, "TCP Opaque Driver ready");
-
-  // Start the device thread; spawns a new thread and executes
-  // TCPStream::Main(), which contains the main loop for the driver.
-  StartThread();
-
-  return(0);
 }
 
 
@@ -256,12 +236,6 @@ int TCPStream::ProcessMessage(QueuePointer & resp_queue,
 	// Process messages here.  Send a response if necessary, using Publish().
 	// If you handle the message successfully, return 0.  Otherwise,
 	// return -1, and a NACK will be sent for you, if a response is required.
-
-	if (!connected)
-	{
-		PLAYER_MSG0(2, "TCP reconnecting");
-		OpenTerm();
-	}
 
 	if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_OPAQUE_CMD_DATA, this->device_addr))
 	{
@@ -297,21 +271,20 @@ void TCPStream::Main()
   // The main loop; interact with the device here
   for(;;)
   {
+    if (!connected)
+    {
+      OpenTerm();
+    }
     // we read/connect first otherwise we we wait when we have no data connection
     if (connected)
     {
       // Reads the data from the tcp server and then publishes it
       ReadData();
     }
-    else
-    {
-      PLAYER_MSG0(2, "TCP reconnecting");
-      OpenTerm();
-    }
-
-    Wait(1);
 
     ProcessMessages();
+    Wait(1);
+
   }
 }
 
@@ -322,7 +295,10 @@ int TCPStream::OpenTerm()
 {
 	sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (sock < 0)
+	{
 		PLAYER_ERROR("Failed to create socket.");
+		return -1;
+	}
 
 	sockaddr_in address;
 	memset(&address, 0, sizeof(address));
@@ -330,11 +306,18 @@ int TCPStream::OpenTerm()
 	address.sin_addr.s_addr = inet_addr(ip.GetValue());
 	address.sin_port = htons(port.GetValue());
 	if (connect(sock, (sockaddr*) &address, sizeof(address)) < 0)
+	{
 		PLAYER_ERROR("Failed to connect");
+		return -1;
+	}
 
 	int flags = fcntl(sock, F_GETFL);
 	if (fcntl(sock, F_SETFL, flags | O_NONBLOCK) < 0)
+	{
+		close(sock);
 		PLAYER_ERROR("Error changing socket to be non-blocking");
+		return -1;
+	}
 
 	PLAYER_MSG0(2, "TCP Opaque Driver connected");
 

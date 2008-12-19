@@ -82,7 +82,7 @@ driver
 #include <libplayercore/playercore.h>
 
 // The Dummy driver
-class Dummy: public Driver
+class Dummy: public ThreadedDriver 
 {
     public:
         // Constructor
@@ -90,10 +90,6 @@ class Dummy: public Driver
 
         // Destructor
         ~Dummy ();
-
-        // Implementations of virtual functions
-        virtual int Setup ();
-        virtual int Shutdown ();
 
     private:
 
@@ -127,7 +123,7 @@ void dummy_Register(DriverTable* table)
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 Dummy::Dummy(ConfigFile* cf, int section)
-	: Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
+	: ThreadedDriver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
 {
     // Look for our default device id
     if (cf->ReadDeviceAddr(&this->device_addr, section, "provides",
@@ -156,28 +152,6 @@ Dummy::Dummy(ConfigFile* cf, int section)
 Dummy::~Dummy()
 {
     return;
-}
-
-
-////////////////////////////////////////////////////////////////////////////
-// Initialize driver
-int Dummy::Setup()
-{
-    // Start device thread
-    this->StartThread();
-
-    return 0;
-}
-
-
-////////////////////////////////////////////////////////////////////////////
-// Finalize the driver
-int Dummy::Shutdown()
-{
-    // Stop the device thread
-    this->StopThread();
-
-    return 0;
 }
 
 

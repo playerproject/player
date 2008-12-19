@@ -115,7 +115,7 @@ extern PlayerTime *GlobalTime;
 
 ///////////////////////////////////////////////////////////////////////////////
 // The class for the driver
-class MotionMind : public Driver
+class MotionMind : public ThreadedDriver
 {
   public:
     // Constructor; need that
@@ -123,8 +123,8 @@ class MotionMind : public Driver
 	~MotionMind();
 
     // Must implement the following methods.
-    virtual int Setup();
-    virtual int Shutdown();
+    virtual int MainSetup();
+    virtual void MainQuit();
 
     // This method will be invoked on each incoming message
     virtual int ProcessMessage(QueuePointer & resp_queue,
@@ -196,7 +196,7 @@ void motionmind_Register(DriverTable* table)
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 MotionMind::MotionMind(ConfigFile* cf, int section)
-    : Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION1D_CODE)
+    : ThreadedDriver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION1D_CODE)
 {
 	this->opaque = NULL;
 	// Must have an opaque device
@@ -228,7 +228,7 @@ MotionMind::~MotionMind()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
-int MotionMind::Setup()
+int MotionMind::MainSetup()
 {
 	puts("Setting up MotionMind driver");
 
@@ -252,28 +252,20 @@ int MotionMind::Setup()
 
 	puts("MotionMind driver ready");
 
-	// Start the device thread; spawns a new thread and executes
-	// MotionMind::Main(), which contains the main loop for the driver.
-	StartThread();
-
 	return(0);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-int MotionMind::Shutdown()
+void MotionMind::MainQuit()
 {
-	// Stop and join the driver thread
-	StopThread();
-
 	puts("MotionMind driver down");
 
 	opaque->Unsubscribe(InQueue);
 
 	puts("MotionMind driver has been shutdown");
 
-	return(0);
 }
 
 

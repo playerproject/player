@@ -98,14 +98,10 @@ driver
 #include <libplayercore/playercore.h>
 
 
-class ImageSeq : public Driver
+class ImageSeq : public ThreadedDriver
 {
   // Constructor
   public: ImageSeq( ConfigFile *cf, int section);
-
-  // Setup/shutdown routines.
-  public: virtual int Setup();
-  public: virtual int Shutdown();
 
   // Main function for device thread.
   private: virtual void Main();
@@ -146,7 +142,7 @@ void imageseq_Register(DriverTable *table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 ImageSeq::ImageSeq(ConfigFile *cf, int section)
-  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_CAMERA_CODE)
+  : ThreadedDriver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_CAMERA_CODE)
 {
   // Data rate
   this->rate = cf->ReadFloat(section, "rate", 10);
@@ -159,31 +155,6 @@ ImageSeq::ImageSeq(ConfigFile *cf, int section)
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Set up the device (called by server thread).
-int ImageSeq::Setup()
-{
-  // Start at frame 0
-  this->frame = 0;
-
-  // Start the driver thread.
-  this->StartThread();
-
-  return 0;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Shutdown the device (called by server thread).
-int ImageSeq::Shutdown()
-{
-  // Stop the driver thread
-  StopThread();
-
-  return 0;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
 void ImageSeq::Main()
 {
@@ -192,7 +163,8 @@ void ImageSeq::Main()
 
   req.tv_sec = (time_t) (1.0 / this->rate);
   req.tv_nsec = (long) (fmod(1e9 / this->rate, 1e9));
-
+  this->frame = 0;
+  
   while (1)
   {
     pthread_testcancel();

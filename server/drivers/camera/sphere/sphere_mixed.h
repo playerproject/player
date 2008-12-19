@@ -34,7 +34,7 @@ extern PlayerTime *GlobalTime;
 
 ////////////////////////////////////////////////////////////////////////////////
 // The class for the driver
-class SphereDriver : public Driver
+class SphereDriver : public ThreadedDriver
 {
   public:
 
@@ -42,7 +42,7 @@ class SphereDriver : public Driver
     SphereDriver(ConfigFile* cf, int section);
 
     // Must implement the following methods.
-    int Setup();
+    int MainSetup();
     int Shutdown();
     // Main function for device thread.
     virtual void Main();

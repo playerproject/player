@@ -145,7 +145,7 @@ driver
 using namespace std;
 
 //Header file. Player driver class for the RS4 Leuze Laser(1);
-class RS4LeuzeLaserDriver : public Driver {
+class RS4LeuzeLaserDriver : public ThreadedDriver {
 public:
 
 	// Constructor, teh constructor takes a CongifgFile parameter
@@ -156,7 +156,7 @@ public:
 
 	//The driver  must implement the abstract Setup and Shutdown methods (3);
 	// Implementations of virtual functions
-	int Setup();
+	int MainSetup();
 	int Shutdown();
 	//The drivers re-implements the ProcessMessage method to provide support for
 	//handling request and commands(4)
@@ -194,7 +194,7 @@ private:
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 RS4LeuzeLaserDriver::RS4LeuzeLaserDriver(ConfigFile* cf, int section)
-: Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LASER_CODE)
+: ThreadedDriver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LASER_CODE)
 {
 
 
@@ -306,7 +306,7 @@ RS4LeuzeLaserDriver::~RS4LeuzeLaserDriver()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
-int RS4LeuzeLaserDriver::Setup() {
+int RS4LeuzeLaserDriver::MainSetup() {
 	//config data
 	// Si el el puerto no fue abierto, entonces mandar error. if(*mylaser.
 	//if(Laser.Open(Port,UseSerial,BaudRate) < 0)
@@ -315,12 +315,6 @@ int RS4LeuzeLaserDriver::Setup() {
 	//	return -1;
 	//}
 	PLAYER_MSG1(1, "%s", "S4LeuzeLaserDriver::Setup");
-
-    // Start the device thread; spawns a new thread and executes
-    // ExampleDriver::Main(), which contains the main loop for the driver.
-	StartThread();
-
-
     return(0);
 }
 

@@ -101,7 +101,7 @@ Try to use BuildWKB() method as in sicknav200 driver instead of GEOS. Note that 
 
 using namespace std;
 
-class Vec2Map : public Driver
+class Vec2Map : public ThreadedDriver
 {
   public:
     // Constructor; need that
@@ -110,7 +110,7 @@ class Vec2Map : public Driver
     virtual ~Vec2Map();
 
     // Must implement the following methods.
-    virtual int Setup();
+    virtual int MainSetup();
     virtual int Shutdown();
 
     // This method will be invoked on each incoming message
@@ -167,7 +167,7 @@ void vec2map_geosprint(const char* format, ...)
 //
 Vec2Map::Vec2Map(ConfigFile * cf, int section)
 //  : Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_MAP_CODE)
-    : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
+    : ThreadedDriver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
 {
   memset(&(this->vectormap_addr), 0, sizeof(player_devaddr_t));
   memset(&(this->map_addr), 0, sizeof(player_devaddr_t));
@@ -222,7 +222,7 @@ Vec2Map::~Vec2Map()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
-int Vec2Map::Setup()
+int Vec2Map::MainSetup()
 {
   // Retrieve the handle to the vectormap device.
   this->vectormap_dev = deviceTable->GetDevice(this->vectormap_addr);
@@ -237,10 +237,6 @@ int Vec2Map::Setup()
     PLAYER_ERROR("unable to subscribe to vectormap device");
     return -1;
   }
-
-  // Start the device thread; spawns a new thread and executes
-  // Vec2Map::Main(), which contains the main loop for the driver.
-  StartThread();
 
   return 0;
 }

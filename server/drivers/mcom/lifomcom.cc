@@ -166,7 +166,6 @@ int LifoMCom::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t *
     {
       ret.type = htons(cfg->type);
       strcpy(ret.channel, cfg->channel);
-      Unlock();
       *resp_len = sizeof(player_mcom_return_t);
       return PLAYER_MSGTYPE_RESP_ACK;
     }
@@ -229,11 +228,9 @@ LifoMCom::PutConfig(player_device_id_t id, void *client,
             if(ret.data.full) {
                 ret.type = htons(cfg->type);
                 strcpy(ret.channel, cfg->channel);
-                Unlock();
                 PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &ret ,sizeof(ret),NULL);
                 return 0;
             } else {
-                Unlock();
                 PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL);
                 return 0;
             }

@@ -246,7 +246,7 @@ typedef struct acts_data
 
 
 
-class Acts:public Driver
+class Acts:public ThreadedDriver
 {
   private:
     int debuglevel;             // debuglevel 0=none, 1=basic, 2=everything
@@ -299,11 +299,11 @@ class Acts:public Driver
     Acts( ConfigFile* cf, int section);
 
     virtual void Main();
-
+    virtual void MainQuit();
+    
     void KillACTS();
 
-    int Setup();
-    int Shutdown();
+    int MainSetup();
 };
 
 // a factory creation function
@@ -333,7 +333,7 @@ void QuitACTS(void* visiondevice);
 
 
 Acts::Acts( ConfigFile* cf, int section)
-  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_BLOBFINDER_CODE)
+  : ThreadedDriver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_BLOBFINDER_CODE)
 {
   char tmpstr[MAX_FILENAME_SIZE];
   int tmpint;
@@ -469,7 +469,7 @@ int Acts::version_enum_to_string(acts_version_t versionnum,
 }
 
 int
-Acts::Setup()
+Acts::MainSetup()
 {
   int i;
   int j;
@@ -742,28 +742,15 @@ Acts::Setup()
     }
     puts("Done.");
 
-    /* now spawn reading thread */
-    StartThread();
-
     return(0);
   }
-
-  // shut up compiler!
   return(0);
 }
 
-int
-Acts::Shutdown()
+void Acts::MainQuit()
 {
-  /* if Setup() was never called, don't do anything */
-  if(sock == -1)
-    return(0);
-
-  StopThread();
-
-  sock = -1;
-  puts("ACTS vision server has been shutdown");
-  return(0);
+	sock = -1;
+	puts("ACTS vision server has been shutdown");
 }
 
 void

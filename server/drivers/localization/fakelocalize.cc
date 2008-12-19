@@ -105,15 +105,15 @@ driver
 using namespace std;
 
 // Driver for computing the free c-space from a laser scan.
-class FakeLocalize : public Driver
+class FakeLocalize : public ThreadedDriver
 {
   // Constructor
   public: FakeLocalize( ConfigFile* cf, int section);
   public: virtual ~FakeLocalize();
 
   // Setup/shutdown/run routines.
-  public: virtual int Setup();
-  public: virtual int Shutdown();
+  public: virtual int MainSetup();
+  public: virtual void MainQuit();
   public: virtual void Main();
   public: virtual int ProcessMessage(QueuePointer &resp_queue,
                                      player_msghdr * hdr,
@@ -143,7 +143,7 @@ void fakelocalize_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 FakeLocalize::FakeLocalize( ConfigFile* cf, int section)
-  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN),
+  : ThreadedDriver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN),
   model (NULL)
 {
   // Must have an input sim
@@ -209,7 +209,7 @@ FakeLocalize::~FakeLocalize()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device (called by server thread).
-int FakeLocalize::Setup()
+int FakeLocalize::MainSetup()
 {
   // Subscribe to the sim.
   if(!(this->sim = deviceTable->GetDevice(this->sim_id)))
@@ -222,22 +222,17 @@ int FakeLocalize::Setup()
     PLAYER_ERROR("unable to subscribe to simulation device");
     return -1;
   }
-
-  this->StartThread();
   return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device (called by server thread).
-int FakeLocalize::Shutdown()
+void FakeLocalize::MainQuit()
 {
-  this->StopThread();
-  // Unsubscribe from devices.
   this->sim->Unsubscribe(this->InQueue);
   sim = NULL;
-
-  return 0;
 }
+
 
 int
 FakeLocalize::UpdateData()

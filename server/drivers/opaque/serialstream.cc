@@ -134,7 +134,7 @@ driver
 
 ////////////////////////////////////////////////////////////////////////////////
 // The class for the driver
-class SerialStream : public Driver
+class SerialStream : public ThreadedDriver
 {
   public:
 
@@ -143,7 +143,7 @@ class SerialStream : public Driver
     virtual ~SerialStream();
 
     // Must implement the following methods.
-    virtual int Setup();
+    virtual int MainSetup();
     virtual int Shutdown();
 
     // This method will be invoked on each incoming message
@@ -224,7 +224,7 @@ void serialstream_Register(DriverTable* table)
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 SerialStream::SerialStream(ConfigFile* cf, int section)
-    : Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
+    : ThreadedDriver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
              PLAYER_OPAQUE_CODE),
              buffer_size ("buffer_size", DEFAULT_OPAQUE_BUFFER_SIZE, 0),
              transfer_rate ("transfer_rate", DEFAULT_OPAQUE_TRANSFER_RATE, 0),
@@ -251,7 +251,7 @@ SerialStream::~SerialStream()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
-int SerialStream::Setup()
+int SerialStream::MainSetup()
 {
 	PLAYER_MSG1(2, "Opaque Driver initialising (%s)", port.GetValue());
 
@@ -260,10 +260,6 @@ int SerialStream::Setup()
 	    return -1;
 
 	PLAYER_MSG0(2, "Opaque Driver ready");
-
-  // Start the device thread; spawns a new thread and executes
-  // SerialStream::Main(), which contains the main loop for the driver.
-  StartThread();
 
   return(0);
 }

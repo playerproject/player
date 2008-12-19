@@ -91,7 +91,7 @@ driver
 
 ////////////////////////////////////////////////////////////////////////////////
 // The XSensMT device class.
-class XSensMT : public Driver
+class XSensMT : public ThreadedDriver
 {
     public:
         // Constructor
@@ -101,8 +101,8 @@ class XSensMT : public Driver
         ~XSensMT ();
 
         // Implementations of virtual functions
-        virtual int Setup ();
-        virtual int Shutdown ();
+        virtual int MainSetup ();
+        virtual void MainQuit ();
 
         // This method will be invoked on each incoming message
         virtual int ProcessMessage (QueuePointer &resp_queue,
@@ -156,7 +156,7 @@ void XSensMT_Register (DriverTable* table)
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 XSensMT::XSensMT (ConfigFile* cf, int section)
-    : Driver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
+    : ThreadedDriver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, 
               PLAYER_IMU_CODE)
 {
     portName = cf->ReadString (section, "port", DEFAULT_PORT);
@@ -177,7 +177,7 @@ XSensMT::~XSensMT()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
-int XSensMT::Setup ()
+int XSensMT::MainSetup ()
 {
     // Open the device
     if (mtcomm.openPort (portName) != MTRV_OK)
@@ -225,25 +225,18 @@ int XSensMT::Setup ()
 
     PLAYER_MSG0 (1, "> XSensMT starting up... [done]");
 
-    // Start the device thread
-    StartThread ();
-
     return (0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-int XSensMT::Shutdown ()
+void XSensMT::MainQuit ()
 {
-    // Stop the driver thread
-    StopThread ();
-
     // Close the MTx device
     if (mtcomm.close () != MTRV_OK)
         PLAYER_ERROR ("Could not close device!");
 
     PLAYER_MSG0 (1, "> XSensMT driver shutting down... [done]");
-    return (0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
