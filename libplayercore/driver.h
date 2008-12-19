@@ -577,6 +577,14 @@ class ThreadedDriver : public Driver
     @returns Returns 0 on success. */
     virtual int Shutdown();
 
+    /** @brief Terminate the driver.
+
+    This method doesnt go through the niceities of unsubscribing etc, only use
+    when the server is actually shutting down as it takes a few shortcuts
+
+    @returns Returns 0 on success. */
+    virtual int Terminate();
+
     /** @brief Main method for driver thread.
 
     drivers have their own thread of execution, created using

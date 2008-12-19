@@ -347,6 +347,12 @@ Cleanup()
 {
   delete ptcp;
   delete pudp;
+
+  if(deviceTable->StopAlwaysonDrivers() != 0)
+  {
+    PLAYER_ERROR("failed to stop alwayson drivers");
+  }
+
   player_globals_fini();
   delete cf;
 }

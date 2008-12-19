@@ -132,7 +132,8 @@ void Message::CreateMessage(const struct player_msghdr & aHeader,
     }
     else
     {
-      PLAYER_ERROR3 ("failed to find clone function for  message %s: %s, %d", interf_to_str (Header.addr.interf), msgtype_to_str (Header.type), Header.subtype);
+      this->Data = NULL;
+      PLAYER_ERROR5 ("failed to find clone function for  message %s[%d]: %s[%d], %d", interf_to_str (Header.addr.interf),Header.addr.interf, msgtype_to_str (Header.type), Header.type, Header.subtype);
     }
   }
   else
@@ -529,8 +530,8 @@ MessageQueue::Push(Message & msg)
   // If it was a response, then mark it , to prompt
   // processing of the queue.
   if(!this->data_requested &&
-     (hdr->type == PLAYER_MSGTYPE_RESP_ACK) ||
-     (hdr->type == PLAYER_MSGTYPE_RESP_NACK))
+     (hdr->type == PLAYER_MSGTYPE_RESP_ACK ||
+     hdr->type == PLAYER_MSGTYPE_RESP_NACK ))
     this->SetDataRequested(true,true);
 
   this->Unlock();

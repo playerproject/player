@@ -968,7 +968,7 @@ int SickNAV200::InterpretLayerData(player_vectormap_layer_data_t* data,
 		uint32_t type = *reinterpret_cast<uint32_t*>(wkb + 1);
 		bool extendedWKB = type >> 24 == 32; // Extended WKBs seem to store a flag in the type variable.
 		int headerSize = extendedWKB ? wkbHeaderSize + 4 : wkbHeaderSize;
-		if (type & 0xffffff != 4) // Ignore the most significant byte, it might have a flag in.
+		if ((type & 0xffffff) != 4) // Ignore the most significant byte, it might have a flag in.
 		{
 			PLAYER_WARN1(
 					"InterpretLayerData only supports MultiPoint data %d\n",

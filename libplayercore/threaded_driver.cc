@@ -89,6 +89,17 @@ ThreadedDriver::ThreadedDriver(ConfigFile *cf, int section, bool overwrite_cmds,
 // destructor, to free up allocated queue.
 ThreadedDriver::~ThreadedDriver()
 {
+	// if our thread is still running request it to be stopped
+	if (ThreadState == PLAYER_THREAD_STATE_RUNNING || ThreadState == PLAYER_THREAD_STATE_RESTARTING)
+	{
+		StopThread();
+	}
+	// wait for the thread to actually stop
+	while (ThreadState != PLAYER_THREAD_STATE_STOPPED)
+	{
+		usleep(100000);
+	}
+
 	pthread_barrier_destroy(&threadSetupBarrier);
 }
 
@@ -129,6 +140,7 @@ ThreadedDriver::StopThread(void)
 {
   if (ThreadState == PLAYER_THREAD_STATE_RUNNING)
   {
+	PLAYER_MSG2(5,"Cancelling thread %p belonging to driver %p",driverthread,this);
     pthread_cancel(driverthread);
     if(pthread_detach(driverthread))
       perror("ThreadedDriver::StopThread:pthread_detach()");
@@ -224,6 +236,16 @@ ThreadedDriver::Setup()
 	return 0;
 }
 
+int ThreadedDriver::Terminate()
+{
+	int ret = Driver::Terminate();
+	// wait for the thread to actually stop
+	while (ret == 0 && ThreadState != PLAYER_THREAD_STATE_STOPPED)
+	{
+		usleep(100000);
+	}
+	return ret;
+}
 
 bool ThreadedDriver::Wait(double TimeOut)
 {
