@@ -185,7 +185,7 @@ class LocalBB : public Driver
 		/** @brief Driver de-initialisation. */
 		int Shutdown();
 		/** Override the unsubscribe to stop sending events to devices which are no longer subscribed. */
-		int Unsubscribe(player_devaddr_t addr);
+		int Unsubscribe(QueuePointer &queue, player_devaddr_t addr);
 
 		// MessageHandler
 		/** @brief Process incoming messages.
@@ -307,15 +307,11 @@ class LocalBB : public Driver
 		* map<group, vector<device queue> >
 		*/
 		map<std::string, vector<QueuePointer> > group_listeners;
-
-		/** Map of queues to devices. Used to remove unneeded queues when a device is unsubscribed. */
-		map<player_devaddr_t, QueuePointer> subscribed_devices;
 };
 ////////////////////////////////////////////////////////////////////////////////
 // Override the unsubscribe. Stop sending out events to unsubscribed devices.
-int LocalBB::Unsubscribe(player_devaddr_t addr)
+int LocalBB::Unsubscribe(QueuePointer &qp, player_devaddr_t addr)
 {
-	QueuePointer &qp = subscribed_devices[addr];
 	for (map<std::string, map<std::string, vector<QueuePointer> > >::iterator itr = listeners.begin(); itr != listeners.end(); itr++)
 	{
 		map<std::string, vector<QueuePointer> > &keys = (*itr).second;
@@ -354,7 +350,7 @@ int LocalBB::Unsubscribe(player_devaddr_t addr)
 		}
 	}
 	
-	return Driver::Unsubscribe(addr);
+	return Driver::Unsubscribe(qp,addr);
 }
 ////////////////////////////////////////////////////////////////////////////////
 // Factory method.
@@ -676,7 +672,6 @@ int LocalBB::ProcessSetEntryMessage(QueuePointer &resp_queue, player_msghdr * hd
 BlackBoardEntry LocalBB::SubscribeKey(const std::string &key, const std::string &group, const QueuePointer &resp_queue, const player_devaddr_t addr)
 {
 	listeners[group][key].push_back(resp_queue);
-	subscribed_devices[addr] = resp_queue;
 	BlackBoardEntry entry = entries[group][key];
 	if (entry.key == "")
 	{
@@ -707,7 +702,6 @@ void LocalBB::UnsubscribeKey(const std::string &key, const std::string &group, c
 vector<BlackBoardEntry> LocalBB::SubscribeGroup(const std::string &group, const QueuePointer &qp, const player_devaddr_t addr)
 {
 	group_listeners[group].push_back(qp);
-	subscribed_devices[addr] = qp;
 
 	vector<BlackBoardEntry> group_entries;
 	//map<group, map<key, entry> >

@@ -109,6 +109,15 @@ class DeviceTable
     // than just driver-specific.
     int StartAlwaysonDrivers();
 
+    // Unsubscribe to each device whose driver is marked 'alwayson'.  Returns
+    // 0 on success, -1 on error (at least one driver failed to start).
+    //
+    // Only used for coordinating server shutdown
+    //
+    // TODO: change the semantics of alwayson to be device-specific, rather
+    // than just driver-specific.
+    int StopAlwaysonDrivers();
+
     // Register a factory creation function.  It will be called when
     // GetDevice fails to find a device in the deviceTable.  This function
     // might, for example, locate the device on a remote host (in a

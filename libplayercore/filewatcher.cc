@@ -77,19 +77,24 @@ int FileWatcher::Wait(double Timeout)
 	t.tv_sec = static_cast<int> (floor(Timeout));
 	t.tv_usec = static_cast<int> ((Timeout - static_cast<int> (floor(Timeout))) * 1e6);
 
+	// unlock for the select call
+	// in the worst case if the list gets modified during the call we will either
+	// not be able to match an event on a deleted fd, or will get spurious wake ups
+	// on a newly added fd all of which are non fatal
+	Unlock();
 	int ret = select (maxfd+1,&ReadFds,&WriteFds,&ExceptFds,&t);
 
 	if (ret < 0)
 	{
 		PLAYER_ERROR2("Select called failed in File Watcher: %d %s",errno,strerror(errno));
-		Unlock();
 		return ret;
 	}
 	else if (ret == 0)
 	{
-		Unlock();
 		return 0;
 	}
+
+	Lock();
 
 	int queueless_count = 0;
 	int match_count = 0;

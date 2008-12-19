@@ -272,6 +272,29 @@ DeviceTable::StartAlwaysonDrivers()
   return(0);
 }
 
+int
+DeviceTable::StopAlwaysonDrivers()
+{
+  Device* thisentry;
+
+  // We don't lock here, on the assumption that the caller is also the only
+  // thread that can make changes to the device table.
+  for(thisentry=head;thisentry;thisentry=thisentry->next)
+  {
+    if(thisentry->driver->alwayson)
+    {
+    	  QueuePointer Temp = QueuePointer();
+      if(thisentry->Unsubscribe(Temp) != 0)
+      {
+        PLAYER_ERROR2("alwayson unsubscription failed for device %s:%d",
+                      interf_to_str(thisentry->addr.interf), thisentry->addr.index);
+        return(-1);
+      }
+    }
+  }
+  return(0);
+}
+
 // Register a factory creation function.  It will be called when
 // GetDevice fails to find a device in the deviceTable.  This function
 // might, for example, locate the device on a remote host (in a

@@ -74,7 +74,7 @@ char playerversion[32];
 bool player_quit;
 bool player_quiet_startup;
 
-// global access to the cmdlihe arguments
+// global access to the cmdline arguments
 int player_argc;
 char** player_argv;
 
