@@ -132,10 +132,14 @@ int KheperaSerial::ReadInts(char Header, int Count, int * Values)
 	int TimePassed = 0;
 	gettimeofday(&Start,NULL);
 	int length = 0;	
+	int rc = 0;
 	do
 	{
 		pthread_testcancel();
-		length += read(fd, &buffer[length], KHEPERA_BUFFER_LEN - length);
+		rc = read(fd, &buffer[length], KHEPERA_BUFFER_LEN - length);
+		if (rc < 0)
+		  errno = rc = 0;
+		else length += rc;
 		gettimeofday(&Now,NULL);
 		TimePassed = (Now.tv_sec - Start.tv_sec)*1000000 + Now.tv_usec - Start.tv_usec;
 	} while (buffer[length-1] != '\n' && TimePassed < KHEPERA_SERIAL_TIMEOUT_USECS);
