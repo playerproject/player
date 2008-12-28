@@ -84,12 +84,14 @@ OpaqueProxy::Subscribe(uint32_t aIndex)
 void
 OpaqueProxy::SendCmd(player_opaque_data_t* aData)
 {
+  scoped_lock_t lock(mPc->mMutex);
   playerc_opaque_cmd(mDevice, aData);
 }
 
 int
 OpaqueProxy::SendReq(player_opaque_data_t* aRequest)
 {
+  scoped_lock_t lock(mPc->mMutex);
   player_opaque_data_t *aReply;
   int result = playerc_opaque_req(mDevice, aRequest, &aReply);
   if (result == 0)
