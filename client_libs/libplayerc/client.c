@@ -212,7 +212,11 @@ void playerc_client_set_transport(playerc_client_t* client,
 // Connect to the server
 int playerc_client_connect(playerc_client_t *client)
 {
-  struct hostent* entp;
+#if defined(HAVE_GETADDRINFO)
+  struct addrinfo* addr_ptr = NULL;
+#else
+  struct hostent* entp = NULL;
+#endif
   char banner[PLAYER_IDENT_STRLEN];
   int old_flags;
   int ret;
@@ -274,6 +278,34 @@ int playerc_client_connect(playerc_client_t *client)
 #endif
 
   // Construct server address
+
+  memset(&client->server, 0, sizeof(client->server));
+  client->server.sin_family = AF_INET;
+  client->server.sin_port = htons(client->port);
+#if defined(HAVE_GETADDRINFO)
+  if (getaddrinfo(client->host, NULL, NULL, &addr_ptr) != 0)
+  {
+    playerc_client_disconnect(client);
+    PLAYERC_ERR("getaddrinfo() failed with error");
+    return -1;
+  }
+  assert(addr_ptr);
+  assert(addr_ptr->ai_addr);
+#ifdef AF_INET6
+  if (((addr_ptr->ai_addr->sa_family) != AF_INET) &&
+      ((addr_ptr->ai_addr->sa_family) != AF_INET6))
+#else
+  if ((addr_ptr->ai_addr->sa_family) != AF_INET)
+#endif
+  {
+    playerc_client_disconnect(client);
+    PLAYERC_ERR("unsupported internet address family");
+    return -1;
+  }
+  client->server.sin_addr.s_addr = ((struct sockaddr_in *)(addr_ptr->ai_addr))->sin_addr.s_addr;
+  freeaddrinfo(addr_ptr);
+  addr_ptr = NULL;
+#else
   entp = gethostbyname(client->host);
   if (entp == NULL)
   {
@@ -281,10 +313,9 @@ int playerc_client_connect(playerc_client_t *client)
     PLAYERC_ERR1("gethostbyname failed with error [%s]", strerror(errno));
     return -1;
   }
-  client->server.sin_family = PF_INET;
-  memcpy(&client->server.sin_addr, entp->h_addr_list[0], entp->h_length);
-  client->server.sin_port = htons(client->port);
-
+  assert(entp->h_length <= sizeof (client->server.sin_addr));
+  memcpy(&(client->server.sin_addr), entp->h_addr_list[0], entp->h_length);
+#endif
   // Connect the socket
   /*
   t = client->request_timeout;
