@@ -445,7 +445,7 @@ double get_scan (int index)
 // Returns a new reference to a dictionary object.
 PyObject *__convert_blackboard_entry__(player_blackboard_entry_t *entry)
 {
-  PyObject *entry_dict, *data;
+  PyObject *entry_dict, *data, *temp_pystring;
   char* str;
   int i;
   double d;
@@ -460,53 +460,78 @@ PyObject *__convert_blackboard_entry__(player_blackboard_entry_t *entry)
   assert(entry->group);
   assert(entry->group_count > 0);
 
-  ok = PyDict_SetItemString(entry_dict, "key", PyString_FromString(entry->key)); // Steals reference
+
+temp_pystring = PyString_FromString(entry->key);
+  ok = PyDict_SetItemString(entry_dict, "key", temp_pystring); // Steals reference
   if (ok != 0)
   {
   	PyErr_SetString(PyExc_RuntimeError, "Could not set dictionary value for 'key'");
   	Py_XDECREF(entry_dict);
+  	Py_XDECREF(temp_pystring);
   	return NULL;
   }
+Py_XDECREF(temp_pystring);
 
-  ok = PyDict_SetItemString(entry_dict, "group", PyString_FromString(entry->group)); // Steals reference
+
+temp_pystring = PyString_FromString(entry->group);
+  ok = PyDict_SetItemString(entry_dict, "group", temp_pystring); // Steals reference
   if (ok != 0)
   {
   	PyErr_SetString(PyExc_RuntimeError, "Could not set dictionary value for 'group'");
   	Py_XDECREF(entry_dict);
+  	Py_XDECREF(temp_pystring);
   	return NULL;
   }
-	
-  ok = PyDict_SetItemString(entry_dict, "type", PyLong_FromLong(entry->type)); // Steals reference
+Py_XDECREF(temp_pystring);
+
+
+temp_pystring = PyLong_FromLong(entry->type);
+  ok = PyDict_SetItemString(entry_dict, "type", temp_pystring); // Steals reference
   if (ok != 0)
   {
   	PyErr_SetString(PyExc_RuntimeError, "Could not set dictionary value for 'type'");
   	Py_XDECREF(entry_dict);
+  	Py_XDECREF(temp_pystring);
   	return NULL;
   }
+Py_XDECREF(temp_pystring);
 
-  ok = PyDict_SetItemString(entry_dict, "subtype", PyLong_FromLong(entry->subtype)); // Steals reference
+
+temp_pystring = PyLong_FromLong(entry->subtype);
+  ok = PyDict_SetItemString(entry_dict, "subtype", temp_pystring); // Steals reference
   if (ok != 0)
   {
   	PyErr_SetString(PyExc_RuntimeError, "Could not set dictionary value for 'subtype'");
   	Py_XDECREF(entry_dict);
+  	Py_XDECREF(temp_pystring);
   	return NULL;
   }
+Py_XDECREF(temp_pystring);
 
-  ok = PyDict_SetItemString(entry_dict, "timestamp_sec", PyLong_FromLong(entry->timestamp_sec)); // Steals reference
+
+temp_pystring = PyLong_FromLong(entry->timestamp_sec);
+  ok = PyDict_SetItemString(entry_dict, "timestamp_sec", temp_pystring); // Steals reference
   if (ok != 0)
   {
   	PyErr_SetString(PyExc_RuntimeError, "Could not set dictionary value for 'timestamp_sec'");
   	Py_XDECREF(entry_dict);
+  	Py_XDECREF(temp_pystring);
   	return NULL;
   }
+Py_XDECREF(temp_pystring);
 
-  ok = PyDict_SetItemString(entry_dict, "timestamp_usec", PyLong_FromLong(entry->timestamp_usec)); // Steals reference
+
+temp_pystring = PyLong_FromLong(entry->timestamp_usec);
+  ok = PyDict_SetItemString(entry_dict, "timestamp_usec", temp_pystring); // Steals reference
   if (ok != 0)
   {
   	PyErr_SetString(PyExc_RuntimeError, "Could not set dictionary value for 'timestamp_usec'");
   	Py_XDECREF(entry_dict);
+  	Py_XDECREF(temp_pystring);
   	return NULL;
   }
+Py_XDECREF(temp_pystring);
+
 
   switch(entry->subtype)
   {
@@ -524,6 +549,7 @@ PyObject *__convert_blackboard_entry__(player_blackboard_entry_t *entry)
       }
       memcpy(str, entry->data, entry->data_count);
       data = PyString_FromString(str);
+      free(str);
     break;
     case PLAYERC_BLACKBOARD_DATA_SUBTYPE_INT:
       assert(entry->type == PLAYERC_BLACKBOARD_DATA_TYPE_SIMPLE);
@@ -542,14 +568,16 @@ PyObject *__convert_blackboard_entry__(player_blackboard_entry_t *entry)
       Py_INCREF(data);
     break;
   }
-
+  
   ok = PyDict_SetItemString(entry_dict, "data", data); // Steals reference
   if (ok != 0)
   {
   	PyErr_SetString(PyExc_RuntimeError, "Could not set dictionary value for 'data'");
   	Py_XDECREF(entry_dict);
+  	Py_XDECREF(data);
   	return NULL;
   }
+  Py_XDECREF(data);
   
   return entry_dict;
 }
@@ -926,18 +954,16 @@ PyObject *GetEntry(const char *key, const char *group)
     PyErr_SetString(PyExc_RuntimeError, "Failed to get entry");
     return NULL;
   }
+  
   entry_dict = playerc_blackboard___convert_blackboard_entry__(self, entry); // New reference
   
   groups_dict = PyTuple_GetItem((PyObject*)self->py_private, DICT_GROUPS_INDEX); // Borrowed reference
   assert(groups_dict);
   assert(entry_dict);
-  Py_INCREF(entry_dict);
+  //Py_INCREF(entry_dict);
   playerc_blackboard___set_nested_dictionary_entry__(self, groups_dict, key, group, entry_dict); // Steals reference to entry_dict
-
-  free(entry->key);
-  free(entry->group);
-  free(entry->data);
-  free(entry);
+  
+  player_blackboard_entry_t_free(entry);
 
   return entry_dict;
 }
