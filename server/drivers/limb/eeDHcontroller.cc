@@ -145,7 +145,7 @@ class EEDHController : public ThreadedDriver
 
     // Implementations of virtual functions
     virtual int MainSetup ();
-    virtual int Shutdown ();
+    virtual void MainQuit ();
 
     // This method will be invoked on each incoming message
     virtual int ProcessMessage (QueuePointer &resp_queue,
@@ -215,7 +215,7 @@ Driver* EEDHController_Init (ConfigFile* cf, int section)
 // Registers the driver in the driver table. Called from the
 // player_driver_init function that the loader looks for
 void
-  EEDHController_Register (DriverTable* table)
+  eedhcontroller_Register (DriverTable* table)
 {
   table->AddDriver ("eeDHcontroller", EEDHController_Init);
 }
@@ -309,19 +309,15 @@ int
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-int
-  EEDHController::Shutdown ()
+void
+  EEDHController::MainQuit ()
 {
-  // Stop the driver thread
-  StopThread ();
-
   pthread_cancel (a_th_cmd);
   pthread_cancel (a_th_home);
 
   this->actarray_device->Unsubscribe (this->InQueue);
 
   PLAYER_MSG0 (1, "> EEDHController driver shutting down... [done]");
-  return (0);
 }
 
 
@@ -330,23 +326,18 @@ int
 void
   EEDHController::Main ()
 {
-  timespec sleepTime = {0, 1000};
-
   command_thread = homing_thread = false;
 
   // The main loop; interact with the device here
   while (true)
   {
-    // test if we are supposed to cancel
-    pthread_testcancel ();
+    Wait();
 
     // Process any pending messages
     this->ProcessMessages ();
 
     // Refresh data
     this->RefreshData ();
-
-    nanosleep (&sleepTime, NULL);
   }
 }
 
