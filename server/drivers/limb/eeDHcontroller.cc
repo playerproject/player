@@ -461,7 +461,7 @@ void
     limb_data.orientation.py = pose (2);
     limb_data.orientation.pz = pose (3);
 
-    Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_LIMB_DATA,
+    Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_LIMB_DATA_STATE,
              &limb_data, sizeof (limb_data), NULL);
 
     actarray_data_received = false;
