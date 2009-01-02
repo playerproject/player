@@ -196,7 +196,7 @@ class CameraV4L : public ThreadedDriver
 
   // Setup/shutdown routines.
   public: virtual int MainSetup();
-  public: virtual int Shutdown();
+  public: virtual void MainQuit();
 
   // This method will be invoked on each incoming message
   public: virtual int ProcessMessage(QueuePointer & resp_queue,
@@ -439,18 +439,14 @@ int CameraV4L::MainSetup()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device (called by server thread).
-int CameraV4L::Shutdown()
+void CameraV4L::MainQuit()
 {
-  // Stop the driver thread.
-  StopThread();
-
   // Free resources
   frame_release(this->frame);
   if ((this->frame->format == VIDEO_PALETTE_YUV420P)&&
       (this->format == PLAYER_CAMERA_FORMAT_RGB888))
        frame_release(this->rgb_converted_frame);
   fg_close(this->fg);
-  return 0;
 }
 
 

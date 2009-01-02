@@ -92,7 +92,7 @@ class CameraCompress : public ThreadedDriver
 
   // Setup/shutdown routines.
   public: virtual int MainSetup();
-  public: virtual int Shutdown();
+  public: virtual void MainQuit();
 
   // This method will be invoked on each incoming message
   public: virtual int ProcessMessage(QueuePointer & resp_queue,
@@ -179,11 +179,8 @@ int CameraCompress::MainSetup()
   return 0;
 }
 
-int CameraCompress::Shutdown()
+void CameraCompress::MainQuit()
 {
-  // Stop the driver thread
-  StopThread();
-
   camera->Unsubscribe(InQueue);
 
   if (this->data.image)
@@ -191,8 +188,6 @@ int CameraCompress::Shutdown()
     delete []this->data.image;
     this->data.image = NULL;
   }
-
-  return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
