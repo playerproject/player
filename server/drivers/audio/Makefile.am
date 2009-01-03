@@ -6,4 +6,4 @@ endif
 
 AM_CPPFLAGS = -Wall -I$(top_srcdir)
 
-libalsa_la_SOURCES = alsa.cc audio_sample.cc
+libalsa_la_SOURCES = alsa.cc audio_sample.cc alsa.h

@@ -18,9 +18,9 @@ endif
 
 AM_CPPFLAGS = -Wall -I$(top_srcdir)
 
-liblasertoranger_la_SOURCES = toranger.cc lasertoranger.cc
+liblasertoranger_la_SOURCES = toranger.cc lasertoranger.cc toranger.h
 
-libsonartoranger_la_SOURCES = toranger.cc sonartoranger.cc
+libsonartoranger_la_SOURCES = toranger.cc sonartoranger.cc toranger.h
 
 libgbxsickacfr_la_SOURCES = gbxsickacfr.cc
 libgbxsickacfr_la_CXXFLAGS = @GBXSICKACFR_CFLAGS@
