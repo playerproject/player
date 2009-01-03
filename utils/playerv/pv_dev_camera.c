@@ -1,4 +1,4 @@
-/* 
+/*
  *  PlayerViewer
  *  Copyright (C) Andrew Howard 2002
  *
@@ -46,12 +46,12 @@ camera_t *camera_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client
   char section[64];
   char label[64];
   camera_t *camera;
-  
+
   camera = malloc(sizeof(camera_t));
   camera->datatime = 0;
   camera->drivername = strdup(drivername);
   camera->proxy = playerc_camera_create(client, index);
-  
+
   // Construct the menu
   snprintf(label, sizeof(label), "camera:%d (%s)", index, camera->drivername);
   camera->menu = rtk_menu_create_sub(mainwnd->device_menu, label);
@@ -64,10 +64,10 @@ camera_t *camera_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client
   // Set the initial menu state
   rtk_menuitem_check(camera->subscribe_item, subscribe);
   rtk_menuitem_check(camera->stats_item, 0);
-  
+
   // Default scale for drawing the image (m/pixel)
   camera->scale = 0.01;
-    
+
   // Construct figures
   camera->image_init = 0;
   camera->allocated_size = 0;
@@ -126,8 +126,8 @@ void camera_update(camera_t *camera)
 	camera->img_buffer = realloc(camera->img_buffer, camera->proxy->image_count);
 	camera->allocated_size = camera->proxy->image_count;
       }
-	
-      flip_image(camera->img_buffer, camera->proxy->image, camera->proxy->width, 
+
+      flip_image(camera->img_buffer, camera->proxy->image, camera->proxy->width,
 		camera->proxy->height, camera->proxy->bpp, camera->proxy->image_count);
       camera_draw(camera);
     }
@@ -188,7 +188,7 @@ void camera_draw(camera_t *camera)
 				 camera->proxy->bpp);
      rtk_fig_text(camera->image_fig, PX(10), PY(camera->proxy->height + 10), 0, text);
   }
-    
+
 }
 
 void flip_image(unsigned char *dst, unsigned char *src, int width, int height, int bpp, int usize)
@@ -204,7 +204,7 @@ void flip_image(unsigned char *dst, unsigned char *src, int width, int height, i
 	}
 
 	row_width = width * bpp/8;
-	for(r = height; r >= 0; r--) {
+	for(r = height-1; r >= 0; r--) {
 		memcpy(dst, src + r*row_width, row_width);
 		dst = dst + row_width;
 	}
