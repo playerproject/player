@@ -157,7 +157,7 @@ int CvCam::MainSetup()
   return 0;
 }
 
-int CvCam::MainQuit()
+void CvCam::MainQuit()
 {
   if (this->capture) cvReleaseCapture(&(this->capture));
   this->capture = NULL;
