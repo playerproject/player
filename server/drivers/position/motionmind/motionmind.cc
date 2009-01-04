@@ -90,6 +90,8 @@ driver(
   parity "none"
   provides ["opaque:0"]
   alwayson 1
+  # IF ATTACHED TO MORE THAN ONE MOTIONMIND BOARD YOU MUST HAVE A WAIT TIME OR THINGS TIMEOUT
+  wait_time 40000
 )
 @endverbatim
 
@@ -106,10 +108,10 @@ driver(
 
 #include <libplayercore/playercore.h>
 
-#define DEFAULT_RX_BUFFER_SIZE 500*1024/8
+#define DEFAULT_RX_BUFFER_SIZE 128
 #define DEFAULT_ADDRESS 1
 #define MESSAGE_LENGTH 7
-#define MSG_TIMEOUT 0.1 //Seconds before it sends another read request if it hasn't yet got a reply
+#define MSG_TIMEOUT 0.25 //Seconds before it sends another read request if it hasn't yet got a reply
 
 extern PlayerTime *GlobalTime;
 
@@ -291,7 +293,6 @@ int MotionMind::ProcessMessage(QueuePointer & resp_queue,
 		else
 		{
 			memcpy(&rx_buffer[messageOffset], recv->data, recv->data_count);
-			//TODO: addd do stuff here to deal with the new data
 		}
 		return 0;
 	}
