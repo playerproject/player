@@ -243,7 +243,7 @@ EEDHController::EEDHController (ConfigFile* cf, int section)
   nr_joints = cf->ReadInt (section, "nr_joints", 0);
 
   // Create initial DH parameters model
-  DHMatrixModel = Matrix (6, 23);
+  DHMatrixModel = Matrix (nr_joints, 23);
   DHMatrixModel = 0;
 
   actarray_state = new int[nr_joints];
