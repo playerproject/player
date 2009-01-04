@@ -360,6 +360,11 @@ void TCPStream::ReadData()
     CloseTerm();
     return;
   }
+	
+  if (len == buffer_size)
+  {
+    PLAYER_WARN("tcpstream:ReadData() filled entire buffer, increasing buffer size will lower latency");
+  }
 
   assert(len <= int(buffer_size));
   mData.data_count = len;
