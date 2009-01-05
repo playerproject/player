@@ -304,7 +304,7 @@ ENDMACRO (PLAYERDRIVER_REQUIRE_FUNCTION)
 
 ###############################################################################
 # PLAYERDRIVER_REQUIRE_LIB (_name _cumulativeVar _library _function _path)
-# Check if a required package is available.
+# Check if a required library is available.
 #
 # _name:            Driver name.
 # _cumulativeVar:   The option used in the calling CMakeLists.txt to check if
@@ -315,6 +315,11 @@ ENDMACRO (PLAYERDRIVER_REQUIRE_FUNCTION)
 INCLUDE (CheckLibraryExists)
 MACRO (PLAYERDRIVER_REQUIRE_LIB _name _cumulativeVar _library _function _path)
     SET (foundLibrary)
+    IF (PLAYER_EXTRA_LIB_DIRS AND NOT _path)
+        SET (_path "${PLAYER_EXTRA_LIB_DIRS}")
+    ELSEIF (NOT PLAYER_EXTRA_LIB_DIRS AND NOT _path)
+        SET (_path ".")
+    ENDIF (PLAYER_EXTRA_LIB_DIRS AND NOT _path)
     CHECK_LIBRARY_EXISTS ("${_library}" "${_function}" "${_path}" foundLibrary)
     # If not found, disable this driver
     # Dereference cumulativeVar only once because IF will dereference the variable name stored inside itself
