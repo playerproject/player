@@ -217,7 +217,7 @@ Driver* EEDHController_Init (ConfigFile* cf, int section)
 void
   eedhcontroller_Register (DriverTable* table)
 {
-  table->AddDriver ("eeDHcontroller", EEDHController_Init);
+  table->AddDriver ("eedhcontroller", eedhcontroller_Init);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
