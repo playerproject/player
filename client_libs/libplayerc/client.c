@@ -765,15 +765,19 @@ int playerc_client_write(playerc_client_t *client,
   return playerc_client_writepacket(client, &header, cmd);
 }
 
+inline double tdiff (const struct timeval t1, const struct timeval t2)
+{
+	return (double)(t2.tv_sec - t1.tv_sec) + (double)(t2.tv_usec - t1.tv_usec)/1e6;
+}
+
 // Issue request and await reply (blocking).
 int playerc_client_request(playerc_client_t *client,
                            playerc_device_t *deviceinfo,
                            uint8_t subtype,
                            const void *req_data, void **rep_data)
 {
-  double t;
   int peek;
-  struct timeval last;
+  struct timeval start;
   struct timeval curr;
   player_msghdr_t req_header, rep_header;
   memset(&req_header, 0, sizeof(req_header));
@@ -795,14 +799,11 @@ int playerc_client_request(playerc_client_t *client,
   if (playerc_client_writepacket(client, &req_header, req_data) < 0)
     return -1;
 
-  t = client->request_timeout;
-
   // Read packets until we get a reply.  Data packets get queued up
   // for later processing.
-  while(t >= 0)
+  gettimeofday(&start,NULL);
+  for(curr = start; tdiff(start,curr)< client->request_timeout; gettimeofday(&curr,NULL))
   {
-    gettimeofday(&last,NULL);
-
     // Peek at the socket
     if((peek = playerc_client_internal_peek(client,10)) < 0)
       return -1;
@@ -812,9 +813,6 @@ int playerc_client_request(playerc_client_t *client,
     // There's data on the socket, so read a packet (blocking).
     if(playerc_client_readpacket(client, &rep_header, client->data) < 0)
       return -1;
-    gettimeofday(&curr,NULL);
-    t -= ((curr.tv_sec + curr.tv_usec/1e6) -
-          (last.tv_sec + last.tv_usec/1e6));
 
     if (rep_header.type == PLAYER_MSGTYPE_DATA || rep_header.type == PLAYER_MSGTYPE_SYNCH)
     {
