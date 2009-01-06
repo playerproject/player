@@ -88,7 +88,7 @@ int playerc_client_readpacket(playerc_client_t *client,
                               char *data);
 int playerc_client_writepacket(playerc_client_t *client,
                                player_msghdr_t *header,
-                               char *data);
+                               const char *data);
 void playerc_client_push(playerc_client_t *client,
                          player_msghdr_t *header, void *data);
 int playerc_client_pop(playerc_client_t *client,
@@ -620,23 +620,24 @@ int playerc_client_internal_peek(playerc_client_t *client, int timeout)
 // Read and process a packet (blocking)
 void *playerc_client_read(playerc_client_t *client)
 {
-  void* ret_proxy;
+  void* ret_proxy = NULL;
   int ret;
-  // 10ms delay
-  struct timespec sleeptime = {0,10000000};
 
-  for(;;)
+  // In case we're in PULL mode, first request a round of data.
+  if(playerc_client_requestdata(client) < 0)
+    return NULL;
+  // now wait until we get a sync, or some data if in push mode
+  do
   {
-    // In case we're in PULL mode, first request a round of data.
-    if(playerc_client_requestdata(client) < 0)
-      return NULL;
     ret = playerc_client_read_nonblock_withproxy(client, &ret_proxy);
-    if((ret > 0) || (client->sock < 0))
+    if (ret < 0 || client->sock < 0)
+      break;
+    if(ret > 0)
       return ret_proxy;
-    if (ret < 0)
-      return NULL;
-    nanosleep(&sleeptime,NULL);
-  }
+    // if no data is available, then do a peek with infinite timeout...
+    // we cant do this first as we may already have data waiting on the internal queue
+  } while (playerc_client_internal_peek(client, -1) >= 0);
+  return NULL;
 }
 
 
@@ -1180,7 +1181,7 @@ int playerc_client_readpacket(playerc_client_t *client,
 
 // Write a raw packet
 int playerc_client_writepacket(playerc_client_t *client,
-                               player_msghdr_t *header, char *data)
+                               player_msghdr_t *header, const char *data)
 {
   int bytes, ret, length;
   player_pack_fn_t packfunc;
@@ -1310,8 +1311,7 @@ void *playerc_client_dispatch(playerc_client_t *client,
 {
   int i, j;
   playerc_device_t *device;
-  void * ret;
-  ret = NULL;
+  void *ret = NULL;
 
   // Look for a device proxy to handle this data
   for (i = 0; i < client->device_count; i++)
