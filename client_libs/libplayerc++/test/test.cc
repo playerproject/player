@@ -5,6 +5,7 @@
  # CVS: $Id$
  **************************************************************************/
 
+#include <cstring>
 #include <unistd.h>
 #include <cstring>
 
