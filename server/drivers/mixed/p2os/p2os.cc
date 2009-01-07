@@ -831,7 +831,7 @@ int P2OS::Setup()
       this->psos_fd = -1;
       return(1);
     }
-
+#endif
     if((flags = fcntl(this->psos_fd, F_GETFL)) < 0)
     {
       perror("P2OS::Setup():fcntl()");
@@ -839,7 +839,6 @@ int P2OS::Setup()
       this->psos_fd = -1;
       return(1);
     }
-#endif
 
     // radio modem initialization code, courtesy of Kim Jinsuck
     //   <jinsuckk@cs.tamu.edu>
