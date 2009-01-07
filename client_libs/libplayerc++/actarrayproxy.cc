@@ -46,6 +46,7 @@
 #include "config.h"
 #endif
 
+#include <cstring>
 #include <cassert>
 #include <sstream>
 #include <iomanip>

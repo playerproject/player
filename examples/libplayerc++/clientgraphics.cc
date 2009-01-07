@@ -8,6 +8,7 @@
 
 #include <libplayerc++/playerc++.h>
 #include <iostream>
+#include <cstring>
 
 #include "args.h"
 

@@ -5,6 +5,7 @@
  # CVS: $Id$
  **************************************************************************/
 
+#include <cstring>
 #include <unistd.h>
 
 #if HAVE_CONFIG_H
