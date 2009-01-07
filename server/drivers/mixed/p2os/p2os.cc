@@ -845,7 +845,12 @@ int P2OS::Setup()
     if(this->radio_modemp)
     {
       puts("Initializing radio modem...");
-      write(this->psos_fd, "WMS2\r", 5);
+      int ret = write(this->psos_fd, "WMS2\r", 5);
+      if (ret < 5)
+      {
+    	  PLAYER_ERROR1("P2OS: Write failed to complete (%d)",ret);
+    	  return 1;
+      }
 
       usleep(50000);
       char modem_buf[50];
@@ -864,7 +869,12 @@ int P2OS::Setup()
       while(strstr(modem_buf, "ected to addres") == NULL)
       {
         puts("Initializing radio modem...");
-        write(this->psos_fd, "WMS2\r", 5);
+        int ret = write(this->psos_fd, "WMS2\r", 5);
+        if (ret < 5)
+        {
+        	PLAYER_ERROR1("P2OS: Failed to write full packet to modem (%d)", ret);
+        	return 1;
+        }
 
         usleep(50000);
         char modem_buf[50];
@@ -1633,9 +1643,9 @@ P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
     }
 
     if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB &&
-       (packet.packet[3] == 0x30 || packet.packet[3] == 0x31) ||
-       (packet.packet[3] == 0x32 || packet.packet[3] == 0x33) ||
-       (packet.packet[3] == 0x34))
+       (packet.packet[3] == 0x30 || packet.packet[3] == 0x31 ||
+       packet.packet[3] == 0x32 || packet.packet[3] == 0x33 ||
+       packet.packet[3] == 0x34))
     {
 
       /* It is a server packet, so process it */
@@ -1695,10 +1705,10 @@ P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
       }
     }
     else if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB &&
-            (packet.packet[3] == 0x50 || packet.packet[3] == 0x80) ||
-//            (packet.packet[3] == 0xB0 || packet.packet[3] == 0xC0) ||
-            (packet.packet[3] == 0xC0) ||
-            (packet.packet[3] == 0xD0 || packet.packet[3] == 0xE0))
+            (packet.packet[3] == 0x50 || packet.packet[3] == 0x80 ||
+//            packet.packet[3] == 0xB0 || packet.packet[3] == 0xC0 ||
+            packet.packet[3] == 0xC0 ||
+            packet.packet[3] == 0xD0 || packet.packet[3] == 0xE0))
     {
       /* It is a vision packet from the old Cognachrome system*/
 
@@ -2369,12 +2379,15 @@ P2OS::HandleConfig(QueuePointer & resp_queue,
                     imager_config->contrast);
 
     if (imager_config->autogain >= 0)
+    {
       if (imager_config->autogain == 0)
         np += sprintf((char*)&cam_command[np], " 19 32");
       else
         np += sprintf((char*)&cam_command[np], " 19 33");
+    }
 
     if (imager_config->colormode >= 0)
+    {
       if (imager_config->colormode == 3)
         np += sprintf((char*)&cam_command[np], " 18 36");
       else if (imager_config->colormode == 2)
@@ -2383,6 +2396,7 @@ P2OS::HandleConfig(QueuePointer & resp_queue,
         np += sprintf((char*)&cam_command[np], " 18 44");
       else
         np += sprintf((char*)&cam_command[np], " 18 40");
+    }
 
     if (np > 6)
     {
