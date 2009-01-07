@@ -44,6 +44,7 @@
 
 #include "config.h"
 
+#include <cstring>
 #include <cassert>
 #include <sstream>
 #include <iomanip>

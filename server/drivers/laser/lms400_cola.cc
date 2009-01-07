@@ -10,6 +10,7 @@
 #include <stddef.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <unistd.h>
 #include <libplayercore/playercore.h>
 
 #include "lms400_cola.h"
@@ -417,7 +418,12 @@ player_laser_data_t
     } while (current < length);
 
     // read checksum:
-    read (sockfd, &cs_read, 1);
+    int ret = read (sockfd, &cs_read, 1);
+    if (ret < 1)
+    {
+    	PLAYER_ERROR1("LMS400 didnt get any data in read %d",ret);
+    	return player_data;
+    }
 
     for (int i = 0; i < length; i++)
       cs_calc ^= buffer[i];
@@ -555,7 +561,12 @@ int
 
   // Read checksum:
   char cs_read = 0;
-  read (sockfd, &cs_read, 1);
+  int ret = read (sockfd, &cs_read, 1);
+  if (ret < 1)
+  {
+  	PLAYER_ERROR1("LMS400 didnt get any data in read %d",ret);
+  	return -1;
+  }
 
 //  printf ("%d %d 0x%x\n", bufferlength, sizeof(MeasurementHeader_t), buffer[0]);
   if (buffer[0] == 's')

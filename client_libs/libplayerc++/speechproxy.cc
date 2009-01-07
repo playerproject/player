@@ -40,6 +40,7 @@
 /*
  * $Id$
  */
+#include <cstring>
 
 #include <cstring>
 #include "playerc++.h"
