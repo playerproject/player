@@ -919,11 +919,9 @@ NodeCalibrationValues Mica2::FindNodeValues (unsigned int nodeID)
 {
     NodeCalibrationValues n;
 
-    unsigned int i = 0;
-       
-    for (i = 0; i < ncv.size (); i++)
+    for (NCV::iterator it = ncv.begin(); it != ncv.end(); it++)
     {
-        n = ncv.at (i);
+	n = *it;
         if (n.node_id == nodeID)
             break;
     }
