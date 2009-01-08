@@ -126,6 +126,8 @@ playerv provides teleoperation of the following kinds of devices:
 #include <time.h>
 #include "playerv.h"
 
+#define GUI_UPDATE_RATE 20.0
+    /* 20 Hz update rate is good for user interaction */
 
 // Set flag to 1 to force program to quit
 static int quit = 0;
@@ -166,7 +168,7 @@ int main(int argc, char **argv)
   device_t devices[PLAYER_MAX_DEVICES];
   device_t *device;
   struct timeval tv, tc = {0, 0};
-  struct timespec st = {0,0};
+  struct timespec st = {0, (1.0/GUI_UPDATE_RATE) * 1e9};
 
   printf("PlayerViewer %s\n", VERSION);
 
