@@ -193,6 +193,40 @@ void playerc_laser_putmsg(playerc_laser_t *device,
     device->robot_pose[1] = scan_data->pose.py;
     device->robot_pose[2] = scan_data->pose.pa;
   }
+  else if((header->type == PLAYER_MSGTYPE_DATA) &&
+          (header->subtype == PLAYER_LASER_DATA_SCANANGLE))
+  {
+	  player_laser_data_scanangle_t* scan_data = (player_laser_data_scanangle_t*)data;
+	  
+	  device->max_range = scan_data->max_range;
+	  device->min_left = device->max_range;
+	  device->min_right = device->max_range;	  
+	  
+	  device->scan_count = scan_data->ranges_count;
+	  playerc_laser_reallocate_scans(device);
+	  
+	  for (i = 0; i < scan_data->ranges_count; i++)
+	  {
+		  r = scan_data->ranges[i];
+		  assert(r >= 0);
+		  b = scan_data->angles[i];
+		  device->ranges[i] = r;
+		  device->scan[i][0] = r;
+		  device->scan[i][1] = b;
+		  device->point[i].px = r * cos(b);
+		  device->point[i].py = r * sin(b);
+		  
+		  if((i <= scan_data->ranges_count/2) && (r < device->min_right))
+			  device->min_right = r;
+		  else if((i > scan_data->ranges_count/2) && (r < device->min_left))
+			  device->min_left = r;
+	  }
+	  for (i = 0; i < scan_data->intensity_count; i++)
+		  device->intensity[i] = scan_data->intensity[i];
+	  
+	  device->scan_id = scan_data->id;
+  }
+	
   else
     PLAYERC_WARN2("skipping laser message with unknown type/subtype: %s/%d\n",
                  msgtype_to_str(header->type), header->subtype);

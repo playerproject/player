@@ -983,6 +983,7 @@ WriteLog::WriteLaser(player_msghdr_t* hdr, void *data)
   player_laser_data_t* scan;
   player_laser_data_scanpose_t* scanpose;
   player_laser_geom_t* geom;
+  player_laser_data_scanangle_t* scanangle;
 
   // Check the type
   switch(hdr->type)
@@ -1032,6 +1033,22 @@ WriteLog::WriteLaser(player_msghdr_t* hdr, void *data)
           }
           return(0);
 
+		case PLAYER_LASER_DATA_SCANANGLE:
+			  scanangle = (player_laser_data_scanangle_t*)data;
+			  fprintf(this->file, "%04d %+07.4f %04d ",
+					  scanangle->id, scanangle->max_range, scanangle->ranges_count);
+			  
+			  for (i = 0; i < scanangle->ranges_count; i++)
+			  {
+				  fprintf(this->file, "%.3f ", scanangle->ranges[i]);
+				  fprintf(this->file, "%.3f ", scanangle->angles[i]);
+				  if(i < scanangle->intensity_count)
+					  fprintf(this->file, "%2d ", scanangle->intensity[i]);
+				  else
+					  fprintf(this->file, "%2d ", 0);
+			  }
+			  return(0);
+				  
         default:
           return(-1);
       }
