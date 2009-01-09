@@ -43,3 +43,7 @@ PLAYER_INSTALL_HEADERS (standalone_drivers urg_laser.h)
 
 PLAYERDRIVER_OPTION (rs4leuze build_rs4leuze ON)
 PLAYERDRIVER_ADD_DRIVER (rs4leuze build_rs4leuze SOURCES RS4LeuzeLaserDriver.cc RS4Leuze_laser.cc)
+
+PLAYERDRIVER_OPTION (sickLDMRS build_sickLDMRS ON)
+PLAYERDRIVER_ADD_DRIVER (sickLDMRS build_sickLDMRS SOURCES sickLDMRS.cc)
+

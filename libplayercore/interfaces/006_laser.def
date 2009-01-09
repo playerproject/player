@@ -21,6 +21,8 @@ of scan width and angular resolution.
 message { DATA, SCAN, 1, player_laser_data_t };
 /** Data subtype: pose-stamped scan */
 message { DATA, SCANPOSE, 2, player_laser_data_scanpose_t };
+/** Data subtype: angle-stamped scan */
+message { DATA, SCANANGLE, 3, player_laser_data_scanangle_t };
 
 /** Request/reply subtype: get geometry */
 message { REQ, GET_GEOM, 1, player_laser_geom_t };
@@ -78,6 +80,30 @@ typedef struct player_laser_data_scanpose
   /** The global pose of the laser at the time the scan was acquired */
   player_pose2d_t pose;
 } player_laser_data_scanpose_t;
+
+/** @brief Data: scan (@ref PLAYER_LASER_DATA_SCANANGLE)
+
+The basic laser angle stamped data packet.  */
+typedef struct player_laser_data_scanangle
+{
+  /** Maximum range [m]. */
+  float max_range;
+  /** Number of range readings.  */
+  uint32_t ranges_count;
+  /** Range readings [m]. */
+  float *ranges;
+  /** Number of agle readings. */
+  uint32_t angles_count;
+  /** Angle readings [m]. */
+  float *angles;
+  /** Number of intensity readings */
+  uint32_t intensity_count;
+  /** Intensity readings. */
+  uint8_t *intensity;
+  /** A unique, increasing, ID for the scan */
+  uint32_t id;
+} player_laser_data_scanangle_t;
+
 
 /** @brief Request/reply: Get geometry.
 
