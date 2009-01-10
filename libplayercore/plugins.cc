@@ -166,7 +166,13 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
       cfgdir = dirname(tmp);
       if(cfgdir[0] != '/' && cfgdir[0] != '~')
       {
-        getcwd(path->fullpath, PATH_MAX);
+        char * ret = getcwd(path->fullpath, PATH_MAX);
+        if (ret == NULL)
+        {
+        	PLAYER_ERROR("Failed to get working directory");
+        	assert(false);
+        	// TODO: handle this error properly
+        }
         strncat(path->fullpath,"/", PATH_MAX);
       }
       strncat(path->fullpath,cfgdir, PATH_MAX);

@@ -148,8 +148,8 @@ cBaudrate( int baudrate )
 #endif
 
 #ifdef B460800  // POSIX doesn't have this one
-#warning Including support for baud rate B460800 which is not available in all implementations of termios. 
-#warning To enable in Linux, you must edit the serial driver: see this source file for details.
+#warning Including support for baud rate B460800 which is not available in all implementations of termios. \
+To enable in Linux, you must edit the serial driver. see this source file for details.
   case 500000:
     /* to use 500k you have to change the entry of B460800 in you kernel:
        /usr/src/linux/drivers/usb/serial/ftdi_sio.h:
@@ -165,7 +165,7 @@ cBaudrate( int baudrate )
 
 }
 
-long 
+long
 bytesWaiting( int sd )
 {
   long available=0;
@@ -173,9 +173,9 @@ bytesWaiting( int sd )
     return available;
   else
     return -1;
-}    
+}
 
-void 
+void
 DEVICE_set_params( RFLEX_Device dev )
 {
   struct termios  ctio;
@@ -189,7 +189,7 @@ DEVICE_set_params( RFLEX_Device dev )
   ctio.c_cflag =
     CREAD                            |
     cFlowControl(dev.hwf || dev.swf) |
-    cParity(dev.parity)              | 
+    cParity(dev.parity)              |
     cDataSize(dev.databits)          |
     cStopSize(dev.stopbits);
 
@@ -205,7 +205,7 @@ DEVICE_set_params( RFLEX_Device dev )
 
 }
 
-void 
+void
 DEVICE_set_baudrate( RFLEX_Device dev, int brate )
 {
   struct termios  ctio;
@@ -284,14 +284,14 @@ waitForETX( int fd, unsigned char *buf, int  *len )
 	      //Wait to have one more byte
 	    }
 	  else if(buf[2] == 0x06 && pos >= (dlen+1) && buf[dlen-1]==B_ESC && buf[dlen-0]==B_ETX)
-	    {    
+	    {
 	      //haunted packet. We have a ghost byte at the 7th position. scrap it and send a corrected paquet
 	      for (int j = 0;j<(buf[5]+3);j++)
 		{
 		  //shift byte to the left
 		  buf[j+6] = buf[j+7];
 		}
-	           
+
 	      *len = dlen;
 
 #ifdef IO_DEBUG

@@ -204,7 +204,7 @@ int
   char *c = (char*) malloc (10);
   while (strncmp ((const char*)buffer, "1003", 4) != 0)
   {
-    sprintf (c, "1003%s", transferspeed_string);
+    snprintf (c, 10, "1003%s", transferspeed_string);
     SendCommand (c);
     ReadResult ();
   }

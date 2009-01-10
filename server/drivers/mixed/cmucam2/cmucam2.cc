@@ -240,7 +240,7 @@ Cmucam2::Cmucam2( ConfigFile* cf, int section)
 		color = new color_config[num_of_blobs];
 		for (int i = 0; i < num_of_blobs; i++)
 		{
-			sprintf (variable, "color%d", i);
+			snprintf (variable, 20, "color%d", i);
 			color[i].rmin = (int)cf->ReadTupleFloat (section, variable, 0, 16);
 			color[i].rmax = (int)cf->ReadTupleFloat (section, variable, 1, 16);
 			color[i].gmin = (int)cf->ReadTupleFloat (section, variable, 2, 16);
@@ -542,7 +542,7 @@ void Cmucam2::get_blob (packet_t cam_packet,
 	unsigned char green = (range.gmin + range.gmax)/2;
 	unsigned char blue  = (range.bmin + range.bmax)/2;
 
-	(*blob).color  = red << 16 + green << 8 + blue;
+	(*blob).color  = (red << 16) + (green << 8) + blue;
 	// the number of pixels in the blob
 	(*blob).area   = cam_packet.blob_area;
 	// setting the bounding box for the blob

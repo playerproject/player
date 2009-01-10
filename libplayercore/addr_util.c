@@ -2,7 +2,7 @@
  *  Player - One Hell of a Robot Server
  *  Copyright (C) <insert dates here>
  *     <insert author's name(s) here>
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -61,8 +61,8 @@ packedaddr_to_dottedip(char* dest, size_t len, uint32_t addr)
   swappedaddr = htonl(addr);
 
   assert(len >= (size_t)16);
-  
-  sprintf(dest, "%u.%u.%u.%u",
+
+  snprintf(dest, 16,"%u.%u.%u.%u",
           swappedaddr>>24 & mask,
           swappedaddr>>16 & mask,
           swappedaddr>>8 & mask,

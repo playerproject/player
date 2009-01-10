@@ -589,6 +589,7 @@ Camera1394::Camera1394(ConfigFile* cf, int section)
   // Parse camera settings - default is to leave them alone.
   str =  cf->ReadString(section, "brightness", "NONE");
   if (strcmp(str,"NONE"))
+  {
        if (!strcmp(str,"auto"))
 	    {
 		 this->setBrightness=true;
@@ -600,8 +601,10 @@ Camera1394::Camera1394(ConfigFile* cf, int section)
 		 this->autoBrightness=false;
 		 this->brightness = atoi(str);
 	    }
+  }
   str =  cf->ReadString(section, "exposure", "NONE");
   if (strcmp(str,"NONE"))
+  {
        if (!strcmp(str,"auto"))
 	    {
 		 this->setExposure=true;
@@ -613,8 +616,10 @@ Camera1394::Camera1394(ConfigFile* cf, int section)
 		 this->autoExposure=false;
 		 this->exposure = atoi(str);
 	    }
+  }
   str =  cf->ReadString(section, "shutter", "NONE");
   if (strcmp(str,"NONE"))
+  {
        if (!strcmp(str,"auto"))
 	    {
 		 this->setShutter=true;
@@ -626,8 +631,10 @@ Camera1394::Camera1394(ConfigFile* cf, int section)
 		 this->autoShutter=false;
 		 this->shutter = atoi(str);
 	    }
+  }
   str =  cf->ReadString(section, "gain", "NONE");
   if (strcmp(str,"NONE"))
+  {
        if (!strcmp(str,"auto"))
 	    {
 		 this->setGain=true;
@@ -639,12 +646,15 @@ Camera1394::Camera1394(ConfigFile* cf, int section)
 		 this->autoGain=false;
 		 this->gain = atoi(str);
 	    }
+  }
   str =  cf->ReadString(section, "whitebalance", "NONE");
   if (strcmp(str,"NONE"))
+  {
        if(sscanf(str,"%u %u",&this->blueBalance,&this->redBalance)==2)
 	    this->setWhiteBalance=true;
        else
 	    PLAYER_ERROR1("didn't understand white balance values [%s]", str);
+  }
 
   // Force into raw mode
   this->forceRaw = cf->ReadInt(section, "force_raw", 0);
@@ -1367,21 +1377,26 @@ int Camera1394::SaveFrame(const char *filename)
     return -1;
   }
 
+  int ret = 0;
   switch (this->data->format)
   {
     case PLAYER_CAMERA_FORMAT_MONO8:
       fprintf(fp,"P5\n%u %u\n255\n", this->data->width, this->data->height);
-      fwrite((unsigned char*)this->data->image, 1, this->data->image_count, fp);
+      ret = fwrite((unsigned char*)this->data->image, 1, this->data->image_count, fp);
       break;
     case PLAYER_CAMERA_FORMAT_RGB888:
       fprintf(fp,"P6\n%u %u\n255\n", this->data->width, this->data->height);
-      fwrite((unsigned char*)this->data->image, 1, this->data->image_count, fp);
+      ret = fwrite((unsigned char*)this->data->image, 1, this->data->image_count, fp);
       break;
     default:
       break;
   }
-
   fclose(fp);
+
+  if (ret < 0)
+  {
+	  PLAYER_ERROR("Failed to save frame");
+  }
 
   return 0;
 }

@@ -50,7 +50,7 @@
 //  Requires:       1.  The Video4Linux subsystem to be properly initialised
 //                  2.  Either a valid device name (such as "/dev/bttv") or
 //                      NULL to use the default.
-//                  
+//
 //  Promises:       1.  To open the video device
 //                  2.  Initialise the video device to reasonable defaults
 //                  3.  To not leak any memory by freeing upon any error
@@ -161,7 +161,7 @@ FRAMEGRABBER* fg_open( const char* dev )
     free( fg );
     return NULL;
   }
-  
+
   // set the default max_buffer
   fg->max_buffer = fg->mbuf.frames;
 
@@ -189,7 +189,7 @@ FRAMEGRABBER* fg_open( const char* dev )
 
 void fg_close(FRAMEGRABBER* fg)
 {
-    munmap( fg->mb_map, fg->mbuf.size);     
+    munmap( fg->mb_map, fg->mbuf.size);
     close( fg->fd );
 
     // Make sure we free all memory (backwards!)
@@ -415,7 +415,7 @@ FRAME* fg_grab_frame( FRAMEGRABBER* fg, FRAME* fr )
     {
         capture_frame = 0;
     }
-    
+
     // Set up capture parameters
     fg->mmap.format = fg->picture.palette;
     fg->mmap.frame  = capture_frame;
@@ -477,9 +477,15 @@ FRAME* fg_grab_read( FRAMEGRABBER* fg )
                            fg->window.height,
                            fg->picture.palette );
 
-    read( fg->fd,
+    int ret = read( fg->fd,
           fr->data,
           frame_get_size( fr ) );
+
+    if (ret < 0)
+    {
+    	PLAYER_ERROR("Failed to read from frame grabber");
+    	return NULL;
+    }
 
     return fr;
 }

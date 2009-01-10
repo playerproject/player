@@ -256,7 +256,12 @@ joystick_handler(void* arg)
   for(;;)
   {
     // get the next event from the joystick
-    read (jfd, &event, sizeof(struct js_event));
+    int ret = read (jfd, &event, sizeof(struct js_event));
+    if (ret < 0)
+    {
+    	fprintf(stderr,"Failed to read from joystick, trying again");
+    	continue;
+    }
 
     if ((event.type & ~JS_EVENT_INIT) == JS_EVENT_BUTTON) {
       if (event.value)

@@ -220,7 +220,7 @@ RCore_XBridge::RCore_XBridge (ConfigFile* cf, int section)
     for (i = 0; i < nodes_count; i++)
     {
     	char node_nr[7];
-	   sprintf (node_nr, "node%d", (i+1));
+	   snprintf (node_nr, sizeof(none_nr), "node%d", (i+1));
 	   NodeCalibrationValues n;
 	   n.node_id  = cf->ReadTupleInt (section, node_nr, 0, 0);
 	   n.group_id = cf->ReadTupleInt (section, node_nr, 1, 0);
@@ -396,8 +396,8 @@ player_wsn_data_t RCore_XBridge::DecodePacket (struct p_packet *pkt)
 
     char gid[12];
     char nid[12];
-    sprintf (gid, "%d%d%d%d", srcid[0], srcid[1], srcid[2], srcid[3] );
-    sprintf (nid, "%d%d%d%d", srcid[4], srcid[5], srcid[6], srcid[7] );
+    snprintf (gid, sizeof(gid), "%d%d%d%d", srcid[0], srcid[1], srcid[2], srcid[3] );
+    snprintf (nid, sizeof(nid), "%d%d%d%d", srcid[4], srcid[5], srcid[6], srcid[7] );
 
     temp_data.node_type      = 1;
     temp_data.node_id        = atol (nid);

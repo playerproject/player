@@ -74,7 +74,7 @@
 //			  - Deleted obsolete functions
 //			  - Changed function getLastErrorCode into getLastDeviceError
 //			  - Changed OpenPort function for compatiblity with Bluetooth ports
-//			  - Added workaround for lockup of USB driver (close function) 
+//			  - Added workaround for lockup of USB driver (close function)
 //			  - Added workaround for clock() problem with read function of USB driver
 //
 // v1.0.2
@@ -92,7 +92,7 @@
 // ----------------------------------------------------------------------------
 //  This file is an Xsens Code Examples.
 //
-//  Copyright (C) Xsens Technologies B.V., 2005.  
+//  Copyright (C) Xsens Technologies B.V., 2005.
 //
 //  This source code is intended only as a example of the implementation
 //	of the Xsens MT Communication protocol.
@@ -150,7 +150,7 @@ CMTComm::~CMTComm()
 //
 // Calculates the processor time used by the calling process.
 // For linux use gettimeofday instead of clock() function
-// When using read from FTDI serial port in a loop the 
+// When using read from FTDI serial port in a loop the
 // clock() function very often keeps returning 0.
 //
 // Output
@@ -195,10 +195,10 @@ short CMTComm::openPort(const int portNumber, const unsigned long baudrate, cons
 	if (m_fileOpen || m_portOpen) {
 		return (m_retVal = MTRV_ANINPUTALREADYOPEN);
 	}
-#ifdef WIN32	
+#ifdef WIN32
 	char pchFileName[10];
-	
-	sprintf(pchFileName,"\\\\.\\COM%d",portNumber);		// Create file name
+
+	snprintf(pchFileName,10,"\\\\.\\COM%d",portNumber);		// Create file name
 
 	m_handle = CreateFile(pchFileName, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
 	if (m_handle == INVALID_HANDLE_VALUE) {
@@ -217,14 +217,14 @@ short CMTComm::openPort(const int portNumber, const unsigned long baudrate, cons
 	dcb.Parity = NOPARITY;				// Setup the Parity
 	dcb.ByteSize = 8;					// Setup the data bits
 	dcb.StopBits = TWOSTOPBITS;			// Setup the stop bits
-	dcb.fDsrSensitivity = FALSE;		// Setup the flow control 
+	dcb.fDsrSensitivity = FALSE;		// Setup the flow control
 	dcb.fOutxCtsFlow = FALSE;			// NoFlowControl:
 	dcb.fOutxDsrFlow = FALSE;
 	dcb.fOutX = FALSE;
 	dcb.fInX = FALSE;
 	if (!SetCommState(m_handle, (LPDCB)&dcb)) {// Set new state
 		// Bluetooth ports cannot always be opened with 2 stopbits
-		// Now try to open port with 1 stopbit. 
+		// Now try to open port with 1 stopbit.
 		dcb.StopBits = ONESTOPBIT;
 		if (!SetCommState(m_handle, (LPDCB)&dcb)) {
 			CloseHandle(m_handle);
@@ -242,12 +242,12 @@ short CMTComm::openPort(const int portNumber, const unsigned long baudrate, cons
 	// immediate return if data is available, wait 1ms otherwise
 	CommTimeouts.ReadTotalTimeoutConstant = 1;
 	CommTimeouts.ReadIntervalTimeout = MAXDWORD;
-	CommTimeouts.ReadTotalTimeoutMultiplier = MAXDWORD; 
+	CommTimeouts.ReadTotalTimeoutMultiplier = MAXDWORD;
 
 	// immediate return whether data is available or not
 //	CommTimeouts.ReadTotalTimeoutConstant = 0;
 //	CommTimeouts.ReadIntervalTimeout = MAXDWORD;
-//	CommTimeouts.ReadTotalTimeoutMultiplier = 0; 
+//	CommTimeouts.ReadTotalTimeoutMultiplier = 0;
 
 	SetCommTimeouts(m_handle, &CommTimeouts);	// Set CommTimeouts structure
 
@@ -259,13 +259,13 @@ short CMTComm::openPort(const int portNumber, const unsigned long baudrate, cons
 	PurgeComm(m_handle, PURGE_TXCLEAR | PURGE_RXCLEAR);
 
 	return (m_retVal = MTRV_OK);
-#else	
+#else
 	char chPort[15];
 	struct termios options;
 
 	/* Open port */
-	sprintf(chPort,"/dev/ttyS%d",(portNumber - 1));
-	
+	snprintf(chPort,15,"/dev/ttyS%d",(portNumber - 1));
+
 	m_handle = open(chPort, O_RDWR | O_NOCTTY);
 
 	// O_RDWR: Read+Write
@@ -283,11 +283,11 @@ short CMTComm::openPort(const int portNumber, const unsigned long baudrate, cons
 	/* Start configuring of port for non-canonical transfer mode */
 	// Get current options for the port
 	tcgetattr(m_handle, &options);
-	
-	// Set baudrate. 
+
+	// Set baudrate.
 	cfsetispeed(&options, baudrate);
 	cfsetospeed(&options, baudrate);
-	
+
 	// Enable the receiver and set local mode
 	options.c_cflag |= (CLOCAL | CREAD);
 	// Set character size to data bits and set no parity Mask the characte size bits
@@ -307,11 +307,11 @@ short CMTComm::openPort(const int portNumber, const unsigned long baudrate, cons
 
 	// Set the new options for the port
 	tcsetattr(m_handle,TCSANOW, &options);
-	
+
 	tcflush(m_handle, TCIOFLUSH);
 
 	return (m_retVal = MTRV_OK);
-#endif	
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -335,7 +335,7 @@ short CMTComm::openPort(const char *portName, const unsigned long baudrate, cons
 	if (m_fileOpen || m_portOpen) {
 		return (m_retVal = MTRV_ANINPUTALREADYOPEN);
 	}
-#ifdef WIN32	
+#ifdef WIN32
 	m_handle = CreateFile(portName, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
 	if (m_handle == INVALID_HANDLE_VALUE) {
 		return (m_retVal = MTRV_INPUTCANNOTBEOPENED);
@@ -353,14 +353,14 @@ short CMTComm::openPort(const char *portName, const unsigned long baudrate, cons
 	dcb.Parity = NOPARITY;				// Setup the Parity
 	dcb.ByteSize = 8;					// Setup the data bits
 	dcb.StopBits = TWOSTOPBITS;			// Setup the stop bits
-	dcb.fDsrSensitivity = FALSE;		// Setup the flow control 
+	dcb.fDsrSensitivity = FALSE;		// Setup the flow control
 	dcb.fOutxCtsFlow = FALSE;			// NoFlowControl:
 	dcb.fOutxDsrFlow = FALSE;
 	dcb.fOutX = FALSE;
 	dcb.fInX = FALSE;
 	if (!SetCommState(m_handle, (LPDCB)&dcb)) {// Set new state
 		// Bluetooth ports cannot always be opened with 2 stopbits
-		// Now try to open port with 1 stopbit. 
+		// Now try to open port with 1 stopbit.
 		dcb.StopBits = ONESTOPBIT;
 		if (!SetCommState(m_handle, (LPDCB)&dcb)) {
 			CloseHandle(m_handle);
@@ -378,12 +378,12 @@ short CMTComm::openPort(const char *portName, const unsigned long baudrate, cons
 	// immediate return if data is available, wait 1ms otherwise
 	CommTimeouts.ReadTotalTimeoutConstant = 1;
 	CommTimeouts.ReadIntervalTimeout = MAXDWORD;
-	CommTimeouts.ReadTotalTimeoutMultiplier = MAXDWORD; 
+	CommTimeouts.ReadTotalTimeoutMultiplier = MAXDWORD;
 
 	// immediate return whether data is available or not
 //	CommTimeouts.ReadTotalTimeoutConstant = 0;
 //	CommTimeouts.ReadIntervalTimeout = MAXDWORD;
-//	CommTimeouts.ReadTotalTimeoutMultiplier = 0; 
+//	CommTimeouts.ReadTotalTimeoutMultiplier = 0;
 	SetCommTimeouts(m_handle, &CommTimeouts);	// Set CommTimeouts structure
 
 	// Other initialization functions
@@ -394,11 +394,11 @@ short CMTComm::openPort(const char *portName, const unsigned long baudrate, cons
 	PurgeComm(m_handle, PURGE_TXCLEAR | PURGE_RXCLEAR);
 
 	return (m_retVal = MTRV_OK);
-#else	
+#else
 	struct termios options;
 
 	/* Open port */
-	
+
 	m_handle = open(portName, O_RDWR | O_NOCTTY);
 
 	// O_RDWR: Read+Write
@@ -409,15 +409,15 @@ short CMTComm::openPort(const char *portName, const unsigned long baudrate, cons
 		// Port not open
 		return (m_retVal = MTRV_INPUTCANNOTBEOPENED);
 	}
-	
+
 	// Once here, port is open
 	m_portOpen = true;
 
 	/* Start configuring of port for non-canonical transfer mode */
 	// Get current options for the port
 	tcgetattr(m_handle, &options);
-	
-	// Set baudrate. 
+
+	// Set baudrate.
 	cfsetispeed(&options, baudrate);
 	cfsetospeed(&options, baudrate);
 
@@ -440,11 +440,11 @@ short CMTComm::openPort(const char *portName, const unsigned long baudrate, cons
 
 	// Set the new options for the port
 	tcsetattr(m_handle,TCSANOW, &options);
-	
+
 	tcflush(m_handle, TCIOFLUSH);
 
 	return (m_retVal = MTRV_OK);
-#endif	
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -469,7 +469,7 @@ short CMTComm::openFile(const char *fileName, bool createAlways)
 	if (m_portOpen || m_portOpen) {
 		return (m_retVal = MTRV_ANINPUTALREADYOPEN);
 	}
-#ifdef WIN32	
+#ifdef WIN32
 	DWORD disposition = OPEN_ALWAYS;
 	if (createAlways == true) {
 		disposition = CREATE_ALWAYS;
@@ -573,7 +573,7 @@ int CMTComm::readData(unsigned char* msgBuffer, const int nBytesToRead)
 			}
 		}
 		while (j < nBytesToRead);
-		
+
 		return j;
 	*/
 #endif
@@ -591,7 +591,7 @@ int CMTComm::readData(unsigned char* msgBuffer, const int nBytesToRead)
 //
 // Output
 //   number of bytes actually written
-// 
+//
 // The MTComm return value is != MTRV_OK if serial port is closed
 int CMTComm::writeData(const unsigned char* msgBuffer, const int nBytesToWrite)
 {
@@ -599,7 +599,7 @@ int CMTComm::writeData(const unsigned char* msgBuffer, const int nBytesToWrite)
 		m_retVal = MTRV_NOINPUTINITIALIZED;
 		return 0;
 	}
-	
+
 	m_retVal = MTRV_OK;
 #ifdef WIN32
 	DWORD nBytesWritten;
@@ -613,7 +613,7 @@ int CMTComm::writeData(const unsigned char* msgBuffer, const int nBytesToWrite)
 ////////////////////////////////////////////////////////////////////
 // flush
 //
-// Remove any 'old' data in COM port buffer and flushes internal 
+// Remove any 'old' data in COM port buffer and flushes internal
 //   temporary buffer
 //
 void CMTComm::flush()
@@ -673,7 +673,7 @@ void CMTComm::setPortQueueSize(const unsigned long inqueueSize /* = 4096 */, con
 //				    origin is specified in moveMethod
 //	 moveMethod	: FILEPOS_BEGIN, FILEPOS_CURRENT or FILEPOS_END
 // Output
-//	
+//
 //   returns MTRV_OK if file pointer is successfully set
 //
 short CMTComm::setFilePos(long relPos, unsigned long moveMethod)
@@ -702,7 +702,7 @@ short CMTComm::setFilePos(long relPos, unsigned long moveMethod)
 // Input
 // Output
 //	 fileSize  : Number of bytes of the current file
-//	
+//
 //   returns MTRV_OK if successful
 //
 short CMTComm::getFileSize(unsigned long &fileSize)
@@ -758,7 +758,7 @@ short CMTComm::close()
 ////////////////////////////////////////////////////////////////////
 // readMessage
 //
-// Reads the next message from serial port buffer or file. 
+// Reads the next message from serial port buffer or file.
 // To be read within current time out period
 //
 // Input
@@ -767,7 +767,7 @@ short CMTComm::close()
 //	 data	    : array pointer to data bytes (no header)
 //	 dataLen    : number of data bytes read
 //   bid		: BID or address of message read (optional)
-//	
+//
 //   returns MTRV_OK if a message has been read else <>MTRV_OK
 //
 // Remarks
@@ -899,7 +899,7 @@ short CMTComm::readMessageRaw(unsigned char *msgBuffer, short *msgBufferLength)
 					nBytesToRead = 0;
 				}
 			}
-			
+
 			// Check if serial port buffer must be read
 			if (nBytesToRead > 0) {
 				nBytesRead = readData(msgBuffer+nOffset, nBytesToRead);
@@ -910,7 +910,7 @@ short CMTComm::readMessageRaw(unsigned char *msgBuffer, short *msgBufferLength)
 				nBytesToRead -= nBytesRead;
 				nBytesRead = 0;
 			}
-			
+
 			if(nBytesToRead == 0){
 				switch(state){
 				case 0:					// Check preamble
@@ -931,7 +931,7 @@ short CMTComm::readMessageRaw(unsigned char *msgBuffer, short *msgBufferLength)
 					else {
 						state = 2;
 						nBytesToRead = 2;	// Read extended length
-					}	
+					}
 					break;
 				case 2:
 					state = 3;
@@ -990,7 +990,7 @@ short CMTComm::readMessageRaw(unsigned char *msgBuffer, short *msgBufferLength)
 				}
 			}
 		} while((clkEnd >= clockms()) || m_timeOut == 0 || nBytesRead != 0);
-		
+
 		// Check if pending message has a valid message
 		if(state > 0){
 			int i;
@@ -1013,7 +1013,7 @@ short CMTComm::readMessageRaw(unsigned char *msgBuffer, short *msgBufferLength)
 		}
 		break;
 	}
-	
+
 	return (m_retVal = MTRV_TIMEOUT);
 }
 
@@ -1040,16 +1040,16 @@ short CMTComm::readMessageRaw(unsigned char *msgBuffer, short *msgBufferLength)
 //	 = MTRV_TIMEOUT if timeout occurred
 //   = MTRV_NOINPUTINITIALIZED
 //
-short CMTComm::writeMessage(const unsigned char mid, const unsigned long dataValue, 
+short CMTComm::writeMessage(const unsigned char mid, const unsigned long dataValue,
 						   const unsigned char dataValueLen, const unsigned char bid)
 {
 	unsigned char buffer[MAXMSGLEN];
 	short msgLen;
-	
+
 	if (!(m_fileOpen || m_portOpen)) {
 		return (m_retVal = MTRV_NOINPUTINITIALIZED);
 	}
-	
+
 	buffer[IND_PREAMBLE] = PREAMBLE;
 	buffer[IND_BID] = bid;
 	buffer[IND_MID] = mid;
@@ -1058,13 +1058,13 @@ short CMTComm::writeMessage(const unsigned char mid, const unsigned long dataVal
 	calcChecksum(buffer,LEN_MSGHEADER + dataValueLen);
 
 	// Send message
-	writeData(buffer, LEN_MSGHEADERCS + dataValueLen);	
+	writeData(buffer, LEN_MSGHEADERCS + dataValueLen);
 
 	// Return if file opened
 	if (m_fileOpen) {
 		return (m_retVal = MTRV_OK);
 	}
-	
+
 	// Keep reading until an Ack or Error message is received (or timeout)
 	clock_t clkStart, clkOld;
 	bool	msgRead = false;
@@ -1117,7 +1117,7 @@ short CMTComm::writeMessage(const unsigned char mid, const unsigned long dataVal
 //	 = MTRV_TIMEOUT if timeout occurred
 //   = MTRV_NOINPUTINITIALIZED
 //
-short CMTComm::writeMessage(const unsigned char mid, const unsigned char data[], 
+short CMTComm::writeMessage(const unsigned char mid, const unsigned char data[],
 						   const unsigned short &dataLen, const unsigned char bid)
 {
 	unsigned char buffer[MAXMSGLEN];
@@ -1190,7 +1190,7 @@ short CMTComm::writeMessage(const unsigned char mid, const unsigned char data[],
 // waitForMessage
 //
 // Read messages from serial port or file using the current timeout period
-//  until the received message is equal to a specific message identifier 
+//  until the received message is equal to a specific message identifier
 // By default the timeout period by file input is set to infinity (= until
 //  end of file is reached)
 //
@@ -1298,7 +1298,7 @@ short CMTComm::reqSetting(const unsigned char mid, unsigned long &value, const u
 			// Acknowledge received
 			value = 0;
 			swapEndian(&buffer[IND_DATA0],(unsigned char *)&value, buffer[IND_LEN]);
-			return (m_retVal = MTRV_OK);				
+			return (m_retVal = MTRV_OK);
 		}
 		else if (buffer[IND_MID] == MID_ERROR){
 			m_deviceError = buffer[IND_DATA0];
@@ -1330,7 +1330,7 @@ short CMTComm::reqSetting(const unsigned char mid, unsigned long &value, const u
 //
 //	 value contains the integer value of the data field of the ack message
 //
-short CMTComm::reqSetting(const unsigned char mid, const unsigned char param, unsigned long &value,  
+short CMTComm::reqSetting(const unsigned char mid, const unsigned char param, unsigned long &value,
 						  const unsigned char bid)
 {
 	unsigned char buffer[MAXMSGLEN];
@@ -1369,7 +1369,7 @@ short CMTComm::reqSetting(const unsigned char mid, const unsigned char param, un
 			else{
 				swapEndian(&buffer[IND_DATA0]+1,(unsigned char *)&value, buffer[IND_LEN]-1);
 			}
-			return (m_retVal = MTRV_OK);				
+			return (m_retVal = MTRV_OK);
 		}
 		else if (buffer[IND_MID] == MID_ERROR){
 			m_deviceError = buffer[IND_DATA0];
@@ -1426,7 +1426,7 @@ short CMTComm::reqSetting(const unsigned char mid, float &value, const unsigned 
 			// Acknowledge received
 			value = 0;
 			swapEndian(&buffer[IND_DATA0],(unsigned char *)&value, buffer[IND_LEN]);
-			return (m_retVal = MTRV_OK);				
+			return (m_retVal = MTRV_OK);
 		}
 		else if (buffer[IND_MID] == MID_ERROR){
 			m_deviceError = buffer[IND_DATA0];
@@ -1496,7 +1496,7 @@ short CMTComm::reqSetting(const unsigned char mid, const unsigned char param, fl
 			else{
 				swapEndian(&buffer[IND_DATA0]+1,(unsigned char *)&value, buffer[IND_LEN]-1);
 			}
-			return (m_retVal = MTRV_OK);				
+			return (m_retVal = MTRV_OK);
 		}
 		else if (buffer[IND_MID] == MID_ERROR){
 			m_deviceError = buffer[IND_DATA0];
@@ -1518,7 +1518,7 @@ short CMTComm::reqSetting(const unsigned char mid, const unsigned char param, fl
 // Input
 //	 mid		: Message ID of message to send
 //   bid		: Bus ID of message to send (def 0xFF)
-//	 
+//
 // Output
 //   = MTRV_OK if an Ack message is received
 //	 = MTRV_RECVERRORMSG if an error message is received
@@ -1527,7 +1527,7 @@ short CMTComm::reqSetting(const unsigned char mid, const unsigned char param, fl
 //	 data[] contains the data of the acknowledge message
 //	 dataLen contains the number bytes returned
 //
-short CMTComm::reqSetting(const unsigned char mid, 
+short CMTComm::reqSetting(const unsigned char mid,
 						  unsigned char data[], short &dataLen, const unsigned char bid)
 {
 	unsigned char buffer[MAXMSGLEN];
@@ -1562,7 +1562,7 @@ short CMTComm::reqSetting(const unsigned char mid,
 				dataLen = buffer[IND_LENEXTH]*256 + buffer[IND_LENEXTL];
 				memcpy(data, &buffer[IND_DATAEXT0], dataLen);
 			}
-			return (m_retVal = MTRV_OK);				
+			return (m_retVal = MTRV_OK);
 		}
 		else if (buffer[IND_MID] == MID_ERROR){
 			m_deviceError = buffer[IND_DATA0];
@@ -1586,7 +1586,7 @@ short CMTComm::reqSetting(const unsigned char mid,
 //   bid		: Bus ID of message to send (def 0xFF)
 //	 dataIn		: Data to be included in request
 //	 dataInLen	: Number of bytes in dataIn
-//	 
+//
 // Output
 //   = MTRV_OK if an Ack message is received
 //	 = MTRV_RECVERRORMSG if an error message is received
@@ -1642,7 +1642,7 @@ short CMTComm::reqSetting(const unsigned char mid,
 				dataOutLen = buffer[IND_LENEXTH]*256 + buffer[IND_LENEXTL];
 				memcpy(dataOut, &buffer[IND_DATAEXT0], dataOutLen);
 			}
-			return (m_retVal = MTRV_OK);				
+			return (m_retVal = MTRV_OK);
 		}
 		else if (buffer[IND_MID] == MID_ERROR){
 			m_deviceError = buffer[IND_DATA0];
@@ -1666,7 +1666,7 @@ short CMTComm::reqSetting(const unsigned char mid,
 //	 mid		: Message ID of message to send
 //	 param		: For messages that need a parameter (optional)
 //   bid		: Bus ID of message to send (def 0xFF)
-//	 
+//
 // Output
 //   = MTRV_OK if an Ack message is received
 //	 = MTRV_RECVERRORMSG if an error message is received
@@ -1675,7 +1675,7 @@ short CMTComm::reqSetting(const unsigned char mid,
 //	 data[] contains the data of the acknowledge message (including param!!)
 //	 dataLen contains the number bytes returned
 //
-short CMTComm::reqSetting(const unsigned char mid, const unsigned char param, 
+short CMTComm::reqSetting(const unsigned char mid, const unsigned char param,
 						  unsigned char data[], short &dataLen, const unsigned char bid)
 {
 	unsigned char buffer[MAXMSGLEN];
@@ -1716,7 +1716,7 @@ short CMTComm::reqSetting(const unsigned char mid, const unsigned char param,
 				dataLen = buffer[IND_LENEXTH]*256 + buffer[IND_LENEXTL];
 				memcpy(data, &buffer[IND_DATAEXT0], dataLen);
 			}
-			return (m_retVal = MTRV_OK);				
+			return (m_retVal = MTRV_OK);
 		}
 		else if (buffer[IND_MID] == MID_ERROR){
 			m_deviceError = buffer[IND_DATA0];
@@ -2034,46 +2034,46 @@ short CMTComm::setSetting(const unsigned char mid, const unsigned char param,
 //
 // Requests the current output mode/setting of input (file or serialport)
 //  the Outputmode, Outputsettings, DataLength & number of devices
-//  are stored in member variables of the MTComm class. These values 
+//  are stored in member variables of the MTComm class. These values
 //  are needed for the GetValue functions.
 //  The function optionally returns the number of devices
 //
 // File: expects the Configuration message at the start of the file
-//       which holds the OutputMode & OutputSettings. File position 
+//       which holds the OutputMode & OutputSettings. File position
 //       is after the first message
 //
 // Input
 // Output
 //	 numDevices : [optional] number of devices connected to port or
 //                found in configuration file
-//	
+//
 //   returns MTRV_OK if the mode & settings are read
 //
 short CMTComm::getDeviceMode(unsigned short *numDevices)
 {
 	unsigned char mid, data[MAXMSGLEN];
 	short datalen;
-	
+
 	if (numDevices != NULL) {
 		*numDevices = 0;
 	}
-	
+
 	// In case serial port is used (live device / XM or MT)
 	if (m_portOpen) {
 		if (reqSetting(MID_INITBUS,data,datalen) != MTRV_OK) {
 			return m_retVal;
 		}
-		
+
 		// Retrieve outputmode + outputsettings
 		for (int i = 0; i < datalen / LEN_DEVICEID; i++) {
 			if (reqSetting(MID_REQOUTPUTMODE,m_storedOutputMode[BID_MT+i],BID_MT+i) != MTRV_OK) {
 				return m_retVal;
 			}
-			
+
 			if (reqSetting(MID_REQOUTPUTSETTINGS,m_storedOutputSettings[BID_MT+i],BID_MT+i) != MTRV_OK) {
 				return m_retVal;
 			}
-			
+
 			if (reqSetting(MID_REQDATALENGTH,m_storedDataLength[BID_MT+i],BID_MT+i) != MTRV_OK) {
 				return m_retVal;
 			}
@@ -2082,14 +2082,14 @@ short CMTComm::getDeviceMode(unsigned short *numDevices)
 		if (numDevices != NULL) {
 			*numDevices = datalen / LEN_DEVICEID;
 		}
-				
+
 		unsigned char masterDID[4];
 		short DIDlen;
 
 		if(reqSetting(MID_REQDID,masterDID,DIDlen) != MTRV_OK) {
 			return m_retVal;
 		}
-		
+
 		if (memcmp(masterDID,data,LEN_DEVICEID) != 0) {
 			// Using an XbusMaster
 			m_storedOutputMode[0] = OUTPUTMODE_XM;
@@ -2112,13 +2112,13 @@ short CMTComm::getDeviceMode(unsigned short *numDevices)
 				swapEndian(data+CONF_NUMDEVICES, (unsigned char *)&_numDevices,CONF_NUMDEVICESLEN);
 				for(unsigned int i = 0; i < _numDevices; i++){
 					m_storedOutputMode[BID_MT+i] = 0;
-					swapEndian(data+CONF_OUTPUTMODE+i*CONF_BLOCKLEN, (unsigned char *)(m_storedOutputMode+BID_MT+i), 
+					swapEndian(data+CONF_OUTPUTMODE+i*CONF_BLOCKLEN, (unsigned char *)(m_storedOutputMode+BID_MT+i),
 							   CONF_OUTPUTMODELEN);
 					m_storedOutputSettings[BID_MT+i] = 0;
-					swapEndian(data+CONF_OUTPUTSETTINGS+i*CONF_BLOCKLEN, (unsigned char *)(m_storedOutputSettings+BID_MT+i), 
+					swapEndian(data+CONF_OUTPUTSETTINGS+i*CONF_BLOCKLEN, (unsigned char *)(m_storedOutputSettings+BID_MT+i),
 							   CONF_OUTPUTSETTINGSLEN);
 					m_storedDataLength[BID_MT+i] = 0;
-					swapEndian(data+CONF_DATALENGTH+i*CONF_BLOCKLEN, (unsigned char *)(m_storedDataLength+BID_MT+i), 
+					swapEndian(data+CONF_DATALENGTH+i*CONF_BLOCKLEN, (unsigned char *)(m_storedDataLength+BID_MT+i),
 							   CONF_DATALENGTHLEN);
 				}
 				if (numDevices != NULL) {
@@ -2146,16 +2146,16 @@ short CMTComm::getDeviceMode(unsigned short *numDevices)
 ////////////////////////////////////////////////////////////////////
 // setDeviceMode
 //
-// Sets the current output mode/setting of input (not for file-based 
+// Sets the current output mode/setting of input (not for file-based
 //   inputs)
 //
 // Input
-//	 OutputMode		: OutputMode to be set in device & stored in MTComm 
+//	 OutputMode		: OutputMode to be set in device & stored in MTComm
 //						class member variable
-//	 OutputSettings : OutputSettings to be set in device & stored in 
+//	 OutputSettings : OutputSettings to be set in device & stored in
 //						MTComm class member variable
 // Output
-//	
+//
 //   returns MTRV_OK if the mode & settings are read
 //
 short CMTComm::setDeviceMode(unsigned long OutputMode, unsigned long OutputSettings, const unsigned char bid)
@@ -2186,7 +2186,7 @@ short CMTComm::setDeviceMode(unsigned long OutputMode, unsigned long OutputSetti
 		if (OutputMode != OUTPUTMODE_XM) {
 			unsigned long value;
 			if (reqSetting(MID_REQDATALENGTH, value, bid) == MTRV_OK) {
-				if (bid == BID_MASTER || bid == BID_MT && m_storedOutputMode[0] != OUTPUTMODE_XM) {
+				if (bid == BID_MASTER || (bid == BID_MT && m_storedOutputMode[0] != OUTPUTMODE_XM)) {
 					m_storedDataLength[0] = m_storedDataLength[BID_MT] = value;
 				}
 				else{
@@ -2205,17 +2205,17 @@ short CMTComm::setDeviceMode(unsigned long OutputMode, unsigned long OutputSetti
 // getMode
 //
 // Gets the output mode/setting used in MTComm class and the corresponding
-//  datalength. These variables are set by the functions GetDeviceMode, 
+//  datalength. These variables are set by the functions GetDeviceMode,
 //  SetDeviceMode or SetMode
 //
 // Input
 // Output
 //	 OutputMode		: OutputMode stored in MTComm class member variable
 //	 OutputSettings : OutputSettings stored in MTComm class member variable
-//	
+//
 //   returns always MTRV_OK
 //
-short CMTComm::getMode(unsigned long &OutputMode, unsigned long &OutputSettings, 
+short CMTComm::getMode(unsigned long &OutputMode, unsigned long &OutputSettings,
 					   unsigned short &dataLength, const unsigned char bid)
 {
 	unsigned char nbid = (bid == BID_MASTER)?0:bid;
@@ -2236,7 +2236,7 @@ short CMTComm::getMode(unsigned long &OutputMode, unsigned long &OutputSettings,
 //	 OutputMode		: OutputMode to be stored in MTComm class member variable
 //	 OutputSettings : OutputSettings to be stored in MTComm class member variable
 // Output
-//	
+//
 //   returns always MTRV_OK
 //
 short CMTComm::setMode(unsigned long OutputMode, unsigned long OutputSettings, const unsigned char bid)
@@ -2309,7 +2309,7 @@ short CMTComm::setMode(unsigned long OutputMode, unsigned long OutputSettings, c
 // Retrieves a unsigned short value from the data input parameter
 // This function is valid for the following value specifiers:
 //		VALUE_RAW_TEMP
-//		VALUE_SAMPLECNT		
+//		VALUE_SAMPLECNT
 //
 // Use getDeviceMode or setMode to initialize the Outputmode
 // and Outputsettings member variables used to retrieve the correct
@@ -2323,12 +2323,12 @@ short CMTComm::setMode(unsigned long OutputMode, unsigned long OutputSettings, c
 // Output
 //	 value			: reference to unsigned short in which the retrieved
 //						value will be returned
-//	
+//
 //	Return value
 //    MTRV_OK		: value is successfully retrieved
 //	  != MTRV_OK	: not successful
 //
-short CMTComm::getValue(const unsigned long valueSpec, unsigned short &value, const unsigned char data[], 
+short CMTComm::getValue(const unsigned long valueSpec, unsigned short &value, const unsigned char data[],
 						const unsigned char bid)
 {
 	short offset = 0;
@@ -2350,7 +2350,7 @@ short CMTComm::getValue(const unsigned long valueSpec, unsigned short &value, co
 			offset += (short)m_storedDataLength[i++];
 		}
 	}
-	
+
 	// Check if data is unsigned short & available in data
 	m_retVal = MTRV_INVALIDVALUESPEC;
 	if (valueSpec == VALUE_RAW_TEMP) {
@@ -2376,7 +2376,7 @@ short CMTComm::getValue(const unsigned long valueSpec, unsigned short &value, co
 ////////////////////////////////////////////////////////////////////
 // getValue (array of unsigned short variant)
 //
-// Retrieves an array of unsigned short values from the data input 
+// Retrieves an array of unsigned short values from the data input
 // parameter. This function is valid for the following value specifiers:
 //		VALUE_RAW_ACC
 //		VALUE_RAW_GYR
@@ -2392,14 +2392,14 @@ short CMTComm::getValue(const unsigned long valueSpec, unsigned short &value, co
 //	 bid			: bus identifier of the device of which the
 //						value should be returned (default = BID_MT)
 // Output
-//	 value[]		: pointer to array of unsigned shorts in which the 
+//	 value[]		: pointer to array of unsigned shorts in which the
 //						retrieved values will be returned
-//	
+//
 //	Return value
 //    MTRV_OK		: value is successfully retrieved
 //	  != MTRV_OK	: not successful
 //
-short CMTComm::getValue(const unsigned long valueSpec, unsigned short value[], const unsigned char data[], 
+short CMTComm::getValue(const unsigned long valueSpec, unsigned short value[], const unsigned char data[],
 						const unsigned char bid)
 {
 	short offset = 0;
@@ -2440,7 +2440,7 @@ short CMTComm::getValue(const unsigned long valueSpec, unsigned short value[], c
 ////////////////////////////////////////////////////////////////////
 // getValue (array of floats variant)
 //
-// Retrieves an array of float values from the data input parameter. 
+// Retrieves an array of float values from the data input parameter.
 // This function is valid for the following value specifiers:
 //		VALUE_TEMP
 //		VALUE_CALIB_ACC
@@ -2460,14 +2460,14 @@ short CMTComm::getValue(const unsigned long valueSpec, unsigned short value[], c
 //	 bid			: bus identifier of the device of which the
 //						value should be returned (default = BID_MT)
 // Output
-//	 value[]		: pointer to array of floats in which the 
+//	 value[]		: pointer to array of floats in which the
 //						retrieved values will be returned
-//	
+//
 //	Return value
 //    MTRV_OK		: value is successfully retrieved
 //	  != MTRV_OK	: not successful
 //
-short CMTComm::getValue(const unsigned long valueSpec, float value[], const unsigned char data[], 
+short CMTComm::getValue(const unsigned long valueSpec, float value[], const unsigned char data[],
 						const unsigned char bid)
 {
 	short offset = 0;
@@ -2501,7 +2501,7 @@ short CMTComm::getValue(const unsigned long valueSpec, float value[], const unsi
 	}
 	else if (valueSpec == VALUE_CALIB_ACC) {
 		offset += ((m_storedOutputMode[nbid] & OUTPUTMODE_TEMP) != 0)?LEN_TEMPDATA:0;
-		if (m_storedOutputMode[nbid] & OUTPUTMODE_CALIB && 
+		if (m_storedOutputMode[nbid] & OUTPUTMODE_CALIB &&
 			(m_storedOutputSettings[nbid] & OUTPUTSETTINGS_CALIBMODE_ACC_MASK) == 0) {
 			nElements = LEN_CALIB_ACCDATA / LEN_FLOAT;
 			m_retVal = MTRV_OK;
@@ -2509,7 +2509,7 @@ short CMTComm::getValue(const unsigned long valueSpec, float value[], const unsi
 	}
 	else if (valueSpec == VALUE_CALIB_GYR) {
 		offset += ((m_storedOutputMode[nbid] & OUTPUTMODE_TEMP) != 0)?LEN_TEMPDATA:0;
-		if (m_storedOutputMode[nbid] & OUTPUTMODE_CALIB && 
+		if (m_storedOutputMode[nbid] & OUTPUTMODE_CALIB &&
 			(m_storedOutputSettings[nbid] & OUTPUTSETTINGS_CALIBMODE_GYR_MASK) == 0) {
 			offset += ((m_storedOutputSettings[nbid] & OUTPUTSETTINGS_CALIBMODE_ACC_MASK) == 0)?LEN_CALIB_ACCX*3:0;
 			nElements = LEN_CALIB_GYRDATA / LEN_FLOAT;
@@ -2518,7 +2518,7 @@ short CMTComm::getValue(const unsigned long valueSpec, float value[], const unsi
 	}
 	else if (valueSpec == VALUE_CALIB_MAG) {
 		offset += ((m_storedOutputMode[nbid] & OUTPUTMODE_TEMP) != 0)?LEN_TEMPDATA:0;
-		if (m_storedOutputMode[nbid] & OUTPUTMODE_CALIB && 
+		if (m_storedOutputMode[nbid] & OUTPUTMODE_CALIB &&
 			(m_storedOutputSettings[nbid] & OUTPUTSETTINGS_CALIBMODE_MAG_MASK) == 0) {
 			offset += ((m_storedOutputSettings[nbid] & OUTPUTSETTINGS_CALIBMODE_ACC_MASK) == 0)?LEN_CALIB_ACCX*3:0;
 			offset += ((m_storedOutputSettings[nbid] & OUTPUTSETTINGS_CALIBMODE_GYR_MASK) == 0)?LEN_CALIB_GYRX*3:0;
@@ -2565,10 +2565,10 @@ short CMTComm::getValue(const unsigned long valueSpec, float value[], const unsi
 				swapEndian(data+offset+i*LEN_FLOAT, (unsigned char *)value+i*LEN_FLOAT, LEN_FLOAT);
 			}
 		}
-		else {			
+		else {
 			int temp;
 			for (int i = 0; i < nElements; i++) {
-				swapEndian(data+offset+i*LEN_FLOAT, (unsigned char*)&temp, 4);	
+				swapEndian(data+offset+i*LEN_FLOAT, (unsigned char*)&temp, 4);
 				value[i] = (float)temp/1048576;
 			}
 		}
@@ -2579,7 +2579,7 @@ short CMTComm::getValue(const unsigned long valueSpec, float value[], const unsi
 //////////////////////////////////////////////////////////////////////
 // getLastDeviceError
 //
-// Returns the last reported device error of the latest received Error 
+// Returns the last reported device error of the latest received Error
 //	message
 //
 // Output
@@ -2666,7 +2666,7 @@ void CMTComm::calcChecksum(unsigned char *msgBuffer, const int msgBufferLength)
 	unsigned char checkSum = 0;
 	int i;
 
-	for(i = 1; i < msgBufferLength; i++)		
+	for(i = 1; i < msgBufferLength; i++)
 		checkSum += msgBuffer[i];
 
 	msgBuffer[msgBufferLength] = -checkSum;	// Store chksum
