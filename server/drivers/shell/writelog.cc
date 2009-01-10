@@ -1037,7 +1037,7 @@ WriteLog::WriteLaser(player_msghdr_t* hdr, void *data)
 			  scanangle = (player_laser_data_scanangle_t*)data;
 			  fprintf(this->file, "%04d %+07.4f %04d ",
 					  scanangle->id, scanangle->max_range, scanangle->ranges_count);
-			  
+
 			  for (i = 0; i < scanangle->ranges_count; i++)
 			  {
 				  fprintf(this->file, "%.3f ", scanangle->ranges[i]);
@@ -1048,7 +1048,7 @@ WriteLog::WriteLaser(player_msghdr_t* hdr, void *data)
 					  fprintf(this->file, "%2d ", 0);
 			  }
 			  return(0);
-				  
+
         default:
           return(-1);
       }
@@ -2164,7 +2164,7 @@ int WriteLog::WriteCamera(WriteLogDevice *device, player_msghdr_t* hdr, void *da
                         ::EncodeHex(str, dst_size, camera_data->image, src_size);
 
                         // Write image bytes
-                        fprintf(this->file, str);
+                        fprintf(this->file, "%s", str);
                         free(str);
                     }
                     if(this->cameraSaveImages)
