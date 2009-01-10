@@ -77,11 +77,12 @@ The sicklms200 driver controls the SICK LMS 200 and PLS scanning laser range-fin
   - Default: 0 (FTDI)
   - Method to achieve high speed (RS422) communication
     0: FTDI RS422 to USB, using Linux High Speed Serial
-  1: CP210x RS422 to USB (And maybe others). This chipset has
-     the hardware remap some normal baudrate (230400 for
-     example) to 500000, so the host machine doesn't need to
-     know it's running at 500000 (Works on Mac OS X).
-
+    1: CP210x RS422 to USB (And maybe others). This chipset has
+       the hardware remap some normal baudrate (230400 for
+       example) to 500000, so the host machine doesn't need to
+       know it's running at 500000 (Works on Mac OS X).
+    2: MOXA Multiport Serial Board CP-118EL (and probably other models)
+       An ioctl call is used to set this card to 500000 baud
 - serial_high_speed_baudremap (integer)
    - Default: 38400 (Needed for FTDI)
    - The fake baud rate to use after 500Kbps is achieved. In
@@ -661,7 +662,7 @@ SickLMS200::ProcessMessage(QueuePointer & resp_queue,
     {
       if (SetLaserRes(this->scan_width, this->scan_res) != 0)
 	PLAYER_ERROR("failed setting resolution [SetLaserRes()]");
-      
+
       if(SetLaserConfig(this->intensity, this->high_avail) != 0)
         PLAYER_ERROR("failed setting configuration [SetLaserConfig()]");
     }
@@ -1070,6 +1071,23 @@ int SickLMS200::ChangeTermSpeed(int speed)
 	        tcsetattr(this->laser_fd, TCSANOW, &term);
 	        tcflush(this->laser_fd, TCIFLUSH);
 	}
+    else if (this->serial_high_speed_mode == 2)
+    {
+      if (tcgetattr(this->laser_fd, &term) < 0)
+        RETURN_ERROR(1, "unable to get device attributes");
+
+      cfmakeraw(&term);
+      if (tcsetattr(this->laser_fd, TCSAFLUSH, &term) < 0)
+        RETURN_ERROR(1, "unable to set device attributes");
+
+      //Using the ioctl() API to set non-standard baud rate after setting the termios parameters.
+      #define  MOXA_SET_SPECIAL_BAUD_RATE  0x44D
+      int moxanonstandardbaud = 500000;
+      if (ioctl(this->laser_fd, MOXA_SET_SPECIAL_BAUD_RATE,
+					&moxanonstandardbaud) < 0)
+        RETURN_ERROR(1, "error on MOXA_SET_SPECIAL_BAUD_RATE ioctl");
+    }
+
 	break;
 
         default:
@@ -1254,11 +1272,11 @@ int SickLMS200::CheckLaserConfig(uint8_t* packet, ssize_t packet_size,
   // Set high-availability level 3 mode
   if (packet[5] != high_avail)
     return 1;
-  
+
   // Return intensity in top 3 data bits
   if (packet[6] != intensity)
     return 1;
-  
+
   // Set the units for the range reading
   if (this->range_res == 1)
   {
@@ -1278,7 +1296,7 @@ int SickLMS200::CheckLaserConfig(uint8_t* packet, ssize_t packet_size,
   else
     if (packet[7] != 0x01)
       return 1;
-  
+
   return 0;
 
 }
