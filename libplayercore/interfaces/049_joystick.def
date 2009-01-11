@@ -13,14 +13,17 @@ message { DATA, STATE, 1, player_joystick_data_t };
 /** @brief Data: state (@ref PLAYER_JOYSTICK_DATA_STATE)
 
 The joystick data packet, which contains the current state of the
-joystick */
-typedef struct player_joystick_data
-{
+ joystick */
+ typedef struct player_joystick_data
+ {
   /** Current joystick position X, Y and Yaw (unscaled) */
-  int32_t pos[3];
-  /** Scaling factors for X, Y and Yaw */
-  int32_t scale[3];
-  /** Button states (bitmask) */
-  uint32_t buttons;
-} player_joystick_data_t;
+  int32_t pos[8];
+  /** Scaling factors for X, Y and Yaw --- not using these yet*/
+  int32_t scale[8];
+   /** Button states (bitmask) */
+   uint32_t buttons;
+   /** Nunber of axes */
+   uint32_t axes_count;
+ } player_joystick_data_t;
+ 
 

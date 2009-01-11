@@ -229,6 +229,7 @@ extern PlayerTime *GlobalTime;
 #define XAXIS 1
 #define YAXIS 2
 #define YAWAXIS 0
+#define SLIDER 3
 
 #define MAX_XSPEED 0.5
 #define MAX_YSPEED 0.5
@@ -276,11 +277,12 @@ class LinuxJoystick : public ThreadedDriver
   private: player_devaddr_t joystick_addr;
   private: const char *dev;
   private: int fd;
-  private: int16_t pos[3];
-  private: uint16_t buttons;
-  private: int axes_max[3];
-  private: int axes_min[3];
-  private: double scale_pos[3];
+  private: int axes_count;
+  private: int32_t pos[4];
+  private: uint32_t buttons;
+  private: int axes_max[4];
+  private: int axes_min[4];
+  private: double scale_pos[4];
   private: double timeout;
   private: struct timeval lastread;
 
@@ -289,8 +291,8 @@ class LinuxJoystick : public ThreadedDriver
   private: player_position2d_data_t pos_data;
 
   // These are used when we send commands to a position device
-  private: double max_speed[3];
-  private: int axes[3];
+  private: double max_speed[4];
+  private: int axes[4];
   private: int deadman_button;
   private: player_devaddr_t cmd_position_addr;
   private: Device * position;
@@ -360,9 +362,14 @@ LinuxJoystick::LinuxJoystick(ConfigFile* cf, int section) : ThreadedDriver(cf, s
   }
 
   this->dev = cf->ReadString(section, "port", "/dev/js0");
+// partially implementing axes_count
+  this->axes_count=4;
   this->axes[0] = cf->ReadTupleInt(section,"axes", 0, XAXIS);
   this->axes[1] = cf->ReadTupleInt(section,"axes", 1, YAXIS);
   this->axes[2] = cf->ReadTupleInt(section,"axes", 2, YAWAXIS);
+  this->axes[3] = cf->ReadTupleInt(section,"axes", 3, SLIDER);
+
+
   this->deadman_button = cf->ReadInt(section,"deadman", -1);
   this->axes_max[0] = cf->ReadTupleInt(section, "axes_maxima", 0, XAXIS_MAX);
   this->axes_max[1] = cf->ReadTupleInt(section, "axes_maxima", 1, YAXIS_MAX);
@@ -445,7 +452,7 @@ int LinuxJoystick::MainSetup()
     }
   }
 
-  this->pos[0] = this->pos[1] = this->pos[2] = 0;
+  this->pos[0] = this->pos[1] = this->pos[2] = this->pos[3] = 0;
 
   return 0;
 }
@@ -571,6 +578,7 @@ void LinuxJoystick::ReadJoy()
   fd.events = POLLIN | POLLHUP;
   fd.revents = 0;
 
+
   count = poll(&fd, 1, 10);
   if (count < 0)
     PLAYER_ERROR1("poll returned error [%s]", strerror(errno));
@@ -590,10 +598,12 @@ void LinuxJoystick::ReadJoy()
     // Update buttons
     if ((event.type & ~JS_EVENT_INIT) == JS_EVENT_BUTTON)
     {
+
       if (event.value)
         this->buttons |= (1 << event.number);
       else
         this->buttons &= ~(1 << event.number);
+
     }
 
     // ignore the startup events
@@ -625,6 +635,13 @@ void LinuxJoystick::ReadJoy()
               this->pos[2] = 0;
             GlobalTime->GetTime(&this->lastread);
           }
+          else if(event.number == this->axes[3])
+          {
+            this->pos[3] = event.value;
+            if(abs(this->pos[3]) < this->axes_min[3])
+              this->pos[3] = 0;
+            GlobalTime->GetTime(&this->lastread);
+          }
         }
         break;
     }
@@ -638,16 +655,22 @@ void LinuxJoystick::ReadJoy()
 // Send new data out
 void LinuxJoystick::RefreshData()
 {
+  int i;
   if(this->joystick_addr.interf)
   {
     memset(&(this->joy_data),0,sizeof(player_joystick_data_t));
-    this->joy_data.pos[0] = this->pos[0];
-    this->joy_data.pos[1] = this->pos[1];
-    this->joy_data.pos[2] = this->pos[2];
+
+    this->joy_data.buttons = this->buttons;
+    this->joy_data.axes_count = this->axes_count;
+    for (i = 0; i < joy_data.axes_count ; i++)
+        this->joy_data.pos[i] = this->pos[i];
+
+
     this->joy_data.scale[0] = this->axes_max[0];
     this->joy_data.scale[1] = this->axes_max[1];
     this->joy_data.scale[2] = this->axes_max[2];
-    this->joy_data.buttons = this->buttons;
+    this->joy_data.scale[3] = this->axes_max[3];
+
     this->Publish(this->joystick_addr,
                   PLAYER_MSGTYPE_DATA, PLAYER_JOYSTICK_DATA_STATE,
                   (void*)&this->joy_data, sizeof(this->joy_data), NULL);

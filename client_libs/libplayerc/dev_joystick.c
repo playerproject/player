@@ -1,4 +1,4 @@
-/* 
+/*
  *  libplayerc : a Player client library
  *  Copyright (C) Andrew Howard 2002-2003
  *
@@ -20,7 +20,7 @@
 /*
  *  Player - One Hell of a Robot Server
  *  Copyright (C) Andrew Howard 2003
- *                      
+ *
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -37,19 +37,28 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 /***************************************************************************
- * Desc: Joystick device proxy
+ * Desc: joystick proxy.
  * Author: Andrew Howard
- * Date: 13 May 2002
+ * Date: 26 May 2002
  * CVS: $Id$
  **************************************************************************/
+#if HAVE_CONFIG_H
+  #include "config.h"
+#endif
 
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include <netinet/in.h>
 
 #include "playerc.h"
 #include "error.h"
 
+// Local declarations
+void playerc_joystick_putmsg(playerc_joystick_t *device,
+                           player_msghdr_t *header,
+                           player_joystick_data_t *data,
+                           size_t len);
 
 // Create a new joystick proxy
 playerc_joystick_t *playerc_joystick_create(playerc_client_t *client, int index)
@@ -59,9 +68,8 @@ playerc_joystick_t *playerc_joystick_create(playerc_client_t *client, int index)
   device = malloc(sizeof(playerc_joystick_t));
   memset(device, 0, sizeof(playerc_joystick_t));
   playerc_device_init(&device->info, client, PLAYER_JOYSTICK_CODE, index,
-                      (playerc_putdata_fn_t) playerc_joystick_putdata,NULL,NULL);
+                      (playerc_putmsg_fn_t) playerc_joystick_putmsg);
 
-  
   return device;
 }
 
@@ -71,8 +79,6 @@ void playerc_joystick_destroy(playerc_joystick_t *device)
 {
   playerc_device_term(&device->info);
   free(device);
-
-  return;
 }
 
 
@@ -91,13 +97,26 @@ int playerc_joystick_unsubscribe(playerc_joystick_t *device)
 
 
 // Process incoming data
-void playerc_joystick_putdata(playerc_joystick_t *device, player_msghdr_t *header,
-                              player_joystick_data_t *data, size_t len)
+void playerc_joystick_putmsg(playerc_joystick_t *device, player_msghdr_t *header,
+                            player_joystick_data_t *data, size_t len)
 {
-  device->px = (double) (int16_t) ntohs(data->xpos) / (double) (int16_t) ntohs(data->xscale);
-  device->py = (double) (int16_t) ntohs(data->ypos) / (double) (int16_t) ntohs(data->yscale);
-  device->buttons = ntohs(data->buttons);
-  
+  int i;
+  if((header->type == PLAYER_MSGTYPE_DATA) &&
+     (header->subtype == PLAYER_JOYSTICK_DATA_STATE))
+  {
+
+    device->buttons       = data->buttons;
+    device->axes_count       = data->axes_count;
+    for (i = 0; i < data->axes_count ; i++)
+        device->pos[i] = data->pos[i];
+
+
+  }
+  else
+    PLAYERC_WARN2("skipping joystick message with unknown type/subtype: %s/%d\n",
+                 msgtype_to_str(header->type), header->subtype);
   return;
 }
+
+
 

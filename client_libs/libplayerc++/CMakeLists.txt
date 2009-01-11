@@ -173,6 +173,7 @@ IF (BUILD_PLAYERCC)
                         healthproxy.cc
                         imuproxy.cc
                         irproxy.cc
+                        joystickproxy.cc
                         laserproxy.cc
                         limbproxy.cc
                         localizeproxy.cc

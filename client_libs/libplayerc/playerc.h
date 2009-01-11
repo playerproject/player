@@ -51,7 +51,7 @@ Geoffrey Biggs, Richard Vaughan.
 #ifndef PLAYERC_H
 #define PLAYERC_H
 
-#include <netinet/in.h> // need this for struct sockaddr_in
+#include <netinet/in.h> /* need this for struct sockaddr_in */
 #include <stdio.h>
 
 #include <playerconfig.h>
@@ -64,7 +64,7 @@ Geoffrey Biggs, Richard Vaughan.
 typedef void * GEOSGeom;
 #endif
 
-// Get the message structures from Player
+/* Get the message structures from Player*/
 #include <libplayercore/playercommon.h>
 #include <libplayercore/player.h>
 #include <libplayercore/error.h>
@@ -332,10 +332,10 @@ the new packet pushed onto the end of the queue.
 const char *playerc_error_str(void);
 
 /** Get the name for a given interface code. */
-//const char *playerc_lookup_name(int code);
+/*const char *playerc_lookup_name(int code);*/
 
 /** Get the interface code for a given name. */
-//int playerc_lookup_code(const char *name);
+/*int playerc_lookup_code(const char *name);*/
 
 /** Add new entries to the XDR function table. */
 int playerc_add_xdr_ftable(playerxdr_function_t *flist, int replace);
@@ -344,13 +344,13 @@ int playerc_add_xdr_ftable(playerxdr_function_t *flist, int replace);
 /***************************************************************************/
 
 
-// Forward declare types
+/* Forward declare types*/
 struct _playerc_client_t;
 struct _playerc_device_t;
 
 
-// forward declaration to avoid including <sys/poll.h>, which may not be
-// available when people are building clients against this lib
+/* forward declaration to avoid including <sys/poll.h>, which may not be
+   available when people are building clients against this lib*/
 struct pollfd;
 
 
@@ -365,7 +365,7 @@ struct pollfd;
 @{
 */
 
-// Items in incoming data queue.
+/* Items in incoming data queue.*/
 typedef struct
 {
   player_msghdr_t header;
@@ -373,36 +373,36 @@ typedef struct
 } playerc_client_item_t;
 
 
-// Multi-client data
+/* Multi-client data*/
 typedef struct
 {
-  // List of clients being managed
+  /* List of clients being managed*/
   int client_count;
   struct _playerc_client_t *client[128];
 
-  // Poll info
+  /* Poll info*/
   struct pollfd* pollfd;
 
-  // Latest time received from any server
+  /* Latest time received from any server*/
   double time;
 
 } playerc_mclient_t;
 
-// Create a multi-client object
+/* Create a multi-client object*/
 playerc_mclient_t *playerc_mclient_create(void);
 
-// Destroy a multi-client object
+/* Destroy a multi-client object*/
 void playerc_mclient_destroy(playerc_mclient_t *mclient);
 
-// Add a client to the multi-client (private).
+/* Add a client to the multi-client (private).*/
 int playerc_mclient_addclient(playerc_mclient_t *mclient, struct _playerc_client_t *client);
 
-// Test to see if there is pending data.
-// Returns -1 on error, 0 or 1 otherwise.
+/* Test to see if there is pending data.
+   Returns -1 on error, 0 or 1 otherwise.*/
 int playerc_mclient_peek(playerc_mclient_t *mclient, int timeout);
 
-// Read incoming data.  The timeout is in ms.  Set timeout to a
-// negative value to wait indefinitely.
+/* Read incoming data.  The timeout is in ms.  Set timeout to a
+   negative value to wait indefinitely.*/
 int playerc_mclient_read(playerc_mclient_t *mclient, int timeout);
 
 /** @} */
@@ -739,11 +739,11 @@ never return the ID of a proxy other than the client.
 */
 void *playerc_client_read(playerc_client_t *client);
 
-// Read and process a packet (nonblocking)
-// returns 0 if no data recieved, 1 if data recieved and -1 on error
+/* Read and process a packet (nonblocking)
+   returns 0 if no data recieved, 1 if data recieved and -1 on error*/
 int playerc_client_read_nonblock(playerc_client_t *client);
-// Read and process a packet (nonblocking), fills in pointer to proxy that got data
-// returns 0 if no data recieved, 1 if data recieved and -1 on error
+/* Read and process a packet (nonblocking), fills in pointer to proxy that got data
+   returns 0 if no data recieved, 1 if data recieved and -1 on error*/
 int playerc_client_read_nonblock_withproxy(playerc_client_t *client, void ** proxy);
 
 /** @brief Set the timeout for client requests.
@@ -908,10 +908,10 @@ typedef struct
   /** Device info; must be at the start of all device structures. */
   playerc_device_t info;
 
-  /// The number of valid analog inputs.
+  /* The number of valid analog inputs.*/
   uint8_t voltages_count;
 
-  /// A bitfield of the current digital inputs.
+  /* A bitfield of the current digital inputs.*/
   float *voltages;
 
 } playerc_aio_t;
@@ -1035,7 +1035,7 @@ int playerc_actarray_brakes(playerc_actarray_t *device, uint8_t enable);
 /** @brief Set the speed of a joint (-1 for all joints) for all subsequent movement commands. */
 int playerc_actarray_speed_config(playerc_actarray_t *device, int joint, float speed);
 
-// Set the accelration of a joint (-1 for all joints) for all subsequent movement commands
+/* Set the accelration of a joint (-1 for all joints) for all subsequent movement commands*/
 int playerc_actarray_accel_config(playerc_actarray_t *device, int joint, float accel);
 
 
@@ -1440,10 +1440,10 @@ typedef struct
   /** Device info; must be at the start of all device structures. */
   playerc_device_t info;
 
-    /// The number of valid digital inputs.
+    /*/ The number of valid digital inputs.*/
     uint8_t count;
 
-    /// A bitfield of the current digital inputs.
+    /*/ A bitfield of the current digital inputs.*/
     uint32_t digin;
 
 } playerc_dio_t;
@@ -1844,10 +1844,10 @@ typedef struct
   /** Device info; must be at the start of all device structures. */
   playerc_device_t info;
 
-  // data
+  /* data*/
   player_ir_data_t data;
 
-  // config
+  /* config*/
   player_ir_pose_t poses;
 
 } playerc_ir_t;
@@ -1877,6 +1877,46 @@ int playerc_ir_get_geom(playerc_ir_t *device);
 /** @} */
 /***************************************************************************/
 
+
+/***************************************************************************/
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_joystick joystick
+
+The joystick proxy can be used to get images from a joystick.
+
+@{
+*/
+
+/** @brief joystick proxy data. */
+typedef struct
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+  int32_t axes_count;
+  int32_t pos[8];
+  uint32_t buttons;
+  int * axes_max;
+  int * axes_min;
+  double * scale_pos;
+
+
+} playerc_joystick_t;
+
+
+/** @brief Create a joystick proxy. */
+playerc_joystick_t *playerc_joystick_create(playerc_client_t *client, int index);
+
+/** @brief Destroy a joystick proxy. */
+void playerc_joystick_destroy(playerc_joystick_t *device);
+
+/** @brief Subscribe to the joystick device. */
+int playerc_joystick_subscribe(playerc_joystick_t *device, int access);
+
+/** @brief Un-subscribe from the joystick device. */
+int playerc_joystick_unsubscribe(playerc_joystick_t *device);
+
+/** @} */
+/**************************************************************************/
 
 
 /***************************************************************************/
@@ -3299,8 +3339,8 @@ typedef struct
   playerc_device_t info;
 
   char *rawText;
-  // Just estimating that no more than 20 words will be spoken between updates.
-  // Assuming that the longest word is <= 30 characters.
+  /* Just estimating that no more than 20 words will be spoken between updates.
+   Assuming that the longest word is <= 30 characters.*/
   char **words;
   int wordCount;
 } playerc_speechrecognition_t;
