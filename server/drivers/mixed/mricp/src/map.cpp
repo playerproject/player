@@ -61,7 +61,7 @@ GdkPixbuf * MAP::CreateMap()
 	if (!this->pixbuf)
 	{
   		cout<<"\n	--->>> Creating Image Pixel Buffer:"<<this->Mapname;
-  		fflush(stdout);	
+  		fflush(stdout);
   		if(!(this->pixbuf = gdk_pixbuf_new (GDK_COLORSPACE_RGB, FALSE, 8, this->size_x,this->size_y))) 	// Read the image
   		{
     			printf("\nfailed to Create Map Buffer %s", this->Mapname);
@@ -101,7 +101,7 @@ MAP::~ MAP()
     if(this->pixbuf)
     	gdk_pixbuf_unref(this->pixbuf);
     cout <<"\n	<<<--- IMAGE DATA FREED <<<---";
-    fflush(stdout); 
+    fflush(stdout);
 };
 MapInfo MAP::GetMapInfo()
 {
@@ -138,16 +138,16 @@ void MAP::SavePixelBufferToFile()
 {
 	char command[40],filename[40];
 	struct stat stat_buf;
-  	if(!this->pixbuf)	
+  	if(!this->pixbuf)
 	{
 		cout<<"		--->>> Nothing To SAVE Buffer Empty !!! ";
 		return;
 	}
-  	sprintf(filename,"%s%s",this->Mapname,".png");
+  	snprintf(filename,40, "%s%s",this->Mapname,".png");
 	// Delete the file if it exists
  	if (stat(filename,&stat_buf) != 0 || (stat_buf.st_mode & S_IFMT) == S_IFREG)
 	{
-		sprintf(command,"%s%s","rm -f -r ",filename); 
+		snprintf(command,40,"%s%s","rm -f -r ",filename);
 		if(system(command)==-1)
 		{
 			perror("\nError Happened while trying to Delete Existing File");
@@ -169,7 +169,7 @@ int MAP::SavePgm()
   signed char c;
   unsigned char d;
   FILE *file;
-  sprintf(filename,"%s%s",this->Mapname,".pgm");
+  snprintf(filename,40,"%s%s",this->Mapname,".pgm");
   file = fopen(filename, "w+");
   if (file == NULL)
   {

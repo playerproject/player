@@ -94,7 +94,7 @@ int EgInterfDriver::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr
 			resp.stuff_count = reinterpret_cast<player_eginterf_cmd*> (data)->doStuff;
 			resp.stuff = new double[reinterpret_cast<player_eginterf_cmd*> (data)->doStuff];
 			printf ("EgInterfDriver: Sending data:\n");
-			for (char ii = 0; ii < reinterpret_cast<player_eginterf_cmd*> (data)->doStuff; ii++)
+			for (int ii = 0; ii < reinterpret_cast<player_eginterf_cmd*> (data)->doStuff; ii++)
 			{
 				double temp = (((double) random ()) / RAND_MAX) * 10.0f;
 				resp.stuff[ii] = temp;

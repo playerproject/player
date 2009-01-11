@@ -2,7 +2,7 @@
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2000-2003
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -39,7 +39,7 @@
 
 /*
  * Author: Radu Bogdan Rusu
- * client-side RFID device 
+ * client-side RFID device
  */
 
 #include "playerc++.h"
@@ -96,10 +96,10 @@ std::ostream& std::operator << (std::ostream &os, const PlayerCc::RFIDProxy &c)
 		playerc_rfidtag_t tag;
 		tag = c.GetRFIDTag(i);
 		char RFIDtag[24];
-		sprintf (RFIDtag, "$%2x$%2x$%2x$%2x$%2x$%2x$%2x$%2x", 
+		snprintf (RFIDtag, 24, "$%2x$%2x$%2x$%2x$%2x$%2x$%2x$%2x",
 			 tag.guid[0], tag.guid[1], tag.guid[2], tag.guid[3],
 			 tag.guid[4], tag.guid[5], tag.guid[6], tag.guid[7]);
-		
+
 		os << "  tag " << i << ":" << std::endl;
 		os << "             type: " << tag.type << std::endl;
 		os << "             guid: " << RFIDtag << std::endl;

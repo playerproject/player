@@ -1,4 +1,4 @@
-/* 
+/*
  *  PlayerViewer
  *  Copyright (C) Andrew Howard 2002
  *
@@ -18,9 +18,9 @@
  *
  */
 /***************************************************************************
- * Desc: 
- * Author: 
- * Date: 
+ * Desc:
+ * Author:
+ * Date:
  * CVS: $Id$
  ***************************************************************************/
 
@@ -44,7 +44,7 @@ power_t *power_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
   char label[64];
   char section[64];
   power_t *power;
-  
+
   power = malloc(sizeof(power_t));
   power->proxy = playerc_power_create(client, index);
   power->drivername = strdup(drivername);
@@ -59,10 +59,10 @@ power_t *power_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
 
   // Set the initial menu state
   rtk_menuitem_check(power->subscribe_item, subscribe);
-  
+
   // Construct figures
   power->fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 50);
-  
+
   return power;
 }
 
@@ -77,7 +77,7 @@ void power_destroy(power_t *power)
   rtk_fig_destroy(power->fig);
   free(power->drivername);
   free(power);
-  
+
   return;
 }
 
@@ -121,52 +121,58 @@ void power_update(power_t *power)
 void power_draw(power_t *power)
 {
   char text[256];
-  char buf[64];
 
-  rtk_fig_show(power->fig, 1);      
+  rtk_fig_show(power->fig, 1);
   rtk_fig_clear(power->fig);
 
   // TODO: get text origin from somewhere
-  
+
   // Draw in the power reading
   rtk_fig_color_rgb32(power->fig, COLOR_POWER);
-  
+
   text[0] = 0;
-  
+  int size = 0;
+  int ret;
+
   if( power->proxy->valid & PLAYER_POWER_MASK_VOLTS )
-    {
-      snprintf(buf, sizeof(buf), "Voltage: %4.1fV", 
-	       power->proxy->charge );
-      
-      strncat( text, buf, sizeof(text) );
-    }
+  {
+    ret = snprintf(&text[size], sizeof(text) - size, "Voltage: %4.1fV", power->proxy->charge );
+    if (ret < 0)
+    	return;
+    size += ret;
+  }
 
   if( power->proxy->valid & PLAYER_POWER_MASK_PERCENT )
-    {
-      snprintf(buf, sizeof(buf), "(%5.1f%%)", 
-	       power->proxy->percent);
-      strncat( text, buf, sizeof(text) );
-    }
-  
+  {
+    ret = snprintf(&text[size], sizeof(text) - size,  "(%5.1f%%)", power->proxy->percent );
+    if (ret < 0)
+    	return;
+    size += ret;
+  }
+
   if( power->proxy->valid & PLAYER_POWER_MASK_JOULES )
-    {
-      snprintf(buf, sizeof(buf), " Joules: %4f", 
-	       power->proxy->joules);
-      strncat( text, buf, sizeof(text) );
-    }
-  
+  {
+    ret = snprintf(&text[size], sizeof(text) - size, " Joules: %4f", power->proxy->joules );
+    if (ret < 0)
+    	return;
+    size += ret;
+  }
+
   if( power->proxy->valid & PLAYER_POWER_MASK_WATTS )
-    {
-      snprintf(buf, sizeof(buf), " Watts: %4.1f", 
-	       power->proxy->watts);
-      strncat( text, buf, sizeof(text) );
-    }
-  
+  {
+    ret = snprintf(&text[size], sizeof(text) - size, " Watts: %4.1f", power->proxy->watts );
+    if (ret < 0)
+    	return;
+    size += ret;
+  }
 
   if( power->proxy->valid & PLAYER_POWER_MASK_CHARGING )
-    strncat( text, 
-	     power->proxy->charging ? " CHARGING" : "",
-	     sizeof(text) );
+  {
+    ret = snprintf(&text[size], sizeof(text) - size, power->proxy->charging ? " CHARGING" : "" );
+    if (ret < 0)
+    	return;
+    size += ret;
+  }
 
   rtk_fig_text(power->fig, -1, +1, 0, text);
 

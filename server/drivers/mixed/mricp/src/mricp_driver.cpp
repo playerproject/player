@@ -369,7 +369,7 @@ MrIcp::MrIcp(ConfigFile* cf, int section)  : ThreadedDriver(cf, section)
 	}
 	for(int k = 0; k < number_of_lasers ; k++)
 	{
-		sprintf(config_temp,"%s%d%s","laser",k,"_ranges");
+		snprintf(config_temp,40,"%s%d%s","laser",k,"_ranges");
 		// Expects you to provide "laserx_ranges" (where x is the laser index)
 		// in the configuration file
 		this->range_count[k] =	 cf->GetTupleCount(section,config_temp);
@@ -464,7 +464,7 @@ int MrIcp::MainSetup()
 	printf("\n- Setting UP MRICP Plugin Driver.");
 	if(!is_directory(map_path))
 	{
-		sprintf(command,"%s%s","mkdir ",map_path);
+		snprintf(command,40,"%s%s","mkdir ",map_path);
 		if(system(command)==-1)
 		{
 			perror("\n Serious Error Happened while trying to create the folder");
@@ -488,7 +488,7 @@ int MrIcp::MainSetup()
 	this->map = new MAP(g_filename,this->map_resolution,this->map_size*2);
 	this->map->CreateMap();
 	this->map->ResetProb();
-	sprintf(filename,"%spatch_config.txt",map_path);
+	snprintf(filename,40,"%spatch_config.txt",map_path);
 	config_file = fopen(filename,"wb");
 	// Initial Patch Settings
 	fprintf(config_file,"%s %.3f %.3f %.3f\n","MAP_PATCH0",0.0,0.0,0.0);
@@ -499,7 +499,7 @@ int MrIcp::MainSetup()
 	sample_initialized = FALSE;
 	if(log)
 	{
-        sprintf(filename,"%sicplog.txt",map_path);
+        snprintf(filename,40, "%sicplog.txt",map_path);
 		file=fopen(filename,"wb");
 	}
 	usleep((int)(this->start_in*1e6));
@@ -578,7 +578,7 @@ void MrIcp::ResetMap()
 	//map->SavePixelBufferToFile();
 	map->SavePgm();
 	map->ClearData();
-	sprintf(filename,"MAP_PATCH%d",map_number++);
+	snprintf(filename,40,"MAP_PATCH%d",map_number++);
   	savefile=g_strdup_printf("%s%s",map_path,filename);
   	map->Mapname = (char *)realloc(map->Mapname,strlen(savefile)*(sizeof(savefile[0])));
  	strcpy(map->Mapname,savefile);

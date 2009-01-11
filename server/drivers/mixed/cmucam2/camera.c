@@ -37,7 +37,7 @@ int write_check(int fd, char *msg, int respond_size)
 		return 0;
 	}
 	return 1;
-} 
+}
 
 int power(int fd, int on)
 {
@@ -133,7 +133,7 @@ int poll_mode(int fd, int on)
 	else
 		return write_check(fd, "PM 0\r", 5);
 }
-   
+
 /**************************************************************************
 			                      *** SET SERVO POSITION ***
 **************************************************************************/
@@ -169,7 +169,7 @@ int set_servo_position(int fd, int servo_num, int angle)
                      guide)
                 n: the set of values to be used in the command
                 size: the number of values used
-                full_command: the final command in characters to be send to the 
+                full_command: the final command in characters to be send to the
                               camera
    Returns:     void
 */
@@ -184,7 +184,7 @@ void make_command(char *cmd, int *n, size_t size, char *full_command)
 	strcat(full_command, cmd);     // attach the command header, ex. SF
 	for(i = 0; i < (int)size; i++) // for all the values, convert them into char
 	{                              // and attach them to the end of the command
-		length = sprintf(value, "%d", n[i]);    // plus a space
+		length = snprintf(value, 3, "%d", n[i]);    // plus a space
 		strcat(full_command, value);
 		strcat(full_command, " ");
 	}
@@ -194,7 +194,7 @@ void make_command(char *cmd, int *n, size_t size, char *full_command)
 /**************************************************************************
 			                      *** OPEN PORT ***
 **************************************************************************/
-/* Description: This function opens the serial port for communication with the 
+/* Description: This function opens the serial port for communication with the
                 camera.
    Parameters:  NONE
    Returns:     the file descriptor
@@ -205,17 +205,17 @@ int open_port(char *devicepath)
 	struct termios term;
 	struct pollfd fds[1];
 	char cam_response[5];
- 
+
 	if( tcgetattr( fd, &term ) < 0 )                 // get device attributes
 	{
 		puts( "Cmucam2: unable to get device attributes.");
 		return -1;
 	}
-  
+
 	cfmakeraw( &term );
 	cfsetispeed( &term, B115200 );                   // set baudrate to 115200
 	cfsetospeed( &term, B115200 );
-  
+
 	if( tcsetattr( fd, TCSAFLUSH, &term ) < 0 )
 	{
 		puts( "Cmucam2: unable to set device attributes");
@@ -224,7 +224,7 @@ int open_port(char *devicepath)
 
   // Make sure queue is empty
 	tcflush(fd, TCIOFLUSH);
-  
+
 	write(fd, "\r", 1);
 	fds[0].fd = fd;
 	fds[0].events = 1;
@@ -254,7 +254,7 @@ void close_port(int fd)
 /**************************************************************************
 			        *** GET BYTES  ***
 **************************************************************************/
-/* Description: This function reads a specified number of bytes from the serial 
+/* Description: This function reads a specified number of bytes from the serial
                 port
    Parameters:  fd: serial port handler, buf: bytes read, len: bytes to read
    Returns:     0: if could not read the number of bytes specified  1: otherwise
@@ -275,17 +275,17 @@ int get_bytes(int fd, char *buf, size_t len)
 	}
 	return bytes_read;
 }
-    
+
 /**************************************************************************
 		        *** GET SERVO POSITION  ***
 **************************************************************************/
 /* Description: This function gets the position of the specified servo.
-   Parameters:  fd: serial port handler, servo_num: the servo number whose size 
+   Parameters:  fd: serial port handler, servo_num: the servo number whose size
                     is required
    Returns:     the position of the servo
 */
 int get_servo_position(int fd, int servo_num)
-{  
+{
 	int servo_position;
 	int i;
 	char number[3];
@@ -300,7 +300,7 @@ int get_servo_position(int fd, int servo_num)
 	{
 		read(fd, &c, 1);
 		if(c == '\r')
-			break;   
+			break;
 		number[i] = c;
 	}
 	read(fd, &c, 1);           // read the : at the end
@@ -311,10 +311,10 @@ int get_servo_position(int fd, int servo_num)
 /**************************************************************************
 		        *** TRACK BLOB  ***
 **************************************************************************/
-/* Description: This functions starts to Track a Color. It takes in the minimum 
-                and maximum RGB values and outputs a type T packet. This packet 
-                by default returns the middle mass x and y coordinates, the 
-                bounding box, the number of pixles tracked, and a confidence 
+/* Description: This functions starts to Track a Color. It takes in the minimum
+                and maximum RGB values and outputs a type T packet. This packet
+                by default returns the middle mass x and y coordinates, the
+                bounding box, the number of pixles tracked, and a confidence
                 values.
    cc:          the min & max RGB values of the blob to be tracked.
 */
@@ -324,7 +324,7 @@ void track_blob( int fd, color_config cc )
 	int value[] = {cc.rmin, cc.rmax, cc.gmin, cc.gmax, cc.bmin, cc.bmax};
 	range = cc;
 
-	make_command("TC ", value, sizeof(value)/sizeof(int), cmd); 
+	make_command("TC ", value, sizeof(value)/sizeof(int), cmd);
 	if(!write_check(fd, cmd, 4))
 	{
 		printf("ERROR; track color failed.\n");
@@ -366,7 +366,7 @@ int auto_servoing(int fd, int on)
 /**************************************************************************
 		        *** STOP TRACKING  ***
 **************************************************************************/
-/* Description: The function stops the camera from tracking blobs and sending 
+/* Description: The function stops the camera from tracking blobs and sending
                 data
    Parameters:  fd: serial port handler
    Returns:     none
@@ -382,7 +382,7 @@ void stop_tracking(int fd)
 /**************************************************************************
 		        *** READ T PACKET  ***
 **************************************************************************/
-/* Description: The function reads a t-packet from camera, ex. when camera is 
+/* Description: The function reads a t-packet from camera, ex. when camera is
                 tracking
    Parameters:  fd: serial port handler, tpack_chars: the characters read
    Returns:     none
@@ -393,30 +393,30 @@ void read_t_packet(int fd, char *tpack_chars)
 	int k = 0;
 	while(1)
 	{
-		read(fd, &c, 1);     
+		read(fd, &c, 1);
 		tpack_chars[k++] = c;
 		if(c == '\r')
 			break;
 	}
 	if(tpack_chars[k-1] != '\r')
-		printf("ERROR: reading T packet failed.\n");   
+		printf("ERROR: reading T packet failed.\n");
 	tpack_chars[k] = '\0';
 }
 
 /**************************************************************************
 		        *** READ T PACKET  ***
 **************************************************************************/
-/* Description: The function reads a t-packet from camera, ex. when camera is 
+/* Description: The function reads a t-packet from camera, ex. when camera is
                 tracking
-   Parameters:  fd: serial port handler, output: 
+   Parameters:  fd: serial port handler, output:
    Returns:     none
 */
 int set_t_packet( packet_t *tpacket, char tpack_chars[] )
-{ 
+{
 	char packet_type;
-	sscanf(tpack_chars, "%c %d %d %d %d %d %d %d %d", &packet_type, 
+	sscanf(tpack_chars, "%c %d %d %d %d %d %d %d %d", &packet_type,
 		   &tpacket->middle_x, &tpacket->middle_y,
-		   &tpacket->left_x, &tpacket->left_y, &tpacket->right_x, 
+		   &tpacket->left_x, &tpacket->left_y, &tpacket->right_x,
 		   &tpacket->right_y,
 		   &tpacket->blob_area, &tpacket->confidence);
 	if(packet_type != 'T')
@@ -438,7 +438,7 @@ int read_f_packet (int fd, char *fpack_chars)
 {
 	char c = 0;
 	int k = 0;
-   
+
 	while ((c != 0) || (c != 1))
 	{
 		read(fd, &c, 1);
@@ -447,17 +447,17 @@ int read_f_packet (int fd, char *fpack_chars)
 			printf ("Cmucam2: frame grab failed.\n");
 			return -1;
 		}
-    
+
 		if (c == 1) {
 			fpack_chars[k++] = c;
 			read(fd, &c, 1);
 			fpack_chars[k++] = c;
       //char xsize = c;
-			read(fd, &c, 1);     
+			read(fd, &c, 1);
 			fpack_chars[k++] = c;
       //char ysize = c;
       //printf ("Cmucam2: getting a frame of X=%d and Y=%d pixels.\n",
-        //(uint8_t)xsize*2, 
+        //(uint8_t)xsize*2,
         //(uint8_t)ysize);
 			break;
 		}
@@ -472,9 +472,9 @@ int read_f_packet (int fd, char *fpack_chars)
 			break;
 		}
 	}
-  
+
 	if (fpack_chars[k-1] != 3) {
-		printf ("ERROR: reading F packet failed.\n");   
+		printf ("ERROR: reading F packet failed.\n");
 		return -1;
 	}
 	fpack_chars[k] = '\0';
@@ -484,13 +484,13 @@ int read_f_packet (int fd, char *fpack_chars)
 /**************************************************************************
 		        *** READ IMAGE ***
 **************************************************************************/
-/* Description: This function gets an image from the camera using the 
+/* Description: This function gets an image from the camera using the
                 specified channel as a filter.
    Parameters:  fd: serial port handler, chan_num: the channel number
    Returns:     the image as an F packet
 */
 int read_image (int fd, int chan_num, packet_f *fpacket)
-{  
+{
 	char fpack_chars [F_PACKET_LENGTH];
 	switch (chan_num)
 	{
@@ -520,8 +520,8 @@ int read_image (int fd, int chan_num, packet_f *fpacket)
 			break;
 		}
 	}
-   
-  
+
+
 	if (read_f_packet (fd, fpack_chars) != 0)
 		return -1;
 
@@ -532,21 +532,21 @@ int read_image (int fd, int chan_num, packet_f *fpacket)
 		        *** SET F PACKET  ***
 **************************************************************************/
 int set_f_packet (packet_f *fpacket, char fpack_chars[], int chan_num)
-{ 
+{
 	fpacket->first = (uint8_t)fpack_chars[0];
 	fpacket->xsize = (uint8_t)fpack_chars[1];
 	fpacket->ysize = (uint8_t)fpack_chars[2];
-  
+
 	switch (chan_num)
 	{
 		case -1:
 		{
 			int i = 0;
 			int j = 0;
-       
+
 			for (i = 0; i < IMAGE_HEIGHT; i++)
 			{
-				fpacket->rows[i].rowbyte = 
+				fpacket->rows[i].rowbyte =
 						(uint8_t)fpack_chars[3 + (i*IMAGE_WIDTH/2)];
 				for (j = 0; j < IMAGE_WIDTH/2; j++)
 				{
@@ -555,7 +555,7 @@ int set_f_packet (packet_f *fpacket, char fpack_chars[], int chan_num)
 					fpacket->rows[i].rgb[j].b = (uint8_t)fpack_chars[6 + i*j];
 				}
 			}
-  
+
 			fpacket->last = (uint8_t)
 					fpack_chars[3 + IMAGE_HEIGHT*(IMAGE_WIDTH/2*3 + 1)];
 
@@ -565,10 +565,10 @@ int set_f_packet (packet_f *fpacket, char fpack_chars[], int chan_num)
 		{
 			int i = 0;
 			int j = 0;
-      
+
 			for (i = 0; i < IMAGE_HEIGHT; i++)
 			{
-				fpacket->rows[i].rowbyte = 
+				fpacket->rows[i].rowbyte =
 						(uint8_t)fpack_chars[3 + (i*IMAGE_WIDTH/2)];
 				for (j = 0; j < IMAGE_WIDTH/2; j++)
 				{
@@ -577,7 +577,7 @@ int set_f_packet (packet_f *fpacket, char fpack_chars[], int chan_num)
 					fpacket->rows[i].rgb[j].b = (uint8_t)fpack_chars[4 + i*j];
 				}
 			}
-  
+
 			fpacket->last = (uint8_t)
 					fpack_chars[3 + IMAGE_HEIGHT*(IMAGE_WIDTH/2 + 1)];
 			break;

@@ -278,7 +278,7 @@ Mica2::Mica2 (ConfigFile* cf, int section)
     for (i = 0; i < nodes_count; i++)
     {
     	char node_nr[7];
-    	sprintf (node_nr, "node%d", (i+1));
+    	snprintf (node_nr, sizeof(node_nr), "node%d", (i+1));
 	NodeCalibrationValues n;
 	n.node_id  = cf->ReadTupleInt (section, node_nr, 0, 0);
 	n.group_id = cf->ReadTupleInt (section, node_nr, 1, 0);
@@ -1128,7 +1128,7 @@ int Mica2::DecodeSerial (unsigned char *buffer, int length)
 			    ((rmsg->data[x+1]  > 0x40) && (rmsg->data[x+1] < 0x47)) ))     // if p[i+1] is a capital let
 			{
 			    char str[3];
-			    sprintf (str, "%c%c", rmsg->data[x], rmsg->data[x+1]);
+			    snprintf (str, sizeof(str), "%c%c", rmsg->data[x], rmsg->data[x+1]);
                             sscanf (str, "%x", (unsigned int*)&rfid_data.tags[0].guid[cc]);
 			    cc++;
 			}

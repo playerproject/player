@@ -130,7 +130,7 @@ driver
 static void LogMe( const char* s )
 {
   FILE* fp = fopen( "plog", "a+" );
-  fprintf( fp, s );
+  fprintf( fp, "%s", s );
   fclose( fp );
 }
 
@@ -1116,7 +1116,7 @@ const char* wbr914::GetPMDErrorString( int rc )
     return errorStrings[ rc ];
   }
 
-  sprintf( bogusRC, "Unknown error %d", rc );
+  snprintf( bogusRC,sizeof(bogusRC), "Unknown error %d", rc );
   return bogusRC;
 }
 

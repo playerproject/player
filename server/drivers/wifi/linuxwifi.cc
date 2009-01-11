@@ -476,7 +476,7 @@ char *
 LinuxWiFi::PrintEther(char *buf, unsigned char *data)
 {
   struct ether_addr * p = (struct ether_addr *)data;
-  sprintf(buf, "%02X:%02X:%02X:%02X:%02X:%02X",
+  snprintf(buf,18, "%02X:%02X:%02X:%02X:%02X:%02X",
 	  p->ether_addr_octet[0], p->ether_addr_octet[1],
 	  p->ether_addr_octet[2], p->ether_addr_octet[3],
 	  p->ether_addr_octet[4], p->ether_addr_octet[5]);

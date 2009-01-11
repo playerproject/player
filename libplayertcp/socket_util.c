@@ -47,7 +47,7 @@
 #include <sys/types.h>     /* for socket(2) */
 #include <sys/socket.h>     /* for socket(2) */
 #include <fcntl.h>     /* for fcntl(2) */
-#include <stdio.h>     /* for sprintf(3) */
+#include <stdio.h>     /* for snprintf(3) */
 #include <string.h>     /* for strncpy(3) */
 #include <unistd.h>     /* for getpid(2),close(2) */
 #include <time.h>     /* for ctime(3) */

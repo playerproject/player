@@ -1057,11 +1057,11 @@ int P2OS::MainSetup()
   }
 
   cnt = 4;
-  cnt += sprintf(name, "%s", &receivedpacket.packet[cnt]);
+  cnt += snprintf(name, sizeof(name), "%s", &receivedpacket.packet[cnt]);
   cnt++;
-  cnt += sprintf(type, "%s", &receivedpacket.packet[cnt]);
+  cnt += snprintf(type, sizeof(type), "%s", &receivedpacket.packet[cnt]);
   cnt++;
-  cnt += sprintf(subtype, "%s", &receivedpacket.packet[cnt]);
+  cnt += snprintf(subtype, sizeof(subtype), "%s", &receivedpacket.packet[cnt]);
   cnt++;
 
 
@@ -1848,12 +1848,12 @@ void P2OS::CMUcamReset(bool doLock)
   CMUcamStopTracking(doLock); // Stop the current tracking.
 
   P2OSPacket cam_packet;
-  unsigned char cam_command[8];
+  unsigned char cam_command[10];
 
   printf("Resetting the CMUcam...\n");
   cam_command[0] = TTY3;
   cam_command[1] = ARGSTR;
-  sprintf((char*)&cam_command[3], "RS\r");
+  strncpy((char*)&cam_command[3], "RS\r",4);
   cam_command[2] = strlen((char *)&cam_command[3]);
   cam_packet.Build(cam_command, (int)cam_command[2]+3);
   this->SendReceive(&cam_packet,doLock);
@@ -1862,7 +1862,7 @@ void P2OS::CMUcamReset(bool doLock)
   printf("Setting raw mode...\n");
   cam_command[0] = TTY3;
   cam_command[1] = ARGSTR;
-  sprintf((char*)&cam_command[3], "RM 3\r");
+  strncpy((char*)&cam_command[3], "RM 3\r",6);
   cam_command[2] = strlen((char *)&cam_command[3]);
   cam_packet.Build(cam_command, (int)cam_command[2]+3);
   this->SendReceive(&cam_packet,doLock);
@@ -1906,7 +1906,7 @@ void P2OS::CMUcamTrack(int rmin, int rmax,
     printf("Activating CMUcam color tracking (AUTO-mode)...\n");
     cam_command[0] = TTY3;
     cam_command[1] = ARGSTR;
-    sprintf((char*)&cam_command[3], "TW\r");
+    strncpy((char*)&cam_command[3], "TW\r",4);
     cam_command[2] = strlen((char *)&cam_command[3]);
     cam_packet.Build(cam_command, (int)cam_command[2]+3);
     this->SendReceive(&cam_packet);
@@ -1918,7 +1918,7 @@ void P2OS::CMUcamTrack(int rmin, int rmax,
     //                   rmin, rmax, gmin, gmax, bmin, bmax);
     cam_command[0] = TTY3;
     cam_command[1] = ARGSTR;
-    sprintf((char*)&cam_command[3], "TC %d %d %d %d %d %d\r",
+    snprintf((char*)&cam_command[3], sizeof(cam_command) - 3, "TC %d %d %d %d %d %d\r",
              rmin, rmax, gmin, gmax, bmin, bmax);
     cam_command[2] = strlen((char *)&cam_command[3]);
     cam_packet.Build(cam_command, (int)cam_command[2]+3);
@@ -1944,7 +1944,7 @@ void P2OS::CMUcamStartTracking(bool doLock)
     // Then start it up with current values.
     cam_command[0] = TTY3;
     cam_command[1] = ARGSTR;
-    sprintf((char*)&cam_command[3], "TC\r");
+    strncpy((char*)&cam_command[3], "TC\r", 4);
     cam_command[2] = strlen((char *)&cam_command[3]);
     cam_packet.Build(cam_command, (int)cam_command[2]+3);
     this->SendReceive(&cam_packet,false);
@@ -1963,7 +1963,7 @@ void P2OS::CMUcamStopTracking(bool doLock)
   // First we must STOP tracking.  Just send a return.
   cam_command[0] = TTY3;
   cam_command[1] = ARGSTR;
-  sprintf((char*)&cam_command[3], "\r");
+  strncpy((char*)&cam_command[3], "\r", 2);
   cam_command[2] = strlen((char *)&cam_command[3]);
   cam_packet.Build(cam_command, (int)cam_command[2]+3);
   this->SendReceive(&cam_packet,doLock);
@@ -2377,39 +2377,39 @@ P2OS::HandleConfig(QueuePointer & resp_queue,
 
     cam_command[0] = TTY3;
     cam_command[1] = ARGSTR;
-    np += sprintf((char*)&cam_command[np], "CR ");
+    np += snprintf((char*)&cam_command[np], sizeof(cam_command) - np, "CR ");
 
     if (imager_config->brightness >= 0)
-      np += sprintf((char*)&cam_command[np], " 6 %d",
+      np += snprintf((char*)&cam_command[np],sizeof(cam_command) - np, " 6 %d",
                     imager_config->brightness);
 
     if (imager_config->contrast >= 0)
-      np += sprintf((char*)&cam_command[np], " 5 %d",
+      np += snprintf((char*)&cam_command[np],sizeof(cam_command) - np, " 5 %d",
                     imager_config->contrast);
 
     if (imager_config->autogain >= 0)
     {
       if (imager_config->autogain == 0)
-        np += sprintf((char*)&cam_command[np], " 19 32");
+        np += snprintf((char*)&cam_command[np],sizeof(cam_command) - np, " 19 32");
       else
-        np += sprintf((char*)&cam_command[np], " 19 33");
+        np += snprintf((char*)&cam_command[np], sizeof(cam_command) - np," 19 33");
     }
 
     if (imager_config->colormode >= 0)
     {
       if (imager_config->colormode == 3)
-        np += sprintf((char*)&cam_command[np], " 18 36");
+        np += snprintf((char*)&cam_command[np],sizeof(cam_command) - np, " 18 36");
       else if (imager_config->colormode == 2)
-        np += sprintf((char*)&cam_command[np], " 18 32");
+        np += snprintf((char*)&cam_command[np],sizeof(cam_command) - np, " 18 32");
       else if (imager_config->colormode == 1)
-        np += sprintf((char*)&cam_command[np], " 18 44");
+        np += snprintf((char*)&cam_command[np],sizeof(cam_command) - np, " 18 44");
       else
-        np += sprintf((char*)&cam_command[np], " 18 40");
+        np += snprintf((char*)&cam_command[np],sizeof(cam_command) - np, " 18 40");
     }
 
     if (np > 6)
     {
-      sprintf((char*)&cam_command[np], "\r");
+      snprintf((char*)&cam_command[np],sizeof(cam_command) - np, "\r");
       cam_command[2] = strlen((char *)&cam_command[3]);
       cam_packet.Build(cam_command, (int)cam_command[2]+3);
       SendReceive(&cam_packet);

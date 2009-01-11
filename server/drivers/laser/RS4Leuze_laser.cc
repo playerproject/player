@@ -1,6 +1,6 @@
 /**
  laser.cpp V 2.0 -> RS4Leuze_laser.cpp
- 
+
  Modified by Ernesto Homar Teniente Aviles
  Date 20 APril 2007
 */
@@ -13,8 +13,8 @@
 /**
   Default constructor.
 */
-//Claser::Claser(ClogMsg *lgMsg, bool *laser_ON, char dir_name[80]) //default constructor. 
-Claser::Claser(int scan_points) //default constructor. 
+//Claser::Claser(ClogMsg *lgMsg, bool *laser_ON, char dir_name[80]) //default constructor.
+Claser::Claser(int scan_points) //default constructor.
  {
 	points_to_scan = scan_points;
 
@@ -23,7 +23,7 @@ Claser::Claser(int scan_points) //default constructor.
 /**
   Destructor
 */
-Claser::~Claser() 
+Claser::~Claser()
 {
 	//close port
 	closeSerial();
@@ -49,13 +49,13 @@ void Claser::openSerial(bool *laser_ON, int Baud_rate, const char * Port)
 	// Configure Serial Port: termios  settings: 57600(default), No Parity, 8 data bits, 1 stop Bit (8N1)
 	// values of masks in /usr/include/bits/termios.h
 	tcgetattr(serialFD,&ttyset);
-	ttyset.c_cflag = ( Baud_rate | CLOCAL | CREAD | CS8 ); 
+	ttyset.c_cflag = ( Baud_rate | CLOCAL | CREAD | CS8 );
 	ttyset.c_iflag = ( IGNBRK ); //Ignores break condition on input
 	ttyset.c_oflag = 0x0;
 	ttyset.c_lflag = 0x0;
 
 	// Set configuration immediately.
-  	if (tcsetattr(serialFD, TCSANOW, &ttyset)<0) 
+  	if (tcsetattr(serialFD, TCSANOW, &ttyset)<0)
 	{
 		PLAYER_ERROR("Claser, Error opening serial port");
 		*laser_ON=0;
@@ -63,15 +63,15 @@ void Claser::openSerial(bool *laser_ON, int Baud_rate, const char * Port)
 	}
 
 	else
-	
+
 
 
 	FD_ZERO(&rfds);			// Initialize the read set to zero
 	FD_SET(serialFD, &rfds);	// Turn on the read set
 	// set timer
-	tv.tv_sec = 1;	
-	tv.tv_usec = 0;	
-	
+	tv.tv_sec = 1;
+	tv.tv_usec = 0;
+
 	//Flush both pending input and untransmitted output.
  	tcflush(serialFD, TCIOFLUSH);
 
@@ -84,7 +84,7 @@ unsigned char Claser::readByte()
 {
 	unsigned char localByte;
 	read (serialFD, &localByte, 1);
-	checksum = checksum ^ localByte; 
+	checksum = checksum ^ localByte;
 	return localByte;
 }
 
@@ -94,15 +94,15 @@ unsigned char Claser::readByte()
 void Claser::sync()
 {
 	int num_zeroes = 0;
-		
+
 	// We must read three consecutive 0x00 for the end of the message
 	while (num_zeroes < 3)
-	{    
+	{
 		read(serialFD, &byte, 1);
-		if(byte == 0x00) num_zeroes++; 
-		else num_zeroes = 0; 
+		if(byte == 0x00) num_zeroes++;
+		else num_zeroes = 0;
 	}
-	// We are now, for a short time, at the beginning of the message.	
+	// We are now, for a short time, at the beginning of the message.
 }
 
 /**
@@ -111,8 +111,8 @@ void Claser::sync()
 int Claser::scanRead()
 {
 	unsigned int ii;
-	
-	//******STEP 1: Reading message header	
+
+	//******STEP 1: Reading message header
 	for (ii=0; ii<2; ii++)
 	{
 		byte = readByte();
@@ -125,12 +125,12 @@ int Claser::scanRead()
 		}
 	}
 	readByte(); //Reads but doesn't analyze command byte
-	option1=readByte(); //Reads Option1;			
-	if (option1 & 0x03 > 1)
+	option1=readByte(); //Reads Option1;
+	if ((option1 & 0x03) > 1)
 	{
-		byte=readByte(); //Reads Option2	
+		byte=readByte(); //Reads Option2
 	}
-	if (option1 & 0x03 > 2)
+	if ((option1 & 0x03) > 2)
 	{;
 		byte=readByte(); //Reads Option3
 	}
@@ -176,7 +176,7 @@ int Claser::scanRead()
 		if (ii%2 == 0)
 		{
 			// 3.1: reading the first Byte of two from de scaned point
-			scanedPoint = (readByte() * 256);	
+			scanedPoint = (readByte() * 256);
 		}
 		else
 		{
@@ -186,12 +186,12 @@ int Claser::scanRead()
 			scanData.Reading[(ii-1)/2] = (double)(scanedPoint/1000.0);
 		}
 	}
-	
+
 	//******STEP 4: Reading Control Byte for checksum and ending message;
 	read(serialFD, &controlByte, 1);//just read without checksum
-	
+
 	/*********************!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*****/
-	
+
         return(0);
 }
 
@@ -199,18 +199,18 @@ int Claser::scanRead()
 void Claser::runLaser()
 {
 	//Claser *thisLaser = (Claser*)thisPnt;
-	//zeroTimeStamp=clock(); //Initializes time stamp 
+	//zeroTimeStamp=clock(); //Initializes time stamp
 	FD_ZERO(&rfds);			// Initialize the read set to zero
 	FD_SET(serialFD, &rfds);	// Turn on the read set
 	// set timer
-	tv.tv_sec = 1;	
-	tv.tv_usec = 0;	
+	tv.tv_sec = 1;
+	tv.tv_usec = 0;
 	if(select(serialFD+1, &rfds, NULL, NULL, &tv))
 	{
 		this->sync(); //Synchronizes
 		this->checksum=0x00; //Reset Checksum
 		this->scanRead(); //Read all scan Message
-		
+
 	}
 	else
 	{
