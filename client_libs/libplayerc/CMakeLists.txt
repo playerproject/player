@@ -27,6 +27,7 @@ SET (playercSrcs    playerc.h
                     dev_health.c
                     dev_imu.c
                     dev_ir.c
+                    dev_joystick.c
                     dev_laser.c
                     dev_limb.c
                     dev_localize.c

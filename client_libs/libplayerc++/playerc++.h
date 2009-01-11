@@ -1230,6 +1230,55 @@ class LimbProxy : public ClientProxy
 };
 
 
+/**
+The @p LinuxjoystickProxy class is used to control a @ref interface_joystick
+device.  The most recent joystick range measuremts can be read from the
+range attribute, or using the the [] operator.
+*/
+class LinuxjoystickProxy : public ClientProxy
+{
+  private:
+
+    void Subscribe(uint32_t aIndex);
+    void Unsubscribe();
+
+    // libplayerc data structure
+    playerc_joystick_t *mDevice;
+
+  public:
+    /// constructor
+    LinuxjoystickProxy(PlayerClient *aPc, uint32_t aIndex=0);
+    /// destructor
+    ~LinuxjoystickProxy();
+
+    /// return the sensor count
+    uint32_t GetButtons() const { return GetVar(mDevice->buttons); };
+
+    /// return a particular scan value
+    double GetAxes(uint32_t aIndex) const
+      { if (GetVar(mDevice->axes_count) <= (int32_t)aIndex) return -1.0; return GetVar(mDevice->pos[aIndex]); };
+    /// This operator provides an alternate way of access the scan data.
+    /// For example, LinuxjoystickProxy[0] == LinuxjoystickProxy.GetRange(0)
+    double operator [] (uint32_t aIndex) const { return GetAxes(aIndex); }
+
+    /// Number of valid joystick poses
+    uint32_t GetAxesCount() const { return GetVar(mDevice->axes_count); };
+
+    /// Linuxjoystick poses (m,m,radians)
+//    player_pose3d_t GetPose(uint32_t aIndex) const
+//      { return GetVar(mDevice->poses[aIndex]); };
+
+    // Enable/disable the joysticks.
+    // Set @p state to 1 to enable, 0 to disable.
+    // Note that when joysticks are disabled the client will still receive joystick
+    // data, but the ranges will always be the last value read from the joysticks
+    // before they were disabled.
+    //void SetEnable(bool aEnable);
+
+    /// Request the joystick geometry.
+//    void RequestGeom();
+};
+
 
 /**
 The @p LocalizeProxy class is used to control a @ref
@@ -2563,6 +2612,7 @@ namespace std
   std::ostream& operator << (std::ostream& os, const PlayerCc::IrProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::LaserProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::LimbProxy& c);
+  std::ostream& operator << (std::ostream& os, const PlayerCc::LinuxjoystickProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::LocalizeProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::LogProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::MapProxy& c);
