@@ -483,7 +483,7 @@ FRAME* fg_grab_read( FRAMEGRABBER* fg )
 
     if (ret < 0)
     {
-    	PLAYER_ERROR("Failed to read from frame grabber");
+    	fprintf(stderr,"Failed to read from frame grabber");
     	return NULL;
     }
 
