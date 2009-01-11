@@ -295,11 +295,11 @@ void SIP::Print()
   printf("status: 0x%x analog: %d ", status, analog);
   printf("digin: ");
   for(i=0;i<8;i++) {
-    printf("%d", (digin >> 7-i ) & 0x01);
+    printf("%d", (digin >> (7-i) ) & 0x01);
   }
   printf(" digout: ");
   for(i=0;i<8;i++) {
-    printf("%d", (digout >> 7-i ) & 0x01);
+    printf("%d", (digout >> (7-i) ) & 0x01);
   }
   puts("");
   printf("battery: %d compass: %d sonarreadings: %d\n", battery, compass, sonarreadings);
@@ -427,8 +427,8 @@ void SIP::ParseStandard( unsigned char *buffer )
   cnt += sizeof(unsigned char);
 
   unsigned char numSonars=buffer[cnt];
-  cnt+=sizeof(unsigned char);  
-  
+  cnt+=sizeof(unsigned char);
+
   if(numSonars>0)
   {
     //find the largest sonar index supplied
@@ -438,7 +438,7 @@ void SIP::ParseStandard( unsigned char *buffer )
       unsigned char sonarIndex=buffer[cnt+i*(sizeof(unsigned char)+sizeof(unsigned short))];
       if((sonarIndex+1)>maxSonars) maxSonars=sonarIndex+1;
     }
-    
+
     //if necessary make more space in the array and preserve existing readings
     if(maxSonars>sonarreadings)
     {
@@ -449,7 +449,7 @@ void SIP::ParseStandard( unsigned char *buffer )
       sonars=newSonars;
       sonarreadings=maxSonars;
     }
-    
+
     //update the sonar readings array with the new readings
     for(unsigned char i=0;i<numSonars;i++)
     {

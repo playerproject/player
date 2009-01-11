@@ -64,7 +64,7 @@ FILE
     }
     memset (data, 0, 1024);
 
-    sprintf (fileName, "%lf-split.log", t1);
+    snprintf (fileName, sizeof(fileName), "%lf-split.log", t1);
 
     // Seek to the beginning of the file
     fseek (input, 0L, SEEK_SET);
@@ -99,7 +99,7 @@ FILE
     }
 
     // Create a new file and copy the remainings there
-    sprintf (fileName, "%lf-split.log", t2);
+    snprintf (fileName, sizeof(fileName), "%lf-split.log", t2);
     if (stat (fileName, &fbuf) != 0)
     {
 	rest = fopen (fileName, "w+");

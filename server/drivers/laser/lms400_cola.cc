@@ -17,6 +17,8 @@
 #include <unistd.h>
 #include <string.h>
 
+const int CMD_BUFFER_SIZE=255;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor.
 lms400_cola::lms400_cola (const char* host, int port, int debug_mode)
@@ -88,8 +90,8 @@ int
 int
   lms400_cola::EnableRIS (int onoff)
 {
-  char cmd[40];
-  sprintf (cmd, "sWN MDblex %i", onoff);
+  char cmd[CMD_BUFFER_SIZE];
+  snprintf (cmd, CMD_BUFFER_SIZE, "sWN MDblex %i", onoff);
   SendCommand (cmd);
 
   if (ReadAnswer () != 0)
@@ -113,8 +115,8 @@ player_laser_config
 int
   lms400_cola::SetMeanFilterParameters (int num_scans)
 {
-  char cmd[40];
-  sprintf (cmd, "sWN FLmean 0 %i", num_scans);
+  char cmd[CMD_BUFFER_SIZE];
+  snprintf (cmd, CMD_BUFFER_SIZE, "sWN FLmean 0 %i", num_scans);
   SendCommand (cmd);
 
   if (ReadAnswer () != 0)
@@ -128,8 +130,8 @@ int
 int
   lms400_cola::SetRangeFilterParameters (float *ranges)
 {
-  char cmd[40];
-  sprintf (cmd, "sWN FLrang %+f %+f", ranges[0], ranges[1]);
+  char cmd[CMD_BUFFER_SIZE];
+  snprintf (cmd, CMD_BUFFER_SIZE, "sWN FLrang %+f %+f", ranges[0], ranges[1]);
   SendCommand (cmd);
 
   if (ReadAnswer () != 0)
@@ -144,8 +146,8 @@ int
 int
   lms400_cola::EnableFilters (int filter_mask)
 {
-  char cmd[40];
-  sprintf (cmd, "sWN FLsel %+i", filter_mask);
+  char cmd[CMD_BUFFER_SIZE];
+  snprintf (cmd, CMD_BUFFER_SIZE, "sWN FLsel %+i", filter_mask);
   SendCommand (cmd);
 
   if (ReadAnswer () != 0)
@@ -176,8 +178,8 @@ unsigned char*
 int
   lms400_cola::SetUserLevel (int8_t userlevel, const char* password)
 {
-  char cmd[255];
-  sprintf (cmd, "sMN SetAccessMode %d %s", userlevel, password);
+  char cmd[CMD_BUFFER_SIZE];
+  snprintf (cmd, CMD_BUFFER_SIZE, "sMN SetAccessMode %d %s", userlevel, password);
   SendCommand (cmd);
   return (ReadConfirmationAndAnswer ());
 }
@@ -220,7 +222,7 @@ int
   ip_str = ParseIP (ip);
   char cmd[80];
 
-  sprintf (cmd, "sWN EIip %X %X %X %X", ip_str[0], ip_str[1], ip_str[2], ip_str[3]);
+  snprintf (cmd, 80, "sWN EIip %X %X %X %X", ip_str[0], ip_str[1], ip_str[2], ip_str[3]);
   free (ip_str);
   SendCommand (cmd);
 
@@ -234,9 +236,9 @@ int
 {
   unsigned char* gw_str;
   gw_str = ParseIP (gw);
-  char cmd[80];
+  char cmd[CMD_BUFFER_SIZE];
 
-  sprintf (cmd, "sWN EIgate %X %X %X %X", gw_str[0], gw_str[1], gw_str[2], gw_str[3]);
+  snprintf (cmd, CMD_BUFFER_SIZE, "sWN EIgate %X %X %X %X", gw_str[0], gw_str[1], gw_str[2], gw_str[3]);
   free (gw_str);
   SendCommand (cmd);
 
@@ -250,9 +252,9 @@ int
 {
   unsigned char* mask_str;
   mask_str = ParseIP (mask);
-  char cmd[80];
+  char cmd[CMD_BUFFER_SIZE];
 
-  sprintf (cmd, "sWN EImask %X %X %X %X", mask_str[0], mask_str[1], mask_str[2], mask_str[3]);
+  snprintf (cmd, CMD_BUFFER_SIZE, "sWN EImask %X %X %X %X", mask_str[0], mask_str[1], mask_str[2], mask_str[3]);
   free (mask_str);
   SendCommand (cmd);
 
@@ -264,9 +266,9 @@ int
 int
   lms400_cola::SetPort (uint16_t port)
 {
-  char cmd[80];
+  char cmd[CMD_BUFFER_SIZE];
 
-  sprintf (cmd, "sWN EIport %04X", port);
+  snprintf (cmd,CMD_BUFFER_SIZE, "sWN EIport %04X", port);
   SendCommand (cmd);
 
   return (ReadAnswer ());
@@ -300,8 +302,8 @@ int
   lms400_cola::SetAngularResolution (const char* password, float ang_res,
                                     float angle_start, float angle_range)
 {
-  char cmd[80];
-  sprintf (cmd, "sMN mSCconfigbyang 04 %s %+f 01 %+f %+f",
+  char cmd[CMD_BUFFER_SIZE];
+  snprintf (cmd, CMD_BUFFER_SIZE, "sMN mSCconfigbyang 04 %s %+f 01 %+f %+f",
            password, ang_res, angle_start, angle_range);
   SendCommand (cmd);
 
@@ -314,8 +316,8 @@ int
   lms400_cola::SetScanningFrequency (const char* password, float freq,
                                     float angle_start, float angle_range)
 {
-  char cmd[80];
-  sprintf (cmd, "sMN mSCconfigbyfreq 04 %s %+f 01 %+f %+f",
+  char cmd[CMD_BUFFER_SIZE];
+  snprintf (cmd, CMD_BUFFER_SIZE, "sMN mSCconfigbyfreq 04 %s %+f 01 %+f %+f",
            password, freq, angle_start, angle_range);
   SendCommand (cmd);
 
@@ -328,8 +330,8 @@ int
   lms400_cola::SetResolutionAndFrequency (float freq, float ang_res,
                                           float angle_start, float angle_range)
 {
-  char cmd[80];
-  sprintf (cmd, "sMN mSCsetscanconfig %+.2f %+.2f %+.2f %+.2f",
+  char cmd[CMD_BUFFER_SIZE];
+  snprintf (cmd, CMD_BUFFER_SIZE, "sMN mSCsetscanconfig %+.2f %+.2f %+.2f %+.2f",
     freq, ang_res, angle_start, angle_range);
   SendCommand (cmd);
 
@@ -362,11 +364,11 @@ int
 int
   lms400_cola::StartMeasurement (bool intensity)
 {
-  char cmd[40];
+  char cmd[CMD_BUFFER_SIZE];
   if (intensity)
-    sprintf (cmd, "sMN mLRreqdata %x", 0x20);
+    snprintf (cmd, CMD_BUFFER_SIZE, "sMN mLRreqdata %x", 0x20);
   else
-    sprintf (cmd, "sMN mLRreqdata %x", 0x21);
+    snprintf (cmd, CMD_BUFFER_SIZE, "sMN mLRreqdata %x", 0x21);
 
   SendCommand (cmd);
 
@@ -499,8 +501,8 @@ player_laser_data_t
 int
   lms400_cola::StopMeasurement ()
 {
-  char cmd[40];
-  sprintf (cmd, "sMN mLRstopdata");
+  char cmd[CMD_BUFFER_SIZE];
+  snprintf (cmd, CMD_BUFFER_SIZE, "sMN mLRstopdata");
   SendCommand (cmd);
 
   return (ReadConfirmationAndAnswer ());

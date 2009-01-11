@@ -33,34 +33,34 @@ class CanPacket
       dlc = 8;
     }
 
-    uint16_t GetSlot(int s)  const 
+    uint16_t GetSlot(int s)  const
     {
       return (uint16_t) ((msg[s*2] << 8) | (msg[s*2+1]));
     }
 
-    void PutSlot(const int slot, const uint16_t val) 
+    void PutSlot(const int slot, const uint16_t val)
     {
       msg[slot*2] = (val >> 8) & 0xFF;
       msg[slot*2+1] = val & 0xFF;
     }
 
-    void PutByte(const int byte, const uint16_t val) 
+    void PutByte(const int byte, const uint16_t val)
     {
       msg[byte] = val & 0xFF;
     }
 
-    char* toString() 
+    char* toString()
     {
       static char buf[256];
-      sprintf(buf, "id:%04lX %02X %02X %02X %02X %02X %02X %02X %02X",
-              id, msg[0], msg[1], msg[2], msg[3], msg[4], msg[5], 
+      snprintf(buf,sizeof(buf), "id:%04lX %02X %02X %02X %02X %02X %02X %02X %02X",
+              id, msg[0], msg[1], msg[2], msg[3], msg[4], msg[5],
               msg[6], msg[7]);
 
       return buf;
     }
 };
 
-#define DUALCAN_NR_CHANNELS 2  
+#define DUALCAN_NR_CHANNELS 2
 
 /* this class encapsulates the low level CAN stuff.... so it deals
    with reading and writing packets on the dual CAN channels.
@@ -72,7 +72,7 @@ class CanPacket
 
    It wouldn't take much to make this an abstract base class so that
    the SegwayIO can use it, and then have different CAN hardwares
-   implement the virtual methods.  So then we can just drop in 
+   implement the virtual methods.  So then we can just drop in
    a new CAN hardware driver class and everything would still work.
    Would also be able to split up the files, so we could keep
    canio.[cc,h] in player, and the CAN hardware specific files

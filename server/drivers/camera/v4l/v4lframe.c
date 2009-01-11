@@ -83,7 +83,7 @@ int frame_get_size( FRAME* fr )
       // 3 bytes per pixel
       size = pixels * 3;
       break;
-            
+
     case VIDEO_PALETTE_RGB32:
       // 4 bytes (1 int) per pixel
       size = pixels * 4;
@@ -225,10 +225,12 @@ int frame_save( FRAME* fr, const char* filename )
       fprintf( fp, "255\n" );
 
       // Dump raw image data
-      fwrite( fr->data,
+      int ret = fwrite( fr->data,
               1, // YUV422 has 1 byte per pixel
               fr->width * fr->height,
               fp );
+      if (ret < 0)
+    	  fprintf(stderr,"Failed to write image");
       break;
 
     case VIDEO_PALETTE_YUV420P:

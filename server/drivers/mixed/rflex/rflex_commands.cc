@@ -284,13 +284,13 @@ void rflex_set_velocity( int fd, long tvel, long rvel,
   // ** if 2'nd order byte is 1b, round to nearest 1c, or 1a
   if((urvel&0xff00)==0x1b00){
     // ** if lowest order byte is>127 round up, otherwise round down
-    urvel=urvel&0xffff0000|(urvel&0xff>127?0x1c00:0x1aff);
+    urvel=(urvel&0xffff0000)|((urvel&0xff)>127?0x1c00:0x1aff);
   }
 
   // ** if highest order byte is 1b, round to 1c, otherwise round to 1a
   if((urvel&0xff000000)==0x1b000000){
     // ** if 3'rd order byte is>127 round to 1c, otherwise round to 1a
-    urvel=urvel&0x00ffffff|(urvel&0xff0000>127?0x1c000000:0x1aff0000);
+    urvel=(urvel&0x00ffffff)|(((urvel&0xff0000)>>16)>127?0x1c000000:0x1aff0000);
   }
 
   convertUInt8( (long) 0,                 &(data[0]) );       /* forward motion */

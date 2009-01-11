@@ -615,21 +615,6 @@ Khepera::ResetOdometry()
 }
 
 
-/* this will read the given AD channel
- *
- * returns: the value of the AD channel
- */
-/*unsigned short
-REB::ReadAD(int channel)
-{
-  char buf[64];
-
-  sprintf(buf, "I,%d\r", channel);
-  write_command(buf, strlen(buf), sizeof(buf));
-
-  return atoi(&buf[2]);
-}*/
-
 /* reads all the IR values at once.  stores them
  * in the uint16_t array given as arg ir
  *
@@ -679,19 +664,6 @@ Khepera::ReadSpeed(int * left,int * right)
 	return 0;
 }
 
-/* this sets the desired position motor mn should go to
- *
- * returns:
- */
-/*void
-REB::SetPos(int mn, int pos)
-{
-  char buf[64];
-
-  sprintf(buf,"C,%c,%d\r", '0'+mn,pos);
-
-  write_command(buf, strlen(buf), sizeof(buf));
-}*/
 
 /* this sets the position counter of motor mn to the given value
  *
@@ -722,66 +694,4 @@ Khepera::ReadPos(int * pos1, int * pos2)
 	return 0;
 }
 
-/* this will configure the position PID for motor mn
- * using paramters Kp, Ki, and Kd
- *
- * returns:
- */
-/*void
-REB::ConfigPosPID(int mn, int kp, int ki, int kd)
-{
-  char buf[64];
 
-  sprintf(buf, "F,%c,%d,%d,%d\r", '0'+mn, kp,ki,kd);
-  write_command(buf, strlen(buf), sizeof(buf));
-}*/
-
-/* this will configure the speed PID for motor mn
- *
- * returns:
- */
-/*void
-REB::ConfigSpeedPID(int mn, int kp, int ki, int kd)
-{
-  char buf[64];
-
-  sprintf(buf, "A,%c,%d,%d,%d\r", '0'+mn, kp,ki,kd);
-
-  write_command(buf, strlen(buf), sizeof(buf));
-}*/
-
-/* this will set the speed profile for motor mn
- * it takes the max velocity and acceleration
- *
- * returns:
- */
-/*void
-REB::ConfigSpeedProfile(int mn, int speed, int acc)
-{
-  char buf[64];
-
-  sprintf(buf, "J,%c,%d,%d\r", '0'+mn, speed,acc);
-  write_command(buf, strlen(buf), sizeof(buf));
-}*/
-
-/* this will read the status of the motion controller.
- * mode is set to 1 if in position mode, 0 if velocity mode
- * error is set to the position/speed error
- *
- * returns: target status: 1 is on target, 0 is not on target
- */
-/*unsigned char
-Khepera::ReadStatus(int mn, int *mode, int *error)
-{
-  char buf[64];
-
-  sprintf(buf, "K,%c\r", '0'+mn);
-  //write_command(buf, strlen(buf), sizeof(buf));
-
-  // buf now has the form "k,target,mode,error"
-  int target;
-
-  sscanf(buf, "k,%d,%d,%d", &target, mode, error);
-
-  return (unsigned char)target;
-}*/

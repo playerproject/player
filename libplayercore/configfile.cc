@@ -1,8 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -97,7 +97,7 @@ const char * COLOR_DATABASE[5] = {"/usr/X11R6/lib/X11/rgb.txt","/usr/share/X11/r
 
 ///////////////////////////////////////////////////////////////////////////
 // Default constructor
-ConfigFile::ConfigFile(uint32_t _default_host, uint32_t _default_robot) 
+ConfigFile::ConfigFile(uint32_t _default_host, uint32_t _default_robot)
 {
   this->default_host = _default_host;
   this->default_robot = _default_robot;
@@ -189,7 +189,7 @@ bool ConfigFile::Load(const char *filename)
   }
 
   ClearTokens();
-  
+
   // Read tokens from the file
   if (!LoadTokens(file, 0))
   {
@@ -217,7 +217,7 @@ bool ConfigFile::Load(const char *filename)
     fclose(file);
     return false;
   }
-  
+
   // Work out what the length units are
   const char *unit = ReadString(0, "unit_length", "m");
   if (strcmp(unit, "m") == 0)
@@ -233,9 +233,9 @@ bool ConfigFile::Load(const char *filename)
     this->unit_angle = M_PI / 180;
   else if (strcmp(unit, "radians") == 0)
     this->unit_angle = 1;
-  
+
   //DumpTokens();
-  fclose(file);  
+  fclose(file);
   return true;
 }
 
@@ -243,7 +243,7 @@ bool ConfigFile::Load(const char *filename)
 /// Add a (name,value) pair directly into the database, without
 /// reading from a file.  The (name,value) goes into the "global" section.
 void ConfigFile::InsertFieldValue(int index,
-                                  const char* name, 
+                                  const char* name,
                                   const char* value)
 {
   // Work out what the length units are
@@ -282,7 +282,7 @@ bool ConfigFile::Save(const char *filename)
 {
   // Debugging
   //DumpFields();
-  
+
   // If no filename is supplied, use default
   if (!filename)
     filename = this->filename;
@@ -350,7 +350,7 @@ bool ConfigFile::LoadTokens(FILE *file, int include)
   int ch;
   int line;
   char token[256];
-  
+
   line = 1;
 
   while (true)
@@ -358,7 +358,7 @@ bool ConfigFile::LoadTokens(FILE *file, int include)
     ch = fgetc(file);
     if (ch == EOF)
       break;
-    
+
     if ((char) ch == '#')
     {
       ungetc(ch, file);
@@ -416,7 +416,7 @@ bool ConfigFile::LoadTokens(FILE *file, int include)
     else if ( 0x0d == ch )
     {
       ch = fgetc(file);
-      if ( 0x0a != ch ) 
+      if ( 0x0a != ch )
         ungetc(ch, file);
       line++;
       AddToken(TokenEOL, "\n", include);
@@ -424,7 +424,7 @@ bool ConfigFile::LoadTokens(FILE *file, int include)
     else if ( 0x0a == ch )
     {
       ch = fgetc(file);
-      if ( 0x0d != ch ) 
+      if ( 0x0d != ch )
         ungetc(ch, file);
       line++;
       AddToken(TokenEOL, "\n", include);
@@ -450,7 +450,7 @@ bool ConfigFile::LoadTokenComment(FILE *file, int *line, int include)
 
   len = 0;
   memset(token, 0, sizeof(token));
-  
+
   while (true)
   {
     ch = fgetc(file);
@@ -480,10 +480,10 @@ bool ConfigFile::LoadTokenWord(FILE *file, int *line, int include)
   char token[1024];
   int len;
   int ch;
-  
+
   len = 0;
   memset(token, 0, sizeof(token));
-  
+
   while (true)
   {
     ch = fgetc(file);
@@ -506,8 +506,8 @@ bool ConfigFile::LoadTokenWord(FILE *file, int *line, int include)
         if (!LoadTokenInclude(file, line, include))
           return false;
       }
-      else if(strcmp(token, "true") == 0 || strcmp(token, "false") == 0 || 
-              strcmp(token, "yes") == 0  || strcmp(token, "no") == 0) 
+      else if(strcmp(token, "true") == 0 || strcmp(token, "false") == 0 ||
+              strcmp(token, "yes") == 0  || strcmp(token, "no") == 0)
       {
         ungetc(ch, file);
         AddToken(TokenBool, token, include);
@@ -532,7 +532,7 @@ bool ConfigFile::LoadTokenInclude(FILE *file, int *line, int include)
   int ch;
   const char *filename;
   char *fullpath;
-  
+
   ch = fgetc(file);
 
   if (ch == EOF)
@@ -551,7 +551,7 @@ bool ConfigFile::LoadTokenInclude(FILE *file, int *line, int include)
     return false;
 
   ch = fgetc(file);
-  
+
   if (ch == EOF)
   {
     TOKEN_ERR("incomplete include statement", *line);
@@ -585,7 +585,7 @@ bool ConfigFile::LoadTokenInclude(FILE *file, int *line, int include)
     fullpath = (char*) malloc(PATH_MAX);
     memset(fullpath, 0, PATH_MAX);
     strcat( fullpath, dirname(tmp));
-    strcat( fullpath, "/" ); 
+    strcat( fullpath, "/" );
     strcat( fullpath, filename );
     assert(strlen(fullpath) + 1 < PATH_MAX);
     free(tmp);
@@ -597,10 +597,16 @@ bool ConfigFile::LoadTokenInclude(FILE *file, int *line, int include)
     // There's no bounds-checking, but what the heck.
     char *tmp = strdup(this->filename);
     fullpath = (char*) malloc(PATH_MAX);
-    getcwd(fullpath, PATH_MAX);
-    strcat( fullpath, "/" ); 
+    char* ret = getcwd(fullpath, PATH_MAX);
+    if (ret == NULL)
+    {
+    	PLAYER_ERROR("Failed to get working directory");
+    	assert(false);
+    	// TODO: handle this error properly
+    }
+    strcat( fullpath, "/" );
     strcat( fullpath, dirname(tmp));
-    strcat( fullpath, "/" ); 
+    strcat( fullpath, "/" );
     strcat( fullpath, filename );
     assert(strlen(fullpath) + 1 < PATH_MAX);
     free(tmp);
@@ -639,10 +645,10 @@ bool ConfigFile::LoadTokenNum(FILE *file, int *line, int include)
   char token[1024];
   int len;
   int ch;
-  
+
   len = 0;
   memset(token, 0, sizeof(token));
-  
+
   while (true)
   {
     ch = fgetc(file);
@@ -675,12 +681,12 @@ bool ConfigFile::LoadTokenString(FILE *file, int *line, int include)
   int ch;
   int len;
   char token[1024];
-  
+
   len = 0;
   memset(token, 0, sizeof(token));
 
   ch = fgetc(file);
-      
+
   while (true)
   {
     ch = fgetc(file);
@@ -712,10 +718,10 @@ bool ConfigFile::LoadTokenSpace(FILE *file, int *line, int include)
   int ch;
   int len;
   char token[1024];
-  
+
   len = 0;
   memset(token, 0, sizeof(token));
-  
+
   while (true)
   {
     ch = fgetc(file);
@@ -747,7 +753,7 @@ bool ConfigFile::SaveTokens(FILE *file)
 {
   int i;
   Token *token;
-  
+
   for (i = 0; i < this->token_count; i++)
   {
     token = this->tokens + i;
@@ -755,7 +761,7 @@ bool ConfigFile::SaveTokens(FILE *file)
     if (token->include > 0)
       continue;
     if (token->type == TokenString)
-      fprintf(file, "\"%s\"", token->value);  
+      fprintf(file, "\"%s\"", token->value);
     else
       fprintf(file, "%s", token->value);
   }
@@ -792,11 +798,11 @@ bool ConfigFile::AddToken(int type, const char *value, int include)
     this->tokens = (Token*) realloc(this->tokens, this->token_size * sizeof(this->tokens[0]));
   }
 
-  this->tokens[this->token_count].include = include;  
+  this->tokens[this->token_count].include = include;
   this->tokens[this->token_count].type = type;
   this->tokens[this->token_count].value = strdup(value);
   this->token_count++;
-  
+
   return true;
 }
 
@@ -809,7 +815,7 @@ bool ConfigFile::SetTokenValue(int index, const char *value)
 
   free(this->tokens[index].value);
   this->tokens[index].value = strdup(value);
-  
+
   return true;
 }
 
@@ -856,11 +862,11 @@ bool ConfigFile::ParseTokens()
 
   ClearSections();
   ClearFields();
-  
+
   // Add in the "global" section.
   section = AddSection(-1, "");
   line = 1;
-  
+
   for (i = 0; i < this->token_count; i++)
   {
     token = this->tokens + i;
@@ -1081,7 +1087,7 @@ bool ConfigFile::ParseTokenWord(int section, int *index, int *line)
         return false;
     }
   }
-  
+
   return false;
 }
 
@@ -1097,7 +1103,7 @@ bool ConfigFile::ParseTokenSection(int section, int *index, int *line)
 
   name = *index;
   macro = LookupMacro(GetTokenValue(name));
-  
+
   // If the section name is a macro...
   if (macro >= 0)
   {
@@ -1186,7 +1192,7 @@ bool ConfigFile::ParseTokenField(int section, int *index, int *line)
   name = *index;
   value = -1;
   count = 0;
-  
+
   for (i = *index + 1; i < this->token_count; i++)
   {
     token = this->tokens + i;
@@ -1233,7 +1239,7 @@ bool ConfigFile::ParseTokenTuple(int section, int field, int *index, int *line)
   Token *token;
 
   count = 0;
-  
+
   for (i = *index + 1; i < this->token_count; i++)
   {
     token = this->tokens + i;
@@ -1293,7 +1299,7 @@ int ConfigFile::AddMacro(const char *macroname, const char *sectionname,
   this->macros[macro].starttoken = starttoken;
   this->macros[macro].endtoken = endtoken;
   this->macro_count++;
-  
+
   return macro;
 }
 
@@ -1305,7 +1311,7 @@ int ConfigFile::LookupMacro(const char *macroname)
 {
   int i;
   CMacro *macro;
-  
+
   for (i = 0; i < this->macro_count; i++)
   {
     macro = this->macros + i;
@@ -1365,7 +1371,7 @@ int ConfigFile::AddSection(int parent, const char *type)
   this->sections[section].parent = parent;
   this->sections[section].type = type;
   this->section_count++;
-  
+
   return section;
 }
 
@@ -1455,7 +1461,7 @@ int ConfigFile::AddField(int section, const char *name, int line)
 {
   int i;
   Field *field;
-  
+
   // See if this field already exists; if it does, we dont need to
   // add it again.
   for (i = 0; i < this->field_count; i++)
@@ -1513,7 +1519,7 @@ void ConfigFile::AddFieldValue(int field, int index, int value_token)
 
 
 ///////////////////////////////////////////////////////////////////////////
-// Get a field 
+// Get a field
 int ConfigFile::GetField(int section, const char *name)
 {
   // Find first instance of field
@@ -1552,18 +1558,18 @@ void ConfigFile::SetFieldValue(int field, int index, const char *value)
 
 
 ///////////////////////////////////////////////////////////////////////////
-// Get the value of an field 
+// Get the value of an field
 const char *ConfigFile::GetFieldValue(int field, int index, bool flag_used)
 {
   assert(field >= 0);
   Field *pfield = this->fields + field;
-  
+
   if(index >= pfield->value_count)
     return NULL;
 
   if (flag_used)
     pfield->useds[index] = true;
-  
+
   return GetTokenValue(pfield->values[index]);
 }
 
@@ -1577,7 +1583,7 @@ void ConfigFile::DumpFields()
   {
     Field *field = this->fields + i;
     Section *section = this->sections + field->section;
-    
+
     printf("## [%d]", field->section);
     printf("[%s]", section->type);
     printf("[%s]", field->name);
@@ -1607,7 +1613,7 @@ void ConfigFile::WriteString(int section, const char *name, const char *value)
   int field = GetField(section, name);
   if (field < 0)
     return;
-  SetFieldValue(field, 0, value);  
+  SetFieldValue(field, 0, value);
 }
 
 
@@ -1717,7 +1723,7 @@ uint32_t ConfigFile::ReadColor(int section, const char *name, uint32_t value)
 {
   int field;
   const char *color;
-  
+
   field = GetField(section, name);
   if (field < 0)
     return value;
@@ -1739,7 +1745,7 @@ const char *ConfigFile::ReadFilename(int section, const char *name, const char *
     return value;
 
   const char *filename = GetFieldValue(field, 0);
-  
+
   if( filename[0] == '/' || filename[0] == '~' )
     return filename;
 
@@ -1752,12 +1758,12 @@ const char *ConfigFile::ReadFilename(int section, const char *name, const char *
     char *fullpath = (char*) malloc(MAX_FILENAME_SIZE);
     memset(fullpath, 0, MAX_FILENAME_SIZE);
     strcat( fullpath, dirname(tmp));
-    strcat( fullpath, "/" ); 
+    strcat( fullpath, "/" );
     strcat( fullpath, filename );
     assert(strlen(fullpath) + 1 < MAX_FILENAME_SIZE);
 
     SetFieldValue(field, 0, fullpath);
-    
+
     free(fullpath);
     free(tmp);
   }
@@ -1769,15 +1775,21 @@ const char *ConfigFile::ReadFilename(int section, const char *name, const char *
     // There's no bounds-checking, but what the heck.
     char *tmp = strdup(this->filename);
     char *fullpath = (char*) malloc(MAX_FILENAME_SIZE);
-    getcwd(fullpath, MAX_FILENAME_SIZE);
-    strcat( fullpath, "/" ); 
+    char * ret = getcwd(fullpath, MAX_FILENAME_SIZE);
+    if (ret == NULL)
+    {
+    	PLAYER_ERROR("Failed to get working directory");
+    	assert(false);
+    	// TODO: handle this error properly
+    }
+    strcat( fullpath, "/" );
     strcat( fullpath, dirname(tmp));
-    strcat( fullpath, "/" ); 
+    strcat( fullpath, "/" );
     strcat( fullpath, filename );
     assert(strlen(fullpath) + 1 < MAX_FILENAME_SIZE);
 
     SetFieldValue(field, 0, fullpath);
-    
+
     free(fullpath);
     free(tmp);
   }
@@ -1825,7 +1837,7 @@ void ConfigFile::WriteTupleString(int section, const char *name,
   if (field < 0)
     field = InsertField(section, name);
   */
-  SetFieldValue(field, index, value);  
+  SetFieldValue(field, index, value);
 }
 
 
@@ -1975,8 +1987,8 @@ uint32_t ConfigFile::LookupColor(const char *name)
     fclose(file);
     return 0xFFFFFF;
   }
-  
-  
+
+
   while (true)
   {
     char line[1024];
@@ -1984,7 +1996,7 @@ uint32_t ConfigFile::LookupColor(const char *name)
       break;
 
     // it's a macro or comment line - ignore the line
-    if (line[0] == '!' || line[0] == '#' || line[0] == '%') 
+    if (line[0] == '!' || line[0] == '#' || line[0] == '%')
       continue;
 
     // Trim the trailing space
@@ -1995,7 +2007,7 @@ uint32_t ConfigFile::LookupColor(const char *name)
     int r, g, b;
     int chars_matched = 0;
     sscanf( line, "%d %d %d %n", &r, &g, &b, &chars_matched );
-      
+
     // Read the name
     char* nname = line + chars_matched;
 
@@ -2037,7 +2049,7 @@ int ConfigFile::ReadDeviceAddr(player_devaddr_t *addr, int section,
 
   // Find the number of values in the field
   count = GetFieldValueCount(prop);
-  
+
   // Consider all the values, looking for a match
   for (i = 0; i < count; i++)
   {
@@ -2124,7 +2136,7 @@ int ConfigFile::ReadDeviceAddr(player_devaddr_t *addr, int section,
     // is no match.
     if (key && k == NULL)
       continue;
-    
+
     // If the key is expected and present in the file, it must match
     if (key && k && strcmp(key, k) != 0)
       continue;
@@ -2137,14 +2149,14 @@ int ConfigFile::ReadDeviceAddr(player_devaddr_t *addr, int section,
     addr->interf = interf.interf;
     addr->index = ind;
     return 0;
- 
+
   }
 
   return -1;
 }
 
 // Parse all driver blocks
-bool 
+bool
 ConfigFile::ParseAllDrivers()
 {
   for(int i = 1; i < this->GetSectionCount(); i++)
@@ -2160,10 +2172,10 @@ ConfigFile::ParseAllDrivers()
 }
 
 // Parse a driver block, and update the deviceTable accordingly
-bool 
+bool
 ConfigFile::ParseDriver(int section)
 {
-  const char *pluginname;  
+  const char *pluginname;
   const char *drivername;
   DriverEntry *entry;
   Driver *driver;
@@ -2173,7 +2185,7 @@ ConfigFile::ParseDriver(int section)
 
   entry = NULL;
   driver = NULL;
-  
+
   // Load any required plugins
   pluginname = this->ReadString(section, "plugin", NULL);
   if (pluginname != NULL)
@@ -2197,7 +2209,7 @@ ConfigFile::ParseDriver(int section)
     PLAYER_ERROR1("No driver name specified in section %d", section);
     return (false);
   }
-  
+
   // Look for the driver
   entry = driverTable->GetDriverEntry(drivername);
   if (entry == NULL)
@@ -2241,8 +2253,8 @@ ConfigFile::ParseDriver(int section)
     PLAYER_ERROR1("Driver has no (usable) interfaces \"%s\"", drivername);
     return false;
   }
-  
-  // Should this device be "always on"?  
+
+  // Should this device be "always on"?
   if (driver)
     driver->alwayson = this->ReadInt(section, "alwayson", driver->alwayson);
 

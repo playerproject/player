@@ -31,7 +31,7 @@ int show_robot_names;
 /*
  * handle quit events, by setting a flag that will make the main loop exit
  */
-static gboolean 
+static gboolean
 _quit_callback(GtkWidget *widget,
                GdkEvent *event,
                gpointer data)
@@ -40,7 +40,7 @@ _quit_callback(GtkWidget *widget,
   return(TRUE);
 }
 
-static gboolean 
+static gboolean
 _toggle_dump(GtkWidget *widget,
              GdkEvent *event,
              gpointer data)
@@ -49,13 +49,13 @@ _toggle_dump(GtkWidget *widget,
   return(TRUE);
 }
 
-static gboolean 
+static gboolean
 _show_names(GtkWidget *widget,
              GdkEvent *event,
              gpointer data)
 {
   int i;
-  gui_data_t* gui_data = (gui_data_t*)widget; 
+  gui_data_t* gui_data = (gui_data_t*)widget;
 
   show_robot_names = !show_robot_names;
 
@@ -74,7 +74,7 @@ _show_names(GtkWidget *widget,
 }
 
 
-static gboolean 
+static gboolean
 _refresh_map(GtkWidget *widget,
              GdkEvent *event,
              gpointer data)
@@ -83,13 +83,13 @@ _refresh_map(GtkWidget *widget,
   return(TRUE);
 }
 
-static gboolean 
+static gboolean
 _show_particles(GtkWidget *widget,
                 GdkEvent *event,
                 gpointer data)
 {
   int i;
-  gui_data_t* gui_data = (gui_data_t*)widget; 
+  gui_data_t* gui_data = (gui_data_t*)widget;
   gboolean onmap;
   pose_t robot_pose;
 
@@ -107,10 +107,10 @@ _show_particles(GtkWidget *widget,
       robot_pose.pa = gui_data->localizes[i]->hypoths[0].mean.pa;
 
       onmap = ((fabs(robot_pose.px) <
-                (gui_data->mapdev->width * 
+                (gui_data->mapdev->width *
                  gui_data->mapdev->resolution / 2.0)) ||
                (fabs(robot_pose.py) <
-                (gui_data->mapdev->height * 
+                (gui_data->mapdev->height *
                  gui_data->mapdev->resolution / 2.0)));
 
       if(onmap)
@@ -133,14 +133,14 @@ _show_particles(GtkWidget *widget,
 }
 
 
-static gboolean 
+static gboolean
 _stop_all_robots(GtkWidget *widget,
                  GdkEvent *event,
                  gpointer data)
 {
   int i;
   playerc_planner_t* planner;
-  gui_data_t* gui_data = (gui_data_t*)widget; 
+  gui_data_t* gui_data = (gui_data_t*)widget;
 
   for(i=0;i<gui_data->num_robots;i++)
   {
@@ -154,14 +154,14 @@ _stop_all_robots(GtkWidget *widget,
   return(TRUE);
 }
 
-static gboolean 
+static gboolean
 _go_all_robots(GtkWidget *widget,
                GdkEvent *event,
                gpointer data)
 {
   int i;
   playerc_planner_t* planner;
-  gui_data_t* gui_data = (gui_data_t*)widget; 
+  gui_data_t* gui_data = (gui_data_t*)widget;
 
   for(i=0;i<gui_data->num_robots;i++)
   {
@@ -207,7 +207,7 @@ _robot_button_callback(GnomeCanvasItem *item,
   pose.pa = 0.0;
   pose.px = event->button.x;
   pose.py = -event->button.y;
-  
+
   // lookup (and store) which robot (or goal) was clicked
   if((item != (GnomeCanvasItem*)gnome_canvas_root(gui_data->map_canvas)) &&
      !setting_theta && !setting_goal)
@@ -239,7 +239,7 @@ _robot_button_callback(GnomeCanvasItem *item,
         case 2:
           if(onrobot && !setting_theta)
           {
-            gui_data->robot_enable_states[idx] = 
+            gui_data->robot_enable_states[idx] =
                     !gui_data->robot_enable_states[idx];
             playerc_planner_enable(gui_data->planners[idx],
                                    gui_data->robot_enable_states[idx]);
@@ -258,7 +258,7 @@ _robot_button_callback(GnomeCanvasItem *item,
             if(onrobot || (ongoal && event->button.button == 3))
             {
               gnome_canvas_item_grab(item,
-                                     GDK_POINTER_MOTION_MASK | 
+                                     GDK_POINTER_MOTION_MASK |
                                      GDK_BUTTON_RELEASE_MASK,
                                      NULL, event->button.time);
               dragging = TRUE;
@@ -289,10 +289,10 @@ _robot_button_callback(GnomeCanvasItem *item,
                 printf("setting goal for robot %d to (%.3f, %.3f, %.3f)\n",
                        idx, mean[0], mean[1], mean[2]);
                 if(playerc_planner_set_cmd_pose(gui_data->planners[idx],
-                                                mean[0], mean[1], 
+                                                mean[0], mean[1],
                                                 mean[2]) < 0)
                 {
-                  fprintf(stderr, "error while setting goal on robot %d\n", 
+                  fprintf(stderr, "error while setting goal on robot %d\n",
                           idx);
                   //gtk_main_quit();
                   //return(TRUE);
@@ -317,10 +317,10 @@ _robot_button_callback(GnomeCanvasItem *item,
                 printf("setting pose for robot %d to (%.3f, %.3f, %.3f)\n",
                        idx, mean[0], mean[1], mean[2]);
 
-                if(playerc_localize_set_pose(gui_data->localizes[idx], 
+                if(playerc_localize_set_pose(gui_data->localizes[idx],
                                              mean, cov) < 0)
                 {
-                  fprintf(stderr, "error while setting pose on robot %d\n", 
+                  fprintf(stderr, "error while setting pose on robot %d\n",
                           idx);
                   gtk_main_quit();
                   return(TRUE);
@@ -377,7 +377,7 @@ _robot_button_callback(GnomeCanvasItem *item,
         points->coords[3] = -pose.py;
         if(!setting_theta_line)
         {
-          g_assert((setting_theta_line = 
+          g_assert((setting_theta_line =
                   gnome_canvas_item_new(gnome_canvas_root(gui_data->map_canvas),
                                         gnome_canvas_line_get_type(),
                                         "points", points,
@@ -412,7 +412,7 @@ canvas_to_meters(gui_data_t* gui_data, double* dx, double* dy, int cx, int cy)
 
 void
 item_to_meters(GnomeCanvasItem* item,
-               double* dx, double* dy, 
+               double* dx, double* dy,
                double ix, double iy)
 {
   *dx=ix;
@@ -444,7 +444,7 @@ make_menu(gui_data_t* gui_data)
   GtkCheckMenuItem* show_names_item;
   GtkCheckMenuItem* show_particles_item;
   GtkCheckMenuItem* refresh_map_item;
-  
+
   GtkMenu* stop_menu;
   GtkMenuItem* stop_item;
   GtkMenuItem* stop_all_item;
@@ -476,26 +476,26 @@ make_menu(gui_data_t* gui_data)
        Ctrl-n toggles showing robot names
        Ctrl-d toggles dumping screenshots
    */
-  gtk_widget_add_accelerator((GtkWidget*)stop_all_item, "activate", 
-                             accel_group, GDK_s, GDK_CONTROL_MASK, 
+  gtk_widget_add_accelerator((GtkWidget*)stop_all_item, "activate",
+                             accel_group, GDK_s, GDK_CONTROL_MASK,
                              GTK_ACCEL_VISIBLE);
-  gtk_widget_add_accelerator((GtkWidget*)go_all_item, "activate", 
-                             accel_group, GDK_g, GDK_CONTROL_MASK, 
+  gtk_widget_add_accelerator((GtkWidget*)go_all_item, "activate",
+                             accel_group, GDK_g, GDK_CONTROL_MASK,
                              GTK_ACCEL_VISIBLE);
-  gtk_widget_add_accelerator((GtkWidget*)quit_item, "activate", 
-                             accel_group, GDK_q, GDK_CONTROL_MASK, 
+  gtk_widget_add_accelerator((GtkWidget*)quit_item, "activate",
+                             accel_group, GDK_q, GDK_CONTROL_MASK,
                              GTK_ACCEL_VISIBLE);
-  gtk_widget_add_accelerator((GtkWidget*)show_names_item, "activate", 
-                             accel_group, GDK_n, GDK_CONTROL_MASK, 
+  gtk_widget_add_accelerator((GtkWidget*)show_names_item, "activate",
+                             accel_group, GDK_n, GDK_CONTROL_MASK,
                              GTK_ACCEL_VISIBLE);
-  gtk_widget_add_accelerator((GtkWidget*)show_particles_item, "activate", 
-                             accel_group, GDK_p, GDK_CONTROL_MASK, 
+  gtk_widget_add_accelerator((GtkWidget*)show_particles_item, "activate",
+                             accel_group, GDK_p, GDK_CONTROL_MASK,
                              GTK_ACCEL_VISIBLE);
-  gtk_widget_add_accelerator((GtkWidget*)refresh_map_item, "activate", 
-                             accel_group, GDK_r, GDK_CONTROL_MASK, 
+  gtk_widget_add_accelerator((GtkWidget*)refresh_map_item, "activate",
+                             accel_group, GDK_r, GDK_CONTROL_MASK,
                              GTK_ACCEL_VISIBLE);
-  gtk_widget_add_accelerator((GtkWidget*)dump_item, "activate", 
-                             accel_group, GDK_d, GDK_CONTROL_MASK, 
+  gtk_widget_add_accelerator((GtkWidget*)dump_item, "activate",
+                             accel_group, GDK_d, GDK_CONTROL_MASK,
                              GTK_ACCEL_VISIBLE);
 
   /* Add them to the menu */
@@ -571,7 +571,7 @@ init_gui(gui_data_t* gui_data, int argc, char** argv)
   g_type_init();
   gtk_init(&argc, &argv);
 
-  g_assert((gui_data->main_window = 
+  g_assert((gui_data->main_window =
             (GtkWindow*)gtk_window_new(GTK_WINDOW_TOPLEVEL)));
   gtk_widget_set_size_request((GtkWidget*)(gui_data->main_window),
                               MIN_DISPLAY_WIDTH,MIN_DISPLAY_WIDTH);
@@ -586,7 +586,7 @@ init_gui(gui_data_t* gui_data, int argc, char** argv)
   /* a box to hold everything else */
   g_assert((gui_data->hbox = (GtkBox*)gtk_hbox_new(FALSE, 5)));
 
-  g_assert((gui_data->map_window = 
+  g_assert((gui_data->map_window =
             (GtkScrolledWindow*)gtk_scrolled_window_new(NULL, NULL)));
   gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(gui_data->map_window),
                                  GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
@@ -614,7 +614,7 @@ init_gui(gui_data_t* gui_data, int argc, char** argv)
 
   gnome_canvas_set_center_scroll_region(gui_data->map_canvas, TRUE);
   gnome_canvas_set_scroll_region(gui_data->map_canvas,
-                                 -(gui_data->mapdev->width * 
+                                 -(gui_data->mapdev->width *
                                    gui_data->mapdev->resolution)/2.0,
                                  -(gui_data->mapdev->height *
                                    gui_data->mapdev->resolution)/2.0,
@@ -626,19 +626,19 @@ init_gui(gui_data_t* gui_data, int argc, char** argv)
   // the zoom scrollbar
 
   // set canvas zoom to make the map fill the window
-  initial_zoom = (gui_data->initial_zoom) * 
+  initial_zoom = (gui_data->initial_zoom) *
           (1.0 / gui_data->mapdev->resolution);
   // zoom in at most 10 times
   max_zoom = 10.0 * initial_zoom;
 
-  g_assert((gui_data->zoom_adjustment = 
-            (GtkAdjustment*)gtk_adjustment_new(initial_zoom, 
+  g_assert((gui_data->zoom_adjustment =
+            (GtkAdjustment*)gtk_adjustment_new(initial_zoom,
                                                initial_zoom,
                                                max_zoom,
                                                (max_zoom-initial_zoom)/1e3,
                                                (max_zoom-initial_zoom)/1e2,
                                                (max_zoom-initial_zoom)/1e2)));
-  g_assert((gui_data->zoom_scrollbar = 
+  g_assert((gui_data->zoom_scrollbar =
             (GtkVScrollbar*)gtk_vscrollbar_new(gui_data->zoom_adjustment)));
 
   gtk_container_add(GTK_CONTAINER(gui_data->main_window),
@@ -646,15 +646,15 @@ init_gui(gui_data_t* gui_data, int argc, char** argv)
   make_menu(gui_data);
 
   gtk_box_pack_start(gui_data->vbox,
-                     (GtkWidget*)(gui_data->hbox), 
+                     (GtkWidget*)(gui_data->hbox),
                      TRUE, TRUE, 0);
   gtk_box_pack_start(gui_data->hbox,
-                     (GtkWidget*)(gui_data->zoom_scrollbar), 
+                     (GtkWidget*)(gui_data->zoom_scrollbar),
                      FALSE, FALSE, 0);
   gtk_container_add(GTK_CONTAINER(gui_data->map_window),
                     (GtkWidget*)(gui_data->map_canvas));
   gtk_box_pack_start(gui_data->hbox,
-                     (GtkWidget*)(gui_data->map_window), 
+                     (GtkWidget*)(gui_data->map_window),
                      TRUE, TRUE, 0);
 
   gtk_widget_show((GtkWidget*)(gui_data->vbox));
@@ -717,11 +717,11 @@ create_map_image(gui_data_t* gui_data)
     {
       if(gui_data->mapdev->cells[PLAYERC_MAP_INDEX(gui_data->mapdev,i,j)] == -1)
       {
-        pixels[(gui_data->mapdev->width * 
+        pixels[(gui_data->mapdev->width *
                 (gui_data->mapdev->height - j-1) + i)*3] = 255;
-        pixels[(gui_data->mapdev->width * 
+        pixels[(gui_data->mapdev->width *
                 (gui_data->mapdev->height - j-1) + i)*3+1] = 255;
-        pixels[(gui_data->mapdev->width * 
+        pixels[(gui_data->mapdev->width *
                 (gui_data->mapdev->height - j-1) + i)*3+2] = 255;
         /*
         pixels[(gui_data->mapdev->width * j + i)*3] = 255;
@@ -731,11 +731,11 @@ create_map_image(gui_data_t* gui_data)
       }
       else if(gui_data->mapdev->cells[PLAYERC_MAP_INDEX(gui_data->mapdev,i,j)] == 0)
       {
-        pixels[(gui_data->mapdev->width * 
+        pixels[(gui_data->mapdev->width *
                 (gui_data->mapdev->height - j-1) + i)*3] = 100;
-        pixels[(gui_data->mapdev->width * 
+        pixels[(gui_data->mapdev->width *
                 (gui_data->mapdev->height - j-1) + i)*3+1] = 100;
-        pixels[(gui_data->mapdev->width * 
+        pixels[(gui_data->mapdev->width *
                 (gui_data->mapdev->height - j-1) + i)*3+2] = 100;
         /*
         pixels[(gui_data->mapdev->width * j + i)*3] = 100;
@@ -745,11 +745,11 @@ create_map_image(gui_data_t* gui_data)
       }
       else
       {
-        pixels[(gui_data->mapdev->width * 
+        pixels[(gui_data->mapdev->width *
                 (gui_data->mapdev->height - j-1) + i)*3] = 0;
-        pixels[(gui_data->mapdev->width * 
+        pixels[(gui_data->mapdev->width *
                 (gui_data->mapdev->height - j-1) + i)*3+1] = 0;
-        pixels[(gui_data->mapdev->width * 
+        pixels[(gui_data->mapdev->width *
                 (gui_data->mapdev->height - j-1) + i)*3+2] = 0;
         /*
         pixels[(gui_data->mapdev->width * j + i)*3] = 0;
@@ -759,20 +759,20 @@ create_map_image(gui_data_t* gui_data)
       }
     }
   }
-  
+
   // create the pixbuf
   g_assert((pixbuf = gdk_pixbuf_new_from_data(pixels,
                                               GDK_COLORSPACE_RGB,
                                               FALSE,
                                               8,
-                                              gui_data->mapdev->width, 
-                                              gui_data->mapdev->height, 
+                                              gui_data->mapdev->width,
+                                              gui_data->mapdev->height,
                                               3*gui_data->mapdev->width,
                                               NULL,
                                               NULL)));
 
-  g_assert((gui_data->imageitem = 
-            gnome_canvas_item_new(gnome_canvas_root(gui_data->map_canvas), 
+  g_assert((gui_data->imageitem =
+            gnome_canvas_item_new(gnome_canvas_root(gui_data->map_canvas),
                                   gnome_canvas_pixbuf_get_type(),
                                   "width-set", TRUE,
                                   "height-set", TRUE,
@@ -792,11 +792,11 @@ create_map_image(gui_data_t* gui_data)
 
   gnome_canvas_set_scroll_region(gui_data->map_canvas,
                                  gui_data->mapdev->origin[0],
-                                 -(gui_data->mapdev->origin[1] + 
-                                   gui_data->mapdev->height * 
+                                 -(gui_data->mapdev->origin[1] +
+                                   gui_data->mapdev->height *
                                    gui_data->mapdev->resolution),
-                                 (gui_data->mapdev->origin[0] + 
-                                  gui_data->mapdev->width * 
+                                 (gui_data->mapdev->origin[0] +
+                                  gui_data->mapdev->width *
                                   gui_data->mapdev->resolution),
                                  -gui_data->mapdev->origin[1]);
 
@@ -822,7 +822,7 @@ create_robot(gui_data_t* gui_data, int idx, pose_t pose)
                                   "x", 0.0, "y", 0.0,
                                   NULL)));
 
-  g_assert((robot_circle = 
+  g_assert((robot_circle =
             gnome_canvas_item_new(robot,
                                   gnome_canvas_ellipse_get_type(),
                                   "x1", -ROBOT_RADIUS,
@@ -830,7 +830,7 @@ create_robot(gui_data_t* gui_data, int idx, pose_t pose)
                                   "x2",  ROBOT_RADIUS,
                                   "y2",  ROBOT_RADIUS,
                                   "outline_color_rgba", COLOR_BLACK,
-                                  "fill_color_rgba", 
+                                  "fill_color_rgba",
                                   robot_colors[idx % num_robot_colors],
                                   "width_pixels", 1,
                                   NULL)));
@@ -842,7 +842,7 @@ create_robot(gui_data_t* gui_data, int idx, pose_t pose)
   points->coords[4] = ROBOT_RADIUS * cos(ROBOT_V_ANGLE);
   points->coords[5] = ROBOT_RADIUS * sin(-ROBOT_V_ANGLE);
 
-  g_assert((robot_v = 
+  g_assert((robot_v =
             gnome_canvas_item_new(robot,
                                   gnome_canvas_line_get_type(),
                                   "points", points,
@@ -858,12 +858,12 @@ create_robot(gui_data_t* gui_data, int idx, pose_t pose)
   points->coords[4] = ROBOT_RADIUS * cos(11*M_PI/6.0);
   points->coords[5] = ROBOT_RADIUS * sin(11*M_PI/6.0);
 
-  g_assert((robot_goal = 
+  g_assert((robot_goal =
             gnome_canvas_item_new(gnome_canvas_root(gui_data->map_canvas),
                                   gnome_canvas_polygon_get_type(),
                                   "points", points,
                                   "outline_color_rgba", COLOR_BLACK,
-                                  "fill_color_rgba", 
+                                  "fill_color_rgba",
                                   robot_colors[idx % num_robot_colors],
                                   "width_pixels", 1,
                                   NULL)));
@@ -873,7 +873,7 @@ create_robot(gui_data_t* gui_data, int idx, pose_t pose)
   gnome_canvas_points_unref(points);
 
 
-  sprintf(robotname, "%s:%d", 
+  snprintf(robotname, sizeof(robotname), "%s:%d",
           gui_data->hostnames[idx], gui_data->ports[idx]);
   g_assert((robot_text =
             gnome_canvas_item_new(robot,
@@ -934,7 +934,7 @@ draw_particles(gui_data_t* gui_data, int idx)
 
   if(gui_data->localizes[idx]->num_particles)
   {
-    g_assert((gui_data->robot_particles[idx] = 
+    g_assert((gui_data->robot_particles[idx] =
               gnome_canvas_item_new(gnome_canvas_root(gui_data->map_canvas),
                                     gnome_canvas_group_get_type(),
                                     "x", 0.0, "y", 0.0,
@@ -942,20 +942,20 @@ draw_particles(gui_data_t* gui_data, int idx)
     g_assert((linepoints = gnome_canvas_points_new(2)));
     for(i=0;i<gui_data->localizes[idx]->num_particles;i++)
     {
-      linepoints->coords[0] = 
+      linepoints->coords[0] =
               gui_data->localizes[idx]->particles[i].pose[0];
-      linepoints->coords[1] = 
+      linepoints->coords[1] =
               -gui_data->localizes[idx]->particles[i].pose[1];
-      linepoints->coords[2] = 
-              (gui_data->localizes[idx]->particles[i].pose[0] + 
-               PARTICLE_LENGTH * 
+      linepoints->coords[2] =
+              (gui_data->localizes[idx]->particles[i].pose[0] +
+               PARTICLE_LENGTH *
                cos(gui_data->localizes[idx]->particles[i].pose[2]));
-      linepoints->coords[3] = 
+      linepoints->coords[3] =
               -(gui_data->localizes[idx]->particles[i].pose[1] +
-                PARTICLE_LENGTH * 
+                PARTICLE_LENGTH *
                 sin(gui_data->localizes[idx]->particles[i].pose[2]));
 
-      g_assert((line = 
+      g_assert((line =
                 gnome_canvas_item_new((GnomeCanvasGroup*)gui_data->robot_particles[idx],
                                       gnome_canvas_line_get_type(),
                                       "points", linepoints,
@@ -971,9 +971,9 @@ draw_particles(gui_data_t* gui_data, int idx)
                                       NULL)));
     }
 
-    // Draw the 3-sigma ellipse 
+    // Draw the 3-sigma ellipse
     stddev = sqrt(gui_data->localizes[idx]->variance);
-    g_assert((ellipse = 
+    g_assert((ellipse =
               gnome_canvas_item_new((GnomeCanvasGroup*)gui_data->robot_particles[idx],
                                     gnome_canvas_ellipse_get_type(),
                                     "x1", -3*stddev,
@@ -1015,7 +1015,7 @@ draw_waypoints(gui_data_t* gui_data, int idx)
   }
   else if(gui_data->planners[idx]->path_valid)
   {
-    g_assert((gui_data->robot_paths[idx] = 
+    g_assert((gui_data->robot_paths[idx] =
               gnome_canvas_item_new(gnome_canvas_root(gui_data->map_canvas),
                                     gnome_canvas_group_get_type(),
                                     "x", 0.0, "y", 0.0,
@@ -1038,12 +1038,12 @@ draw_waypoints(gui_data_t* gui_data, int idx)
     {
       if(i<gui_data->planners[idx]->waypoint_count-1)
       {
-        g_assert((waypoint = 
+        g_assert((waypoint =
                   gnome_canvas_item_new((GnomeCanvasGroup*)gui_data->robot_paths[idx],
                                         gnome_canvas_polygon_get_type(),
                                         "points", points,
                                         "outline_color_rgba", COLOR_BLACK,
-                                        "fill_color_rgba", 
+                                        "fill_color_rgba",
                                         robot_colors[idx % num_robot_colors],
                                         "width_pixels", 1,
                                         NULL)));
@@ -1072,7 +1072,7 @@ draw_waypoints(gui_data_t* gui_data, int idx)
         linepoints->coords[2] = gui_data->planners[idx]->waypoints[i][0];
         linepoints->coords[3] = -gui_data->planners[idx]->waypoints[i][1];
 
-        g_assert((line = 
+        g_assert((line =
                   gnome_canvas_item_new((GnomeCanvasGroup*)gui_data->robot_paths[idx],
                                         gnome_canvas_line_get_type(),
                                         "points", linepoints,
@@ -1111,20 +1111,20 @@ dump_screenshot(gui_data_t* gui_data)
   GdkWindow* win;
   char fname[PATH_MAX];
   gint width, height;
-  
+
   g_assert((win = ((GtkWidget*)gui_data->map_canvas)->window));
   if(gdk_window_is_viewable(win))
   {
     gdk_window_get_size(win, &width, &height);
 
-    g_assert((screenshot = 
+    g_assert((screenshot =
               gdk_pixbuf_get_from_drawable(screenshot,
                                            (GdkDrawable*)win,
                                            gdk_colormap_get_system(),
                                            0,0,0,0,
                                            width,height)));
 
-    sprintf(fname,"playernav-img-%04d.png",idx);
+    snprintf(fname,sizeof(fname),"playernav-img-%04d.png",idx);
     printf("writing screenshot to %s\n", fname);
 
     if(!(gdk_pixbuf_save(screenshot, fname, "png", NULL, NULL)))

@@ -577,7 +577,12 @@ void LinuxJoystick::ReadJoy()
   else if(count > 0)
   {
     // get the next event from the joystick
-    read(this->fd, &event, sizeof(struct js_event));
+    int ret = read(this->fd, &event, sizeof(struct js_event));
+    if (ret < 0)
+    {
+    	PLAYER_ERROR("Failed to read from the joystick");
+    	return;
+    }
 
     //printf( "value % d type %u  number %u state %X \n",
     //        event.value, event.type, event.number, this->joy_data.buttons );

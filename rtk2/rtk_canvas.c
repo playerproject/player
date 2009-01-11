@@ -792,7 +792,11 @@ int rtk_canvas_save_ppm(rtk_canvas_t *canvas, const char *filename,
 
   // Save PPM image
   fprintf(file, "P6\n%d %d\n255\n", sizex, sizey);
-  fwrite(image, sizex * sizey * 3, 1, file);
+  int ret = fwrite(image, sizex * sizey * 3, 1, file);
+  if (ret < 0)
+  {
+	  fprintf(stderr,"Failed to write Image");
+  }
   fclose(file);
 
   return 0;

@@ -501,9 +501,9 @@ int Erratic::Connect()
   }
 
   char name[20], type[20], subtype[20];
-  sprintf(name, "%s", &received_packet.packet[5]);
-  sprintf(type, "%s", &received_packet.packet[25]);
-  sprintf(subtype, "%s", &received_packet.packet[45]);
+  snprintf(name, 20, "%s", &received_packet.packet[5]);
+  snprintf(type, 20, "%s", &received_packet.packet[25]);
+  snprintf(subtype, 20, "%s", &received_packet.packet[45]);
 
   // Open the driver, and tickle it a bit
   {
@@ -918,9 +918,9 @@ void Erratic::ReceiveThread()
 	for (int i=0; i < 4; i++)
 	  {
 	    erratic_data.aio.voltages[i_voltage+i] =
-	      (packet.packet[5+i_voltage*2] & (0x1 << i+4)) ? 1.0 : 0.0;
+	      (packet.packet[5+i_voltage*2] & (0x1 << (i+4))) ? 1.0 : 0.0;
 	    erratic_data.ir.voltages[i] =
-	      (packet.packet[5+i_voltage*2] & (0x1 << i+4)) ? 1.0 : 0.0;
+	      (packet.packet[5+i_voltage*2] & (0x1 << (i+4))) ? 1.0 : 0.0;
 	    erratic_data.ir.ranges[i] =
 	      IRFloorRange(erratic_data.ir.voltages[i]);
 	  }

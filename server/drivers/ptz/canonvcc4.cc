@@ -478,14 +478,14 @@ canonvcc4::SendAbsPanTilt(int pan, int tilt)
   command[4] = 0x62;
   // pan position
 
-  sprintf((char *)buf, "%X", convpan);
+  snprintf((char *)buf,sizeof(buf), "%X", convpan);
 
   command[5] = buf[0];
   command[6] = buf[1];
   command[7] = buf[2];
   command[8] = buf[3];
   // tilt position
-  sprintf((char *)buf, "%X", convtilt);
+  snprintf((char *)buf,sizeof(buf), "%X", convtilt);
   command[9]  = buf[0];
   command[10] = buf[1];
   command[11] = buf[2];
@@ -511,7 +511,7 @@ canonvcc4::setDefaultTiltRange()
   command[5] = 0x31;
 
   mintilt = (int)(floor(PTZ_TILT_MIN/.1125) + 0x8000);
-  sprintf((char *)buf, "%X", mintilt);
+  snprintf((char *)buf,sizeof(buf), "%X", mintilt);
 
   command[6] = buf[0];
   command[7] = buf[1];
@@ -519,7 +519,7 @@ canonvcc4::setDefaultTiltRange()
   command[9] = buf[3];
   // tilt position
   maxtilt = (int)(floor(PTZ_TILT_MAX/.1125) + 0x8000);
-  sprintf((char *)buf, "%X", maxtilt);
+  snprintf((char *)buf,sizeof(buf), "%X", maxtilt);
 
   command[10] = buf[0];
   command[11] = buf[1];
@@ -663,7 +663,7 @@ canonvcc4::SendAbsZoom(int zoom)
   command[3] = 0x00;
   command[4] = 0xB3;
 
-  sprintf((char *)buf, "%4X", zoom);
+  snprintf((char *)buf,sizeof(buf), "%4X", zoom);
 
   for (i=0;i<3;i++)
     if (buf[i] == ' ')

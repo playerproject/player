@@ -308,7 +308,9 @@ void CameraCompress::ProcessImage(player_camera_data_t & rawdata)
   {
     snprintf(filename, sizeof(filename), "click-%04d.jpeg",this->frameno++);
     FILE *fp = fopen(filename, "w+");
-    fwrite(this->data.image, 1, this->data.image_count, fp);
+    int ret = fwrite(this->data.image, 1, this->data.image_count, fp);
+    if (ret < 0)
+    	PLAYER_ERROR("Failed to save frame");
     fclose(fp);
   }
 

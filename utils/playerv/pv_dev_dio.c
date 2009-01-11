@@ -129,14 +129,14 @@ void dio_draw(dio_t *dio)
   rtk_fig_show(dio->fig, 1);
   rtk_fig_clear(dio->fig);
 
-  sprintf(str, "", str);
+  str[0] = '\0';
   if (count > 0)
   {
     for (i = count-1; i >= 0 ; i--)
     {
-      sprintf(str, "%s%i", str, (digin & (1 << i)) > 0);
+      snprintf(str, sizeof(str), "%s%i", str, (digin & (1 << i)) > 0);
       if (3==(count-1-i)%4)
-        sprintf(str, "%s ", str);
+        snprintf(str, sizeof(str), "%s ", str);
     }
   }
 

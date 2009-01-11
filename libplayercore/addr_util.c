@@ -60,7 +60,7 @@ packedaddr_to_dottedip(char* dest, size_t len, uint32_t addr)
 
   assert(len >= (size_t)16);
 
-  sprintf(dest, "%u.%u.%u.%u",
+  snprintf(dest, 16,"%u.%u.%u.%u",
           swappedaddr>>24 & mask,
           swappedaddr>>16 & mask,
           swappedaddr>>8 & mask,

@@ -251,7 +251,7 @@ EEDHController::EEDHController (ConfigFile* cf, int section)
   for (i = 0; i < nr_joints; i++)
   {
     char joint_nr[10];
-    sprintf (joint_nr, "joint%d_DH", (i+1));
+    snprintf (joint_nr, 10,"joint%d_DH", (i+1));
 
     for (j = 0; j < 7; j++)
     {

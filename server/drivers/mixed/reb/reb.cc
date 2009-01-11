@@ -1923,7 +1923,7 @@ REB::SetIRState(int action)
 {
   char buf[64];
 
-  sprintf(buf, "Y,%c\r", action ? '1' : '0');
+  snprintf(buf,sizeof(buf), "Y,%c\r", action ? '1' : '0');
 
   write_command(buf, strlen(buf), sizeof(buf));
 }
@@ -1938,7 +1938,7 @@ REB::ConfigAD(int channel, int action)
 {
   char buf[64];
 
-  sprintf(buf, "Q,%d,%c\r", channel, '0'+action);
+  snprintf(buf, sizeof(buf),"Q,%d,%c\r", channel, '0'+action);
 
   write_command(buf, strlen(buf), sizeof(buf));
 }
@@ -1952,7 +1952,7 @@ REB::ReadAD(int channel)
 {
   char buf[64];
 
-  sprintf(buf, "I,%d\r", channel);
+  snprintf(buf, sizeof(buf), "I,%d\r", channel);
   write_command(buf, strlen(buf), sizeof(buf));
 
   return atoi(&buf[2]);
@@ -1969,7 +1969,7 @@ REB::ReadAllIR(uint16_t *ir)
   char buf[64];
   int ret;
 
-  sprintf(buf, "W\r");
+  snprintf(buf, sizeof(buf), "W\r");
   ret = write_command(buf, strlen(buf), sizeof(buf));
 
   int p=0;
@@ -1993,7 +1993,7 @@ REB::SetSpeed(int mn, int speed)
 {
   char buf[64];
 
-  sprintf(buf, "D,%c,%d\r", '0'+mn, speed);
+  snprintf(buf, sizeof(buf), "D,%c,%d\r", '0'+mn, speed);
 
   write_command(buf, strlen(buf), sizeof(buf));
 }
@@ -2007,7 +2007,7 @@ REB::ReadSpeed(int mn)
 {
   char buf[64];
 
-  sprintf(buf, "E,%c\r", '0'+mn);
+  snprintf(buf, sizeof(buf), "E,%c\r", '0'+mn);
 
   write_command(buf, strlen(buf), sizeof(buf));
 
@@ -2023,7 +2023,7 @@ REB::SetPos(int mn, int pos)
 {
   char buf[64];
 
-  sprintf(buf,"C,%c,%d\r", '0'+mn,pos);
+  snprintf(buf, sizeof(buf),"C,%c,%d\r", '0'+mn,pos);
 
   write_command(buf, strlen(buf), sizeof(buf));
 }
@@ -2037,7 +2037,7 @@ REB::SetPosCounter(int mn, int pos)
 {
   char buf[64];
 
-  sprintf(buf,"G,%c,%d\r", '0'+mn,pos);
+  snprintf(buf, sizeof(buf),"G,%c,%d\r", '0'+mn,pos);
   write_command(buf, strlen(buf), sizeof(buf));
 }
 
@@ -2051,7 +2051,7 @@ REB::ReadPos(int mn)
 {
   char buf[64];
 
-  sprintf(buf, "H,%c\r", '0'+mn);
+  snprintf(buf, sizeof(buf), "H,%c\r", '0'+mn);
   write_command(buf, strlen(buf), sizeof(buf));
 
   return atoi(&buf[2]);
@@ -2067,7 +2067,7 @@ REB::ConfigPosPID(int mn, int kp, int ki, int kd)
 {
   char buf[64];
 
-  sprintf(buf, "F,%c,%d,%d,%d\r", '0'+mn, kp,ki,kd);
+  snprintf(buf, sizeof(buf), "F,%c,%d,%d,%d\r", '0'+mn, kp,ki,kd);
   write_command(buf, strlen(buf), sizeof(buf));
 }
 
@@ -2080,7 +2080,7 @@ REB::ConfigSpeedPID(int mn, int kp, int ki, int kd)
 {
   char buf[64];
 
-  sprintf(buf, "A,%c,%d,%d,%d\r", '0'+mn, kp,ki,kd);
+  snprintf(buf, sizeof(buf), "A,%c,%d,%d,%d\r", '0'+mn, kp,ki,kd);
 
   write_command(buf, strlen(buf), sizeof(buf));
 }
@@ -2095,7 +2095,7 @@ REB::ConfigSpeedProfile(int mn, int speed, int acc)
 {
   char buf[64];
 
-  sprintf(buf, "J,%c,%d,%d\r", '0'+mn, speed,acc);
+  snprintf(buf, sizeof(buf), "J,%c,%d,%d\r", '0'+mn, speed,acc);
   write_command(buf, strlen(buf), sizeof(buf));
 }
 
@@ -2110,7 +2110,7 @@ REB::ReadStatus(int mn, int *mode, int *error)
 {
   char buf[64];
 
-  sprintf(buf, "K,%c\r", '0'+mn);
+  snprintf(buf, sizeof(buf), "K,%c\r", '0'+mn);
   write_command(buf, strlen(buf), sizeof(buf));
 
   // buf now has the form "k,target,mode,error"
