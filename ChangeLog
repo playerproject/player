@@ -1,3 +1,47 @@
+2009-01-16: thjc
+	* 2.1.2 released
+		Fixed many compiler warnings
+		Fixes for gcc 4.3 (still some issues remaining with some drivers)
+		Patch 2161837: PlayerV sleep to avoid 100% CPU
+		Patch 2164569: p2os driver - OSX serial flags
+		Patch 2491569: adding some includes for neater compilation (v2.1.1)
+		Patch 2145007: fix up incorrect return type from playerc_client_read when sock < 0.
+		Fixed bug where client reads would not timeout when waiting for data in pull mode
+		allow eedhcontroller to work with nr joints != 6
+		fix off by one error in playerv image flipping routine
+		patch from Luis Riazuelo regarding discontinuity setting
+		Added missing scoped locks to OpaqueProxy
+		Allow both IPv4 and IPv6 addresses in libplayerc server address spec
+		Softened an index assertion in vfh, so that it skips out-of-range beams
+		Patch 2136981 khepera read()
+		removed old and broken asserts from many drivers
+		fix for memory leak in python bindings for blackboard
+		make tcpremotedriver not replace messages (this should be left up to the remote driver)
+		Patch 2144822 VFH Planner initilization
+		Patch 2136885 sicklms200 read() bug fix
+		Patch 2110078 libplayerc python bindings compatibility patch
+		Patch 2129287
+		Patch 2145002
+		Patch 2147885
+		Patch 2147767
+		Applied [ 1956512 ] the mica2 fixes from 
+		Applied [ 1957498 ] Fixes for segfaults on the InsideM300 RFID driver
+		Applied [ 1998688 ] camerav4l patch
+		Applied [ 2016923 ] Error checking and better timeouts in SICK LMS200
+		Applied [ 2046418 ] roomba driver: stall notification
+		Applied [ 2074625 ] serialstream fix for osx
+		Applied [ 2082498 ] fixed Geometry-Request
+		Updated Serial Stream to use file watcher
+		added scan accessor function to the sonar python client
+		fix for Cmucam2 which was not matching command messages correctly, and incorrectly acking commands
+		fixes to the group subscription etc for blackboard proxies.
+		Added retry and delay options to gbxsickacfr driver
+		Added scan point calculation to the ranger device
+		Added PLAYER_RANGER_REQ_POWER to hokuyo_aist driver
+		prevent deadlocks in drivers that make player requests in their shutdown methods
+		Adding driver wrapper around gearbox flexiport data comms library
+		merged p2os kinematics fix from trunk [6579,6584]
+		
 2008-06-16: thjc
 	* 2.1.1 released
 	* Applied fix for missing clock_gettime on OSX
