@@ -213,6 +213,7 @@ int CameraUncompress::ProcessMessage(QueuePointer &resp_queue, player_msghdr * h
       PLAYER_WARN("uncompressing raw camera images (not good)");
       return -1;
     }
+    camera_time = hdr->timestamp;
     ProcessImage(*camera_data);
     return 0;
   }
