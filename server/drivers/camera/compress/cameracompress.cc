@@ -201,6 +201,7 @@ int CameraCompress::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hd
   {
 	assert(data);
     player_camera_data_t * recv = reinterpret_cast<player_camera_data_t * > (data);
+    camera_time = hdr->timestamp;
     ProcessImage(*recv);
     return 0;
   }
