@@ -21,14 +21,14 @@ When the server is in a PLAYER_DATAMODE_PULL data delivery mode, the
 client can request a single round of data by sending a zero-argument
 request with type code @p PLAYER_PLAYER_REQ_DATA.  The response will
 be a zero-length acknowledgement. */
-message { REQ, DATA, 4, player_null_t };
+message { REQ, DATA, 4, NULL };
 
 message { REQ, DATAMODE, 5, player_device_datamode_req_t };
 message { REQ, AUTH, 7, player_device_auth_req_t };
 message { REQ, NAMESERVICE, 8, player_device_nameservice_req_t };
 message { REQ, ADD_REPLACE_RULE, 10, player_add_replace_rule_req_t };
 
-message { SYNCH, OK, 1, player_null_t };
+message { SYNCH, OK, 1, NULL };
 message { SYNCH, OVERFLOW, 2, player_uint32_t };
 
 

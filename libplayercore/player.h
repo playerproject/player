@@ -176,11 +176,6 @@ typedef struct player_msghdr
  * These structures often appear inside other structures.
  * @{ */
 
-/** @brief A null structure for parsing completeness */
-typedef struct player_null
-{
-} player_null_t;
-
 /** @brief A point in the plane */
 typedef struct player_point_2d
 {

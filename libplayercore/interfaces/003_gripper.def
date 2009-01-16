@@ -20,28 +20,28 @@ message { REQ, GET_GEOM, 1, player_gripper_geom_t };
 /** @brief Command: Open (@ref PLAYER_GRIPPER_CMD_OPEN)
 
 Tells the gripper to open. */
-message { CMD, OPEN, 1, player_null_t };
+message { CMD, OPEN, 1, NULL };
 
 /** @brief Command: Close (@ref PLAYER_GRIPPER_CMD_CLOSE)
 
 Tells the gripper to close. */
-message { CMD, CLOSE, 2, player_null_t };
+message { CMD, CLOSE, 2, NULL };
 
 /** @brief Command: Stop (@ref PLAYER_GRIPPER_CMD_STOP)
 
 Tells the gripper to stop. */
-message { CMD, STOP, 3, player_null_t };
+message { CMD, STOP, 3, NULL };
 
 /** @brief Command: Store (@ref PLAYER_GRIPPER_CMD_STORE)
 
 Tells the gripper to store whatever it is holding. */
-message { CMD, STORE, 4, player_null_t };
+message { CMD, STORE, 4, NULL };
 
 /** @brief Command: Retrieve (@ref PLAYER_GRIPPER_CMD_RETRIEVE)
 
 Tells the gripper to retrieve a stored object (so that it can
 be put back into the world). The opposite of store. */
-message { CMD, RETRIEVE, 5, player_null_t };
+message { CMD, RETRIEVE, 5, NULL };
 
 
 /** Gripper state: open */

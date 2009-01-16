@@ -137,7 +137,7 @@ driver
 
 static void StopRobot(void* obotdev);
 
-class Obot : public ThreadedDriver 
+class Obot : public ThreadedDriver
 {
   private:
     // this function will be run in a separate thread
@@ -776,12 +776,6 @@ int Obot::ProcessMessage(QueuePointer & resp_queue,
                                 PLAYER_POSITION2D_REQ_RESET_ODOM,
                                 this->position_addr))
   {
-    if(hdr->size != sizeof(player_null_t))
-    {
-      PLAYER_WARN("Arg to odometry reset requests wrong size; ignoring");
-      return(-1);
-    }
-
     // Just overwrite our current odometric pose.
     this->px = 0.0;
     this->py = 0.0;

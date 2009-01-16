@@ -12,7 +12,7 @@ Graphics items should be accumulated until an explicit clear command is issued
 }
 
 /** Command subtype: clear the drawing area (send an empty message) */
-message { CMD, CLEAR, 1, player_null_t };
+message { CMD, CLEAR, 1, NULL };
 /** Command subtype: draw items */
 message { CMD, DRAW, 2, player_graphics3d_cmd_draw_t };
 /** Command subtype: translate coordinate system */
@@ -20,9 +20,9 @@ message { CMD, TRANSLATE, 3, player_graphics3d_cmd_translate_t };
 /** Command subtype: rotate coordinate system */
 message { CMD, ROTATE, 4, player_graphics3d_cmd_rotate_t };
 /** Command subtype: push current coordinate system onto stack */
-message { CMD, PUSH, 5, player_null_t };
+message { CMD, PUSH, 5, NULL };
 /** Command subtype: pop coordinate system from stack to become current */
-message { CMD, POP, 6, player_null_t };
+message { CMD, POP, 6, NULL };
 
 
 /** Drawmode: enumeration that defines the drawing mode */

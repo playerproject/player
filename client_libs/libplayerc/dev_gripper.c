@@ -108,46 +108,31 @@ void playerc_gripper_putmsg (playerc_gripper_t *device, player_msghdr_t *header,
 // Command the gripper to open
 int playerc_gripper_open_cmd (playerc_gripper_t *device)
 {
-  player_null_t cmd;
-
-  memset (&cmd, 0, sizeof (cmd));
-  return playerc_client_write (device->info.client, &device->info, PLAYER_GRIPPER_CMD_OPEN, &cmd, NULL);
+  return playerc_client_write (device->info.client, &device->info, PLAYER_GRIPPER_CMD_OPEN, NULL, NULL);
 }
 
 // Command the gripper to close
 int playerc_gripper_close_cmd (playerc_gripper_t *device)
 {
-  player_null_t cmd;
-
-  memset (&cmd, 0, sizeof (cmd));
-  return playerc_client_write (device->info.client, &device->info, PLAYER_GRIPPER_CMD_CLOSE, &cmd, NULL);
+  return playerc_client_write (device->info.client, &device->info, PLAYER_GRIPPER_CMD_CLOSE, NULL, NULL);
 }
 
 // Command the gripper to stop
 int playerc_gripper_stop_cmd (playerc_gripper_t *device)
 {
-  player_null_t cmd;
-
-  memset (&cmd, 0, sizeof (cmd));
-  return playerc_client_write (device->info.client, &device->info, PLAYER_GRIPPER_CMD_STOP, &cmd, NULL);
+  return playerc_client_write (device->info.client, &device->info, PLAYER_GRIPPER_CMD_STOP, NULL, NULL);
 }
 
 // Command the gripper to store
 int playerc_gripper_store_cmd (playerc_gripper_t *device)
 {
-  player_null_t cmd;
-
-  memset (&cmd, 0, sizeof (cmd));
-  return playerc_client_write (device->info.client, &device->info, PLAYER_GRIPPER_CMD_STORE, &cmd, NULL);
+  return playerc_client_write (device->info.client, &device->info, PLAYER_GRIPPER_CMD_STORE, NULL, NULL);
 }
 
 // Command the gripper to retrieve
 int playerc_gripper_retrieve_cmd (playerc_gripper_t *device)
 {
-  player_null_t cmd;
-
-  memset (&cmd, 0, sizeof (cmd));
-  return playerc_client_write (device->info.client, &device->info, PLAYER_GRIPPER_CMD_RETRIEVE, &cmd, NULL);
+  return playerc_client_write (device->info.client, &device->info, PLAYER_GRIPPER_CMD_RETRIEVE, NULL, NULL);
 }
 
 // Get the geometry.  The writes the result into the proxy

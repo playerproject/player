@@ -125,25 +125,17 @@ int playerc_limb_get_geom(playerc_limb_t *device)
 // Command the end effector to move home
 int playerc_limb_home_cmd(playerc_limb_t *device)
 {
-  player_null_t cmd;
-
-  memset(&cmd, 0, sizeof(cmd));
-
   return playerc_client_write(device->info.client, &device->info,
                               PLAYER_LIMB_CMD_HOME,
-                              &cmd, NULL);
+                              NULL, NULL);
 }
 
 // Command the end effector to stop immediatly
 int playerc_limb_stop_cmd(playerc_limb_t *device)
 {
-  player_null_t cmd;
-
-  memset(&cmd, 0, sizeof(cmd));
-
   return playerc_client_write(device->info.client, &device->info,
                               PLAYER_LIMB_CMD_STOP,
-                              &cmd, NULL);
+                              NULL, NULL);
 }
 
 // Command the end effector to move to a specified pose

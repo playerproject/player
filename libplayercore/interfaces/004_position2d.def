@@ -191,7 +191,7 @@ The @ref driver_p2os driver offers two modes of velocity control:
 
   To reset the robot's odometry to @f$(x, y, yaw) = (0,0,0)@f$, send
   a @ref PLAYER_POSITION2D_REQ_RESET_ODOM request.  Null response. */
-  message { REQ, RESET_ODOM, 6, player_null_t };
+  message { REQ, RESET_ODOM, 6, NULL };
 
   /** @brief Request/reply: Set velocity PID parameters.
   *
