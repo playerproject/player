@@ -551,13 +551,12 @@ int
 playerc_client_requestdata(playerc_client_t* client)
 {
   int ret;
-  player_null_t req;
 
   if(client->mode != PLAYER_DATAMODE_PULL || client->data_requested)
     return(0);
 
   ret = playerc_client_request(client, NULL, PLAYER_PLAYER_REQ_DATA,
-                               &req, NULL);
+                               NULL, NULL);
   if(ret == 0)
   {
     client->data_requested = 1;

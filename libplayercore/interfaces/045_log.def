@@ -14,7 +14,7 @@ message { REQ, SET_READ_STATE, 2, player_log_set_read_state_t };
 /** Request/reply subtype: get state */
 message { REQ, GET_STATE, 3, player_log_get_state_t };
 /** Request/reply subtype: rewind */
-message { REQ, SET_READ_REWIND, 4, player_log_set_read_rewind_t };
+message { REQ, SET_READ_REWIND, 4, NULL };
 /** Request/reply subtype: set filename to write */
 message { REQ, SET_FILENAME, 5, player_log_set_filename_t };
 
@@ -50,9 +50,7 @@ typedef struct player_log_set_read_state
 To rewind log playback to beginning of logfile, send a
 @ref PLAYER_LOG_REQ_SET_READ_REWIND request.  Does not affect playback state
 (i.e., whether it is started or stopped.  Null response. */
-typedef struct player_log_set_read_rewind
-{
-} player_log_set_read_rewind_t;
+
 
 /** @brief Request/reply: Get state.
 

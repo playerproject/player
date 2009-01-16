@@ -10,13 +10,13 @@ include RFID readers such as Skyetek M1 and Inside M300).
 message { DATA, TAGS, 1, player_rfid_data_t };
 
 /** Request/reply: put the reader in sleep mode (0) or wake it up (1). */
-message { REQ, POWER, 1, player_null_t };
+message { REQ, POWER, 1, NULL };
 /** Request/reply: read data from the RFID tag - to be implemented.    */
-message { REQ, READTAG, 2, player_null_t };
+message { REQ, READTAG, 2, NULL };
 /** Request/reply: write data to the RFID tag - to be implemented.     */
-message { REQ, WRITETAG, 3, player_null_t };
+message { REQ, WRITETAG, 3, NULL };
 /** Request/reply: lock data blocks of a RFID tag - to be implemented. */
-message { REQ, LOCKTAG, 4, player_null_t };
+message { REQ, LOCKTAG, 4, NULL };
 
 
 /** @brief Structure describing a single RFID tag. */

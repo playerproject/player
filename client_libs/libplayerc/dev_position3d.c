@@ -193,7 +193,7 @@ playerc_position3d_get_geom(playerc_position3d_t *device)
 
   //TODO: Actually store the geometry
   player_position3d_geom_t_free(config);
-  
+
   return 0;
 }
 
@@ -324,14 +324,8 @@ playerc_position3d_set_odom(playerc_position3d_t *device,
 
 int playerc_position3d_reset_odom(playerc_position3d_t *device)
 {
-  player_position3d_reset_odom_config_t config;
-
-  memset(&config, 0, sizeof(config));
-
-
-
   return playerc_client_request(device->info.client,
                               	&device->info,
 				PLAYER_POSITION3D_REQ_RESET_ODOM,
-				&config,NULL);
+				NULL,NULL);
 }

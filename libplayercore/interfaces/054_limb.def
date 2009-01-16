@@ -23,11 +23,11 @@ message { DATA, STATE, 1, player_limb_data_t };
 /** @brief Command: home (@ref PLAYER_LIMB_HOME_CMD)
 
 Tells the end effector to return to its home position. */
-message { CMD, HOME, 1, player_null_t };
+message { CMD, HOME, 1, NULL };
 /** @brief Command: stop (@ref PLAYER_LIMB_STOP_CMD)
 
 Tells the limb to stop moving immediatly. */
-message { CMD, STOP, 2, player_null_t };
+message { CMD, STOP, 2, NULL };
 /** Command subtype: set pose */
 message { CMD, SETPOSE, 3, player_limb_setpose_cmd_t };
 /** Command subtype: set position */

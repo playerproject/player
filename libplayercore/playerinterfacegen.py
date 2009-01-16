@@ -132,8 +132,9 @@ static playerxdr_function_t %(interface_name)s_ftable[] =
 """ % {"interface_name": interface_name}
     print "\n  /* %s messages */" % interface_name
     for m in interface_messages:
-      print "  {", interface_def, ",", m.msg_type, ",", m.msg_subtype_string, ","
-      print "    (player_pack_fn_t)%(dt_base)s_pack, (player_copy_fn_t)%(dt)s_copy, (player_cleanup_fn_t)%(dt)s_cleanup,(player_clone_fn_t)%(dt)s_clone,(player_free_fn_t)%(dt)s_free,(player_sizeof_fn_t)%(dt)s_sizeof}," % { "dt_base": m.datatype[:-2], "dt": m.datatype}
+      if m.datatype != "NULL":
+        print "  {", interface_def, ",", m.msg_type, ",", m.msg_subtype_string, ","
+        print "    (player_pack_fn_t)%(dt_base)s_pack, (player_copy_fn_t)%(dt)s_copy, (player_cleanup_fn_t)%(dt)s_cleanup,(player_clone_fn_t)%(dt)s_clone,(player_free_fn_t)%(dt)s_free,(player_sizeof_fn_t)%(dt)s_sizeof}," % { "dt_base": m.datatype[:-2], "dt": m.datatype}
     if plugin:
       print """
   /* This NULL element signals the end of the list */

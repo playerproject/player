@@ -8,7 +8,7 @@ this interface to allow clients to draw in the Stage window.
 }
 
 /** Command subtype: clear the drawing area (send an empty message) */
-message { CMD, CLEAR, 1, player_null_t };
+message { CMD, CLEAR, 1, NULL };
 /** Command subtype: draw points */
 message { CMD, POINTS, 2, player_graphics2d_cmd_points_t };
 /** Command subtype: draw a polyline */
