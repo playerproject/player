@@ -550,7 +550,7 @@ class PTU46_Device:public ThreadedDriver
 	PTU46_Device (ConfigFile* cf, int section);
 
 	virtual int MainSetup    ();
-	virtual int Shutdown ();
+	virtual void MainQuit ();
 
 	// MessageHandler
 	int ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data);
@@ -613,15 +613,10 @@ PTU46_Device::MainSetup ()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-int
-PTU46_Device::Shutdown ()
+void
+PTU46_Device::MainQuit ()
 {
-    StopThread ();
-
     delete pantilt;
-
-    PLAYER_MSG0 (1, "> PTU46 driver shutting down... [done]");
-    return (0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

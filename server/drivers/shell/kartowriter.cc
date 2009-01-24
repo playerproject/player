@@ -440,7 +440,7 @@ int	KartoLogger::MainSetup()
 //
 KartoLogger::~KartoLogger()
 {
-	Shutdown();
+	MainQuit();
 }
 
 //

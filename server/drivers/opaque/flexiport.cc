@@ -102,7 +102,7 @@ class Flexiport : public ThreadedDriver
 		virtual ~Flexiport (void);
 
 		virtual int MainSetup (void);
-		virtual int Shutdown (void);
+		virtual void MainQuit (void);
 		virtual int ProcessMessage (QueuePointer &respQueue, player_msghdr *hdr, void *data);
 
 	protected:
@@ -199,7 +199,7 @@ int Flexiport::ProcessMessage (QueuePointer &respQueue, player_msghdr *hdr, void
 						NULL, 0, NULL);
 				return 0;
 			}
-			
+
 			if (_receiveBuffer != NULL)
 				delete[] _receiveBuffer;
 			_receiveBuffer = newBuffer;
@@ -284,14 +284,10 @@ int Flexiport::MainSetup (void)
 	return 0;
 }
 
-int Flexiport::Shutdown (void)
+void Flexiport::MainQuit (void)
 {
-	StopThread();
-
 	delete _port;
 	_port = NULL;
-
-	return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

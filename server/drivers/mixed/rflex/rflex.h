@@ -1,8 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -36,7 +36,7 @@
 #include <sys/time.h>
 
 #include <libplayercore/playercore.h>
-   
+
 #include "rflex_commands.h"
 #include "rflex-io.h"
 
@@ -56,7 +56,7 @@
 #define RFLEX_BUMPER_STYLE_ADDR "addr"
 #define DEFAULT_RFLEX_BUMPER_STYLE RFLEX_BUMPER_STYLE_ADDR
 
-enum 
+enum
 {
    BUMPER_BIT,
    BUMPER_ADDR
@@ -93,7 +93,7 @@ typedef struct
 
 // this is here because we need the above typedef's before including it.
 
-class RFLEX : public ThreadedDriver 
+class RFLEX : public ThreadedDriver
 {
   private:
     player_devaddr_t position_id;
@@ -113,9 +113,9 @@ class RFLEX : public ThreadedDriver
     int bumper_subscriptions;
 
     int rflex_fd;               // rflex device file descriptor
-    
+
     // device used to communicate with rflex
-    char rflex_serial_port[MAX_FILENAME_SIZE]; 
+    char rflex_serial_port[MAX_FILENAME_SIZE];
     double m_odo_x;
     double m_odo_y;
     double rad_odo_theta;
@@ -139,12 +139,12 @@ class RFLEX : public ThreadedDriver
     virtual int Subscribe(player_devaddr_t addr);
     virtual int Unsubscribe(player_devaddr_t addr);
 
-    virtual int Shutdown();
+    virtual void MainQuit();
 
     static int joy_control;
-	
+
 	// MessageHandler
-	int ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, 
+	int ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr,
                                void * data);
 };
 

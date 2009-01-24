@@ -304,22 +304,14 @@ GarciaDriver::MainSetup()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-int
-GarciaDriver::Shutdown()
+void
+GarciaDriver::MainQuit()
 {
   puts("Shutting Garcia driver down");
-
-  // Stop and join the driver thread
-  StopThread();
-
-  // Here you would shut the device down by, for example, closing a
-  // serial port.
 
   delete mGarcia;
 
   puts("Garcia driver has been shutdown");
-
-  return(0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

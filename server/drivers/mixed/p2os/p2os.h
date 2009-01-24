@@ -330,7 +330,7 @@ class P2OS : public ThreadedDriver
     virtual void Main();
 
     virtual int MainSetup();
-    virtual int Shutdown();
+    virtual void MainQuit();
 
     // MessageHandler
     virtual int ProcessMessage(QueuePointer & resp_queue,

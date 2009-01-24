@@ -1291,7 +1291,7 @@ int P2OS::MainSetup()
   return(0);
 }
 
-int P2OS::Shutdown()
+void P2OS::MainQuit()
 {
   unsigned char command[20],buffer[20];
   P2OSPacket packet;
@@ -1299,9 +1299,7 @@ int P2OS::Shutdown()
   memset(buffer,0,20);
 
   if(this->psos_fd == -1)
-    return(0);
-
-  this->StopThread();
+    return;
 
   command[0] = STOP;
   packet.Build(command, 1);
@@ -1318,8 +1316,6 @@ int P2OS::Shutdown()
   puts("P2OS has been shutdown");
   delete this->sippacket;
   this->sippacket = NULL;
-
-  return(0);
 }
 
 P2OS::~P2OS (void)

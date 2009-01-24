@@ -252,7 +252,7 @@ class LinuxJoystick : public ThreadedDriver
 
   // Must implement the following methods.
   public: int MainSetup();
-  public: int Shutdown();
+  public: void MainQuit();
 
   // Main function for device thread.
   private: virtual void Main();
@@ -460,11 +460,8 @@ int LinuxJoystick::MainSetup()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-int LinuxJoystick::Shutdown()
+void LinuxJoystick::MainQuit()
 {
-  // Stop and join the driver thread
-  this->StopThread();
-
   if ((this->cmd_position_addr.interf) && (this->position))
     this->position->Unsubscribe(this->InQueue);
   if ((this->cmd_gripper_addr.interf) && (this->gripper))
@@ -472,8 +469,6 @@ int LinuxJoystick::Shutdown()
 
   // Close the joystick
   close(this->fd);
-
-  return(0);
 }
 
 

@@ -98,11 +98,13 @@ int ImageBase::MainSetup()
     PLAYER_ERROR ("unable to subscribe to camera device");
     return -1;
   }
-
-
-  camera_driver->Unsubscribe(InQueue);
-
   return 0;
+}
+
+void ImageBase::MainQuit()
+{
+	if (camera_driver)
+		camera_driver->Unsubscribe(InQueue);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

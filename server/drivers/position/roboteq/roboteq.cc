@@ -169,7 +169,7 @@ class roboteq:public ThreadedDriver
     virtual int ProcessMessage(QueuePointer &resp_queue,
 						player_msghdr * hdr, void * data);
     virtual int MainSetup();
-    virtual int Shutdown();
+    virtual void MainQuit();
     virtual void Main();
 };
 
@@ -318,12 +318,9 @@ roboteq::MainSetup()
 
 
 ///////////////////////////////////////////////////////////////////////////
-int roboteq::Shutdown()
+void roboteq::MainQuit()
 {
   int ret;
-
-  StopThread();
-
   // return RoboteQ to RC mode
   strcpy(serialout_buff, "^00 00\r");
   write(roboteq_fd, serialout_buff, 7);
@@ -347,7 +344,7 @@ int roboteq::Shutdown()
 			// this test may need to change since the reset
 			// appears to fail quite often. is it really
 			// failing or is the test bad?
-			return 0;
+			return;
 		}
 		memset(serialin_buff, 0, SERIAL_BUFF_SIZE);
 		ret = read(roboteq_fd, serialin_buff, SERIAL_BUFF_SIZE);
@@ -355,8 +352,6 @@ int roboteq::Shutdown()
 	fputs("Unable to reset Roboteq to RC mode!", stderr);
 
     close(roboteq_fd);
-
-  return(0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

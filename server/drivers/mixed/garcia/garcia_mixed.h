@@ -39,7 +39,7 @@ class GarciaDriver : public ThreadedDriver
 
     // Must implement the following methods.
     int MainSetup();
-    int Shutdown();
+    void MainQuit();
     // Main function for device thread.
     virtual void Main();
 

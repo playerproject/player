@@ -125,7 +125,7 @@ class Phidgetrfid : public ThreadedDriver {
 		~Phidgetrfid();
 
 		virtual int MainSetup();
-		virtual int Shutdown();
+		virtual void MainQuit();
 
 		virtual int ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, void * data);
 
@@ -234,11 +234,8 @@ int Phidgetrfid::MainSetup() {
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-int Phidgetrfid::Shutdown() {
+void Phidgetrfid::MainQuit() {
 	PLAYER_MSG0(1,"Shutting PhidgetRFID driver down");
-
-    // Stop and join the driver thread
-    StopThread();
 
     // Turn of the device and delete the Phidget objects
     CPhidgetRFID_setAntennaOn(rfid,0);
@@ -247,8 +244,6 @@ int Phidgetrfid::Shutdown() {
     rfid=0;
 
     PLAYER_MSG0(1,"PhidgetRFID driver has been shutdown");
-
-    return(0);
 }
 
 int Phidgetrfid::ProcessMessage(QueuePointer &resp_queue,

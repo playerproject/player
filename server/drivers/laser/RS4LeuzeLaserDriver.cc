@@ -157,7 +157,7 @@ public:
 	//The driver  must implement the abstract Setup and Shutdown methods (3);
 	// Implementations of virtual functions
 	int MainSetup();
-	int Shutdown();
+	void MainQuit();
 	//The drivers re-implements the ProcessMessage method to provide support for
 	//handling request and commands(4)
 	// This method will be invoked on each incoming message
@@ -321,13 +321,8 @@ int RS4LeuzeLaserDriver::MainSetup() {
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-int RS4LeuzeLaserDriver::Shutdown() {
-  // Stop and join the driver thread
-  	StopThread();
-
-  	myLaser->closeSerial();
-
-  return(0);
+void RS4LeuzeLaserDriver::MainQuit() {
+	myLaser->closeSerial();
 }
 
 

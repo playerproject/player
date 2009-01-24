@@ -121,10 +121,10 @@ public:
 
     // Destructor
     ~PhidgetIFK();
-
+    Shutdown
     // Must implement the following methods.
     virtual int MainSetup();
-    virtual int Shutdown();
+    virtual void MainQuit();
 
     // This method will be invoked on each incoming message
     virtual int ProcessMessage(QueuePointer &resp_queue,
@@ -288,11 +288,8 @@ int PhidgetIFK::MainSetup() {
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-int PhidgetIFK::Shutdown() {
+void PhidgetIFK::MainQuit() {
     PLAYER_MSG0(1,"Shutting PhidgetIFK driver down");
-
-    // Stop and join the driver thread
-    StopThread();
 
     usleep(100000);
     CPhidget_close((CPhidgetHandle)ifk);
@@ -308,8 +305,6 @@ int PhidgetIFK::Shutdown() {
 
 
     PLAYER_MSG0(1,"PhidgetIFK driver has been shutdown");
-
-    return(0);
 }
 
 int PhidgetIFK::ProcessMessage(QueuePointer &resp_queue,

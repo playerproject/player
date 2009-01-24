@@ -146,8 +146,8 @@ class SimpleShape : public ImageBase
     SimpleShape( ConfigFile* cf, int section);
 
     // Setup/shutdown routines.
-    virtual int Setup();
-    virtual int Shutdown();
+    virtual int MainSetup();
+    virtual void MainQuit();
 
   // Load a shape model
   private: int LoadModel();
@@ -261,7 +261,7 @@ SimpleShape::SimpleShape( ConfigFile* cf, int section)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device (called by server thread).
-int SimpleShape::Setup()
+int SimpleShape::MainSetup()
 {
   // Load the shape model
   if (this->LoadModel() != 0)
@@ -275,17 +275,15 @@ int SimpleShape::Setup()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device (called by server thread).
-int SimpleShape::Shutdown()
+void SimpleShape::MainQuit()
 {
-  ImageBase::Shutdown();
+  ImageBase::MainQuit();
 
   // Free images
   if (this->inpImage)
     cvReleaseImage(&(this->inpImage));
   if (this->outImage)
     cvReleaseImage(&(this->outImage));
-
-  return 0;
 }
 
 

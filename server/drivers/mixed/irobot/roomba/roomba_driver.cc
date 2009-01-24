@@ -123,7 +123,7 @@ class Roomba : public ThreadedDriver
     Roomba(ConfigFile* cf, int section);
 
     int MainSetup();
-    int Shutdown();
+    void MainQuit();
 
     // MessageHandler
     int ProcessMessage(QueuePointer & resp_queue,
@@ -276,18 +276,15 @@ Roomba::MainSetup()
   return(0);
 }
 
-int
-Roomba::Shutdown()
+void
+Roomba::MainQuit()
 {
-  this->StopThread();
-
   if(roomba_close(this->roomba_dev))
   {
     PLAYER_ERROR("failed to close roomba connection");
   }
   roomba_destroy(this->roomba_dev);
   this->roomba_dev = NULL;
-  return(0);
 }
 
 void

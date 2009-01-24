@@ -277,7 +277,7 @@ class VFH_Class : public ThreadedDriver
     bool planner;
 
     player_planner_data_t planner_data;
-    
+
 
     // Devices we require
     // Odometry device info
@@ -1043,7 +1043,7 @@ VFH_Class::ProcessCommand(player_msghdr_t* hdr, player_position2d_cmd_pos_t &cmd
     this->goal_x = x;
     this->goal_y = y;
     this->goal_t = t;
-    
+
     if(this->planner)
     {
        this->planner_data.goal.px = cmd.pos.px;

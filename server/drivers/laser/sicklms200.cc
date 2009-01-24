@@ -229,7 +229,7 @@ class SickLMS200 : public ThreadedDriver
     SickLMS200(ConfigFile* cf, int section);
 
     int MainSetup();
-    int Shutdown();
+    void MainQuit();
 
     // MessageHandler
     int ProcessMessage(QueuePointer & resp_queue,
@@ -609,11 +609,8 @@ int SickLMS200::MainSetup()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-int SickLMS200::Shutdown()
+void SickLMS200::MainQuit()
 {
-  // shutdown laser device
-  StopThread();
-
   // switch to connect rate just in case
   if (this->connect_rate != this->current_rate)
   // PBeeson -- This doesn't do anything.  Once Setup() completes,
@@ -627,8 +624,6 @@ int SickLMS200::Shutdown()
 
 
   PLAYER_MSG0(2, "laser shutdown");
-
-  return(0);
 }
 
 

@@ -106,7 +106,7 @@ class MicroStrain3DMG : public ThreadedDriver
   public: virtual int MainSetup();
 
   // Shutdown the device
-  public: virtual int Shutdown();
+  public: virtual void MainQuit();
 
   // Open the serial port
   // Returns 0 on success
@@ -217,15 +217,10 @@ int MicroStrain3DMG::MainSetup()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-int MicroStrain3DMG::Shutdown()
+void MicroStrain3DMG::MainQuit()
 {
-  // Stop driver thread
-  StopThread();
-
   // Close the port
   ClosePort();
-
-  return 0;
 }
 
 

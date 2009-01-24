@@ -105,7 +105,7 @@ class Iwspy : public ThreadedDriver
   public: virtual int MainSetup();
 
   // Finalize driver
-  public: virtual int Shutdown();
+  public: virtual void MainQuit();
 
   // Main function for device thread.
   public: virtual void Main();
@@ -241,15 +241,10 @@ int Iwspy::MainSetup()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Finalize driver
-int Iwspy::Shutdown()
+void Iwspy::MainQuit()
 {
-  // Stop device thread
-  StopThread();
-
   // Stop pinging
   this->StopPing();
-
-  return 0;
 }
 
 

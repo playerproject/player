@@ -114,7 +114,7 @@ driver
 #include <deque>
 using namespace std;
 
-class Festival:public ThreadedDriver 
+class Festival:public ThreadedDriver
 {
   private:
     int pid;      // Festival's pid so we can kill it later (if necessary)
@@ -205,7 +205,7 @@ Festival::Festival( ConfigFile* cf, int section) :
 
 Festival::~Festival()
 {
-  Shutdown();
+  MainQuit();
   if(sock != -1)
     QuitFestival(this);
 /*  if(queue)

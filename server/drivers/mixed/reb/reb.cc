@@ -345,12 +345,10 @@ REB::MainSetup()
 }
 
 
-int
-REB::Shutdown()
+void
+REB::MainQuit()
 {
   printf("REB: SHUTDOWN\n");
-
-  StopThread();
 
   SetSpeed(REB_MOTOR_LEFT, 0);
   SetSpeed(REB_MOTOR_RIGHT, 0);
@@ -359,7 +357,6 @@ REB::Shutdown()
 
   close(reb_fd);
   reb_fd = -1;
-  return(0);
 }
 
 int

@@ -518,7 +518,7 @@ public:
   SonyEVID30( ConfigFile* cf, int section);
 
   virtual int MainSetup();
-  virtual int Shutdown();
+  virtual void MainQuit();
 };
 
 // initialization function
@@ -692,14 +692,12 @@ int SonyEVID30::MainSetup()
   return(0);
 }
 
-int SonyEVID30::Shutdown()
+void SonyEVID30::MainQuit()
 {
   puts("SonyEVID30::Shutdown");
 
   if(ptz_fd == -1)
-    return(0);
-
-  StopThread();
+    return;
 
   // put the camera back to center
   usleep(PTZ_SLEEP_TIME_USEC);
@@ -711,7 +709,6 @@ int SonyEVID30::Shutdown()
     perror("SonyEVID30::Shutdown():close():");
   ptz_fd = -1;
   puts("PTZ camera has been shutdown");
-  return(0);
 }
 
 int SonyEVID30::Send(unsigned char *str, int len, unsigned char *reply,

@@ -192,7 +192,7 @@ class WriteLog: public ThreadedDriver
   public: virtual int MainSetup();
 
   /// Finalize the driver
-  public: virtual int Shutdown();
+  public: virtual void MainQuit();
 
   // Device thread
   private: virtual void Main(void);
@@ -478,13 +478,10 @@ int WriteLog::MainSetup()
 
 ////////////////////////////////////////////////////////////////////////////
 // Finalize the driver
-int WriteLog::Shutdown()
+void WriteLog::MainQuit()
 {
   int i;
   WriteLogDevice *device;
-
-  // Stop the device thread
-  this->StopThread();
 
   // Close the file
   this->CloseFile();
@@ -498,8 +495,6 @@ int WriteLog::Shutdown()
     device->device->Unsubscribe(this->InQueue);
     device->device = NULL;
   }
-
-  return 0;
 }
 
 int

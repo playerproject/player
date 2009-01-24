@@ -1,8 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@
  * power services all need to go through a single serial port and
  * base device class.  So this code was copied from p2osdevice and
  * modified to taste.
- * 
+ *
  */
 
 #ifndef _REBDEVICE_H
@@ -97,30 +97,30 @@ typedef struct {
 */
 
 
-class REB : public ThreadedDriver 
+class REB : public ThreadedDriver
 {
 public:
-  
+
   REB(ConfigFile *cf, int section);
 
   /* the main thread */
   virtual void Main();
 
   int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
-  
+
   // we override these, because we will maintain our own subscription count
   virtual int Subscribe(player_device_id_t id);
   virtual int Unsubscribe(player_device_id_t id);
-  
+
   virtual int MainSetup();
-  virtual int Shutdown();
+  virtual void MainQuit();
 
   void Restart();
 
   void ReadConfig();
 
   void SetOdometry(int, int, short);
-  
+
   // handle IR
   void SetIRState(int);
 
@@ -141,10 +141,10 @@ public:
   int ReadSpeed(int);
 
   void SetPos(int, int);
-  
+
   void SetPosCounter(int, int);
   int ReadPos(int);
-  
+
   unsigned char ReadStatus(int, int *, int *);
   void ConfigPosPID(int, int, int, int);
   void ConfigSpeedPID(int, int, int, int);
@@ -159,13 +159,13 @@ private:
   player_device_id_t ir_id;
   player_device_id_t position_id;
   player_device_id_t power_id;
-  
+
   int ir_subscriptions;
   int position_subscriptions;
-  
+
   int param_index;  // index in the RobotParams table for this robot
   int reb_fd;               // reb device file descriptor
-  
+
   struct timeval last_position; // last position update
   bool refresh_last_position;
   int last_lpos, last_rpos;
@@ -189,10 +189,10 @@ private:
   bool direct_velocity_control;
 
   // device used to communicate with reb
-  char reb_serial_port[MAX_FILENAME_SIZE]; 
+  char reb_serial_port[MAX_FILENAME_SIZE];
 
   struct pollfd write_pfd, read_pfd;
-  
+
   // holding vars for command processing
   int ProcessCommand(player_position_cmd_t * poscmd);
   short last_trans_command, last_rot_command;

@@ -53,7 +53,7 @@ class ChatterboxDriver : public ThreadedDriver
 
     // Must implement the following methods.
     virtual int MainSetup();
-    virtual int Shutdown();
+    virtual void MainQuit();
     virtual int ProcessMessage(QueuePointer & resp_queue,
                                player_msghdr * hdr,
                                void * data);
@@ -273,7 +273,7 @@ int ChatterboxDriver::MainSetup()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-int ChatterboxDriver::Shutdown()
+void ChatterboxDriver::MainQuit()
 {
   puts("Shutting down Chatterbox driver...");
 
@@ -281,12 +281,7 @@ int ChatterboxDriver::Shutdown()
   for( unsigned int l=0; l<LEDCOUNT; l++ )
     setLed( l, 0,0,0 );
 
-  // Stop and join the driver thread
-  this->StopThread();
-
   puts("done.");
-
-  return(0);
 }
 
 

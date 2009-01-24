@@ -310,7 +310,7 @@ wbr914::~wbr914()
 {
   if ( _tioChanged )
     tcsetattr( this->_fd, TCSADRAIN, &_old_tio);
-  Shutdown();
+  MainQuit();
   delete [] _ir_geom.poses;
   delete [] _data.ir.ranges;
   delete [] _data.ir.voltages;
@@ -488,13 +488,10 @@ int wbr914::InitRobot()
 }
 
 
-int wbr914::Shutdown()
+void wbr914::MainQuit()
 {
   if( this->_fd == -1 )
-    return(0);
-
-  // Stop any more processing
-  StopThread();
+    return;
 
   // Stop the robot
   StopRobot();
@@ -507,8 +504,6 @@ int wbr914::Shutdown()
   close( fd );
 
   puts( "914 has been shut down" );
-
-  return(0);
 }
 
 int wbr914::Subscribe( player_devaddr_t id )
