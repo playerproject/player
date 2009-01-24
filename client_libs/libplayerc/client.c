@@ -1139,33 +1139,39 @@ int playerc_client_readpacket(playerc_client_t *client,
     client->read_xdrdata_len += nbytes;
   }
 
-  // Locate the appropriate unpacking function for the message body
-  if(!(packfunc = playerxdr_get_packfunc(header->addr.interf, header->type,
-                                         header->subtype)))
+  if (header->size)
   {
-    // TODO: Allow the user to register a callback to handle unsupported
-    // messages
-    PLAYERC_ERR4("skipping message from %s:%u with unsupported type %s:%u",
+  // Locate the appropriate unpacking function for the message body
+    if(!(packfunc = playerxdr_get_packfunc(header->addr.interf, header->type,
+                                         header->subtype)))
+    {
+      // TODO: Allow the user to register a callback to handle unsupported
+      // messages
+      PLAYERC_ERR4("skipping message from %s:%u with unsupported type %s:%u",
                  interf_to_str(header->addr.interf), header->addr.index, msgtype_to_str(header->type), header->subtype);
 
-    // Slide over the body
-    memmove(client->read_xdrdata,
+      // Slide over the body
+      memmove(client->read_xdrdata,
             client->read_xdrdata + header->size,
             client->read_xdrdata_len - header->size);
-    client->read_xdrdata_len -= header->size;
+      client->read_xdrdata_len -= header->size;
 
-    return(-1);
-  }
+      return(-1);
+    }
 
-  // Unpack the body
-  if((decode_msglen = (*packfunc)(client->read_xdrdata,
+    // Unpack the body
+    if((decode_msglen = (*packfunc)(client->read_xdrdata,
                                   header->size, data, PLAYERXDR_DECODE)) < 0)
-  {
-    PLAYERC_ERR4("decoding failed on message from %s:%u with type %s:%u",
+    {
+      PLAYERC_ERR4("decoding failed on message from %s:%u with type %s:%u",
                  interf_to_str(header->addr.interf), header->addr.index, msgtype_to_str(header->type), header->subtype);
-    return(-1);
+      return(-1);
+    }
   }
-
+  else
+  {
+    decode_msglen = 0;
+  }
   // Slide over the body
   memmove(client->read_xdrdata,
           client->read_xdrdata + header->size,
@@ -1273,8 +1279,15 @@ void playerc_client_push(playerc_client_t *client,
 
   item = client->qitems + (client->qfirst + client->qlen) % client->qsize;
   item->header = *header;
-  item->data = malloc(header->size);
-  memcpy(item->data, data, header->size);
+  if (header->size && data)
+  {
+    item->data = malloc(header->size);
+    memcpy(item->data, data, header->size);
+  }
+  else
+  {
+    item->data = NULL;
+  }
 
   client->qlen +=1;
 

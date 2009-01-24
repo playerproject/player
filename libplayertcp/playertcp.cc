@@ -567,6 +567,7 @@ PlayerTCP::WriteClient(int cli)
   player_msghdr_t hdr;
   void* payload;
   int encode_msglen;
+
 #if HAVE_Z
   player_map_data_t* zipped_data=NULL;
 #endif
@@ -581,6 +582,8 @@ PlayerTCP::WriteClient(int cli)
                          client->writebuffer,
                          MIN(client->writebufferlen,
                              PLAYERTCP_WRITEBUFFER_SIZE));
+
+
       if(numwritten < 0)
       {
         if(errno == EAGAIN)
@@ -612,79 +615,79 @@ PlayerTCP::WriteClient(int cli)
       // instances of the message on other queues.
       hdr = *msg->GetHeader();
       payload = msg->GetPayload();
-      // Locate the appropriate packing function
-      if(!(packfunc = playerxdr_get_packfunc(hdr.addr.interf,
-                                         hdr.type, hdr.subtype)))
+
+      // Make sure there's room in the buffer for the encoded messsage.
+      // 4 times the message (including dynamic data) is a safe upper bound
+      size_t maxsize = PLAYERXDR_MSGHDR_SIZE + (4 * msg->GetDataSize());
+      if(maxsize > (size_t)(client->writebuffersize))
       {
-        // TODO: Allow the user to register a callback to handle unsupported
-        // messages
-        PLAYER_WARN4("skipping message from %s:%u with unsupported type %s:%u",
-                     interf_to_str(hdr.addr.interf), hdr.addr.index, msgtype_to_str(hdr.type), hdr.subtype);
-      }
-      else
-      {
-        // Make sure there's room in the buffer for the encoded messsage.
-        // 4 times the message (including dynamic data) is a safe upper bound
-        size_t maxsize = PLAYERXDR_MSGHDR_SIZE + (4 * msg->GetDataSize());
-        if(maxsize > (size_t)(client->writebuffersize))
-        {
-          // Get at least twice as much space
-          client->writebuffersize = MAX((size_t)(client->writebuffersize * 2),
+        // Get at least twice as much space
+        client->writebuffersize = MAX((size_t)(client->writebuffersize * 2),
                                         maxsize);
-          // Did we hit the limit (or overflow and become negative)?
-          if((client->writebuffersize >= PLAYERXDR_MAX_MESSAGE_SIZE) ||
-             (client->writebuffersize < 0))
-          {
-            PLAYER_WARN1("allocating maximum %d bytes to outgoing message buffer",
-                         PLAYERXDR_MAX_MESSAGE_SIZE);
-            client->writebuffersize = PLAYERXDR_MAX_MESSAGE_SIZE;
-          }
-          client->writebuffer = (char*)realloc(client->writebuffer,
-                                               client->writebuffersize);
-          assert(client->writebuffer);
-          memset(client->writebuffer, 0, client->writebuffersize);
-        }
-
-        // HACK: special handling for map data to compress it before sending
-        // them out over the network.
-        if((hdr.addr.interf == PLAYER_MAP_CODE) &&
-           (hdr.type == PLAYER_MSGTYPE_RESP_ACK) &&
-           (hdr.subtype == PLAYER_MAP_REQ_GET_DATA))
+        // Did we hit the limit (or overflow and become negative)?
+        if((client->writebuffersize >= PLAYERXDR_MAX_MESSAGE_SIZE) ||
+           (client->writebuffersize < 0))
         {
+          PLAYER_WARN1("allocating maximum %d bytes to outgoing message buffer",
+                         PLAYERXDR_MAX_MESSAGE_SIZE);
+          client->writebuffersize = PLAYERXDR_MAX_MESSAGE_SIZE;
+        }
+        client->writebuffer = (char*)realloc(client->writebuffer,
+                                               client->writebuffersize);
+        assert(client->writebuffer);
+        memset(client->writebuffer, 0, client->writebuffersize);
+      }
+
+      // HACK: special handling for map data to compress it before sending
+      // them out over the network.
+      if((hdr.addr.interf == PLAYER_MAP_CODE) &&
+         (hdr.type == PLAYER_MSGTYPE_RESP_ACK) &&
+         (hdr.subtype == PLAYER_MAP_REQ_GET_DATA))
+      {
 #if HAVE_Z
-          player_map_data_t* raw_data = (player_map_data_t*)payload;
-          zipped_data = (player_map_data_t*)calloc(1,sizeof(player_map_data_t));
-          assert(zipped_data);
+        player_map_data_t* raw_data = (player_map_data_t*)payload;
+        zipped_data = (player_map_data_t*)calloc(1,sizeof(player_map_data_t));
+        assert(zipped_data);
 
-          // copy the metadata
-          *zipped_data = *raw_data;
-          uLongf count = compressBound(raw_data->data_count);
-          zipped_data->data = (int8_t*)malloc(count);
+        // copy the metadata
+        *zipped_data = *raw_data;
+        uLongf count = compressBound(raw_data->data_count);
+        zipped_data->data = (int8_t*)malloc(count);
 
-          // compress the tile
-          int ret;
-          ret = compress((Bytef*)zipped_data->data,&count,
+        // compress the tile
+        int ret;
+        ret = compress((Bytef*)zipped_data->data,&count,
                          (const Bytef*)raw_data->data, raw_data->data_count);
-          if((ret != Z_OK) && (ret != Z_STREAM_END))
-          {
-            PLAYER_ERROR("failed to compress map data");
-            free(zipped_data);
-            client->writebufferlen = 0;
-            delete msg;
-            return(0);
-          }
-
-          zipped_data->data_count = count;
-
-          // swap the payload pointer to point at the zipped version
-          payload = (void*)zipped_data;
-#else
-          PLAYER_WARN("not compressing map data, because zlib was not found at compile time");
-#endif
+        if((ret != Z_OK) && (ret != Z_STREAM_END))
+        {
+          PLAYER_ERROR("failed to compress map data");
+          free(zipped_data);
+          client->writebufferlen = 0;
+          delete msg;
+          return(0);
         }
 
-        if (payload)
-          {
+        zipped_data->data_count = count;
+
+        // swap the payload pointer to point at the zipped version
+        payload = (void*)zipped_data;
+#else
+        PLAYER_WARN("not compressing map data, because zlib was not found at compile time");
+#endif
+      }
+
+      if (payload)
+      {
+        // Locate the appropriate packing function
+        if(!(packfunc = playerxdr_get_packfunc(hdr.addr.interf,
+                                               hdr.type, hdr.subtype)))
+        {
+          // TODO: Allow the user to register a callback to handle unsupported messages
+          PLAYER_WARN4("skipping message from %s:%u with unsupported type %s:%u",
+                           interf_to_str(hdr.addr.interf), hdr.addr.index, msgtype_to_str(hdr.type), hdr.subtype);
+        }
+        else
+        {
           // Encode the body first
           if((encode_msglen =
               (*packfunc)(client->writebuffer + PLAYERXDR_MSGHDR_SIZE,
@@ -706,33 +709,34 @@ PlayerTCP::WriteClient(int cli)
             return(0);
           }
         }
-        else
-        {
-          encode_msglen = 0;
-        }
-        // Rewrite the size in the header with the length of the encoded
-        // body, then encode the header.
-        hdr.size = encode_msglen;
-        if((encode_msglen = player_msghdr_pack(client->writebuffer,
+      }
+      else
+      {
+        encode_msglen = 0;
+      }
+      // Rewrite the size in the header with the length of the encoded
+      // body, then encode the header.
+      hdr.size = encode_msglen;
+      if((encode_msglen = player_msghdr_pack(client->writebuffer,
                    PLAYERXDR_MSGHDR_SIZE, &hdr,
                    PLAYERXDR_ENCODE)) < 0)
-        {
-          PLAYER_ERROR("failed to encode msg header");
+      {
+        PLAYER_ERROR("failed to encode msg header");
 #if HAVE_Z
-          if(zipped_data)
-          {
-            free(zipped_data->data);
-            free(zipped_data);
-            zipped_data=NULL;
-          }
-#endif
-          client->writebufferlen = 0;
-          delete msg;
-          return(0);
+        if(zipped_data)
+        {
+          free(zipped_data->data);
+          free(zipped_data);
+          zipped_data=NULL;
         }
-
-        client->writebufferlen = PLAYERXDR_MSGHDR_SIZE + hdr.size;
+#endif
+        client->writebufferlen = 0;
+        delete msg;
+        return(0);
       }
+
+      client->writebufferlen = PLAYERXDR_MSGHDR_SIZE + hdr.size;
+
       delete msg;
 #if HAVE_Z
       if(zipped_data)
