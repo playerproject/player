@@ -190,7 +190,7 @@ public:
     virtual ~mbicp();
 
     virtual int MainSetup();
-    virtual int Shutdown();
+    virtual void MainQuit();
 
     virtual int ProcessMessage(QueuePointer &resp_queue,
                                player_msghdr * hdr,
@@ -318,13 +318,9 @@ Init_MbICP_ScanMatching(
 
 
 ////////////////////////////////////////////////////////////////////////////////
-int mbicp::Shutdown(){
-   // Stop the driver thread.
-   StopThread();
-
+void mbicp::MainQuit(){
    // Stop the odom device.
    ShutdownDevice();
-   return 0;
 }
 
 

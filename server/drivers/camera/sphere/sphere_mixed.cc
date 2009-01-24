@@ -359,12 +359,9 @@ int SphereDriver::MainSetup()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-int SphereDriver::Shutdown()
+void SphereDriver::MainQuit()
 {
   puts("Shutting Sphere driver down");
-
-  // Stop and join the driver thread
-  StopThread();
 
   // Set to 0,0
   set_pan_and_tilt(mFg->fd, 0, 0);
@@ -377,12 +374,7 @@ int SphereDriver::Shutdown()
   if (mFg != NULL)
     fg_close(mFg);
 
-  // Here you would shut the device down by, for example, closing a
-  // serial port.
-
   puts("Sphere driver has been shutdown");
-
-  return(0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

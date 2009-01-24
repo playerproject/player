@@ -101,7 +101,7 @@ class Bumper2Laser : public ThreadedDriver
 
     // Must implement the following methods.
     virtual int MainSetup();
-    virtual int Shutdown();
+    virtual void MainQuit();
 
     // This method will be invoked on each incoming message
     virtual int ProcessMessage(QueuePointer & resp_queue,
@@ -246,15 +246,10 @@ int Bumper2Laser::MainSetup()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-int Bumper2Laser::Shutdown()
+void Bumper2Laser::MainQuit()
 {
-  // Stop and join the driver thread
-  StopThread();
-
   // Unsubscribe from the bumper
   this->bumper_dev->Unsubscribe(this->InQueue);
-
-  return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

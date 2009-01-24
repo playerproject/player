@@ -3,7 +3,7 @@
 /**
   *  Copyright (C) 2006
   *     Videre Design
-  *  Copyright (C) 2000  
+  *  Copyright (C) 2000
   *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
   *
   *  Videre Erratic robot driver for Player
@@ -94,7 +94,7 @@ typedef enum command {
 	set_pid_rot_p =             83,
 	set_pid_rot_v =             84,
 	set_pid_rot_i =             85,
-	
+
 } command_e;
 
 // Argument types used in robot commands
@@ -135,7 +135,7 @@ extern bool debug_mode;
 
 class ErraticMotorPacket;
 
-class Erratic : public ThreadedDriver 
+class Erratic : public Driver
 {
 private:
   int mcount;
@@ -157,10 +157,10 @@ private:
   //ErraticMotorPacket* sippacket;
   ErraticMotorPacket *motor_packet;
   pthread_mutex_t motor_packet_mutex;
-		
+
   int Connect();
   int Disconnect();
-		
+
   void ResetRawPositions();
   void ToggleMotorPower(unsigned char val);
 
@@ -179,13 +179,13 @@ private:
   void PublishAIn();
   void PublishIR();
   void PublishSonar();
-		
+
   float IRRangeFromVoltage(float voltage);
   float IRFloorRange(float value);
-		
+
   void StartThreads();
   void StopThreads();
-		
+
   void Send(ErraticPacket *packet);
   void SendThread();
   static void *SendThreadDummy(void *driver);
@@ -211,11 +211,11 @@ private:
 
   bool print_all_packets;
   bool print_status_summary;
-		
+
   bool save_settings_in_robot;
 
   int param_idx;  // index in the RobotParams table for this robot
-		
+
   // Max motor speeds (mm/sec,deg/sec)
   int motor_max_speed;
   int motor_max_turnspeed;
@@ -228,7 +228,7 @@ private:
   uint16_t motor_pwm_frequency, motor_pwm_max_on;
 
   // Bound the command velocities
-  bool use_vel_band; 
+  bool use_vel_band;
 
   // Max motor accel/decel (mm/sec/sec, deg/sec/sec)
   short motor_max_trans_accel, motor_max_trans_decel;

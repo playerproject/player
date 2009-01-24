@@ -170,7 +170,7 @@ class Cmucam2:public ThreadedDriver
 		virtual void Main();
 
 		int MainSetup();
-		int Shutdown();
+		void MainQuit();
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -292,12 +292,10 @@ int Cmucam2::MainSetup()
 
 
 ////////////////////////////////////////////////////////////////////////////////
-int Cmucam2::Shutdown()
+void Cmucam2::MainQuit()
 {
-	StopThread();
 	stop_tracking(fd);
 	close_port(fd);                 // close the serial port
-	return(0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

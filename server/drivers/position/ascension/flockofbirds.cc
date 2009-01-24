@@ -422,7 +422,7 @@ class FlockOfBirds_Device : public ThreadedDriver
     FlockOfBirds_Device( ConfigFile* cf, int section);
 
     virtual int MainSetup();
-    virtual int Shutdown();
+    virtual void MainQuit();
 
     // MessageHandler
     int ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, void * data);
@@ -472,19 +472,16 @@ FlockOfBirds_Device::MainSetup()
   return(0);
 }
 
-int
-FlockOfBirds_Device::Shutdown()
+void
+FlockOfBirds_Device::MainQuit()
 {
   puts("FlockOfBirds_Device::Shutdown");
 
 
   fob->StopStream();
-  StopThread();
 
   delete fob;
   fob=NULL;
-
-  return(0);
 }
 
 int FlockOfBirds_Device::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, void * data)

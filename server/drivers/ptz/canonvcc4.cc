@@ -172,7 +172,7 @@ int ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, void * data);
   // int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
 
   virtual int MainSetup();
-  virtual int Shutdown();
+  virtual void MainQuit();
 };
 
 /************************************************************************/
@@ -360,13 +360,12 @@ canonvcc4::configurePort()
 }
 
 /************************************************************************/
-int
-canonvcc4::Shutdown()
+void
+canonvcc4::MainQuit()
 {
   if(ptz_fd == -1)
-    return(0);
+    return;
 
-  StopThread();
   usleep(PTZ_SLEEP_TIME_USEC);
   SendAbsPanTilt(0,0);
   usleep(PTZ_SLEEP_TIME_USEC);
@@ -376,7 +375,6 @@ canonvcc4::Shutdown()
     perror("canonvcc4::Shutdown():close():");
   ptz_fd = -1;
   puts("PTZ camera has been shutdown");
-  return(0);
 }
 
 /************************************************************************/

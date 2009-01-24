@@ -2,7 +2,7 @@
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2000-2003
  *     David Feil-Seifer
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@
 
 /*
  *
- * Relevant constants for the "ER" robots, made by Evolution Robotics.    
+ * Relevant constants for the "ER" robots, made by Evolution Robotics.
  *
  * Some of this code is borrowed and/or adapted from the player
  * module of trogdor; thanks to the author of that module.
@@ -90,11 +90,11 @@ typedef struct
 
 
 
-class ER : public ThreadedDriver 
+class ER : public ThreadedDriver
 {
   private:
     player_er1_data_t er1_data;
-    
+
     player_devaddr_t position_id;
     int position_subscriptions;
 
@@ -106,29 +106,25 @@ class ER : public ThreadedDriver
     void Stop( int StopMode );
     virtual void Main();
     virtual int MainSetup();
-    virtual int Shutdown();
-    //void HandleConfig(void);
-    //void GetCommand(void);
-    //void PutData(void);
-    
+    virtual void MainQuit();
+
     // MessageHandler
     virtual int ProcessMessage(QueuePointer & resp_queue,
                                player_msghdr * hdr,
                                void * data);
-    //void HandlePositionCommand(player_position2d_cmd_t position_cmd);
     void Test();
-        
+
   private:
     // this function will be run in a separate thread
     int InitOdom();
     int InitRobot();
-    
+
     //serial connection
     int *_tc_num;
     int _fd; // device file descriptor
     const char* _serial_port; // name of dev file
     bool _fd_blocking;
-    
+
     // methods for internal use
     int WriteBuf(unsigned char* s, size_t len);
     int ReadBuf(unsigned char* s, size_t len);
@@ -162,7 +158,7 @@ class ER : public ThreadedDriver
     int _last_ltics, _last_rtics;
     double _px, _py, _pa;  // integrated odometric pose (m,m,rad)
     int _powered, _resting; // If _powered is false, no constant updates. _resting means the last update was a 0,0 one.
-    
+
     int send_command( unsigned char address, unsigned char c, int ret_num, unsigned char * ret );
     int send_command_2_arg( unsigned char address, unsigned char c, int arg, int ret_num, unsigned char * ret );
     int send_command_4_arg( unsigned char address, unsigned char c, int arg, int ret_num, unsigned char * ret );

@@ -1,9 +1,9 @@
 /*! \mainpage
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2003  
+ *  Copyright (C) 2003
  *     Brian Gerkey
- *                      
- * 
+ *
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -22,16 +22,16 @@
 
 /*! \class RobotinoDriver
  * \brief Class for FESTO Robotino(R) plug-in driver
- * \par Authors: 
+ * \par Authors:
  * Simon Kracht and Carsten Nielsen
  * Aalborg University, Section for Automation and Control
  * \par Year:
  * 2007
  *
- * Plug-in driver for the FESTO Robotino(R) robot 
+ * Plug-in driver for the FESTO Robotino(R) robot
  *
  * This driver makes use of the open C++ libraries bundled with
- * the FESTO Robotino(R) robot, thus providing access to most 
+ * the FESTO Robotino(R) robot, thus providing access to most
  * of  the robots functionalities.
  *
  * \par Compile-time dependencies:
@@ -68,7 +68,7 @@
  * - PLAYER_IR_REQ_POSE
  *  \b interface_power :
  * - PLAYER_POSITION2D_REQ_MOTOR_POWER
- * 
+ *
  * \par Configuration file example:
  *
  * \code
@@ -76,7 +76,7 @@
  * (
  * name "robotino_driver"
  * provides ["position2d:0" "power:0" "bumper:0" "ir:0"]
- *  
+ *
  * # Options
  * ROBOTINO_TIMEOUT_MS 5000 #default 5000
  * CYCLE_TIME_US 100000     #default 100000
@@ -137,38 +137,38 @@ void connectionClosedCb (void *data)
 class RobotinoDriver:public ThreadedDriver
 {
 public:
-  
+
   // Constructor; need that
   RobotinoDriver (ConfigFile * cf, int section);
-  
+
   // Must implement the following methods.
   virtual int MainSetup ();
-  virtual int Shutdown ();
-  
+  virtual void MainQuit ();
+
   // This method will be invoked on each incoming message
   virtual int ProcessMessage (QueuePointer &resp_queue,
 			      player_msghdr * hdr, void *data);
 
-   // Holders for desired velocities 
+   // Holders for desired velocities
   float desiredVelocityX;
   float desiredVelocityY;
   float desiredVelocityA;
-	
+
 	// Holder for position (odometry) data sent from below
 	player_position2d_data_t posdata;
 
-	// Holder for position (odometry) data sent from above 
+	// Holder for position (odometry) data sent from above
 	player_position2d_set_odom_req odomCommand;
 
 private:
   // Main function for device thread.
   virtual void Main ();
-  
+
   player_devaddr_t position_addr;
   player_devaddr_t power_addr;
   player_devaddr_t bumper_addr;
   player_devaddr_t ir_addr;
-  
+
   // Robotino(R) device
   RobotinoCom com;
 
@@ -178,12 +178,12 @@ private:
 
 };
 /// A factory creation function.
-/** 
+/**
     Declared outside of the class so that it can be invoked without any object context (alternatively, you can
     declare it static in the class).  In this function, we create and return
     (as a generic Driver*) a pointer to a new instance of this driver.
 */
-Driver * 
+Driver *
 RobotinoDriver_Init (ConfigFile * cf, int section)
 {
   //! Create and return a new instance of this driver
@@ -191,11 +191,11 @@ RobotinoDriver_Init (ConfigFile * cf, int section)
 }
 
 //! A driver registration function.
-/** 
-    Again declared outside of the class so that it can be invoked without 
-    object context.  In this function, we add the driver into the given 
-    driver table, indicating which interface the driver can support and how 
-    to create a driver instance. 
+/**
+    Again declared outside of the class so that it can be invoked without
+    object context.  In this function, we add the driver into the given
+    driver table, indicating which interface the driver can support and how
+    to create a driver instance.
 */
 void RobotinoDriver_Register (DriverTable * table)
 {
@@ -215,33 +215,33 @@ RobotinoDriver::RobotinoDriver (ConfigFile * cf, int section):
   memset (&this->power_addr, 0, sizeof (player_devaddr_t));
   memset (&this->bumper_addr, 0, sizeof (player_devaddr_t));
   memset (&this->ir_addr, 0, sizeof(player_devaddr_t));
- 
+
   // Do we create a position interface?
   if (cf->ReadDeviceAddr (& (this-> position_addr),section,"provides",PLAYER_POSITION2D_CODE,-1, NULL) == 0)
     {
       if (this->AddInterface (this->position_addr) !=0)
 	{
-	  this->SetError (-1); 
+	  this->SetError (-1);
 	  return;
 	}
     }
-  
+
   // Do we create a power interface?
   if (cf->ReadDeviceAddr (&(this->power_addr),section,"provides",PLAYER_POWER_CODE,-1, NULL) == 0)
     {
       if (this->AddInterface (this->power_addr) != 0)
 	{
-	  this->SetError (-1); 
+	  this->SetError (-1);
 	  return;
 	}
     }
-  
+
   // Do we create a bumper interface?
   if (cf->ReadDeviceAddr (&(this->bumper_addr),section,"provides",PLAYER_BUMPER_CODE, -1, NULL) == 0)
     {
       if (this->AddInterface (this->bumper_addr) != 0)
 	{
-	  this->SetError (-1); 
+	  this->SetError (-1);
 	  return;
 	}
     }
@@ -250,67 +250,67 @@ RobotinoDriver::RobotinoDriver (ConfigFile * cf, int section):
     {
       if(this->AddInterface(this->ir_addr) != 0)
 	{
-	  this->SetError(-1);    
+	  this->SetError(-1);
 	  return;
 	}
     }
-} 
+}
 
 /// Set up the device.
-/** 
-    Return 0 if things go well, and -1 otherwise. 
+/**
+    Return 0 if things go well, and -1 otherwise.
 */
 int RobotinoDriver::MainSetup ()
 {
   std::cout << std:: endl << "Robotino(R) :: Driver initialising" << std::endl;
-  
+
   //! Here you do whatever is necessary to setup the device, like open and configure a serial port.
-  
+
   XTimer timer;
 
   if (false == com.init ())
     {
       return -1;
     }
-  
+
   std::cout << std::endl << "Robotino(R) :: Connecting...";
-  
+
   com.setErrorCallback (&errorCb,NULL);
   com.setConnectedCallback (&connectedCb, NULL);
   com.setConnectionClosedCallback(&connectionClosedCb, NULL);
-  
+
   com.connectToHost ("127.0.0.1");
- 
+
   while (com.state () == RobotinoCom::ConnectingState)
     {
       std::cout << ".";
       XThread::msleep (200);
     }
-  
-  // Camera settings 
+
+  // Camera settings
   RobotinoCom::CameraParameters param = com.cameraParameters();
   param.compression = RobotinoCom::HighCompression;
   param.resolution = RobotinoCom::QVGA;
   com.setCameraParameters( param );
-  
+
   PLAYER_MSG0(2,"Robotino : Setup done");
-  
+
   // If errors are encountered
   if (com.error () != RobotinoCom::NoError)
     {
-      Shutdown ();
+      MainQuit ();
     }
-  
+
   // Set the robot timeout, in seconds. The robot will stop if no commands are sent before the timeout expires.
   com.setTimeout (this->ROBOTINO_TIMEOUT_MS);
-  std::cout << std::endl << "Robotino(R) :: Timeout set to " << this->ROBOTINO_TIMEOUT_MS;  
+  std::cout << std::endl << "Robotino(R) :: Timeout set to " << this->ROBOTINO_TIMEOUT_MS;
   std::cout << std::endl << "Robotino(R) :: Driver initializing - DONE" << std::endl;
 
  if (com.receiveIoStatus() == false)
 	{
 	  PLAYER_ERROR("Robotino(R) :: Failed to receive IO status in setup");
-	}  
-  
+	}
+
   // Initialize the holders for desired velocities
   desiredVelocityX = 0;
   desiredVelocityY = 0;
@@ -325,7 +325,7 @@ return (0);
 
 
 /// Shutdown the device
-int RobotinoDriver::Shutdown ()
+void RobotinoDriver::MainQuit ()
 {
   std::cout << std::endl << "Robotino(R) :: Shutting driver down";
   //! Stop and join the driver thread
@@ -335,9 +335,9 @@ int RobotinoDriver::Shutdown ()
   //! serial port.
 
   com.close ();
-    
+
   std::cout << std::endl << "Robotino(R) :: Shutting driver down - DONE" << std::endl;
-  
+
   return (0);
 }
 
@@ -348,7 +348,7 @@ ProcessMessage (QueuePointer &resp_queue,player_msghdr * hdr,void *data)
   //! Send a response if necessary, using Publish().
   //! If you handle the message successfully, return 0.  Otherwise,
   //! return -1, and a NACK will be sent for you, if a response is required.
-  
+
   // Interface - position2d
   if (Message::MatchMessage (hdr,PLAYER_MSGTYPE_CMD,
 			     PLAYER_POSITION2D_CMD_VEL,
@@ -357,12 +357,12 @@ ProcessMessage (QueuePointer &resp_queue,player_msghdr * hdr,void *data)
       // Get and send the latest motor commands
       player_position2d_cmd_vel_t position_cmd;
       position_cmd = *(player_position2d_cmd_vel_t *)data;
-      
+
       /*PLAYER_MSG3 (3,"Robotino(R) :: Player motor commands %f:%f:%f",
 		   position_cmd.vel.px,
 		   position_cmd.vel.py,
 		   position_cmd.vel.pa);*/
-      
+
       // Desired velocities are stored
       desiredVelocityX = position_cmd.vel.px; // [m/s]
       desiredVelocityY = position_cmd.vel.py; // [m/s]
@@ -373,12 +373,12 @@ ProcessMessage (QueuePointer &resp_queue,player_msghdr * hdr,void *data)
       position_cmd.vel.pa = position_cmd.vel.pa * (180/PI);
 
       /*
-      
+
       if (position_cmd.vel.px < 0)
 	{
 	  position_cmd.vel.px = position_cmd.vel.px * 5;
 	}
-      
+
       if (position_cmd.vel.py < 0)
 	{
 	  position_cmd.vel.py = position_cmd.vel.py * 5;
@@ -388,7 +388,7 @@ ProcessMessage (QueuePointer &resp_queue,player_msghdr * hdr,void *data)
       com.setVelocity (position_cmd.vel.px,
 		       position_cmd.vel.py,
 		       position_cmd.vel.pa);
-      
+
       // Sending the set values to Robotino and receiving the sensor readings
       if (com.receiveIoStatus() == false)
 	{
@@ -396,8 +396,8 @@ ProcessMessage (QueuePointer &resp_queue,player_msghdr * hdr,void *data)
 	}
       return (0);
     }
-	
-	
+
+
 	// Command from above to set the odometry to a particular value
   	else if (Message::MatchMessage (hdr,PLAYER_MSGTYPE_REQ,
 			     PLAYER_POSITION2D_REQ_SET_ODOM,
@@ -406,12 +406,12 @@ ProcessMessage (QueuePointer &resp_queue,player_msghdr * hdr,void *data)
 		this->Publish(this->position_addr, resp_queue,
 		    PLAYER_MSGTYPE_RESP_ACK,
 		    PLAYER_POSITION2D_REQ_SET_ODOM);
-      
+
         return (0);
 	}
-	
-	
-	
+
+
+
   else if (Message::MatchMessage (hdr,
 				  PLAYER_MSGTYPE_REQ,
 				  PLAYER_POSITION2D_REQ_GET_GEOM,
@@ -422,18 +422,18 @@ ProcessMessage (QueuePointer &resp_queue,player_msghdr * hdr,void *data)
 
       geom.size.sl = ROBOTINO_DIAMETER;
       geom.size.sw = ROBOTINO_DIAMETER;
-      
-      this->Publish (this->position_addr, 
+
+      this->Publish (this->position_addr,
 		     resp_queue,
 		     PLAYER_MSGTYPE_RESP_ACK,
 		     PLAYER_POSITION2D_REQ_GET_GEOM,
 		     (void *) &geom,
 		     sizeof (geom),
 		     NULL);
-      
+
       return (0);
     }
-  
+
     // Interface - bumper
     else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
                                 PLAYER_BUMPER_REQ_GET_GEOM,
@@ -457,7 +457,7 @@ ProcessMessage (QueuePointer &resp_queue,player_msghdr * hdr,void *data)
                   (void*)&geom, sizeof(geom), NULL);
 
     delete geom.bumper_def;
-    
+
     return(0);
    }
   // Interface - ir
@@ -469,13 +469,13 @@ ProcessMessage (QueuePointer &resp_queue,player_msghdr * hdr,void *data)
       memset(&geom, 0, sizeof(geom));
       geom.poses_count = com.numDistanceSensors();
       geom.poses = new player_pose3d_t [geom.poses_count];
-      
+
       for(unsigned int intCount = 0;intCount < geom.poses_count;intCount++)
 	{
 	  geom.poses[intCount].pyaw = DTOR(40*intCount);
 	  geom.poses[intCount].px = cos(geom.poses[intCount].pyaw)*ROBOTINO_RADIUS;
 	  geom.poses[intCount].py = sin(geom.poses[intCount].pyaw)*ROBOTINO_RADIUS;
-	  
+
 	}
       this->Publish(this->ir_addr, resp_queue,
 		    PLAYER_MSGTYPE_RESP_ACK,
@@ -486,7 +486,7 @@ ProcessMessage (QueuePointer &resp_queue,player_msghdr * hdr,void *data)
       delete [] geom.poses;
       return (0);
     }
-    
+
   // Motor power request - NOTE: no action taken since motors are turned on all the time
   else if (Message::MatchMessage (hdr,PLAYER_MSGTYPE_REQ,
 				  PLAYER_POSITION2D_REQ_MOTOR_POWER,
@@ -495,13 +495,13 @@ ProcessMessage (QueuePointer &resp_queue,player_msghdr * hdr,void *data)
       this->Publish(this->position_addr, resp_queue,
 		    PLAYER_MSGTYPE_RESP_ACK,
 		    PLAYER_POSITION2D_REQ_MOTOR_POWER);
-      
+
       return (0);
     }
-    
+
   else
 		PLAYER_ERROR("Robotino:: Unhandled message");
-    return (-1); 
+    return (-1);
 }
 
 
@@ -512,59 +512,59 @@ void RobotinoDriver::Main ()
   // float arrActualVelocities[intNumberOfMotors];
 
   //! The main loop; interact with the device here
-  
+
   XTimer timerEuler;
-  
+
   player_ir_data_t irdata;
   memset (&irdata, 0,sizeof (irdata));
-  
+
   player_power_data_t powerdata;
   memset(&powerdata,0,sizeof(powerdata));
 
   player_bumper_data_t bumperdata;
   memset(&bumperdata,0,sizeof(bumperdata));
-  
+
  // player_position2d_data_t posdata;
  // memset(&posdata,0,sizeof(posdata));
-  
+
   // Update position2d data
   float floatTheta = 0;
   float floatPhi1 = 60*(PI/180);
   float floatPhi2 = 180*(PI/180);
   float floatPhi3 = 300*(PI/180);
-  
+
   // Matrix elements
   float floatA11= -sin(floatPhi1 + floatTheta);
   float floatA12= cos(floatPhi1 + floatTheta);
   float floatA13= ROBOTINO_CENTRE_TO_WHEEL;
-  
+
   float floatA21 = -sin(floatPhi2 + floatTheta);
   float floatA22 = cos(floatPhi2 + floatTheta);
   float floatA23 = ROBOTINO_CENTRE_TO_WHEEL;
-  
+
   float floatA31 = -sin(floatPhi3 + floatTheta);
   float floatA32 = cos(floatPhi3 + floatTheta);
   float floatA33 = ROBOTINO_CENTRE_TO_WHEEL;
-  
+
   // Calculate determinant
   float floatInvDeterminant = 1/(floatA11*(floatA33*floatA22-floatA32*floatA23)-floatA21*(floatA33*floatA12-floatA32*floatA13)+floatA31*(floatA23*floatA12-floatA22*floatA13));
-  
-  while (true)     
-    
+
+  while (true)
+
     {
       // Test if we are supposed to cancel
       pthread_testcancel();
-      
+
       // Process incoming messages
       ProcessMessages();
-      
+
       //! Interact with the device, and push out the resulting data, using Driver::Publish()
-      
-      
+
+
       int intNumberOfMotors = 3;
       float arrActualVelocities[3];
       int intCount = 0;
-      
+
       // Get motor speeds
       for (intCount = 0; intCount <= intNumberOfMotors-1; intCount++)
 	{
@@ -573,12 +573,12 @@ void RobotinoDriver::Main ()
 		      intCount,
 		      arrActualVelocities[intCount]);*/
         }
-      
+
       // Calculate velocities
       posdata.vel.px = (PI/30)*ROBOTINO_WHEEL_RADIUS*floatInvDeterminant*((floatA33*floatA22-floatA32*floatA23)*arrActualVelocities[0]-(floatA33*floatA12-floatA32*floatA13)*arrActualVelocities[1]+(floatA23*floatA12-floatA22*floatA13)*arrActualVelocities[2]);
       posdata.vel.py = (PI/30)*ROBOTINO_WHEEL_RADIUS*floatInvDeterminant*(-(floatA33*floatA21-floatA31*floatA23)*arrActualVelocities[0]+(floatA33*floatA11-floatA31*floatA13)*arrActualVelocities[1]-(floatA23*floatA11-floatA21*floatA13)*arrActualVelocities[2]);
       posdata.vel.pa = (PI/30)*ROBOTINO_WHEEL_RADIUS*floatInvDeterminant*((floatA32*floatA21-floatA31*floatA22)*arrActualVelocities[0]-(floatA32*floatA11-floatA31*floatA12)*arrActualVelocities[1]+(floatA22*floatA11-floatA21*floatA12)*arrActualVelocities[2]);
-      
+
       // Calculate positions
       posdata.pos.px +=  posdata.vel.px * timerEuler.msecsElapsed()/1000;
       posdata.pos.py +=  posdata.vel.py * timerEuler.msecsElapsed()/1000;
@@ -589,43 +589,43 @@ void RobotinoDriver::Main ()
 		{
 			posdata.pos.pa += 2*PI;
 		}
-		
+
 		else if(posdata.pos.pa >PI)
 		{
 			posdata.pos.pa -= 2*PI;
 		}
-		
- 
+
+
       timerEuler.start();
-     
+
       this->Publish(this->position_addr,
 		    PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE,
 		    (void*)&posdata,sizeof(posdata), NULL);
 
-      
+
       // Update power data
       powerdata.volts = com.voltageBatt1plus2();
       powerdata.watts = com.voltageBatt1plus2() * com.current();
       powerdata.valid = (PLAYER_POWER_MASK_VOLTS |
 			 PLAYER_POWER_MASK_WATTS);
-      
+
       this->Publish(this->power_addr,
 		    PLAYER_MSGTYPE_DATA, PLAYER_POWER_DATA_STATE,
 		    (void*)&powerdata, sizeof(powerdata), NULL);
-     
-      
+
+
       // Update bumper data
       bumperdata.bumpers_count = 1;
       bumperdata.bumpers = new uint8_t;
       bumperdata.bumpers[0] = com.bumper();
-      
+
       //PLAYER_MSG1(2,"Robotino(R) :: Bumper = %d",bumperdata.bumpers[0]);
-      
+
       this->Publish(this->bumper_addr,
 		    PLAYER_MSGTYPE_DATA, PLAYER_BUMPER_DATA_STATE,
 		    (void*)&bumperdata, sizeof(bumperdata), NULL);
       delete bumperdata.bumpers;
-      
+
       // Update IR data
       // Number of IR sensors on Robotino(R)
       irdata.ranges_count = com.numDistanceSensors();
@@ -635,8 +635,8 @@ void RobotinoDriver::Main ()
 	{
 	  //! Get measured distances from each sensor
 	  irdata.ranges[intCount] = com.distance(intCount+1);
-	  
-	  irdata.ranges[intCount] = (1024 - irdata.ranges[intCount])*0.001;	  
+
+	  irdata.ranges[intCount] = (1024 - irdata.ranges[intCount])*0.001;
 	  /*PLAYER_MSG2(2,"Robotino(R) :: IR sensor %d = %f",
 		      intCount+1,
 		      irdata.ranges[intCount]);*/
@@ -650,8 +650,8 @@ void RobotinoDriver::Main ()
 		     sizeof (irdata),
 		     NULL);
       delete [] irdata.ranges;
-      
-      // To maintain connection due to RobotinoCom timeout  
+
+      // To maintain connection due to RobotinoCom timeout
       if((desiredVelocityX == 0) && (desiredVelocityY == 0) && (desiredVelocityA == 0))
 	{
 	  if (com.receiveIoStatus() == false)
@@ -659,9 +659,9 @@ void RobotinoDriver::Main ()
 	      PLAYER_ERROR("Robotino(R) :: Failed to receive IO status in setup");
 	    }
 	}
-      
+
       // Sleep (you might, for example, block on a read() instead)
       usleep (this->CYCLE_TIME_US);
       }
 }
-      
+

@@ -109,7 +109,7 @@ int AMCLLaser::Setup(void)
   if(!(msg = laser_dev->Request(AMCL.InQueue,
                                 PLAYER_MSGTYPE_REQ,
                                 PLAYER_LASER_REQ_GET_GEOM,
-                                NULL, 0, NULL,false)))
+                                NULL, 0, NULL)))
   {
     PLAYER_WARN("failed to get laser geometry");
     this->laser_pose.v[0] = 0.0;
@@ -163,7 +163,7 @@ AMCLLaser::SetupMap(void)
   if(!(msg = mapdev->Request(AMCL.InQueue,
                              PLAYER_MSGTYPE_REQ,
                              PLAYER_MAP_REQ_GET_INFO,
-                             NULL, 0, NULL, false)))
+                             NULL, 0, NULL)))
   {
     PLAYER_ERROR("failed to get map info");
     return(-1);
@@ -215,7 +215,7 @@ AMCLLaser::SetupMap(void)
     if(!(msg = mapdev->Request(AMCL.InQueue,
                                PLAYER_MSGTYPE_REQ,
                                PLAYER_MAP_REQ_GET_DATA,
-                               (void*)data_req,0,NULL,false)))
+                               (void*)data_req,0,NULL)))
     {
       PLAYER_ERROR("failed to get map info");
       free(data_req);

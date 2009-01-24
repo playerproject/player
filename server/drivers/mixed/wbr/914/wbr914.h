@@ -1,8 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -134,7 +134,7 @@ typedef struct
 } __attribute__ ((packed)) player_data_t;
 
 
-class wbr914 : public ThreadedDriver 
+class wbr914 : public ThreadedDriver
 {
   public:
 
@@ -148,11 +148,11 @@ class wbr914 : public ThreadedDriver
     virtual void Main();
 
     virtual int  MainSetup();
-    virtual int  Shutdown();
+    virtual void  MainQuit();
 
     // MessageHandler
-    virtual int  ProcessMessage(QueuePointer &resp_queue, 
-				player_msghdr * hdr, 
+    virtual int  ProcessMessage(QueuePointer &resp_queue,
+				player_msghdr * hdr,
 				void * data);
 
   // Private Member Functions
@@ -160,14 +160,14 @@ class wbr914 : public ThreadedDriver
     bool RecvBytes( unsigned char*s, int len );
     int  ReadBuf(unsigned char* s, size_t len);
     int  WriteBuf(unsigned char* s, size_t len);
-    int  sendCmdCom( unsigned char address, unsigned char c, 
-		     int cmd_num, unsigned char* arg, 
+    int  sendCmdCom( unsigned char address, unsigned char c,
+		     int cmd_num, unsigned char* arg,
 		     int ret_num, unsigned char * ret );
-    int  sendCmd0( unsigned char address, unsigned char c, 
+    int  sendCmd0( unsigned char address, unsigned char c,
 		   int ret_num, unsigned char * ret );
-    int  sendCmd16( unsigned char address, unsigned char c, 
+    int  sendCmd16( unsigned char address, unsigned char c,
 		    int16_t arg, int ret_num, unsigned char * ret );
-    int  sendCmd32( unsigned char address, unsigned char c, 
+    int  sendCmd32( unsigned char address, unsigned char c,
 		    int32_t arg, int ret_num, unsigned char * ret );
 
     int32_t BytesToInt32( unsigned char *ptr );
@@ -224,7 +224,7 @@ class wbr914 : public ThreadedDriver
     void SetContourMode( ProfileMode_t prof );
     void SetMicrosteps();
 
-      
+
     /* Conversions */
     int32_t Meters2Ticks( float meters );
     float Ticks2Meters( int32_t ticks );

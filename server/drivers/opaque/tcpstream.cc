@@ -127,7 +127,7 @@ class TCPStream : public ThreadedDriver
     virtual ~TCPStream();
 
     // Must implement the following methods.
-    virtual int Shutdown();
+    virtual void MainQuit();
 
     // This method will be invoked on each incoming message
     virtual int ProcessMessage(QueuePointer &resp_queue,
@@ -217,16 +217,9 @@ TCPStream::~TCPStream()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-int TCPStream::Shutdown()
+void TCPStream::MainQuit()
 {
-  // Stop and join the driver thread
-  StopThread();
-
   CloseTerm();
-
-  PLAYER_MSG0(2, "TCP Opaque Driver Shutdown");
-
-  return(0);
 }
 
 int TCPStream::ProcessMessage(QueuePointer & resp_queue,
@@ -323,7 +316,7 @@ int TCPStream::OpenTerm()
 
 	connected = true;
 	AddFileWatch(sock);
-	
+
 	return 0;
 }
 
@@ -360,7 +353,7 @@ void TCPStream::ReadData()
     CloseTerm();
     return;
   }
-	
+
   if (len == buffer_size)
   {
     PLAYER_WARN("tcpstream:ReadData() filled entire buffer, increasing buffer size will lower latency");

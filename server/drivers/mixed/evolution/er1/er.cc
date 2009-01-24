@@ -488,13 +488,11 @@ void InvokeMain (void *arg)
   er->Main();
 }
 
-int
-    ER::Shutdown()
+void
+    ER::MainQuit()
 {
   if(this->_fd == -1)
-    return(0);
-
-  StopThread();
+    return;
 
     // the robot is stopped by the thread cleanup function StopRobot(), which
     // is called as a result of the above StopThread()
@@ -510,8 +508,6 @@ int
   this->_fd = -1;
   if( _debug )
     printf("ER has been shutdown\n\n");
-
-  return(0);
 }
 
 void

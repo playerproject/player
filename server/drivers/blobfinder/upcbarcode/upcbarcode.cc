@@ -129,8 +129,8 @@ class UPCBarcode : public ImageBase
   public: UPCBarcode( ConfigFile* cf, int section);
 
     // Setup/shutdown routines.
-    virtual int Setup();
-    virtual int Shutdown();
+    virtual int MainSetup();
+    virtual void MainQuit();
 
   // Look for barcodes in the image.
   private: int ProcessFrame();
@@ -218,24 +218,22 @@ UPCBarcode::UPCBarcode( ConfigFile* cf, int section)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Setup the device (called by server thread).
-int UPCBarcode::Setup()
+int UPCBarcode::MainSetup()
 {
-  return ImageBase::Setup();
+  return ImageBase::MainSetup();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device (called by server thread).
-int UPCBarcode::Shutdown()
+int UPCBarcode::MainQuit()
 {
-  ImageBase::Shutdown();
+  ImageBase::MainQuit();
 
   if (this->inpImage)
     cvReleaseImage(&(this->inpImage));
   if (this->outImage)
     cvReleaseImage(&(this->outImage));
   inpImage = outImage = NULL;
-
-  return 0;
 }
 
 

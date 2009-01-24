@@ -171,7 +171,7 @@ class ReadLog: public ThreadedDriver
   public: virtual int MainSetup();
 
   // Finalize the driver
-  public: virtual int Shutdown();
+  public: virtual void MainQuit();
 
   // Main loop
   public: virtual void Main();
@@ -561,11 +561,8 @@ int ReadLog::MainSetup()
 
 ////////////////////////////////////////////////////////////////////////////
 // Finalize the driver
-int ReadLog::Shutdown()
+void ReadLog::MainQuit()
 {
-  // Stop the device thread
-  this->StopThread();
-
   // Free allocated mem
   free(this->line);
 
@@ -582,8 +579,6 @@ int ReadLog::Shutdown()
     fclose(this->file);
     this->file = NULL;
   }
-
-  return 0;
 }
 
 
@@ -1562,24 +1557,24 @@ int ReadLog::ParseLaser(player_devaddr_t id,
 		  case PLAYER_LASER_DATA_SCANANGLE:
           {
 			  player_laser_data_scanangle_t data;
-			  
+
 			  if (token_count < 13)
 			  {
 				  PLAYER_ERROR2("incomplete line at %s:%d",
 								this->filename, linenum);
 				  return -1;
 			  }
-			  
+
 			  data.id = atoi(tokens[7]);
 			  data.max_range = atof(tokens[8]);
 			  data.ranges_count = atoi(tokens[9]);
 			  data.intensity_count = data.ranges_count;
 			  data.angles_count = data.ranges_count;
-			  
+
 			  data.ranges = new float[ data.ranges_count ];
 			  data.intensity = new uint8_t[ data.ranges_count ];
 			  data.angles = new float[ data.ranges_count ];
-			  
+
 			  count = 0;
 			  for (i = 10; i < token_count; i += 3)
 			  {
@@ -1588,7 +1583,7 @@ int ReadLog::ParseLaser(player_devaddr_t id,
 				  data.intensity[count] = atoi(tokens[i + 2]);
 				  count += 1;
 			  }
-			  
+
 			  if (count != (int)data.ranges_count)
 			  {
 				  PLAYER_ERROR2("range count mismatch at %s:%d",
@@ -1603,11 +1598,11 @@ int ReadLog::ParseLaser(player_devaddr_t id,
 			  delete [] data.ranges;
 			  delete [] data.intensity;
 			  delete [] data.angles;
-			  
+
 			  return ret;
           }
-			  
-			  
+
+
         default:
           PLAYER_ERROR1("unknown laser data subtype %d\n", subtype);
           return(-1);

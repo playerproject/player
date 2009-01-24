@@ -793,20 +793,19 @@ RFLEX::~RFLEX()
 {
 }
 
-int RFLEX::Shutdown()
+void RFLEX::MainQuit()
 {
   if(rflex_fd == -1)
   {
-    return 0;
+    return;
   }
-  StopThread();
   //make sure it doesn't go anywhere
   rflex_stop_robot(rflex_fd,(int) M2ARB_ODO_CONV(rflex_configs.mPsec2_trans_acceleration));
   //kill that infernal clicking
   rflex_sonars_off(rflex_fd);
   // release the port
   rflex_close_connection(&rflex_fd);
-  return 0;
+  return;
 }
 
 int

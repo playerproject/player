@@ -110,7 +110,7 @@ class Yarp_Image : public ThreadedDriver
 
         // Implementations of virtual functions
         virtual int MainSetup ();
-        virtual int Shutdown ();
+        virtual void MainQuit ();
 
         // Camera interface (provides)
         player_devaddr_t         cam_id;
@@ -213,11 +213,8 @@ int Yarp_Image::MainSetup ()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-int Yarp_Image::Shutdown ()
+void Yarp_Image::MainQuit ()
 {
-    // Stop the driver thread
-    StopThread ();
-
     // Disconnect the two ports
     Network::disconnect (imagePortName, portName);
 
@@ -225,7 +222,6 @@ int Yarp_Image::Shutdown ()
     portIn.close ();
 
     PLAYER_MSG0 (1, "> Yarp_Image driver shutting down... [done]");
-    return (0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

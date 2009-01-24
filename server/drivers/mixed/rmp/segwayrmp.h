@@ -30,14 +30,14 @@ class rmp_frame_t;
 // Driver for robotic Segway
 class SegwayRMP : public ThreadedDriver
 {
-  public: 
+  public:
     // Constructors etc
     SegwayRMP(ConfigFile* cf, int section);
     ~SegwayRMP();
 
     // Setup/shutdown routines.
     virtual int MainSetup();
-    virtual int Shutdown();
+    virtual void MainQuit();
     virtual int ProcessMessage(QueuePointer & resp_queue,
                                player_msghdr * hdr,
                                void * data);
@@ -50,7 +50,7 @@ class SegwayRMP : public ThreadedDriver
 
     player_devaddr_t position3d_id;
     player_position3d_data_t position3d_data;
-  
+
     player_devaddr_t power_id;
     player_power_data_t power_data;
 
@@ -90,7 +90,7 @@ class SegwayRMP : public ThreadedDriver
 
     // helper to read a cycle of data from the RMP
     int Read();
-    
+
     // Calculate the difference between two raw counter values, taking care
     // of rollover.
     int Diff(uint32_t from, uint32_t to, bool first);
@@ -106,7 +106,7 @@ class SegwayRMP : public ThreadedDriver
 
     // helper to take a player command and turn it into a CAN command packet
     void MakeVelocityCommand(CanPacket* pkt, int32_t xspeed, int32_t yawspeed);
-    
+
     void MakeShutdownCommand(CanPacket* pkt);
 
     void UpdateData(rmp_frame_t *);

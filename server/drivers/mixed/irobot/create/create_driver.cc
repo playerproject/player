@@ -120,7 +120,7 @@ class Create : public ThreadedDriver
     ~Create();
 
     int MainSetup();
-    int Shutdown();
+    void MainQuit();
 
     // MessageHandler
     int ProcessMessage(QueuePointer &resp_queue,
@@ -267,18 +267,15 @@ Create::MainSetup()
   return(0);
 }
 
-int
-Create::Shutdown()
+void
+Create::MainQuit()
 {
-  this->StopThread();
-
   if(create_close(this->create_dev))
   {
     PLAYER_ERROR("failed to close create connection");
   }
   create_destroy(this->create_dev);
   this->create_dev = NULL;
-  return(0);
 }
 
 void

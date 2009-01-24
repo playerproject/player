@@ -267,21 +267,11 @@ SegwayRMP::MainSetup()
   return(0);
 }
 
-int
-SegwayRMP::Shutdown()
+void
+SegwayRMP::MainQuit()
 {
   PLAYER_MSG0(2, "Shutting down CAN bus");
   fflush(stdout);
-
-  // TODO: segfaulting in here somewhere on client disconnect, but only
-  // sometimes.
-  //
-  // UPDATE: This might have been fixed by moving the call to StopThread()
-  // to before the sending of zero velocities.   There could have been
-  // a race condition, since Shutdown() is called from the server's thread
-  // context.
-
-  StopThread();
 
   // send zero velocities, for some semblance of safety
   CanPacket pkt;
@@ -293,8 +283,6 @@ SegwayRMP::Shutdown()
   canio->Shutdown();
   delete canio;
   canio = NULL;
-
-  return(0);
 }
 
 // Main function for device thread.

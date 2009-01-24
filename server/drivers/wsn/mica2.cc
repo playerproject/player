@@ -150,7 +150,7 @@ class Mica2 : public ThreadedDriver
 
 	// Implementations of virtual functions
 	virtual int MainSetup       ();
-	virtual int Shutdown    ();
+	virtual void MainQuit    ();
 	virtual int Subscribe   (player_devaddr_t id);
 	virtual int Unsubscribe (player_devaddr_t id);
 
@@ -293,7 +293,7 @@ Mica2::Mica2 (ConfigFile* cf, int section)
     // Filter base node from readings ?
     filterbasenode   = cf->ReadInt (section, "filterbasenode", 0);
     rfidsamplingrate = cf->ReadInt (section, "rfidsamplingrate", 500);
-        
+
 
     // Do we create a WSN interface?
     if (cf->ReadDeviceAddr (&wsn_addr, section, "provides",
@@ -375,7 +375,7 @@ int Mica2::Unsubscribe (player_devaddr_t id)
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
 int Mica2::MainSetup ()
 {
-    real_elapsed=0; 
+    real_elapsed=0;
     // Open serial port
     fd = open (port_name, O_RDWR | O_NOCTTY | O_NONBLOCK);
     if (fd < 0)
@@ -431,16 +431,12 @@ int Mica2::MainSetup ()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-int Mica2::Shutdown ()
+void Mica2::MainQuit ()
 {
-    // Stop the driver thread
-    StopThread ();
-
     // Close the serial port
     close (fd);
 
     PLAYER_MSG0 (1, "> Mica2 driver shutting down... [done]");
-    return (0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -448,7 +444,7 @@ int Mica2::Shutdown ()
 void Mica2::Main ()
 {
     gettimeofday( &tv_realtime_start, NULL );  // NULL -> don't want timezone information
-   
+
     // The main loop; interact with the device here
     while (true)
     {
@@ -831,7 +827,7 @@ void Mica2::RefreshData ()
       send_rfidcmd=true;
       real_elapsed=0;
     }
- 
+
     // In case the RFID interface is enabled, send a "select_tag" command first
     if (((provideRFID) && (this->rfid_subscriptions > 0)) && send_rfidcmd) {
         send_rfidcmd=false;
@@ -860,7 +856,7 @@ int Mica2::ReadSerial (unsigned char *buffer)
 
     buffer[i] = 0x7e;          // serial start byte
     int no_read=0;
-    
+
     while (no_read<100) {
 	err = read (fd, &c, 1);
 	if (err < 0)

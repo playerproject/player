@@ -121,7 +121,7 @@ class InertiaCube2 : public ThreadedDriver
 
   // Setup/shutdown routines.
   public: virtual int MainSetup();
-  public: virtual int Shutdown();
+  public: virtual void MainQuit();
 
   // Set up the underlying position device.
   private: int SetupPosition();
@@ -233,18 +233,13 @@ int InertiaCube2::MainSetup()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device (called by server thread).
-int InertiaCube2::Shutdown()
+void InertiaCube2::MainQuit()
 {
-  // Stop the driver thread.
-  this->StopThread();
-
   // Stop the imu.
   this->ShutdownImu();
 
   // Stop the position device.
   this->ShutdownPosition();
-
-  return 0;
 }
 
 

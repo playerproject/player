@@ -61,7 +61,7 @@ data command it will write whatever it recieves onto the serial port
 - buffer_size (integer
   - The size of the buffer to be used when reading, this is the maximum that can be read in one read command
   - Default 4096
- 
+
 - parity
  - The parity that you want. Vaid vaules are "none" (default), "even", "odd"
 
@@ -144,7 +144,7 @@ class SerialStream : public ThreadedDriver
 
     // Must implement the following methods.
     virtual int MainSetup();
-    virtual int Shutdown();
+    virtual void MainQuit();
 
     // This method will be invoked on each incoming message
     virtual int ProcessMessage(QueuePointer &resp_queue,
@@ -267,16 +267,11 @@ int SerialStream::MainSetup()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-int SerialStream::Shutdown()
+void SerialStream::MainQuit()
 {
-  // Stop and join the driver thread
-  StopThread();
-
   CloseTerm();
 
   PLAYER_MSG0(2, "Opaque Driver Shutdown");
-
-  return(0);
 }
 
 int SerialStream::ProcessMessage(QueuePointer & resp_queue,
@@ -417,13 +412,13 @@ void SerialStream::UpdateFlags()
 	// set up new settings
 	struct termios newtio;
 	memset(&newtio, 0,sizeof(newtio));
-	
+
 	if(tcgetattr( this->opaque_fd, &newtio ) < 0 )
 		PLAYER_WARN("Failed to get old tty attribltes");
-	
+
 	newtio.c_cc[VMIN] = 0;
 	newtio.c_cc[VTIME] = 0;
-	newtio.c_cflag = CS8 | CREAD; 
+	newtio.c_cflag = CS8 | CREAD;
 	newtio.c_iflag = INPCK;
 	newtio.c_oflag = 0;
 	newtio.c_lflag = 0;
@@ -435,7 +430,7 @@ void SerialStream::UpdateFlags()
 		newtio.c_cflag |= PARENB | PARODD;
 	else
 		PLAYER_WARN("Invalid parity. Defaulting to none.");
-	
+
 	if(tcsetattr(opaque_fd, TCSANOW, &newtio) < 0)
 		PLAYER_ERROR("Failed to set new tty device attributes");
 	tcflush(opaque_fd, TCIOFLUSH);

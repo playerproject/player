@@ -111,7 +111,7 @@ class Vec2Map : public ThreadedDriver
 
     // Must implement the following methods.
     virtual int MainSetup();
-    virtual int Shutdown();
+    virtual void MainQuit();
 
     // This method will be invoked on each incoming message
     virtual int ProcessMessage(QueuePointer & resp_queue,
@@ -243,15 +243,10 @@ int Vec2Map::MainSetup()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-int Vec2Map::Shutdown()
+void Vec2Map::MainQuit()
 {
-  // Stop and join the driver thread
-  StopThread();
-
   // Unsubscribe from the vectormap
   this->vectormap_dev->Unsubscribe(this->InQueue);
-
-  return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

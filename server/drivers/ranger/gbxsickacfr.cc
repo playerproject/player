@@ -125,7 +125,7 @@ class GbxSickAcfr : public ThreadedDriver
         ~GbxSickAcfr (void);
 
         virtual int MainSetup (void);
-        virtual int Shutdown (void);
+        virtual void MainQuit (void);
         virtual int ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, void *data);
 
     private:
@@ -275,10 +275,8 @@ int GbxSickAcfr::MainSetup (void)
     return 0;
 }
 
-int GbxSickAcfr::Shutdown (void)
+void GbxSickAcfr::MainQuit (void)
 {
-    StopThread();
-
     if (device != NULL)
     {
         delete device;
@@ -314,8 +312,6 @@ int GbxSickAcfr::Shutdown (void)
         delete tracer;
         tracer = NULL;
     }
-
-    return 0;
 }
 
 int GbxSickAcfr::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, void *data)

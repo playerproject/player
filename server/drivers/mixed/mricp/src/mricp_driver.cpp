@@ -252,7 +252,7 @@ class MrIcp : public ThreadedDriver
 	// Must implement the following methods.
   	public :
 	    virtual int MainSetup();
-	    virtual int Shutdown();
+	    virtual void MainQuit();
 	    virtual int ProcessMessage(QueuePointer& resp_queue, player_msghdr * hdr, void * data);
 	// Constructor
 	public:  	MrIcp(ConfigFile* cf, int section);
@@ -587,7 +587,7 @@ void MrIcp::ResetMap()
 	fprintf(config_file,"%s %.3f %.3f %.3f\n",filename,global_pose.p.x,global_pose.p.y,global_pose.phi);
 	this->global_pose.p.x = this->global_pose.p.y = this->global_pose.phi = 0;
 }
-int MrIcp::Shutdown()
+void MrIcp::MainQuit()
 {
 	// Stop and join the driver thread
 	cout<<"\n- Shutting Down MRICP Driver - Cleaning up Mess ..\n"; fflush(stdout);
@@ -613,10 +613,9 @@ int MrIcp::Shutdown()
 	fclose(config_file);
 	cout<<" Files Closed ->"; fflush(stdout);
 	//ConnectPatches();
-  	this->StopThread();
 	cout<<" Thread Killed ->"; fflush(stdout);
 	cout<<" ... ShutDown FINISED\n"; fflush(stdout);
-	return(0);
+
 };
 // this function will run in a separate thread
 void MrIcp::Main()

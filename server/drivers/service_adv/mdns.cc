@@ -129,19 +129,6 @@ class SrvAdv_MDNS : public  ThreadedDriver {
     // false on error
     bool Prepare();
 
-
-
-    // called when a client (the first client?) connects. no clients ever
-    // connect.
-    int Setup() {
-        return 0;
-    }
-
-    // called when a client (the last client?) disconnects
-    int Shutdown() {
-        return 0;
-    }
-
     // you could stop the device here if you want but only the destructor
     // currently calls this
     void stop();

@@ -521,7 +521,7 @@ Wavefront::MainSetup()
     if(SetupGraphics2d() < 0)
       return(-1);
   }
-
+  return 0;
 }
 
 

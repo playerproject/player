@@ -1,7 +1,7 @@
 /*
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2000  Brian Gerkey et al
- *                      gerkey@usc.edu    
+ *                      gerkey@usc.edu
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -37,7 +37,7 @@
 @par Requires
 
 - This driver acquires image data from a @ref interface_camera
-  interface. 
+  interface.
 
 @par Provides
 
@@ -61,7 +61,7 @@
 // Driver for detecting laser retro-reflectors.
 class ImageBase : public ThreadedDriver
 {
-	public: 
+	public:
 		// Constructor
 		ImageBase(ConfigFile *cf, int section, bool overwrite_cmds, size_t queue_maxlen, int interf);
 		ImageBase(ConfigFile *cf, int section, bool overwrite_cmds = true, size_t queue_maxlen = PLAYER_MSGQUEUE_DEFAULT_MAXLEN);
@@ -71,19 +71,20 @@ class ImageBase : public ThreadedDriver
 		  PLAYER_WARN("image deleted from the memory");
 		}
 
-		// Process incoming messages from clients 
+		// Process incoming messages from clients
 		int ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data);
 
 	private:
 	        ImageBase(); // no default constructor
 	        ImageBase(const ImageBase &); // no copy constructor
 
-	protected: 
+	protected:
 		virtual int ProcessFrame() = 0;
 		// Main functions for device thread.
-		virtual void Main();	
+		virtual void Main();
 		virtual int MainSetup();
-	
+		virtual void MainQuit();
+
 		// Input camera stuff
   		Device *camera_driver;
 		player_devaddr_t camera_addr;
