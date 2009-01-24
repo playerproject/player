@@ -106,7 +106,7 @@ class Driver
 	int subscriptions;
   public:
     bool HasSubscriptions();
-    
+
   protected:
 
     /** @brief Add an interface.
@@ -154,23 +154,23 @@ class Driver
     /** @brief Mutex used to protect the subscription count for the driver. */
     pthread_mutex_t subscriptionMutex;
   protected:
-    /** @brief Lock access between the server and driver threads. In particular used 
+    /** @brief Lock access between the server and driver threads. In particular used
      * to procect the drivers thread pointer */
-     virtual void Lock(void); 
+     virtual void Lock(void);
     /** @brief Unlock access to driver internals. */
     virtual void Unlock(void);
-    
+
     /** @brief Lock to protect the subscription count for the driver */
-     virtual void SubscriptionLock(void); 
+     virtual void SubscriptionLock(void);
     /** @brief Unlock to protect the subscription count for the driver. */
     virtual void SubscriptionUnlock(void);
 
-    /** enable thread cancellation and test for cancellation 
-     * 
+    /** enable thread cancellation and test for cancellation
+     *
      * This should only ever be called from the driver thread with *no* locks held*/
     virtual void TestCancel() {};
-    
-    
+
+
   public:
     /** @brief Last requester's queue.
 
@@ -360,8 +360,8 @@ class Driver
 
     @returns Returns 0 on success. */
     virtual int Terminate();
-    
-    
+
+
     /** @brief Initialize the driver.
 
     This function is called with the first client subscribes; it MUST
@@ -448,6 +448,48 @@ typedef enum player_thread_state
 	PLAYER_THREAD_STATE_RESTARTING
 } player_thread_state_t;
 
+class PlayerBarrier
+{
+public:
+	PlayerBarrier()
+	{
+		pthread_mutex_init(&barrierMutex,NULL);
+		pthread_cond_init(&barrierCond,NULL);
+		barrierValue = 0;
+	}
+	~PlayerBarrier()
+	{
+		pthread_mutex_destroy(&barrierMutex);
+		pthread_cond_destroy(&barrierCond);
+	};
+
+	int SetValue(int Value)
+	{
+		return barrierValue = Value;
+	};
+
+	int Wait()
+	{
+		pthread_mutex_lock(&barrierMutex);
+		assert(barrierValue);
+		if (--barrierValue)
+			pthread_cond_wait(&barrierCond,&barrierMutex);
+		else
+			pthread_cond_broadcast(&barrierCond);
+		pthread_mutex_unlock(&barrierMutex);
+		return 0;
+	};
+private:
+    /** @brief barrier to make sure StartThread doesnt return until
+    * cleanup handlers etc have been installed.*/
+    pthread_mutex_t barrierMutex;
+
+    int barrierValue;
+
+    pthread_cond_t barrierCond;
+
+};
+
 
 
 /**
@@ -462,7 +504,7 @@ The ThreadedDriver uses a fairly simple thread model with the only complications
 coming from the deferred cancellation.
 
 The default setup method simply calls StartThread and likewise the default Shutdown method calls
-StopThread. Resources for the driver should be allocated in MainSetup and cleaned up in MainQuit, these 
+StopThread. Resources for the driver should be allocated in MainSetup and cleaned up in MainQuit, these
 two methods will be called in the driver thread before and after the main method respectively.
 
 When StopThread is called it will request the driver thread to be cancelled, this cancellation will be
@@ -480,7 +522,7 @@ From the STOPPED state the only valid transition is to RUNNING, this is triggere
 
 From the RUNNING state the driver can transition to STOPPING, triggered by a call to StopThread.
 
-In the STOPPING state the driver can transition to STOPPED, triggered by MainQuit running, or to RESTARTING on a call to 
+In the STOPPING state the driver can transition to STOPPED, triggered by MainQuit running, or to RESTARTING on a call to
 StartThread.
 
 From RESTARTING the driver can transition to RUNNING once MainQuit has run and the new thread is started, or to STOPPING if
@@ -516,36 +558,36 @@ class ThreadedDriver : public Driver
     The driver's thread, when managed by StartThread() and
     StopThread(). */
     pthread_t driverthread;
-    
+
     /** @brief TODO: insert state machine here
     . */
     player_thread_state_t ThreadState;
     bool SetupSuccessful;
-    /** @brief barrier to make sure StartThread doesnt return until  
-    * cleanup handlers etc have been installed.*/
-    pthread_barrier_t threadSetupBarrier;
-    
+
+    /// Barrier to synchronise threads on setup
+    PlayerBarrier SetupBarrier;
+
   protected:
-    /** enable thread cancellation and test for cancellation 
-     * 
+    /** enable thread cancellation and test for cancellation
+     *
      * This should only ever be called from the driver thread with *no* locks held*/
     void TestCancel();
-    
-    
+
+
   public:
-	
+
 	/** @brief Constructor with implicit interface
 	 @param cf Current configuration file
 	 @param section Current section in configuration file
 	 @param overwrite_cmds Do new commands overwrite old ones?
-	 @param queue_maxlen How long can the incoming queue grow? 
+	 @param queue_maxlen How long can the incoming queue grow?
 	 @param interface The interface that you want this driver to provide*/
 	 ThreadedDriver(ConfigFile *cf,
 			int section,
 			bool overwrite_cmds,
 			size_t queue_maxlen,
 			int interface);
-	 
+
     /** @brief Constructor for multiple-interface drivers.
 
     Use AddInterface() to specify individual interfaces.
@@ -594,7 +636,7 @@ class ThreadedDriver : public Driver
 
     /** @brief Sets up the resources needed by the driver thread */
     virtual int MainSetup(void) {return 0;};
-    
+
     /** @brief Cleanup method for driver thread (called when main exits)
 
     Overload this method and to do additional cleanup when the
@@ -610,11 +652,11 @@ class ThreadedDriver : public Driver
     If TimeOut is set to a positive value this method will return false if the
     timeout occurs before and update is recieved.
     */
-    bool Wait(double TimeOut=0.0);    
+    bool Wait(double TimeOut=0.0);
 
     virtual void Update()
     {};
-    
+
 };
 
 

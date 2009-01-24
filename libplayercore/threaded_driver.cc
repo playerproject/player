@@ -74,7 +74,6 @@ ThreadedDriver::ThreadedDriver(ConfigFile *cf, int section, bool overwrite_cmds,
 	driverthread(0),
 	ThreadState(PLAYER_THREAD_STATE_STOPPED)
 {
-	pthread_barrier_init(&threadSetupBarrier, NULL,2);
 }
 
 // this is the other constructor, used by multi-interface drivers.
@@ -83,7 +82,6 @@ ThreadedDriver::ThreadedDriver(ConfigFile *cf, int section, bool overwrite_cmds,
 	driverthread(0),
 	ThreadState(PLAYER_THREAD_STATE_STOPPED)
 {
-	pthread_barrier_init(&threadSetupBarrier, NULL,2);
 }
 
 // destructor, to free up allocated queue.
@@ -100,7 +98,6 @@ ThreadedDriver::~ThreadedDriver()
 		usleep(100000);
 	}
 
-	pthread_barrier_destroy(&threadSetupBarrier);
 }
 
 void ThreadedDriver::TestCancel()
@@ -117,10 +114,11 @@ ThreadedDriver::StartThread(void)
 {
   if (ThreadState == PLAYER_THREAD_STATE_STOPPED)
   {
+    SetupBarrier.SetValue(2);
     pthread_create(&driverthread, NULL, &DummyMain, this);
 
     // sync with dummy main
-    pthread_barrier_wait(&threadSetupBarrier);
+    SetupBarrier.Wait();
     ThreadState = PLAYER_THREAD_STATE_RUNNING;
   }
   else if (ThreadState == PLAYER_THREAD_STATE_STOPPING)
@@ -166,17 +164,18 @@ ThreadedDriver::DummyMain(void *devicep)
 
   // Defer initalisation
   pthread_setcancelstate(PTHREAD_CANCEL_DISABLE,NULL);
-  ((ThreadedDriver*)devicep)->SetupSuccessful = false;
+  ThreadedDriver &tdriver = *reinterpret_cast<ThreadedDriver*>(devicep);
+  tdriver.SetupSuccessful = false;
   // sync with start thread
-  pthread_barrier_wait(&((ThreadedDriver*)devicep)->threadSetupBarrier);
+  tdriver.SetupBarrier.Wait();
 
   pthread_cleanup_push(&DummyMainQuit, devicep);
-  int ret = ((ThreadedDriver*)devicep)->MainSetup();
+  int ret = tdriver.MainSetup();
   // Run the overloaded Main() in the subclassed device.
   if (ret == 0)
   {
-    ((ThreadedDriver*)devicep)->SetupSuccessful = true;
-    ((ThreadedDriver*)devicep)->Main();
+    tdriver.SetupSuccessful = true;
+    tdriver.Main();
   }
   else
   {
