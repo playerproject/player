@@ -10,6 +10,11 @@
 #endif
 #include <sys/types.h>
 
+// for compilers which dont define __FUNCTION__
+#ifndef __FUNCTION__
+#define __FUNCTION__ ""
+#endif
+
 // Boolean macros
 #ifndef TRUE
 #define TRUE 1
