@@ -53,6 +53,7 @@ coreinclude_HEADERS = configfile.h \
                       playerconfig.h \
                       playercore.h \
                       playertime.h \
+                      player_geos.h \
                       plugins.h \
                       wallclocktime.h \
                       error.h \
