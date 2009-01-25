@@ -381,21 +381,11 @@ int VFH_Class::Setup()
   if (this->sonar_addr.interf && this->SetupSonar() != 0)
     return -1;
 
-
-/*
-<<<<<<< vfh.cc
-  // FIXME
-  // Allocate and intialize
-  vfh_Algorithm->Init();
-
   // initialize some navigation state
   rotatedir = 1;
   escapedir = 1;
   escaping = 0;
 
-=======
->>>>>>> 1.82
-*/
   // Start the driver thread.
   if( ! synchronous_mode )
     this->StartThread();
