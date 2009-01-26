@@ -1,5 +1,6 @@
 INCLUDE (${PLAYER_CMAKE_DIR}/PlayerUtils.cmake)
 
+
 INCLUDE (CheckFunctionExists)
 INCLUDE (CheckIncludeFiles)
 INCLUDE (CheckLibraryExists)
@@ -50,6 +51,13 @@ SET (CMAKE_REQUIRED_LIBRARIES m)
 CHECK_FUNCTION_EXISTS (round HAVE_ROUND)
 SET (CMAKE_REQUIRED_INCLUDES)
 SET (CMAKE_REQUIRED_LIBRARIES)
+
+link_directories( /opt/local/lib )
+include_directories( /opt/local/include )
+
+INCLUDE(CheckIncludeFile)
+CHECK_INCLUDE_FILE( jpeglib.h HAVE_JPEG_HEADER )
+MESSAGE( "Result" ${HAVE_JPEG_HEADER} )
 
 CHECK_LIBRARY_EXISTS (jpeg jpeg_read_header "${PLAYER_EXTRA_LIB_DIRS}" HAVE_LIBJPEG)
 CHECK_INCLUDE_FILES ("stdio.h;jpeglib.h" HAVE_JPEGLIB_H)

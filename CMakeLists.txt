@@ -46,10 +46,14 @@ INSTALL (FILES ${playerconfig_h} DESTINATION ${PLAYER_INCLUDE_INSTALL_DIR})
 INCLUDE (${PLAYER_CMAKE_DIR}/internal/LibraryUtils.cmake)
 
 # Set some common include directories, including the binary dir to get config.h
-INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR} ${PROJECT_BINARY_DIR}/libplayercore)
+INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR} ${PROJECT_BINARY_DIR}/libplayercore /opt/local/include )
 # Extra directories where needed libraries, etc may be located (set by the user)
 INCLUDE_DIRECTORIES (${PLAYER_EXTRA_INCLUDE_DIRS})
 LINK_DIRECTORIES (${PLAYER_EXTRA_LIB_DIRS})
+
+# rtv hack
+link_directories( /opt/local/lib )
+include_directories( /opt/local/include )
 
 # If on Windows, only build the client libraries. (this won't actually work yet cause libplayerc needs some stuff from core)
 ADD_SUBDIRECTORY (client_libs)
