@@ -10,7 +10,9 @@ MACRO (PLAYER_ADD_LIBRARY _name)
     SET_TARGET_PROPERTIES (${_name} PROPERTIES
                             VERSION ${PLAYER_VERSION}
                             SOVERSION ${PLAYER_API_VERSION}
-                            INSTALL_NAME_DIR @rpath
+# @rpath is not expanded on OS X, so I replaced this line with the version below [see patch 2318489]
+#                            INSTALL_NAME_DIR @rpath
+                            INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib"
                             INSTALL_RPATH "${INSTALL_RPATH};${CMAKE_INSTALL_PREFIX}/lib"
                             BUILD_WITH_INSTALL_RPATH TRUE)
     INSTALL (TARGETS ${_name} DESTINATION lib/)

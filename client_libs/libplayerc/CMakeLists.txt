@@ -1,6 +1,9 @@
 ADD_SUBDIRECTORY (bindings)
 
-INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/client_libs)
+INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/client_libs /opt/local/include)
+
+link_directories( /opt/local/lib )
+
 
 SET (PLAYERC_EXTRA_LINK_LIBRARIES)
 SET (playercSrcs    playerc.h
@@ -57,7 +60,7 @@ ENDIF (NOT HAVE_POLL)
 APPEND_TO_CACHED_LIST (PLAYERC_EXTRA_LINK_LIBRARIES "Libs to link to with playerc" z m)
 
 PLAYER_ADD_LIBRARY (playerc ${playercSrcs})
-ADD_DEPENDENCIES (playerc player_interfaces playerxdr_src)
+ADD_DEPENDENCIES (playerc player_interfaces playerxdr_src )
 TARGET_LINK_LIBRARIES (playerc playerxdr playerutils playererror ${PLAYERC_EXTRA_LINK_LIBRARIES})
 IF (HAVE_JPEG)
     TARGET_LINK_LIBRARIES (playerc playerjpeg)
