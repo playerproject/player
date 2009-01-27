@@ -1,7 +1,7 @@
 description {
  * @brief A range sensor
 
-Receive data from a range sensor, such as a laser scannar, sonar array or IR
+Receive data from a range sensor, such as a laser scanner, sonar array or IR
 array.
 
 @section properties Recommended Properties
