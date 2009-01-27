@@ -101,8 +101,9 @@ driver(
 
 /** @} */
 
-
-#include <unistd.h>
+#if !defined (WIN32)
+  #include <unistd.h>
+#endif
 #include <string.h>
 #include <time.h>
 
@@ -112,8 +113,6 @@ driver(
 #define DEFAULT_ADDRESS 1
 #define MESSAGE_LENGTH 7
 #define MSG_TIMEOUT 0.25 //Seconds before it sends another read request if it hasn't yet got a reply
-
-extern PlayerTime *GlobalTime;
 
 ///////////////////////////////////////////////////////////////////////////////
 // The class for the driver
@@ -435,7 +434,7 @@ void MotionMind::FindCurrentPos()
 			else
 			{
 				player_position1d_data_t data_packet;
-				data_packet.pos = position;
+				data_packet.pos = static_cast<float> (position);
 				this->Publish(this->device_addr, PLAYER_MSGTYPE_DATA, PLAYER_POSITION1D_DATA_STATE, (void*)&data_packet);
 				rx_count -= 6;
 				memmove(rx_buffer+6, rx_buffer, rx_count);

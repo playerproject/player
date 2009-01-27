@@ -52,10 +52,15 @@
 #include <libplayercore/device.h>
 #include <string.h>
 #include <errno.h>
-#include <unistd.h>
 #include <signal.h>
-#include <netinet/in.h>
 #include <assert.h>
+#if defined WIN32
+  // For Sleep()
+  #include <windows.h>
+#else
+  #include <unistd.h>
+  #include <netinet/in.h>
+#endif
 
 #include <libplayercore/playertime.h>
 #include <libplayercore/driver.h>
@@ -71,17 +76,17 @@
 // interface code and buffer sizes.
 ThreadedDriver::ThreadedDriver(ConfigFile *cf, int section, bool overwrite_cmds, size_t queue_maxlen, int interf) :
 	Driver(cf, section, overwrite_cmds, queue_maxlen, interf),
-	driverthread(0),
 	ThreadState(PLAYER_THREAD_STATE_STOPPED)
 {
+	memset (&driverthread, 0, sizeof (driverthread));
 }
 
 // this is the other constructor, used by multi-interface drivers.
 ThreadedDriver::ThreadedDriver(ConfigFile *cf, int section, bool overwrite_cmds, size_t queue_maxlen) :
 	Driver(cf, section, overwrite_cmds, queue_maxlen),
-	driverthread(0),
 	ThreadState(PLAYER_THREAD_STATE_STOPPED)
 {
+	memset (&driverthread, 0, sizeof (driverthread));
 }
 
 // destructor, to free up allocated queue.
@@ -95,7 +100,11 @@ ThreadedDriver::~ThreadedDriver()
 	// wait for the thread to actually stop
 	while (ThreadState != PLAYER_THREAD_STATE_STOPPED)
 	{
+#if defined WIN32
+		Sleep (100);
+#else
 		usleep(100000);
+#endif
 	}
 
 }
@@ -199,7 +208,7 @@ ThreadedDriver::DummyMainQuit(void *devicep)
   if (driver->SetupSuccessful)
     driver->MainQuit();
   driver->Lock();
-  driver->driverthread = 0;
+  memset (&driver->driverthread, 0, sizeof (driver->driverthread));
   if (driver->ThreadState == PLAYER_THREAD_STATE_RESTARTING)
   {
     driver->ThreadState = PLAYER_THREAD_STATE_STOPPED;
@@ -241,7 +250,11 @@ int ThreadedDriver::Terminate()
 	// wait for the thread to actually stop
 	while (ret == 0 && ThreadState != PLAYER_THREAD_STATE_STOPPED)
 	{
+#if defined (WIN32)
+		Sleep (100);
+#else
 		usleep(100000);
+#endif
 	}
 	return ret;
 }
@@ -254,5 +267,5 @@ bool ThreadedDriver::Wait(double TimeOut)
 	ret = this->InQueue->Wait(TimeOut);
 	pthread_testcancel();
 	pthread_setcancelstate(oldstate,NULL);
-	return ret;
+	return ret ? true : false;
 }

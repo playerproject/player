@@ -47,6 +47,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if defined WIN32
+	#define strdup _strdup
+#endif
+
 Property::Property (void)
 	: key (NULL), readonly(false)
 {

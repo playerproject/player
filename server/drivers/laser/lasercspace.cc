@@ -104,7 +104,6 @@ driver
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>       // for atoi(3)
-#include <unistd.h>
 
 #include <libplayercore/playercore.h>
 #include <libplayercore/error.h>

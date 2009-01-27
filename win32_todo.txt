@@ -1,0 +1,16 @@
+This list is incomplete.
+
+- Fix usage of user-configured pthreads location
+- Add replacement code for setitimer and related, and getopt (there's some on the web we can use)
+- Change nanosleep and usleep in replace to use the high performance timer (and clean up some ifdefs that don't use them yet)
+- Client libs other than libplayerc
+- Utilities
+- Python bindings
+- Finding GTK
+- Use DLL loading for plugins on Win32 instead of ltdl (I have plenty of experience here, it shouldn't take long to do)
+- Installing and setting paths
+- Write a wiki page about how to use Player on windows (environment variables that need to be set, etc)
+- Make examples work
+- Handle command line options
+- Make the CMake modules not require pkg-config to build clients and plugins, to reduce dependencies for windows users
+- Clean up all the places that add srcdir/replace as an include directory

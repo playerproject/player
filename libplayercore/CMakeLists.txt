@@ -30,6 +30,17 @@ ADD_CUSTOM_COMMAND (OUTPUT ${playerxdr_h} ${playerxdr_c}
 
 # Include from the binary dir to get player_interfaces.h and interface_table.h
 INCLUDE_DIRECTORIES (${CMAKE_CURRENT_BINARY_DIR})
+# Possibly use our own copy of XDR
+IF (NOT HAVE_XDR)
+    INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/replace)
+ENDIF (NOT HAVE_XDR)
+
+IF (NOT PTHREAD_INCLUDE_DIR STREQUAL "")
+    INCLUDE_DIRECTORIES (${PTHREAD_INCLUDE_DIR})
+ENDIF (NOT PTHREAD_INCLUDE_DIR STREQUAL "")
+IF (NOT PTHREAD_LIB_DIR STREQUAL "")
+    LINK_DIRECTORIES (${PTHREAD_LIB_DIR})
+ENDIF (NOT PTHREAD_LIB_DIR STREQUAL "")
 
 SET (playercoreSrcs driver.cc
                     device.cc
@@ -52,9 +63,9 @@ SET (coreLibs playerutils playererror playerxdr)
 IF (PLAYER_OS_QNX)
     SET (corePCLibs)
 ELSE (PLAYER_OS_QNX)
-    SET (coreLibs ${coreLibs} pthread)
-    SET (corePCLibs "-lpthread")
-    PLAYER_ADD_LINK_LIB (pthread)
+    SET (coreLibs ${coreLibs} ${PTHREAD_LIB})
+    SET (corePCLibs "-l${PTHREAD_LIB}")
+    PLAYER_ADD_LINK_LIB (${PTHREAD_LIB})
 ENDIF (PLAYER_OS_QNX)
 
 IF (HAVE_CLOCK_GETTIME)
@@ -64,6 +75,9 @@ IF (HAVE_CLOCK_GETTIME)
 ELSE (HAVE_CLOCK_GETTIME)
     SET (playercoreSrcs ${playercoreSrcs} ${PROJECT_SOURCE_DIR}/replace/clock_gettime.c)
 ENDIF (HAVE_CLOCK_GETTIME)
+IF (NOT HAVE_GETTIMEOFDAY)
+    SET (playercoreSrcs ${playercoreSrcs} ${PROJECT_SOURCE_DIR}/replace/gettimeofday.c)
+ENDIF (NOT HAVE_GETTIMEOFDAY)
 IF (HAVE_LIBLTDL)
     IF (PLAYER_OS_QNX)
         SET (coreLibs ${coreLibs} ltdl)
@@ -92,9 +106,12 @@ PLAYER_MAKE_PKGCONFIG ("playererror" "Player error reporting library - part of t
 
 
 SET (playerutilsSrcs interface_util.c
-                      addr_util.c)
+                     addr_util.c)
 PLAYER_ADD_LIBRARY (playerutils ${playerutilsSrcs} ${interface_table_h})
 TARGET_LINK_LIBRARIES (playerutils playererror)
+IF (PLAYER_OS_WIN)
+    TARGET_LINK_LIBRARIES (playerutils Ws2_32)
+ENDIF (PLAYER_OS_WIN)
 PLAYER_MAKE_PKGCONFIG ("playerutils" "Player utilities library - part of the Player Project"
                        "" "" "" "")
 

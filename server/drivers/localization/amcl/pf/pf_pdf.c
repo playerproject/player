@@ -45,7 +45,12 @@ pf_pdf_gaussian_t *pf_pdf_gaussian_alloc(pf_vector_t x, pf_matrix_t cx)
   // Initialize the random number generator
   //pdf->rng = gsl_rng_alloc(gsl_rng_taus);
   //gsl_rng_set(pdf->rng, ++pf_pdf_seed);
+#if defined (WIN32)
+  // TODO: this isn't quite the same behaviour: srand48 is for drand48()'s generator
+  srand(++pf_pdf_seed);
+#else
   srand48(++pf_pdf_seed);
+#endif
 
   return pdf;
 }
@@ -116,9 +121,19 @@ double pf_ran_gaussian(double sigma)
 
   do
   {
+#if defined (WIN32)
+    // TODO: this isn't quite the same behaviour: drand48 returns uniformly-distributed values
+    do { r = (double) rand() / (double) RAND_MAX; } while (r==0.0);
+#else
     do { r = drand48(); } while (r==0.0);
+#endif
     x1 = 2.0 * r - 1.0;
+#if defined (WIN32)
+    // TODO: this isn't quite the same behaviour: drand48 returns uniformly-distributed values
+    do { r = (double) rand() / (double) RAND_MAX; } while (r==0.0);
+#else
     do { r = drand48(); } while (r==0.0);
+#endif
     x2 = 2.0 * r - 1.0;
     w = x1*x1 + x2*x2;
   } while(w > 1.0 || w==0.0);

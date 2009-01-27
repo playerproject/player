@@ -284,8 +284,10 @@ changed to match your particular configuration.
 #include <math.h>
 #include <stdlib.h>       // for atoi(3)
 #include <sys/types.h>
-#include <unistd.h>
-#include <sys/time.h>
+#if !defined (WIN32)
+  #include <unistd.h>
+  #include <sys/time.h>
+#endif
 
 #define PLAYER_ENABLE_TRACE 1
 #define PLAYER_ENABLE_MSG 1
@@ -630,9 +632,11 @@ void AdaptiveMCL::Main(void)
   // Initial hypothesis list
   this->hyp_count = 0;
 
+#if !defined (WIN32)
   // WARNING: this only works for Linux
   // Run at a lower priority
   nice(10);
+#endif
 
 #ifdef INCLUDE_RTKGUI
   pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);

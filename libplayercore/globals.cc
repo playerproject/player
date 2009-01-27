@@ -36,15 +36,13 @@
  *
  ********************************************************************/
 
-#ifndef _GLOBALS_H
-#define _GLOBALS_H
-
 #include <config.h>
 
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
 
+#include <libplayercore/globals.h>
 #include <libplayercore/devicetable.h>
 #include <libplayercore/drivertable.h>
 #include <libplayercore/filewatcher.h>
@@ -109,5 +107,3 @@ player_globals_fini()
     player_sd_fini(globalSD);
 #endif
 }
-
-#endif

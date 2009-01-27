@@ -53,8 +53,8 @@ map_cell_t *map_get_cell(map_t *map, double ox, double oy, double oa)
   int i, j;
   map_cell_t *cell;
 
-  i = MAP_GXWX(map, ox);
-  j = MAP_GYWY(map, oy);
+  i = (int) MAP_GXWX(map, ox);
+  j = (int) MAP_GYWY(map, oy);
   
   if (!MAP_VALID(map, i, j))
     return NULL;

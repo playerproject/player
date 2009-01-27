@@ -43,7 +43,7 @@ int playerc_speechrecognition_unsubscribe(playerc_speechrecognition_t *device)
 
 void playerc_speech_recognition_putmsg(playerc_speechrecognition_t *device, player_msghdr_t *hdr, player_speech_recognition_data_t *buffer, size_t len)
 {
-  int ii,jj;
+  uint32_t ii,jj;
 	
   if((hdr->type == PLAYER_MSGTYPE_DATA) && (hdr->subtype == PLAYER_SPEECH_RECOGNITION_DATA_STRING ))
   {

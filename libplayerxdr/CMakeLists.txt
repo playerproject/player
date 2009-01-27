@@ -6,6 +6,8 @@ ENDIF (NOT PYTHONINTERP_FOUND)
 
 FILE (GLOB interfaceFiles ${PROJECT_SOURCE_DIR}/libplayercore/interfaces/*.def)
 
+INCLUDE (${PLAYER_CMAKE_DIR}/internal/ProcessInterfaces.cmake)
+
 # More cross-directory dependency stuff. Ug.
 SET (player_interfaces_h "${CMAKE_CURRENT_BINARY_DIR}/player_interfaces.h")
 PROCESS_INTERFACES ("" ${PROJECT_SOURCE_DIR}/libplayercore/interfaces ${player_interfaces_h})
@@ -31,10 +33,21 @@ ADD_CUSTOM_TARGET (functiontable_gen ALL
     DEPENDS ${functiontable_gen_h}
     COMMENT "Generating functiontable_gen.h")
 
+IF (NOT HAVE_XDR)
+    SET (replaceSrcs    ${PROJECT_SOURCE_DIR}/replace/xdr.c
+                        ${PROJECT_SOURCE_DIR}/replace/xdr_array.c
+                        ${PROJECT_SOURCE_DIR}/replace/xdr_float.c
+                        ${PROJECT_SOURCE_DIR}/replace/xdr_intXX_t.c
+                        ${PROJECT_SOURCE_DIR}/replace/xdr_mem.c
+                        ${PROJECT_SOURCE_DIR}/replace/xdr_sizeof.c)
+    INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/replace)
+ENDIF (NOT HAVE_XDR)
+
 SET (playerxdrSrcs  ${playerxdr_h}
                     ${playerxdr_c}
                     functiontable.c
-                    ${functiontable_gen_h})
+                    ${functiontable_gen_h}
+                    ${replaceSrcs})
 
 IF (PLAYER_OS_QNX)
     SET (xdrLibFlag -lrpc)
@@ -44,6 +57,9 @@ ENDIF (PLAYER_OS_QNX)
 
 INCLUDE_DIRECTORIES (${CMAKE_CURRENT_BINARY_DIR})
 PLAYER_ADD_LIBRARY (playerxdr ${playerxdrSrcs})
+IF (PLAYER_OS_WIN)
+    TARGET_LINK_LIBRARIES (playerxdr Ws2_32)
+ENDIF (PLAYER_OS_WIN)
 SET_SOURCE_FILES_PROPERTIES (${playerxdr_h} ${playerxdr_c} PROPERTIES GENERATED TRUE)
 IF (PLAYER_OS_QNX)
     TARGET_LINK_LIBRARIES (playerxdr rpc)

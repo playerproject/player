@@ -1,11 +1,14 @@
 PLAYERDRIVER_OPTION (insideM300 build_insideM300 ON)
+PLAYERDRIVER_REJECT_OS (insideM300 build_insideM300 PLAYER_OS_WIN)
 PLAYERDRIVER_ADD_DRIVER (insideM300 build_insideM300 SOURCES insideM300.cc)
 
-PLAYERDRIVER_OPTION (skyetekM1 build_skyetekM1 ON)
-PLAYERDRIVER_ADD_DRIVER (skyetekM1 build_skyetekM1 SOURCES skyetekM1.cc)
-
 PLAYERDRIVER_OPTION (sickRFI341 build_sickRFI341 ON)
+PLAYERDRIVER_REJECT_OS (sickRFI341 build_sickRFI341 PLAYER_OS_WIN)
 PLAYERDRIVER_ADD_DRIVER (sickRFI341 build_sickRFI341 SOURCES rfi341_protocol.cc sickrfi341.cc)
+
+PLAYERDRIVER_OPTION (skyetekM1 build_skyetekM1 ON)
+PLAYERDRIVER_REJECT_OS (skyetekM1 build_skyetekM1 PLAYER_OS_WIN)
+PLAYERDRIVER_ADD_DRIVER (skyetekM1 build_skyetekM1 SOURCES skyetekM1.cc)
 
 PLAYERDRIVER_OPTION (phidgetRFID build_phidgetRFID ON)
 SET (PHIDGETRFID_DIR "" CACHE STRING "Directory containing the Phidget RFID headers and libraries")

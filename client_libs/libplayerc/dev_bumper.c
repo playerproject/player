@@ -47,7 +47,9 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include <netinet/in.h>
+#if !defined (WIN32)
+  #include <netinet/in.h>
+#endif
 
 #include "playerc.h"
 #include "error.h"

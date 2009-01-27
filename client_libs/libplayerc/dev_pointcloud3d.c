@@ -29,6 +29,10 @@
 #include "playerc.h"
 #include "error.h"
 
+#if defined (WIN32)
+  #define snprintf _snprintf
+#endif
+
 // Process incoming data
 void playerc_pointcloud3d_putmsg (playerc_pointcloud3d_t *device,
                                   player_msghdr_t *header,

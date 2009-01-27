@@ -50,6 +50,10 @@
 #include <libplayercore/interface_util.h>
 #include <libplayercore/addr_util.h>
 
+#if defined WIN32
+  #define strdup _strdup
+#endif
+
 // initialize the table
 DeviceTable::DeviceTable()
 {

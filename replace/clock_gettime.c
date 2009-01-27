@@ -22,7 +22,14 @@
 
 #include <stddef.h>
 #include <time.h>
-#include <sys/time.h>
+#if defined WIN32
+  // For struct timeval
+  #include <Winsock2.h>
+#else
+  #include <sys/time.h>
+#endif
+
+#include "replace/replace.h"
 
 /* This replacement function originally written by Klass Gadeyne
    for the Orocos Project */

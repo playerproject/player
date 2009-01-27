@@ -8,7 +8,21 @@
 #ifndef FILEWATCHER_H_
 #define FILEWATCHER_H_
 
-#include <sys/select.h>
+#if defined (WIN32)
+  #if defined (PLAYER_STATIC)
+    #define PLAYERCORE_EXPORT
+  #elif defined (playercore_EXPORTS)
+    #define PLAYERCORE_EXPORT    __declspec (dllexport)
+  #else
+    #define PLAYERCORE_EXPORT    __declspec (dllimport)
+  #endif
+#else
+  #define PLAYERCORE_EXPORT
+#endif
+
+#if !defined WIN32
+  #include <sys/select.h>
+#endif
 #include <sys/types.h>
 #include <stdlib.h>
 #include <pthread.h>
@@ -27,7 +41,7 @@ struct fd_driver_pair
 
 const size_t INITIAL_WATCHED_FILES_ARRAY_SIZE = 32;
 
-class FileWatcher
+class PLAYERCORE_EXPORT FileWatcher
 {
 public:
 	FileWatcher();

@@ -104,15 +104,18 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <termios.h>
-#include <unistd.h>
-#include <sys/ioctl.h>
-#include <arpa/inet.h> // for htons etc
+//#include <termios.h>
+//#include <unistd.h>
+//#include <sys/ioctl.h>
+//#include <arpa/inet.h> // for htons etc
 #include <libplayercore/playercore.h>
 // #include <replace/replace.h>
-extern PlayerTime* GlobalTime;
 
 #include "nav200.h"
+
+#if defined (WIN32)
+  #define M_2_PI (M_PI * 2.0)
+#endif
 
 #define DEFAULT_SICKNAV200_MODE "positioning"
 
@@ -267,6 +270,8 @@ void sicknav200_Register(DriverTable* table) {
 SickNAV200::SickNAV200(ConfigFile* cf, int section) :
 	ThreadedDriver(cf, section, false), 
 	Initialised(false),
+	// The "this" pointer is not valid until after the constructor completes on Windows (maybe elsewhere too?)
+	// so this will likely not function.
 	mode("mode", DEFAULT_SICKNAV200_MODE, false, this, cf, section),
 	Nearest("nearest", 0, false, this, cf, section),
 	AutoFullMapCount("autofullmapcount", 0, false, this, cf, section),

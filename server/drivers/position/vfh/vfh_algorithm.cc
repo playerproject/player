@@ -26,7 +26,9 @@
 
 #include <libplayercore/playercore.h>
 
-extern PlayerTime *GlobalTime;
+#if defined (WIN32)
+  #define hypot _hypot
+#endif
 
 VFH_Algorithm::VFH_Algorithm( double cell_size,
                               int window_diameter,
@@ -47,11 +49,11 @@ VFH_Algorithm::VFH_Algorithm( double cell_size,
                               double obs_cutoff_1ms,
                               double weight_desired_dir,
                               double weight_current_dir )
-    : CELL_WIDTH(cell_size),
+    : CELL_WIDTH(static_cast<float> (cell_size)),
       WINDOW_DIAMETER(window_diameter),
       SECTOR_ANGLE(sector_angle),
-      SAFETY_DIST_0MS(safety_dist_0ms),
-      SAFETY_DIST_1MS(safety_dist_1ms),
+      SAFETY_DIST_0MS(static_cast<float> (safety_dist_0ms)),
+      SAFETY_DIST_1MS(static_cast<float> (safety_dist_1ms)),
       Current_Max_Speed(max_speed),
       MAX_SPEED(max_speed),
       MAX_SPEED_NARROW_OPENING(max_speed_narrow_opening),
@@ -61,12 +63,12 @@ VFH_Algorithm::VFH_Algorithm( double cell_size,
       MAX_TURNRATE_0MS(max_turnrate_0ms),
       MAX_TURNRATE_1MS(max_turnrate_1ms),
       MIN_TURN_RADIUS_SAFETY_FACTOR(min_turn_radius_safety_factor),
-      Binary_Hist_Low_0ms(free_space_cutoff_0ms),
-      Binary_Hist_High_0ms(obs_cutoff_0ms),
-      Binary_Hist_Low_1ms(free_space_cutoff_1ms),
-      Binary_Hist_High_1ms(obs_cutoff_1ms),
-      U1(weight_desired_dir),
-      U2(weight_current_dir),
+      Binary_Hist_Low_0ms(static_cast<float> (free_space_cutoff_0ms)),
+      Binary_Hist_High_0ms(static_cast<float> (obs_cutoff_0ms)),
+      Binary_Hist_Low_1ms(static_cast<float> (free_space_cutoff_1ms)),
+      Binary_Hist_High_1ms(static_cast<float> (obs_cutoff_1ms)),
+      U1(static_cast<float> (weight_desired_dir)),
+      U2(static_cast<float> (weight_current_dir)),
       Desired_Angle(90),
       Picked_Angle(90),
       Last_Picked_Angle(Picked_Angle),
@@ -164,7 +166,7 @@ VFH_Algorithm::Get_Safety_Dist( int speed )
 float
 VFH_Algorithm::Get_Binary_Hist_Low( int speed )
 {
-    return ( Binary_Hist_Low_0ms - (speed*( Binary_Hist_Low_0ms-Binary_Hist_Low_1ms )/1000.0) );
+    return ( Binary_Hist_Low_0ms - (speed*( Binary_Hist_Low_0ms-Binary_Hist_Low_1ms )/1000.0f) );
 }
 
 // AB: Could optimize this with a look-up table, but it shouldn't make much 
@@ -172,7 +174,7 @@ VFH_Algorithm::Get_Binary_Hist_Low( int speed )
 float
 VFH_Algorithm::Get_Binary_Hist_High( int speed )
 {
-    return ( Binary_Hist_High_0ms - (speed*( Binary_Hist_High_0ms-Binary_Hist_High_1ms )/1000.0) );
+    return ( Binary_Hist_High_0ms - (speed*( Binary_Hist_High_0ms-Binary_Hist_High_1ms )/1000.0f) );
 }
 
 
@@ -209,22 +211,22 @@ int VFH_Algorithm::Init()
   for(x=0;x<WINDOW_DIAMETER;x++) {
     for(y=0;y<WINDOW_DIAMETER;y++) {
       Cell_Mag[x][y] = 0;
-      Cell_Dist[x][y] = sqrt(pow((CENTER_X - x), 2) + pow((CENTER_Y - y), 2)) * CELL_WIDTH;
+      Cell_Dist[x][y] = sqrt(pow(static_cast<float> (CENTER_X - x), 2) + pow(static_cast<float> (CENTER_Y - y), 2)) * CELL_WIDTH;
 
-      Cell_Base_Mag[x][y] = pow((3000.0 - Cell_Dist[x][y]), 4) / 100000000.0;
+      Cell_Base_Mag[x][y] = pow((3000.0f - Cell_Dist[x][y]), 4) / 100000000.0f;
 
       // Set up Cell_Direction with the angle in degrees to each cell
       if (x < CENTER_X) {
         if (y < CENTER_Y) {
           Cell_Direction[x][y] = atan((float)(CENTER_Y - y) / (float)(CENTER_X - x));
-          Cell_Direction[x][y] *= (360.0 / 6.28);
-          Cell_Direction[x][y] = 180.0 - Cell_Direction[x][y];
+          Cell_Direction[x][y] *= (360.0f / 6.28f);
+          Cell_Direction[x][y] = 180.0f - Cell_Direction[x][y];
         } else if (y == CENTER_Y) {
           Cell_Direction[x][y] = 180.0;
         } else if (y > CENTER_Y) {
           Cell_Direction[x][y] = atan((float)(y - CENTER_Y) / (float)(CENTER_X - x));
-          Cell_Direction[x][y] *= (360.0 / 6.28);
-          Cell_Direction[x][y] = 180.0 + Cell_Direction[x][y];
+          Cell_Direction[x][y] *= (360.0f / 6.28f);
+          Cell_Direction[x][y] = 180.0f + Cell_Direction[x][y];
         }
       } else if (x == CENTER_X) {
         if (y < CENTER_Y) {
@@ -237,13 +239,13 @@ int VFH_Algorithm::Init()
       } else if (x > CENTER_X) {
         if (y < CENTER_Y) {
           Cell_Direction[x][y] = atan((float)(CENTER_Y - y) / (float)(x - CENTER_X));
-          Cell_Direction[x][y] *= (360.0 / 6.28);
+          Cell_Direction[x][y] *= (360.0f / 6.28f);
         } else if (y == CENTER_Y) {
           Cell_Direction[x][y] = 0.0;
         } else if (y > CENTER_Y) {
           Cell_Direction[x][y] = atan((float)(y - CENTER_Y) / (float)(x - CENTER_X));
-          Cell_Direction[x][y] *= (360.0 / 6.28);
-          Cell_Direction[x][y] = 360.0 - Cell_Direction[x][y];
+          Cell_Direction[x][y] *= (360.0f / 6.28f);
+          Cell_Direction[x][y] = 360.0f - Cell_Direction[x][y];
         }
       }
 
@@ -264,7 +266,7 @@ int VFH_Algorithm::Init()
         {
           r = ROBOT_RADIUS + Get_Safety_Dist(max_speed_this_table);
           // Cell_Enlarge[x][y] = (float)atan( r / Cell_Dist[x][y] ) * (180/M_PI);
-          Cell_Enlarge[x][y] = (float)asin( r / Cell_Dist[x][y] ) * (180/M_PI);
+          Cell_Enlarge[x][y] = static_cast<float> (asin( r / Cell_Dist[x][y] ) * (180.0f/M_PI));
         }
         else
         {
@@ -539,8 +541,8 @@ bool VFH_Algorithm::Cant_Turn_To_Goal()
     // by Build_Masked_Polar_Histogram.
 
     // Coords of goal in local coord system:
-    float goal_x = this->Dist_To_Goal * cos( DTOR(this->Desired_Angle) );
-    float goal_y = this->Dist_To_Goal * sin( DTOR(this->Desired_Angle) );
+    float goal_x = this->Dist_To_Goal * cos( static_cast<float> (DTOR(this->Desired_Angle)) );
+    float goal_y = this->Dist_To_Goal * sin( static_cast<float> (DTOR(this->Desired_Angle)) );
 
 // AlexB: Is this useful?
 //     if ( goal_y < 0 )
@@ -558,7 +560,7 @@ bool VFH_Algorithm::Cant_Turn_To_Goal()
 //     printf("Cant_Turn_To_Goal: Blocked_Circle_Radius = %f\n",Blocked_Circle_Radius);
 
     // right circle
-    dist_between_centres = hypot( goal_x - this->Blocked_Circle_Radius, goal_y );
+    dist_between_centres = static_cast<float> (hypot( goal_x - this->Blocked_Circle_Radius, goal_y ));
     if ( dist_between_centres+this->Goal_Distance_Tolerance < this->Blocked_Circle_Radius )
     {
 //        printf("Goal close & right\n");
@@ -566,7 +568,7 @@ bool VFH_Algorithm::Cant_Turn_To_Goal()
     }
 
     // left circle
-    dist_between_centres = hypot( -goal_x - this->Blocked_Circle_Radius, goal_y );
+    dist_between_centres = static_cast<float> (hypot( -goal_x - this->Blocked_Circle_Radius, goal_y ));
     if ( dist_between_centres+this->Goal_Distance_Tolerance < this->Blocked_Circle_Radius )
     {
 //        printf("Goal close & left.\n");
@@ -729,7 +731,7 @@ int VFH_Algorithm::Select_Direction()
     {
         // narrow opening: aim for the centre
 
-        new_angle = border[i].first + (border[i].second - border[i].first) / 2.0;
+        new_angle = border[i].first + (border[i].second - border[i].first) / 2.0f;
 
         Candidate_Angle.push_back(new_angle);
         Candidate_Speed.push_back(MIN(Current_Max_Speed,MAX_SPEED_NARROW_OPENING));
@@ -738,7 +740,7 @@ int VFH_Algorithm::Select_Direction()
     {
         // wide opening: consider the centre, and 40deg from each border
 
-        new_angle = border[i].first + (border[i].second - border[i].first) / 2.0;
+        new_angle = border[i].first + (border[i].second - border[i].first) / 2.0f;
 
         Candidate_Angle.push_back(new_angle);
         Candidate_Speed.push_back(Current_Max_Speed);
@@ -982,7 +984,7 @@ int VFH_Algorithm::Build_Masked_Polar_Histogram(int speed)
   // local coordinate system (+y is forward).
   center_x_right = CENTER_X + (Min_Turning_Radius[speed] / (float)CELL_WIDTH);
   center_x_left = CENTER_X - (Min_Turning_Radius[speed] / (float)CELL_WIDTH);
-  center_y = CENTER_Y;
+  center_y = static_cast<float> (CENTER_Y);
 
   angle_ahead = 90;
   phi_left  = 180;
@@ -1013,7 +1015,7 @@ int VFH_Algorithm::Build_Masked_Polar_Histogram(int speed)
         {
             // The cell is between phi_right and angle_ahead
 
-            dist_r = hypot(center_x_right - x, center_y - y) * CELL_WIDTH;
+            dist_r = static_cast<float> (hypot(center_x_right - x, center_y - y) * CELL_WIDTH);
             if (dist_r < Blocked_Circle_Radius) 
             { 
                 phi_right = Cell_Direction[x][y];
@@ -1024,7 +1026,7 @@ int VFH_Algorithm::Build_Masked_Polar_Histogram(int speed)
         {
             // The cell is between phi_left and angle_ahead
 
-            dist_l = hypot(center_x_left - x, center_y - y) * CELL_WIDTH;
+            dist_l = static_cast<float> (hypot(center_x_left - x, center_y - y) * CELL_WIDTH);
             if (dist_l < Blocked_Circle_Radius) 
             { 
                 phi_left = Cell_Direction[x][y];
@@ -1038,7 +1040,7 @@ int VFH_Algorithm::Build_Masked_Polar_Histogram(int speed)
   //
   for(x=0;x<HIST_SIZE;x++) 
   {
-      angle = x * SECTOR_ANGLE;
+      angle = static_cast<float> (x * SECTOR_ANGLE);
       if ((Hist[x] == 0) && (((Delta_Angle((float)angle, phi_right) <= 0) && 
                               (Delta_Angle((float)angle, angle_ahead) >= 0)) || 
                              ((Delta_Angle((float)angle, phi_left) >= 0) &&

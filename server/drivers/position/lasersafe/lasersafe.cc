@@ -99,9 +99,6 @@ driver
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <netinet/in.h>
-#include <unistd.h>
-#include <errno.h>
 #include <time.h>
 #include <math.h>
 

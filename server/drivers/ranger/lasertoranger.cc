@@ -374,12 +374,12 @@ int LaserToRanger::ProcessMessage (QueuePointer &respQueue, player_msghdr *hdr, 
 	{
 		// Translate and forward the request to the laser device
 		player_ranger_config_t *req = reinterpret_cast<player_ranger_config_t*> (data);
-		laserConfig.min_angle = req->min_angle;
-		laserConfig.max_angle = req->max_angle;
-		laserConfig.resolution = req->resolution;
-		laserConfig.max_range = req->max_range;
-		laserConfig.range_res = req->range_res;
-		laserConfig.scanning_frequency = req->frequency;
+		laserConfig.min_angle = static_cast<float> (req->min_angle);
+		laserConfig.max_angle = static_cast<float> (req->max_angle);
+		laserConfig.resolution = static_cast<float> (req->resolution);
+		laserConfig.max_range = static_cast<float> (req->max_range);
+		laserConfig.range_res = static_cast<float> (req->range_res);
+		laserConfig.scanning_frequency = static_cast<float> (req->frequency);
 		inputDevice->PutMsg (InQueue, PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_SET_CONFIG, &laserConfig, sizeof (laserConfig), 0);
 		lastReqType = PLAYER_RANGER_REQ_SET_CONFIG;
 		ret_queue = respQueue;

@@ -47,11 +47,28 @@
 #ifndef _WALLCLOCKTIME_H
 #define _WALLCLOCKTIME_H
 
-#include <sys/time.h>
+#if defined (WIN32)
+  #if defined (PLAYER_STATIC)
+    #define PLAYERCORE_EXPORT
+  #elif defined (playercore_EXPORTS)
+    #define PLAYERCORE_EXPORT    __declspec (dllexport)
+  #else
+    #define PLAYERCORE_EXPORT    __declspec (dllimport)
+  #endif
+#else
+  #define PLAYERCORE_EXPORT
+#endif
+
+#if defined WIN32
+  // For struct timeval
+  #include <Winsock2.h>
+#else
+  #include <sys/time.h>
+#endif
 
 #include <libplayercore/playertime.h>
 
-class WallclockTime : public PlayerTime
+class PLAYERCORE_EXPORT WallclockTime : public PlayerTime
 {
   public:
     int GetTime(struct timeval* time);

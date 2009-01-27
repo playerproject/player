@@ -4,19 +4,31 @@
 #cmakedefine HAVE_LIBLTDL 1
 #cmakedefine HAVE_PLAYERSD 1
 #cmakedefine HAVE_POLL 1
+#cmakedefine HAVE_POLLFD 1
+#cmakedefine HAVE_POLLIN 1
 #cmakedefine HAVE_ROUND 1
+#cmakedefine HAVE_RINT 1
 #cmakedefine HAVE_STDINT_H 1
 #cmakedefine HAVE_COMPRESSBOUND 1
 #cmakedefine INCLUDE_RTK 1
 #cmakedefine INCLUDE_RTKGUI 1
 #cmakedefine HAVE_CLOCK_GETTIME 1
+#cmakedefine HAVE_XDR
 #cmakedefine HAVE_XDR_LONGLONG_T 1
 #cmakedefine HAVE_STL 1
+#cmakedefine HAVE_M 1
+#cmakedefine HAVE_GETTIMEOFDAY 1
+#cmakedefine HAVE_USLEEP 1
+#cmakedefine HAVE_NANOSLEEP 1
+#cmakedefine HAVE_STRUCT_TIMESPEC 1
 
-#ifdef HAVE_STDINT_H
-#include <stdint.h>
+#if defined HAVE_STDINT_H
+  #include <stdint.h>
 #endif
 #include <sys/types.h>
+#if defined WIN32
+  #include <rpc/types.h>
+#endif
 
 /* Logging level to console and system log */
 #cmakedefine DEBUG_LEVEL @DEBUG_LEVEL@

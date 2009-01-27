@@ -138,7 +138,7 @@ class MethodGenerator:
     self.sourcefile.write("""
 int xdr_%(typename)s (XDR* xdrs, %(typename)s * msg)
 { """ % {"typename":datatype.typename})
-    
+
     sourcefile = self.sourcefile
 
     for member in datatype.members:
@@ -239,11 +239,11 @@ int xdr_%(typename)s (XDR* xdrs, %(typename)s * msg)
                               var.Name + ') != 1)\n    return(0);\n')
         #varlist.append(varstring)
     sourcefile.write('  return(1);\n}\n')
-    
-    
+
+
   def gen_external_pack(self,datatype):
-    self.headerfile.write("int %(prefix)s_pack(void* buf, size_t buflen, %(typename)s * msg, int op);\n" % {"typename":datatype.typename, "prefix":datatype.prefix})
-    
+    self.headerfile.write("PLAYERXDR_EXPORT int %(prefix)s_pack(void* buf, size_t buflen, %(typename)s * msg, int op);\n" % {"typename":datatype.typename, "prefix":datatype.prefix})
+
     self.sourcefile.write("""int 
 %(prefix)s_pack(void* buf, size_t buflen, %(typename)s * msg, int op)
 {
@@ -262,10 +262,10 @@ int xdr_%(typename)s (XDR* xdrs, %(typename)s * msg)
   return(len);
 } """ % {"typename":datatype.typename, "prefix":datatype.prefix})
 
-    
+
   def gen_copy(self,datatype):
     # If type is not in hasdynamic, not going to write a function so may as well just continue with the next struct
-    self.headerfile.write("unsigned int %(typename)s_copy(%(typename)s *dest, const %(typename)s *src);\n" % {"typename":datatype.typename, "prefix":datatype.prefix})
+    self.headerfile.write("PLAYERXDR_EXPORT unsigned int %(typename)s_copy(%(typename)s *dest, const %(typename)s *src);\n" % {"typename":datatype.typename, "prefix":datatype.prefix})
     if datatype.typename not in hasdynamic:
       self.sourcefile.write("""
 unsigned int %(typename)s_copy(%(typename)s *dest, const %(typename)s *src)
@@ -334,7 +334,7 @@ unsigned int %(typename)s_copy(%(typename)s *dest, const %(typename)s *src)
   
   def gen_cleanup(self,datatype):
     # If type is not in hasdynamic, not going to write a function so may as well just continue with the next struct
-    self.headerfile.write("void %(typename)s_cleanup(const %(typename)s *msg);\n" % {"typename":datatype.typename})
+    self.headerfile.write("PLAYERXDR_EXPORT void %(typename)s_cleanup(const %(typename)s *msg);\n" % {"typename":datatype.typename})
     if datatype.typename not in hasdynamic:
       self.sourcefile.write("""
 void %(typename)s_cleanup(const %(typename)s *msg)
@@ -378,7 +378,7 @@ void %(typename)s_cleanup(const %(typename)s *msg)
     
   def gen_clone(self,datatype):
     # If type is not in hasdynamic, not going to write a function so may as well just continue with the next struct
-    self.headerfile.write("%(typename)s * %(typename)s_clone(const %(typename)s *msg);\n" % {"typename":datatype.typename})
+    self.headerfile.write("PLAYERXDR_EXPORT %(typename)s * %(typename)s_clone(const %(typename)s *msg);\n" % {"typename":datatype.typename})
     self.sourcefile.write("""
 %(typename)s * %(typename)s_clone(const %(typename)s *msg)
 {      
@@ -390,7 +390,7 @@ void %(typename)s_cleanup(const %(typename)s *msg)
     
   def gen_free(self,datatype):
     # If type is not in hasdynamic, not going to write a function so may as well just continue with the next struct
-    self.headerfile.write("void %(typename)s_free(%(typename)s *msg);\n" % {"typename":datatype.typename})
+    self.headerfile.write("PLAYERXDR_EXPORT void %(typename)s_free(%(typename)s *msg);\n" % {"typename":datatype.typename})
     self.sourcefile.write("""
 void %(typename)s_free(%(typename)s *msg)
 {      
@@ -400,7 +400,7 @@ void %(typename)s_free(%(typename)s *msg)
 
 
   def gen_sizeof(self,datatype):
-    self.headerfile.write("unsigned int %(typename)s_sizeof(%(typename)s *msg);\n" % {"typename":datatype.typename})
+    self.headerfile.write("PLAYERXDR_EXPORT unsigned int %(typename)s_sizeof(%(typename)s *msg);\n" % {"typename":datatype.typename})
     if datatype.typename not in hasdynamic:
       self.sourcefile.write("""
 unsigned int %(typename)s_sizeof(%(typename)s *msg)
@@ -496,6 +496,18 @@ if __name__ == '__main__':
 @{ */
 #ifndef _PLAYERXDR_PACK_H_
 #define _PLAYERXDR_PACK_H_
+
+#if defined (WIN32)
+  #if defined (PLAYER_STATIC)
+    #define PLAYERXDR_EXPORT
+  #elif defined (playerxdr_EXPORTS)
+    #define PLAYERXDR_EXPORT    __declspec (dllexport)
+  #else
+    #define PLAYERXDR_EXPORT    __declspec (dllimport)
+  #endif
+#else
+  #define PLAYERXDR_EXPORT
+#endif
 
 #include <rpc/types.h>
 #include <rpc/xdr.h>

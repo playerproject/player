@@ -46,6 +46,18 @@
 #ifndef _DEVICETABLE_H
 #define _DEVICETABLE_H
 
+#if defined (WIN32)
+  #if defined (PLAYER_STATIC)
+    #define PLAYERCORE_EXPORT
+  #elif defined (playercore_EXPORTS)
+    #define PLAYERCORE_EXPORT    __declspec (dllexport)
+  #else
+    #define PLAYERCORE_EXPORT    __declspec (dllimport)
+  #endif
+#else
+  #define PLAYERCORE_EXPORT
+#endif
+
 #include <pthread.h>
 #include <string.h>
 
@@ -54,7 +66,7 @@
 
 typedef Driver* (*remote_driver_fn_t) (player_devaddr_t addr, void* arg);
 
-class DeviceTable
+class PLAYERCORE_EXPORT DeviceTable
 {
   private:
     // we'll keep the device info here.

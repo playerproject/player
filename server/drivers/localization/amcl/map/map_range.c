@@ -12,6 +12,7 @@
 #include <stdlib.h>
 
 #include "map.h"
+#include <libplayercore/playercommon.h>
 
 // Extract a single range reading from the map.  Unknown cells and/or
 // out-of-bound cells are treated as occupied, which makes it easy to
@@ -25,17 +26,17 @@ double map_calc_range(map_t *map, double ox, double oy, double oa, double max_ra
   
   if (fabs(cos(oa)) > fabs(sin(oa)))
   {
-    ai = MAP_GXWX(map, ox);
-    bi = MAP_GXWX(map, ox + max_range * cos(oa));
+    ai = (int) MAP_GXWX(map, ox);
+    bi = (int) MAP_GXWX(map, ox + max_range * cos(oa));
     
-    aj = MAP_GYWY(map, oy);
+    aj = (int) MAP_GYWY(map, oy);
     dy = tan(oa) * map->scale;
 
     if (ai < bi)
     {
       for (i = ai; i < bi; i++)
       {
-        j = MAP_GYWY(map, oy + (i - ai) * dy);
+        j = (int) MAP_GYWY(map, oy + (i - ai) * dy);
         if (MAP_VALID(map, i, j))
         {
           cell = map->cells + MAP_INDEX(map, i, j);
@@ -50,7 +51,7 @@ double map_calc_range(map_t *map, double ox, double oy, double oa, double max_ra
     {
       for (i = ai; i > bi; i--)
       {
-        j = MAP_GYWY(map, oy + (i - ai) * dy);
+        j = (int) MAP_GYWY(map, oy + (i - ai) * dy);
         if (MAP_VALID(map, i, j))
         {
           cell = map->cells + MAP_INDEX(map, i, j);
@@ -64,17 +65,17 @@ double map_calc_range(map_t *map, double ox, double oy, double oa, double max_ra
   }
   else
   {
-    ai = MAP_GXWX(map, ox);
+    ai = (int) MAP_GXWX(map, ox);
     dx = tan(M_PI/2 - oa) * map->scale;
     
-    aj = MAP_GYWY(map, oy);
-    bj = MAP_GYWY(map, oy + max_range * sin(oa));
+    aj = (int) MAP_GYWY(map, oy);
+    bj = (int) MAP_GYWY(map, oy + max_range * sin(oa));
 
     if (aj < bj)
     {
       for (j = aj; j < bj; j++)
       {
-        i = MAP_GXWX(map, ox + (j - aj) * dx);
+        i = (int) MAP_GXWX(map, ox + (j - aj) * dx);
         if (MAP_VALID(map, i, j))
         {
           cell = map->cells + MAP_INDEX(map, i, j);
@@ -89,7 +90,7 @@ double map_calc_range(map_t *map, double ox, double oy, double oa, double max_ra
     {
       for (j = aj; j > bj; j--)
       {
-        i = MAP_GXWX(map, ox + (j - aj) * dx);
+        i = (int) MAP_GXWX(map, ox + (j - aj) * dx);
         if (MAP_VALID(map, i, j))
         {
           cell = map->cells + MAP_INDEX(map, i, j);

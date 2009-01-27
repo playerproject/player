@@ -37,7 +37,9 @@
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>       // for atoi(3)
-#include <unistd.h>
+#if !defined (WIN32)
+  #include <unistd.h>
+#endif
 
 #include <libplayercore/playercore.h>
 #include <libplayercore/error.h>

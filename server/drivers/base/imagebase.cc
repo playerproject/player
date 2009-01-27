@@ -31,7 +31,7 @@
 #include <string.h>
 #include <assert.h>
 #include "imagebase.h"
-#include <libplayerxdr/playerxdr.h>
+//#include <libplayerxdr/playerxdr.h>
 #include <config.h>
 #if HAVE_JPEG
 #include <libplayerjpeg/playerjpeg.h>
@@ -111,7 +111,9 @@ void ImageBase::MainQuit()
 // Process an incoming message
 int ImageBase::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data)
 {
+#if HAVE_JPEG
   uint32_t new_image_count;
+#endif
 
   assert(hdr);
 

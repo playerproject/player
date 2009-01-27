@@ -245,7 +245,7 @@ int RangerToLaser::ConvertData (player_msghdr *hdr, void *data)
 			return 0;
 		}
 		for (int ii = 0; ii < rangeCount; ii++)
-			scanData.scan.ranges[ii] = rangeData[ii];
+			scanData.scan.ranges[ii] = static_cast<float> (rangeData[ii]);
 	}
 	if (intensityData != NULL)
 	{
@@ -304,12 +304,12 @@ bool RangerToLaser::HandleGeomRequest (player_laser_geom_t *dest, player_ranger_
 
 void RangerToLaser::CopyConfig (player_ranger_config_t *data)
 {
-	config.min_angle = data->min_angle;
-	config.max_angle = data->max_angle;
-	config.resolution = data->resolution;
-	config.max_range = data->max_range;
-	config.range_res = data->range_res;
-	config.scanning_frequency = data->frequency;
+	config.min_angle = static_cast<float> (data->min_angle);
+	config.max_angle = static_cast<float> (data->max_angle);
+	config.resolution = static_cast<float> (data->resolution);
+	config.max_range = static_cast<float> (data->max_range);
+	config.range_res = static_cast<float> (data->range_res);
+	config.scanning_frequency = static_cast<float> (data->frequency);
 }
 
 int RangerToLaser::ProcessMessage (QueuePointer &respQueue, player_msghdr *hdr, void *data)

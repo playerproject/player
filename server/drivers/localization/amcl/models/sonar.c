@@ -33,7 +33,7 @@
 #include <stdlib.h>
 
 #include "sonar.h"
-
+#include <libplayercore/playercommon.h>
 
 // Pre-compute the range sensor probabilities
 void sonar_precompute(sonar_t *self);
@@ -138,7 +138,7 @@ void sonar_precompute(sonar_t *self)
 
 
 // Determine the probability for the given range reading
-inline double sonar_sensor_prob(sonar_t *self, double obs_range, double map_range)
+double sonar_sensor_prob(sonar_t *self, double obs_range, double map_range)
 {
   int i, j;
 

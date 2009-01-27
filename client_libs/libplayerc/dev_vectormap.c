@@ -59,8 +59,13 @@
 #include "error.h"
 #include <libplayerxdr/playerxdr.h>
 
+#if defined (WIN32)
+  #define snprintf _snprintf
+  #define strdup _strdup
+#endif
+
 /** Dummy function passed as a function pointer GEOS when it is initialised. GEOS uses this for logging. */
-inline void geosprint(const char* format, ...)
+void geosprint(const char* format, ...)
 {
 	va_list ap;
 	va_start(ap,format);
@@ -120,7 +125,7 @@ int playerc_vectormap_unsubscribe(playerc_vectormap_t *device)
 // Get vectormap meta-data
 int playerc_vectormap_get_map_info(playerc_vectormap_t* device)
 {
-  int ii;
+  uint32_t ii;
   player_vectormap_info_t *info_req;
 
   // try to get map info

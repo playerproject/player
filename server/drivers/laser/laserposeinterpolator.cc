@@ -109,7 +109,10 @@ driver
 
 #include <libplayercore/playercore.h>
 #include <libplayercore/error.h>
-#include <libplayerxdr/playerxdr.h>
+
+#if defined (WIN32)
+  #define hypot _hypot
+#endif
 
 #define DEFAULT_MAXSCANS 100
 
@@ -203,14 +206,14 @@ LaserPoseInterp::LaserPoseInterp(ConfigFile* cf, int section)
   }
   this->position_device = NULL;
 
-  this->interpolate = cf->ReadInt(section, "interpolate", 1);
+  this->interpolate = cf->ReadInt(section, "interpolate", 1) != 0 ? true : false;
   this->maxnumscans = cf->ReadInt(section, "max_scans", DEFAULT_MAXSCANS);
   this->update_thresh[0] = cf->ReadTupleLength(section, "update_thresh",
                                                0, -1.0);
   this->update_thresh[1] = cf->ReadTupleAngle(section, "update_thresh",
                                               1, -1.0);
   this->update_interval = cf->ReadFloat(section, "update_interval", -1.0);
-  this->send_all_scans = cf->ReadInt(section, "send_all_scans", 1);
+  this->send_all_scans = cf->ReadInt(section, "send_all_scans", 1) != 0 ? true : false;
 
   this->scans = (player_laser_data_t*)calloc(this->maxnumscans,
                                              sizeof(player_laser_data_t));
@@ -318,7 +321,13 @@ LaserPoseInterp::ProcessMessage(QueuePointer & resp_queue,
         return(0);
       }
       // store the scan and timestamp, make sure we deep copy the data
-      player_laser_data_t_copy(&this->scans[this->numscans],(player_laser_data_t*)data);
+	  player_copy_fn_t copyfunc;
+      if (!(copyfunc = playerxdr_get_copyfunc (PLAYER_LASER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN)))
+      {
+        PLAYER_ERROR ("Couldn't fund copy function to copy laser data");
+        return(-1);
+      }
+      (*copyfunc) (&this->scans[this->numscans],data);
       //this->scans[this->numscans] = *((player_laser_data_t*)data);
       this->scantimes[this->numscans] = hdr->timestamp;
       this->numscans++;

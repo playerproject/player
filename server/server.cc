@@ -89,10 +89,12 @@ Listening on ports: 6665
 
 #include <stdio.h>
 #include <assert.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <errno.h>
+#if !defined (WIN32)
+  #include <unistd.h>
+#endif
 
 #include <libplayercore/playercore.h>
 #include <libplayercore/interface_util.h>
@@ -142,11 +144,13 @@ main(int argc, char** argv)
     exit(-1);
   }
 
+#if !defined (WIN32)
   if(signal(SIGPIPE, SIG_IGN) == SIG_ERR)
   {
     PLAYER_ERROR1("signal() failed: %s", strerror(errno));
     exit(-1);
   }
+#endif
 
   player_globals_init();
   player_register_drivers();
@@ -413,6 +417,13 @@ int
 ParseArgs(int* port, int* debuglevel, char** cfgfilename, int* gz_serverid, char **logfilename,
           int argc, char** argv)
 {
+#if defined (WIN32)
+  // TODO: write some option parsing code or put a getopt implementation in replace.
+  if (argc > 1)
+    *cfgfilename = argv[1];
+  else
+    return -1;
+#else
   int ch;
   const char* optflags = "d:p:hq";
 
@@ -445,6 +456,7 @@ ParseArgs(int* port, int* debuglevel, char** cfgfilename, int* gz_serverid, char
     return(-1);
 
   *cfgfilename = argv[optind];
+#endif
 
   return(0);
 }

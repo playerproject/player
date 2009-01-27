@@ -46,9 +46,25 @@
 #ifndef _PLAYERTIME_H
 #define _PLAYERTIME_H
 
-#include <sys/time.h>
+#if defined (WIN32)
+  #if defined (PLAYER_STATIC)
+    #define PLAYERCORE_EXPORT
+  #elif defined (playercore_EXPORTS)
+    #define PLAYERCORE_EXPORT    __declspec (dllexport)
+  #else
+    #define PLAYERCORE_EXPORT    __declspec (dllimport)
+  #endif
+#else
+  #define PLAYERCORE_EXPORT
+#endif
 
-class PlayerTime
+#if !defined WIN32
+  #include <sys/time.h>
+#endif
+
+#include "replace/replace.h"
+
+class PLAYERCORE_EXPORT PlayerTime
 {
   public:
     // fills in the timeval struct with the current time, from the right

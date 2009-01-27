@@ -40,15 +40,20 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
 #include <assert.h>
 #include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netdb.h>
+#if defined WIN32
+  #include <Winsock2.h>
+  #define snprintf _snprintf
+#else
+  #include <unistd.h>
+  #include <sys/socket.h>
+  #include <netinet/in.h>
+  #include <netdb.h>
+#endif
 
 #include <libplayercore/error.h>  // for error macros
-#include <playerconfig.h>
+#include "addr_util.h"
 
 void
 packedaddr_to_dottedip(char* dest, size_t len, uint32_t addr)

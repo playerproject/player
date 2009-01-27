@@ -39,13 +39,17 @@
 
 #include <config.h>
 
+#if defined (WIN32)
+  #include <io.h> // For read() and write()
+#else
+  #include <unistd.h>
+  #include <errno.h>
+#endif
 #include <stdlib.h>
 #include <assert.h>
-#include <errno.h>
 #include <string.h>
 #include <stddef.h>
 #include <time.h>
-#include <unistd.h>
 #include <fcntl.h>
 #if ENABLE_TCP_NODELAY
   #include <netinet/tcp.h>
@@ -63,6 +67,12 @@
 #include "socket_util.h"
 #include "remote_driver.h"
 
+#if defined (WIN32)
+  #define snprintf _snprintf
+#endif
+
+#include "playertcp_errutils.h"
+
 typedef struct playertcp_listener
 {
   int fd;
@@ -77,7 +87,11 @@ typedef struct playertcp_conn
   /** Is the connection valid? */
   int valid;
   /** File descriptor for the socket */
+#if defined (WIN32)
+  SOCKET fd;
+#else
   int fd;
+#endif
   /** Host associated with this connection.  For local devices, it's
    * localhost (or some alias); for remote devices, it's the remote host. */
   unsigned int host;
@@ -120,6 +134,16 @@ PlayerTCP::InitGlobals(void)
 
 PlayerTCP::PlayerTCP()
 {
+#if defined (WIN32)
+  // Initialise Windows sockets API (this can safely be done as many times as we like)
+  WSADATA info;
+  int result;
+  if ((result = WSAStartup (MAKEWORD (2, 2), &info)) != 0)
+  {
+    PLAYER_ERROR1 ("Failed to initialise Windows sockets API with error %d", result);
+  }
+#endif
+
   this->thread = pthread_self();
   this->size_clients = 0;
   this->num_clients = 0;
@@ -155,6 +179,12 @@ PlayerTCP::~PlayerTCP()
   free(this->listeners);
   free(this->listen_ufds);
   free(this->decode_readbuffer);
+
+#if defined (WIN32)
+  // Clean up the Windows sockets API (this can safely be done as many times as we like)
+  if (WSACleanup () != 0)
+    PLAYER_ERROR1 ("Failed to clean up Windows sockets API with error %s", WSAGetLastError ());
+#endif
 }
 
 int
@@ -279,7 +309,11 @@ PlayerTCP::AddClient(struct sockaddr_in* cliaddr,
     memset(data,0,sizeof(data));
     snprintf((char*)data, sizeof(data)-1, "%s%s",
              PLAYER_IDENT_STRING, playerversion);
-    if(write(this->clients[j].fd, (void*)data, PLAYER_IDENT_STRLEN) < 0)
+#if defined (WIN32)
+    if(send(this->clients[j].fd, (const char*)data, PLAYER_IDENT_STRLEN, 0) < 0)
+#else
+    if(send(this->clients[j].fd, (void*)data, PLAYER_IDENT_STRLEN, 0) < 0)
+#endif
     {
       PLAYER_ERROR("failed to send ident string");
     }
@@ -311,7 +345,11 @@ int
 PlayerTCP::Accept(int timeout)
 {
   int num_accepts;
+#if defined (WIN32)
+  SOCKET newsock;
+#else
   int newsock;
+#endif
   struct sockaddr_in cliaddr;
   socklen_t sender_len;
 
@@ -319,11 +357,11 @@ PlayerTCP::Accept(int timeout)
   if((num_accepts = poll(this->listen_ufds, num_listeners, timeout)) < 0)
   {
     // Got interrupted by a signal; no problem
-    if(errno == EINTR)
+    if(ErrNo == EINTR)
       return(0);
 
     // A genuine problem
-    PLAYER_ERROR1("poll() failed: %s", strerror(errno));
+    STRERROR (PLAYER_ERROR1, "poll() failed: %s");
     return(-1);
   }
 
@@ -342,9 +380,13 @@ PlayerTCP::Accept(int timeout)
       // Shouldn't block here
       if((newsock = accept(this->listen_ufds[i].fd,
                            (struct sockaddr*)&cliaddr,
+#if defined (WIN32)
+                           &sender_len)) == INVALID_SOCKET)
+#else
                            &sender_len)) == -1)
+#endif
       {
-        PLAYER_ERROR1("accept() failed: %s", strerror(errno));
+        STRERROR (PLAYER_ERROR1, "accept() failed: %s");
         return(-1);
       }
 
@@ -360,12 +402,22 @@ PlayerTCP::Accept(int timeout)
 #endif
 
       // make the socket non-blocking
+#if defined (WIN32)
+      unsigned long setting = 1;
+      if (ioctlsocket (newsock, FIONBIO, &setting) == SOCKET_ERROR)
+      {
+        STRERROR (PLAYER_ERROR1, "ioctlsocket() failed: %s");
+        closesocket (newsock);
+        return(-1);
+      }
+#else
       if(fcntl(newsock, F_SETFL, O_NONBLOCK) == -1)
       {
-        PLAYER_ERROR1("fcntl() failed: %s", strerror(errno));
+        STRERROR (PLAYER_ERROR1, "fcntl() failed: %s");
         close(newsock);
         return(-1);
       }
+#endif
 
       this->AddClient(&cliaddr,
                       this->host,
@@ -397,8 +449,13 @@ PlayerTCP::Close(int cli)
   }
   free(this->clients[cli].dev_subs);
   fileWatcher->RemoveFileWatch(this->clients[cli].fd);
+#if defined (WIN32)
+  if (closesocket (this->clients[cli].fd) != 0)
+    STRERROR (PLAYER_WARN1, "closesocket() failed: %s");
+#else
   if(close(this->clients[cli].fd) < 0)
-    PLAYER_WARN1("close() failed: %s", strerror(errno));
+    STRERROR (PLAYER_WARN1, "close() failed: %s");
+#endif
 
   this->clients[cli].fd = -1;
   this->clients[cli].valid = 0;
@@ -433,11 +490,11 @@ PlayerTCP::Read(int timeout, bool have_lock)
       Unlock();
 
     // Got interrupted by a signal; no problem
-    if(errno == EINTR)
+    if(ErrNo == EINTR)
       return(0);
 
     // A genuine problem
-    PLAYER_ERROR1("poll() failed: %s", strerror(errno));
+	STRERROR (PLAYER_ERROR1, "poll() failed: %s");
     return(-1);
   }
 
@@ -578,22 +635,30 @@ PlayerTCP::WriteClient(int cli)
     // try to send any bytes leftover from last time.
     if(client->writebufferlen)
     {
-      numwritten = write(client->fd,
+      numwritten = send(client->fd,
                          client->writebuffer,
                          MIN(client->writebufferlen,
-                             PLAYERTCP_WRITEBUFFER_SIZE));
+                             PLAYERTCP_WRITEBUFFER_SIZE), 0);
 
 
       if(numwritten < 0)
       {
-        if(errno == EAGAIN)
+        if(ErrNo == ERRNO_EAGAIN)
         {
           // buffers are full
           return(0);
         }
         else
         {
-          PLAYER_MSG1(2,"write() failed: %s", strerror(errno));
+#if defined (WIN32)
+          LPVOID buffer = NULL;
+          FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
+                        ErrNo, 0, reinterpret_cast<LPTSTR> (&buffer), 0, NULL);
+          PLAYER_MSG1(2, "send() failed: %s", reinterpret_cast<LPTSTR> (buffer));
+          LocalFree(buffer);
+#else
+          PLAYER_MSG1(2,"send() failed: %s", strerror(ErrNo));
+#endif
           return(-1);
         }
       }
@@ -835,26 +900,35 @@ PlayerTCP::ReadClient(int cli)
       break;
     }
 
-    numread = read(client->fd,
+    numread = recv(client->fd,
                    client->readbuffer + client->readbufferlen,
-                   client->readbuffersize - client->readbufferlen);
+                   client->readbuffersize - client->readbufferlen,
+                   0);
 
     if(numread < 0)
     {
-      if(errno == EAGAIN)
+      if(ErrNo == ERRNO_EAGAIN)
       {
         // No more data available.
         break;
       }
       else
       {
-        PLAYER_MSG1(2,"read() failed: %s", strerror(errno));
+#if defined (WIN32)
+        LPVOID buffer = NULL;
+        FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
+                      ErrNo, 0, reinterpret_cast<LPTSTR> (&buffer), 0, NULL);
+		PLAYER_MSG1(2, "recv() failed: %s", reinterpret_cast<LPTSTR> (buffer));
+        LocalFree(buffer);
+#else
+        PLAYER_MSG1(2,"recv() failed: %s", strerror(ErrNo));
+#endif
         return(-1);
       }
     }
     else if(numread == 0)
     {
-      PLAYER_MSG0(2, "read() read zero bytes");
+      PLAYER_MSG0(2, "recv() read zero bytes");
       return(-1);
     }
     else
@@ -1177,7 +1251,7 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
 
             // Make up and push out the reply
             resp = new Message(resphdr, (void*)&devresp,
-                               sizeof(player_device_req_t));
+				sizeof(player_device_req_t) != 0 ? true : false);
             assert(resp);
             client->queue->Push(*resp);
             delete resp;
@@ -1208,7 +1282,7 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
           resphdr.type = PLAYER_MSGTYPE_RESP_ACK;
           // Make up and push out the reply
           resp = new Message(resphdr, (void*)&devlist,
-                             sizeof(player_device_devlist_t));
+                             sizeof(player_device_devlist_t) != 0 ? true : false);
           assert(resp);
           client->queue->Push(*resp);
           delete resp;
@@ -1255,7 +1329,7 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
             resphdr.type = PLAYER_MSGTYPE_RESP_ACK;
             // Make up and push out the reply
             resp = new Message(resphdr, (void*)&inforesp,
-                               sizeof(player_device_driverinfo_t));
+                               sizeof(player_device_driverinfo_t) != 0 ? true : false);
             assert(resp);
             client->queue->Push(*resp);
             delete resp;

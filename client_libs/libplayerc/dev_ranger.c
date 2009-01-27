@@ -43,6 +43,10 @@
 #include "playerc.h"
 #include "error.h"
 
+#if defined (WIN32)
+  #define snprintf _snprintf
+#endif
+
 // Local declarations
 void playerc_ranger_putmsg(playerc_ranger_t *device, player_msghdr_t *header,
                            void *data, size_t len);

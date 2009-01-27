@@ -16,6 +16,7 @@
    Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
    02111-1307 USA.  */
 
+#if !defined (WIN32)
 #include <termios.h>
 
 /* Set *T to indicate raw mode.  */
@@ -31,3 +32,5 @@ cfmakeraw (t)
   t->c_cc[VMIN] = 1;		/* read returns when one char is available.  */
   t->c_cc[VTIME] = 0;
 }
+
+#endif

@@ -95,10 +95,15 @@ driver
 
 
 #include <list>
-#include <sys/time.h>
+#if !defined (WIN32)
+  #include <sys/time.h>
+#endif
 
 #include <libplayercore/playercore.h>
 
+#if !HAVE_NANOSLEEP
+  #include <replace/replace.h>
+#endif
 
 using namespace std;
 
@@ -280,6 +285,8 @@ int AioToSonar::MainSetup(void)
   }
 
   PLAYER_MSG0(2, "AioToSonar has been set up");
+
+  return 0;
 }
 
 

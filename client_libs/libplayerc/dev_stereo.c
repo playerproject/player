@@ -29,6 +29,10 @@
 #include "playerc.h"
 #include "error.h"
 
+#if defined (WIN32)
+  #define snprintf _snprintf
+#endif
+
 // Process incoming data
 void playerc_stereo_putmsg (playerc_stereo_t *device,
                             player_msghdr_t *header,

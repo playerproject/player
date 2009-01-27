@@ -178,14 +178,14 @@ LaserPTZCloud::LaserPTZCloud (ConfigFile* cf, int section)
     this->ptz_device = NULL;
 
     // ---[ PTZ parameters ]---
-    this->ptz_pan_or_tilt = cf->ReadFloat
-            (section, "ptz_pan_or_tilt", DEFAULT_PTZ_PAN_OR_TILT);
+    this->ptz_pan_or_tilt = static_cast<float> (cf->ReadFloat
+            (section, "ptz_pan_or_tilt", DEFAULT_PTZ_PAN_OR_TILT));
 
     // Maximum number of laser scans to buffer
     this->maxnumscans = cf->ReadInt (section, "max_scans", DEFAULT_MAXSCANS);
 
     // Maximum allowed distance
-    this->maxdistance = cf->ReadFloat (section, "max_distance", DEFAULT_MAXDISTANCE);
+    this->maxdistance = static_cast<float> (cf->ReadFloat (section, "max_distance", DEFAULT_MAXDISTANCE));
 
     // Maximum number of points that can be sent at once
     this->maxpoints   = cf->ReadInt (section, "max_points", DEFAULT_MAXPOINTS);
@@ -306,55 +306,61 @@ int LaserPTZCloud::ProcessMessage (QueuePointer &resp_queue,
             if (newpose.tilt != lastpose.tilt)
                 for (int i = 0; i < this->numscans; i++)
         	{
-            	    double t0 = this->scantimes[i] - this->lastposetime;
+                double t0 = this->scantimes[i] - this->lastposetime;
 
-            	    float corrected_tilt = this->lastpose.tilt + t0 *
-                        (newpose.tilt - this->lastpose.tilt) / t1;
+                float corrected_tilt = static_cast<float> (this->lastpose.tilt + t0 *
+                    (newpose.tilt - this->lastpose.tilt) / t1);
 
-            	    // Convert the vertical angle to radians
-            	    //float angle_y = corrected_tilt * M_PI/180.0;
-		    // No need to: already converted from PTZ
-            	    float angle_y = corrected_tilt;
+                // Convert the vertical angle to radians
+                //float angle_y = corrected_tilt * M_PI/180.0;
+	            // No need to: already converted from PTZ
+                float angle_y = corrected_tilt;
 
-            	    // Calculate the horizontal angles and the cartesian coordinates
-            	    float angle_x    = this->scans[i].min_angle;
-            	    float resolution = this->scans[i].resolution;
+                // Calculate the horizontal angles and the cartesian coordinates
+                float angle_x    = this->scans[i].min_angle;
+                float resolution = this->scans[i].resolution;
 
-            	    int ranges_count = (int)(this->scans[i].ranges_count);
+                int ranges_count = (int)(this->scans[i].ranges_count);
 
-            	    // The 3D point array
-            	    player_pointcloud3d_data_t cloud_data;
-            	    player_pointcloud3d_element_t all_elements[ranges_count];
+                // The 3D point array
+                player_pointcloud3d_data_t cloud_data;
+                player_pointcloud3d_element_t *all_elements;
+                if ((all_elements = new player_pointcloud3d_element_t[ranges_count]) == NULL)
+                {
+                    PLAYER_ERROR ("Failed to allocate memory for elements array");
+                    return(-1);
+                }
 
-            	    int counter = 0;
-            	    for (int j = 0; j < ranges_count; j++)
-            	    {
-                	float distance = this->scans[i].ranges[j];
-                	if (distance < maxdistance)
-                	{
-                    	    float X = distance * cos (angle_x) * sin (angle_y);
-                    	    float Y = distance * cos (angle_x) * cos (angle_y);
-                    	    float Z = distance * sin (angle_x);
+                int counter = 0;
+                for (int j = 0; j < ranges_count; j++)
+                {
+            	float distance = this->scans[i].ranges[j];
+            	if (distance < maxdistance)
+            	{
+                	    float X = distance * cos (angle_x) * sin (angle_y);
+                	    float Y = distance * cos (angle_x) * cos (angle_y);
+                	    float Z = distance * sin (angle_x);
 
-                    	    player_point_3d_t p3d;
-                    	    p3d.px = X;
-                    	    p3d.py = Y;
-                    	    p3d.pz = Z;
-                    	    all_elements[counter].point = p3d;
-                    	    counter++;
-                	}
-                	angle_x += resolution;
-            	    }
+                	    player_point_3d_t p3d;
+                	    p3d.px = X;
+                	    p3d.py = Y;
+                	    p3d.pz = Z;
+                	    all_elements[counter].point = p3d;
+                	    counter++;
+            	}
+            	angle_x += resolution;
+                }
 
-            	    cloud_data.points_count = counter;
-            	    cloud_data.points = (player_pointcloud3d_element_t*)calloc(sizeof(cloud_data.points[0]),cloud_data.points_count);
-            	    for (int j=0; j < counter; j++)
-                	cloud_data.points[j] = all_elements[j];
+                cloud_data.points_count = counter;
+                cloud_data.points = (player_pointcloud3d_element_t*)calloc(sizeof(cloud_data.points[0]),cloud_data.points_count);
+                for (int j=0; j < counter; j++)
+            	cloud_data.points[j] = all_elements[j];
 
-            	    Publish (this->device_addr, PLAYER_MSGTYPE_DATA,
-                         PLAYER_POINTCLOUD3D_DATA_STATE, &cloud_data,
-                         sizeof (player_pointcloud3d_data_t), NULL);
-            	    free(cloud_data.points);
+                Publish (this->device_addr, PLAYER_MSGTYPE_DATA,
+                     PLAYER_POINTCLOUD3D_DATA_STATE, &cloud_data,
+                     sizeof (player_pointcloud3d_data_t), NULL);
+                free(cloud_data.points);
+                delete[] all_elements;
         	}
             this->numscans     = 0;
             this->lastpose     = newpose;

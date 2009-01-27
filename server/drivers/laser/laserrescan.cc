@@ -96,7 +96,6 @@ driver
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>       // for atoi(3)
-#include <unistd.h>
 
 #include "lasertransform.h"
 
@@ -152,9 +151,9 @@ int LaserRescan::UpdateLaser(player_laser_data_t * data)
   int i;
 
   // Construct the outgoing laser packet
-  this->data.resolution = (max_angle - min_angle)/((double)(scan_count-1));
-  this->data.min_angle = (min_angle);
-  this->data.max_angle = (max_angle);
+  this->data.resolution = static_cast<float> ((max_angle - min_angle)/((double)(scan_count-1)));
+  this->data.min_angle = static_cast<float> (min_angle);
+  this->data.max_angle = static_cast<float> (max_angle);
   this->data.ranges_count = scan_count;
   this->data.ranges = new float[scan_count];
   this->data.max_range = data->max_range;
@@ -187,7 +186,7 @@ int LaserRescan::UpdateLaser(player_laser_data_t * data)
 
 		double new_value = data->ranges[j]+(data->ranges[k] - data->ranges[j])*interpolate;
 
-		this->data.ranges[i] = new_value;
+		this->data.ranges[i] = static_cast<float> (new_value);
 
 	}
 

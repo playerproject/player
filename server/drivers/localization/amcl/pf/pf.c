@@ -254,7 +254,12 @@ void pf_update_resample(pf_t *pf)
 
   // Low-variance resampler, taken from Probabilistic Robotics, p110
   count_inv = 1.0/set_a->sample_count;
+#if defined (WIN32)
+  // TODO: this isn't quite the same behaviour: drand48 returns uniformly-distributed values
+  r = ((double) rand() / (double) RAND_MAX) * count_inv;
+#else
   r = drand48() * count_inv;
+#endif
   c = set_a->samples[0].weight;
   i = 0;
   m = 0;
@@ -268,7 +273,12 @@ void pf_update_resample(pf_t *pf)
       // number
       if(i >= set_a->sample_count)
       {
+#if defined (WIN32)
+        // TODO: this isn't quite the same behaviour: drand48 returns uniformly-distributed values
+        r = ((double) rand() / (double) RAND_MAX) * count_inv;
+#else
         r = drand48() * count_inv;
+#endif
         c = set_a->samples[0].weight;
         i = 0;
         m = 0;

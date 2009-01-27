@@ -52,6 +52,10 @@
 #include "playerc.h"
 #include "error.h"
 
+#if defined (WIN32)
+  #define snprintf _snprintf
+#endif
+
 // Process incoming data
 void playerc_laser_putmsg(playerc_laser_t *device,
                           player_msghdr_t *header,
@@ -118,7 +122,7 @@ void playerc_laser_putmsg(playerc_laser_t *device,
                           player_msghdr_t *header,
                           void *data)
 {
-  int i;
+  uint32_t i;
   double r, b, db;
 
   if((header->type == PLAYER_MSGTYPE_DATA) &&

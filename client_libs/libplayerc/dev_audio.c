@@ -43,6 +43,10 @@
 #include "playerc.h"
 #include "error.h"
 
+#if defined (WIN32)
+  #define snprintf _snprintf
+#endif
+
 // Local declarations
 void playerc_audio_putmsg(playerc_audio_t *device,
                              player_msghdr_t *header,

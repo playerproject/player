@@ -38,9 +38,13 @@
 
 #include <config.h>
 
+#if defined (WIN32)
+  #include <io.h> // For read() and write()
+#else
+  #include <unistd.h>
+#endif
 #include <errno.h>
 #include <sys/types.h>
-#include <unistd.h>
 #include <fcntl.h>
 
 #if ENABLE_TCP_NODELAY
@@ -51,6 +55,12 @@
 #include <libplayercore/error.h>
 #include <libplayerxdr/playerxdr.h>
 #include "remote_driver.h"
+#include "playertcp_errutils.h"
+
+#if defined (WIN32)
+  #define write _write
+  #define read _read
+#endif
 
 TCPRemoteDriver::TCPRemoteDriver(player_devaddr_t addr, void* arg)
         : Driver(NULL, 0, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN),
@@ -113,12 +123,22 @@ TCPRemoteDriver::Setup()
          this->ipaddr, this->device_addr.robot);
 
   // make the socket non-blocking
+#if defined (WIN32)
+  unsigned long setting = 1;
+  if (ioctlsocket(sock, FIONBIO, &setting) == SOCKET_ERROR)
+  {
+    STRERROR(PLAYER_ERROR1, "ioctlsocket error: %s");
+    closesocket(sock);
+    return(-1);
+  }
+#else
   if(fcntl(this->sock, F_SETFL, O_NONBLOCK) == -1)
   {
     PLAYER_ERROR1("fcntl() failed: %s", strerror(errno));
     close(this->sock);
     return(-1);
   }
+#endif
 
 #if ENABLE_TCP_NODELAY
   // Disable Nagel's algorithm for lower latency
@@ -139,7 +159,7 @@ TCPRemoteDriver::Setup()
     if((thisnumread = read(this->sock, banner+numread,
                            sizeof(banner)-numread)) < 0)
     {
-      if(errno != EAGAIN)
+      if(errno != ERRNO_EAGAIN)
       {
         PLAYER_ERROR("error reading banner from remote device");
         return(-1);
@@ -156,7 +176,11 @@ TCPRemoteDriver::Setup()
   }
   if(this->SubscribeRemote(PLAYER_OPEN_MODE) < 0)
   {
+#if defined (WIN32)
+    closesocket(this->sock);
+#else
     close(this->sock);
+#endif
     return(-1);
   }
 
@@ -170,7 +194,7 @@ TCPRemoteDriver::Setup()
                                       this->sock,
                                       false,
                                       &this->kill_flag,
-                                      (this->ptcp->thread == pthread_self()));
+									  pthread_equal (this->ptcp->thread, pthread_self()) != 0 ? true : false);
 
   PLAYER_MSG0(5,"Adding new TCPRemoteDriver to the PlayerTCP Client List...Success");
 
@@ -230,7 +254,7 @@ TCPRemoteDriver::SubscribeRemote(unsigned char mode)
     if((thisnumbytes = write(this->sock, buf+numbytes,
                              encode_msglen-numbytes)) < 0)
     {
-      if(errno != EAGAIN)
+      if(errno != ERRNO_EAGAIN)
       {
         PLAYER_ERROR1("write failed: %s", strerror(errno));
         return(-1);
@@ -261,7 +285,7 @@ TCPRemoteDriver::SubscribeRemote(unsigned char mode)
     if((thisnumbytes = read(this->sock, buf+numbytes,
                             PLAYERXDR_MSGHDR_SIZE-numbytes)) < 0)
     {
-      if(errno != EAGAIN)
+      if(errno != ERRNO_EAGAIN)
       {
         PLAYER_ERROR1("read failed: %s", strerror(errno));
         return(-1);
@@ -302,7 +326,7 @@ TCPRemoteDriver::SubscribeRemote(unsigned char mode)
     if((thisnumbytes = read(this->sock, buf+PLAYERXDR_MSGHDR_SIZE+numbytes,
                             hdr.size-numbytes)) < 0)
     {
-      if(errno != EAGAIN)
+      if(errno != ERRNO_EAGAIN)
       {
         PLAYER_ERROR1("read failed: %s", strerror(errno));
         return(-1);
@@ -358,7 +382,7 @@ TCPRemoteDriver::Shutdown()
     // Set the delete flag, letting PlayerTCP close the connection and
     // clean up.
     this->ptcp->DeleteClient(this->queue,
-                             (this->ptcp->thread == pthread_self()));
+                             pthread_equal(this->ptcp->thread, pthread_self()) != 0 ? true : false);
   }
   return(0);
 }
@@ -366,7 +390,7 @@ TCPRemoteDriver::Shutdown()
 void 
 TCPRemoteDriver::Update()
 {
-  if(this->ptcp->thread == pthread_self())
+  if (pthread_equal(this->ptcp->thread, pthread_self()))
   {
     //this->ptcp->Read(0,true);
     this->ptcp->Lock();
@@ -374,7 +398,7 @@ TCPRemoteDriver::Update()
     this->ptcp->Unlock();
   }
   this->ProcessMessages();
-  if(this->ptcp->thread == pthread_self())
+  if (pthread_equal(this->ptcp->thread, pthread_self()))
     this->ptcp->Write(false);
 }
 

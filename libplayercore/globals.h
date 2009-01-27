@@ -39,6 +39,18 @@
 #ifndef _GLOBALS_H
 #define _GLOBALS_H
 
+#if defined (WIN32)
+  #if defined (PLAYER_STATIC)
+    #define PLAYERCORE_EXPORT
+  #elif defined (playercore_EXPORTS)
+    #define PLAYERCORE_EXPORT    __declspec (dllexport)
+  #else
+    #define PLAYERCORE_EXPORT    __declspec (dllimport)
+  #endif
+#else
+  #define PLAYERCORE_EXPORT
+#endif
+
 #include <playerconfig.h>
 
 class DeviceTable;
@@ -47,23 +59,23 @@ class DriverTable;
 class FileWatcher;
 struct player_sd;
 
-extern DeviceTable* deviceTable;
-extern PlayerTime* GlobalTime;
-extern DriverTable* driverTable;
-extern FileWatcher* fileWatcher;
-extern char playerversion[];
-extern bool player_quit;
-extern bool player_quiet_startup;
+PLAYERCORE_EXPORT extern DeviceTable* deviceTable;
+PLAYERCORE_EXPORT extern PlayerTime* GlobalTime;
+PLAYERCORE_EXPORT extern DriverTable* driverTable;
+PLAYERCORE_EXPORT extern FileWatcher* fileWatcher;
+PLAYERCORE_EXPORT extern char playerversion[];
+PLAYERCORE_EXPORT extern bool player_quit;
+PLAYERCORE_EXPORT extern bool player_quiet_startup;
 
 // global access to the command line arguments
-extern int player_argc;
-extern char** player_argv;
+PLAYERCORE_EXPORT extern int player_argc;
+PLAYERCORE_EXPORT extern char** player_argv;
 
 #if HAVE_PLAYERSD
-extern struct player_sd* globalSD;
+PLAYERCORE_EXPORT extern struct player_sd* globalSD;
 #endif
 
-void player_globals_init(void);
-void player_globals_fini();
+PLAYERCORE_EXPORT void player_globals_init(void);
+PLAYERCORE_EXPORT void player_globals_fini();
 
 #endif

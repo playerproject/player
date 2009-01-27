@@ -16,6 +16,10 @@
 #include "nd2.h"
 //#include <stdlib.h>
 
+#if defined (WIN32)
+  #define hypot _hypot
+#endif
+
 // ----------------------------------------------------------------------------
 // CONSTANTES.
 // ----------------------------------------------------------------------------
@@ -90,7 +94,7 @@ static int DistanciaSectorialOrientada(int s1,int s2) { // Distancia de s1 a s2.
 
 static void InicializarE(void) {
   // Calcula la distancia desde el origen (punto de coordenadas 0.0F,0.0F)
-  // hasta el perÌmetro (que contiene el origen) en la direcciÛn de la bisectriz
+  // hasta el per˙äetro (que contiene el origen) en la direcciÛn de la bisectriz
   // de cada sector.
 
   TCoordenadasPolares limite;
@@ -123,7 +127,7 @@ static void InicializarE(void) {
 
 static void InicializarERedondo(void) {
   // Calcula la distancia desde el origen (punto de coordenadas 0.0F,0.0F)
-  // hasta el perÌmetro (que contiene el origen) en la direcciÛn de la bisectriz
+  // hasta el per˙äetro (que contiene el origen) en la direcciÛn de la bisectriz
   // de cada sector.
   int i;
   for (i = 0; i<SECTORES; i++)
@@ -132,7 +136,7 @@ static void InicializarERedondo(void) {
 
 static void InicializarDSRedondo(float dmax) {
   // Calcula la distancia desde el origen (punto de coordenadas 0.0F,0.0F)
-  // hasta el perÌmetro (que contiene el origen) en la direcciÛn de la bisectriz
+  // hasta el per˙äetro (que contiene el origen) en la direcciÛn de la bisectriz
   // de cada sector.
   int i;
   for (i = 0; i<SECTORES; i++)
@@ -280,7 +284,7 @@ void InicializarND(TParametersND *parametros) {
 
 static void SectorizarMapa(TInfoEntorno *mapa,TInfoND *nd) {
   TCoordenadas p;
-  TCoordenadasPolares pp; // MÛdulos al cuadrado para evitar raÌces innecesarias.
+  TCoordenadasPolares pp; // MÛdulos al cuadrado para evitar ra˙Äes innecesarias.
   int i,j;
 
   for (i=0; i<SECTORES; i++)
@@ -423,10 +427,10 @@ static int ObjetivoAlcanzable(TInfoND *nd,TRegion *region,int direccion_tipo) {
   region->direccion_angulo=objetivo_intermedio_polares.a;
   ConstruirCoordenadasCxy(&objetivo_intermedio,objetivo_intermedio_polares.r,0.0F);
 
-  // DeterminaciÛn de si el objetivo est· dentro de un C-Obst·culo y
+  // DeterminaciÛn de si el objetivo estÅEdentro de un C-Obst·culo y
   // construcciÛn de las listas de puntos FL y FR.
 
-  limite=CUADRADO(robot.discontinuidad/2.0F); // Para no hacer raÌces cuadradas dentro del bucle.
+  limite=CUADRADO(robot.discontinuidad/2.0F); // Para no hacer ra˙Äes cuadradas dentro del bucle.
   nl=0;
   nr=0;
   for (i=0; i<SECTORES; i++) {
@@ -434,10 +438,10 @@ static int ObjetivoAlcanzable(TInfoND *nd,TRegion *region,int direccion_tipo) {
       continue;
 
     ConstruirCoordenadasCra(&p,nd->d[i].r,nd->d[i].a-region->direccion_angulo);
-    if ((p.x<0.0F) || (p.x>=objetivo_intermedio.x) || ((float)fabs(p.y)>robot.discontinuidad)) // Si el obst·culo no est· en el rect·ngulo que consideramos, pasamos al siguiente sector.
+    if ((p.x<0.0F) || (p.x>=objetivo_intermedio.x) || ((float)fabs(p.y)>robot.discontinuidad)) // Si el obst·culo no estÅEen el rect·ngulo que consideramos, pasamos al siguiente sector.
       continue;
 
-    if (DISTANCIA_CUADRADO2(p,objetivo_intermedio)<limite) // Si el objetivo intermedio est· en colisiÛn con el obst·culo, es inalcanzable.
+    if (DISTANCIA_CUADRADO2(p,objetivo_intermedio)<limite) // Si el objetivo intermedio estÅEen colisiÛn con el obst·culo, es inalcanzable.
       return 0; // Objetivo intermedio inalcanzable.
 
     if (p.y>0.0F)
@@ -448,7 +452,7 @@ static int ObjetivoAlcanzable(TInfoND *nd,TRegion *region,int direccion_tipo) {
 
   // DeterminaciÛn de si los obst·culos nos impiden alcanzar el objetivo intermedio.
 
-  limite=CUADRADO(robot.discontinuidad); // Para no hacer raÌces cuadradas dentro de los bucles.
+  limite=CUADRADO(robot.discontinuidad); // Para no hacer ra˙Äes cuadradas dentro de los bucles.
   for (i=0; i<nl; i++)
     for (j=0; j<nr; j++)
       if (DISTANCIA_CUADRADO2(FL[i],FR[j])<limite)
@@ -613,7 +617,7 @@ static void SeleccionarRegion(TInfoND *nd) {
 
         SiguienteDiscontinuidad(nd,region_izquierda->final,IZQUIERDA,&(region_izquierda->principio),&(region_izquierda->principio_ascendente));
 
-      } else { // Principio descendente: Ser· un final ascendente en la siguiente regiÛn izquierda.
+      } else { // Principio descendente: SerÅEun final ascendente en la siguiente regiÛn izquierda.
 
         if (indice_izquierda!=indice_derecha) {
 
@@ -693,7 +697,7 @@ static void SeleccionarRegion(TInfoND *nd) {
 
         SiguienteDiscontinuidad(nd,region_derecha->principio,DERECHA,&(region_derecha->final),&(region_derecha->final_ascendente));
 
-      } else { // Final descendente: Ser· un principio ascendente en la siguiente regiÛn derecha.
+      } else { // Final descendente: SerÅEun principio ascendente en la siguiente regiÛn derecha.
 
         if (indice_derecha!=indice_izquierda) {
 
@@ -1236,7 +1240,7 @@ TVelocities *IterarND(TCoordenadas objetivo,
 		  return 0;
 	  }
 
-  // SelecciÛn de la regiÛn por la cual avanzar· el robot.
+  // SelecciÛn de la regiÛn por la cual avanzarÅEel robot.
 
   SeleccionarRegion(&nd);
   if (nd.region<0) {
@@ -1244,7 +1248,7 @@ TVelocities *IterarND(TCoordenadas objetivo,
 	  return 0;
   }
 
-  // ConstrucciÛn de la distancia desde el perÌmetro del robot al obst·culo m·s cercano en cada sector.
+  // ConstrucciÛn de la distancia desde el per˙äetro del robot al obst·culo m·s cercano en cada sector.
 
   ConstruirDR(&nd);
 

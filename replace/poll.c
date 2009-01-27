@@ -29,9 +29,15 @@
 #include <sys/types.h>
 #include <errno.h>
 #include <string.h>
-#include <sys/time.h>
-#include <sys/param.h>
-#include <unistd.h>
+#if defined (WIN32)
+  #include <winsock2.h> // For struct timeval
+  #include <malloc.h> // For alloca()
+  #include <string.h> // For memset ()
+#else
+  #include <sys/time.h>
+  #include <sys/param.h>
+  #include <unistd.h>
+#endif
 
 /* *-*-nto-qnx doesn't define this constant in the system headers */
 #ifndef NFDBITS
@@ -73,7 +79,11 @@ poll(struct pollfd* fds, unsigned long int nfds, int timeout)
   int bytes;
 
   if (!max_fd_size)
+#if defined (WIN32)
+    max_fd_size = 256; // Best value I could find, the help doesn't specify anywhere
+#else
     max_fd_size = getdtablesize ();
+#endif
 
   bytes = howmany (max_fd_size, NFDBITS);
   rset = alloca (bytes);
@@ -82,9 +92,9 @@ poll(struct pollfd* fds, unsigned long int nfds, int timeout)
 
   /* We can't call FD_ZERO, since FD_ZERO only works with sets
      of exactly FD_SETSIZE size.  */
-  bzero (rset, bytes);
-  bzero (wset, bytes);
-  bzero (xset, bytes);
+  memset (rset, 0, bytes);
+  memset (wset, 0, bytes);
+  memset (xset, 0, bytes);
 
   for (f = fds; f < &fds[nfds]; ++f)
     {
@@ -106,9 +116,9 @@ poll(struct pollfd* fds, unsigned long int nfds, int timeout)
 	      nwset = alloca (nbytes);
 	      nxset = alloca (nbytes);
 
-	      bzero ((char *) nrset + bytes, nbytes - bytes);
-	      bzero ((char *) nwset + bytes, nbytes - bytes);
-	      bzero ((char *) nxset + bytes, nbytes - bytes);
+	      memset ((char *) nrset + bytes, 0, nbytes - bytes);
+	      memset ((char *) nwset + bytes, 0, nbytes - bytes);
+	      memset ((char *) nxset + bytes, 0, nbytes - bytes);
 
 	      rset = memcpy (nrset, rset, bytes);
 	      wset = memcpy (nwset, wset, bytes);
@@ -146,9 +156,9 @@ poll(struct pollfd* fds, unsigned long int nfds, int timeout)
 	  struct timeval sngl_tv;
 
 	  /* Clear the original set.  */
-	  bzero (rset, bytes);
-	  bzero (wset, bytes);
-	  bzero (xset, bytes);
+	  memset (rset, 0, bytes);
+	  memset (wset, 0, bytes);
+	  memset (xset, 0, bytes);
 
 	  /* This means we don't wait for input.  */
 	  sngl_tv.tv_sec = 0;
@@ -165,9 +175,9 @@ poll(struct pollfd* fds, unsigned long int nfds, int timeout)
 	      {
 		int n;
 
-		bzero (sngl_rset, bytes);
-		bzero (sngl_wset, bytes);
-		bzero (sngl_xset, bytes);
+		memset (sngl_rset, 0, bytes);
+		memset (sngl_wset, 0, bytes);
+		memset (sngl_xset, 0, bytes);
 
 		if (f->events & POLLIN)
 		  FD_SET (f->fd, sngl_rset);

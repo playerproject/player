@@ -46,6 +46,18 @@
 #ifndef MESSAGE_H
 #define MESSAGE_H
 
+#if defined (WIN32)
+  #if defined (PLAYER_STATIC)
+    #define PLAYERCORE_EXPORT
+  #elif defined (playercore_EXPORTS)
+    #define PLAYERCORE_EXPORT    __declspec (dllexport)
+  #else
+    #define PLAYERCORE_EXPORT    __declspec (dllimport)
+  #endif
+#else
+  #define PLAYERCORE_EXPORT
+#endif
+
 #include <pthread.h>
 
 #include <libplayercore/player.h>
@@ -58,7 +70,7 @@ Using an autopointer allows the queue to be released by the client and still exi
 until no drivers have messages relating to the queue still pending.
 
 **/
-class QueuePointer
+class PLAYERCORE_EXPORT QueuePointer
 {
   public:
     /// Create a NULL autopointer;
@@ -117,7 +129,7 @@ The only method of interest to driver authors is the helper MatchMessage(),
 which can be used in a Driver::ProcessMessage method to determine if a
 message header matches a given signature.
 */
-class Message
+class PLAYERCORE_EXPORT Message
 {
   public:
     /// Create a new message. If copy is set to false then the pointer is claimed by the message, 
@@ -203,7 +215,7 @@ class Message
 /**
  This class is a helper for maintaining doubly-linked queues of Messages.
 */
-class MessageQueueElement
+class PLAYERCORE_EXPORT MessageQueueElement
 {
   public:
     /// Create a queue element with NULL prev and next pointers.
@@ -228,7 +240,7 @@ class MessageQueueElement
  * default rule is used: never replace config requests or replies, replace
  * data and command msgs if the Replace flag is set.
  */
-class MessageReplaceRule
+class PLAYERCORE_EXPORT MessageReplaceRule
 {
   private:
     // The address to match (not using a player_devaddr_t so that we can
@@ -322,7 +334,7 @@ not usually manipulated directly in driver code; it's main use inside
 Device::Request.
 
 */
-class MessageQueue
+class PLAYERCORE_EXPORT MessageQueue
 {
   public:
     /// Create an empty message queue.

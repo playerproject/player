@@ -10,6 +10,10 @@
 //#include <gsl/gsl_matrix.h>
 //#include <gsl/gsl_eigen.h>
 //#include <gsl/gsl_linalg.h>
+#if defined (WIN32)
+  #include <float.h>
+  #define finite _finite
+#endif
 
 #include "pf_vector.h"
 #include "eig3.h"

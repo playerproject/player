@@ -93,7 +93,9 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <libplayercore/playercore.h>
-#include <unistd.h>
+#if !defined (WIN32)
+  #include <unistd.h>
+#endif
 #include <math.h>
 #include <assert.h>
 #include <libplayercore/addr_util.h>
@@ -105,6 +107,10 @@
 #define DRIVER_NAME "kartowriter"
 #define DEFAULT_UID "http://unknown"
 #define MAX_HOSTNAME 256
+
+#if defined (WIN32)
+  #define strdup _strdup
+#endif
 
 using namespace std;
 

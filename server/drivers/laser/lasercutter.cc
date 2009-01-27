@@ -96,9 +96,12 @@ driver
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>       // for atoi(3)
-#include <unistd.h>
 
 #include "lasertransform.h"
+
+#if defined (WIN32)
+  #define M_PI_2 (M_PI/2.0)
+#endif
 
 // Driver class starts here
 class LaserCutter : public LaserTransform
@@ -161,8 +164,8 @@ int LaserCutter::UpdateLaser(player_laser_data_t * indata)
 
   // Construct the outgoing laser packet
   this->data.resolution   = indata->resolution;
-  this->data.min_angle    = min_angle;
-  this->data.max_angle    = max_angle;
+  this->data.min_angle    = static_cast<float> (min_angle);
+  this->data.max_angle    = static_cast<float> (max_angle);
   this->data.max_range    = indata->max_range;
   this->data.id           = indata->id;
 

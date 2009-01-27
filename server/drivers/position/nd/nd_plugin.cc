@@ -155,7 +155,9 @@ driver
 */
 /** @} */
 #include <math.h>
-#include <unistd.h>
+#if !defined (WIN32)
+  #include <unistd.h>
+#endif
 #include <stdlib.h>
 #include <float.h>
 
@@ -166,7 +168,9 @@ driver
   #define SIGN(x) (((x) == 0) ? 0 : (((x) > 0) ? 1 : -1))
 #endif
 
-extern PlayerTime *GlobalTime;
+#if defined (WIN32)
+  #define hypot _hypot
+#endif
 
 class ND : public ThreadedDriver 
 {
@@ -709,10 +713,10 @@ ND::ProcessLaser(player_msghdr_t* hdr, player_laser_data_t* scan)
           y * cos(this->laser_pose.pyaw));
 
     // convert to the odometric frame and add to the obstacle list
-    this->laser_obstacles[idx].punto[i].x = (this->odom_pose.px +
+    this->laser_obstacles[idx].punto[i].x = static_cast<float> (this->odom_pose.px +
                                              rx * cos(this->odom_pose.pa) -
                                              ry * sin(this->odom_pose.pa));
-    this->laser_obstacles[idx].punto[i].y = (this->odom_pose.py +
+    this->laser_obstacles[idx].punto[i].y = static_cast<float> (this->odom_pose.py +
                                              rx * sin(this->odom_pose.pa) +
                                              ry * cos(this->odom_pose.pa));
   }
@@ -770,10 +774,10 @@ ND::ProcessSonar(player_msghdr_t* hdr, player_sonar_data_t* scan)
           y * cos(this->sonar_poses[i].pyaw));
 
     // convert to the odometric frame and add to the obstacle list
-    this->sonar_obstacles[idx].punto[count].x = (this->odom_pose.px +
+    this->sonar_obstacles[idx].punto[count].x = static_cast<float> (this->odom_pose.px +
                                                  rx * cos(this->odom_pose.pa) -
                                                  ry * sin(this->odom_pose.pa));
-    this->sonar_obstacles[idx].punto[count].y = (this->odom_pose.py +
+    this->sonar_obstacles[idx].punto[count].y = static_cast<float> (this->odom_pose.py +
                                                  rx * sin(this->odom_pose.pa) +
                                                  ry * cos(this->odom_pose.pa));
     count++;
@@ -830,14 +834,14 @@ ND::SetDirection(int dir)
 
   if(dir > 0)
   {
-    this->NDparametros.front = this->robot_geom.size.sl/2.0 + this->robot_geom.pose.px + this->safety_dist; // Distance to the front
-    this->NDparametros.back = this->robot_geom.size.sl/2.0 - this->robot_geom.pose.px + this->safety_dist;  // Distance to the back
+    this->NDparametros.front = static_cast<float> (this->robot_geom.size.sl/2.0 + this->robot_geom.pose.px + this->safety_dist); // Distance to the front
+    this->NDparametros.back = static_cast<float> (this->robot_geom.size.sl/2.0 - this->robot_geom.pose.px + this->safety_dist);  // Distance to the back
     InicializarND(&this->NDparametros);
   }
   else
   {
-    this->NDparametros.front = this->robot_geom.size.sl/2.0 - this->robot_geom.pose.px + this->safety_dist; // Distance to the front
-    this->NDparametros.back = this->robot_geom.size.sl/2.0 + this->robot_geom.pose.px + this->safety_dist;  // Distance to the back
+    this->NDparametros.front = static_cast<float> (this->robot_geom.size.sl/2.0 - this->robot_geom.pose.px + this->safety_dist); // Distance to the front
+    this->NDparametros.back = static_cast<float> (this->robot_geom.size.sl/2.0 + this->robot_geom.pose.px + this->safety_dist);  // Distance to the back
     InicializarND(&this->NDparametros);
   }
   this->current_dir = dir;
@@ -967,28 +971,28 @@ ND::Main()
   // Rectangular geometry
   this->NDparametros.geometryRect = 1;
   // Distance to the front
-  this->NDparametros.front = this->robot_geom.size.sl/2.0 + this->robot_geom.pose.px + this->safety_dist;
+  this->NDparametros.front = static_cast<float> (this->robot_geom.size.sl/2.0 + this->robot_geom.pose.px + this->safety_dist);
   // Distance to the back
-  this->NDparametros.back = this->robot_geom.size.sl/2.0 - this->robot_geom.pose.px + this->safety_dist;
+  this->NDparametros.back = static_cast<float> (this->robot_geom.size.sl/2.0 - this->robot_geom.pose.px + this->safety_dist);
   // Distance to the left side
-  this->NDparametros.left = this->robot_geom.size.sw/2.0 + this->safety_dist;
+  this->NDparametros.left = static_cast<float> (this->robot_geom.size.sw/2.0 + this->safety_dist);
 
   this->NDparametros.R = 0.2F;			// Not used
 
   this->NDparametros.holonomic = 0;		// Non holonomic vehicle
 
-  this->NDparametros.vlmax = this->vx_max;
-  this->NDparametros.vamax = this->va_max;
+  this->NDparametros.vlmax = static_cast<float> (this->vx_max);
+  this->NDparametros.vamax = static_cast<float> (this->va_max);
 
   this->NDparametros.almax = 0.75F;		// More or less it will be like this
   this->NDparametros.aamax = 0.75F;
 
-  this->NDparametros.dsmax = this->avoid_dist; // Security distance
+  this->NDparametros.dsmax = static_cast<float> (this->avoid_dist); // Security distance
   this->NDparametros.dsmin = this->NDparametros.dsmax/4.0F;
   //NDparametros.enlarge = NDparametros.dsmin/2.0F;
   this->NDparametros.enlarge = this->NDparametros.dsmin*0.2F;
 
-  this->NDparametros.discontinuity = 2.0 * this->NDparametros.left;  // Discontinuity (check whether it fits)
+  this->NDparametros.discontinuity = static_cast<float> (2.0 * this->NDparametros.left);  // Discontinuity (check whether it fits)
 
   this->NDparametros.T = 0.1F;  // Sample rate of the SICK
 
@@ -1016,9 +1020,9 @@ ND::Main()
       continue;
 
     // The robot's current odometric pose
-    pose.SR1.posicion.x = this->odom_pose.px;
-    pose.SR1.posicion.y = this->odom_pose.py;
-    pose.SR1.orientacion = this->odom_pose.pa;
+    pose.SR1.posicion.x = static_cast<float> (this->odom_pose.px);
+    pose.SR1.posicion.y = static_cast<float> (this->odom_pose.py);
+    pose.SR1.orientacion = static_cast<float> (this->odom_pose.pa);
 
     // Merge the (possibly buffered) laser and sonar obstacle lists
     this->obstacles.longitud = 0;
@@ -1060,15 +1064,15 @@ ND::Main()
         // To make the robot turn (safely) to the goal orientation, we'll
         // give it a fake goal that is in the right direction, and just
         // ignore the translational velocity.
-        goal.x = this->odom_pose.px + 10.0 * cos(this->goal.pa);
-        goal.y = this->odom_pose.py + 10.0 * sin(this->goal.pa);
+        goal.x = static_cast<float> (this->odom_pose.px + 10.0 * cos(this->goal.pa));
+        goal.y = static_cast<float> (this->odom_pose.py + 10.0 * sin(this->goal.pa));
 
         // In case we went backward to get here, reverse direction so that we
         // can attain the goal heading
         this->SetDirection(1);
 
         cmd_vel = IterarND(goal,
-                           this->dist_eps,
+                           static_cast<float> (this->dist_eps),
                            &pose,
                            &this->obstacles,
                            NULL);
@@ -1149,15 +1153,15 @@ ND::Main()
         }
 
         // The current odometric goal
-        goal.x = this->goal.px;
-        goal.y = this->goal.py;
+        goal.x = static_cast<float> (this->goal.px);
+        goal.y = static_cast<float> (this->goal.py);
 
         // Were we asked to go backward?
         if(this->dir < 0)
         {
           // Trick the ND by telling it that the robot is pointing the
           // opposite direction
-          pose.SR1.orientacion = NORMALIZE(pose.SR1.orientacion + M_PI);
+          pose.SR1.orientacion = static_cast<float> (NORMALIZE(pose.SR1.orientacion + M_PI));
           // Also reverse the robot's geometry (it may be asymmetric
           // front-to-back)
           this->SetDirection(-1);
@@ -1166,7 +1170,7 @@ ND::Main()
           this->SetDirection(1);
 
         cmd_vel = IterarND(goal,
-                           this->dist_eps,
+                           static_cast<float> (this->dist_eps),
                            &pose,
                            &this->obstacles,
                            NULL);

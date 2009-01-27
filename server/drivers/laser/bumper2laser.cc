@@ -79,8 +79,6 @@ driver
 #include <pthread.h>
 #include <libplayercore/playercore.h>
 
-extern PlayerTime * GlobalTime;
-
 #ifndef M_PI
 #define M_PI (3.14159265358979323846)
 #endif
@@ -346,7 +344,7 @@ int Bumper2Laser::ProcessMessage(QueuePointer & resp_queue,
   {
     player_laser_config_t * config =
             reinterpret_cast<player_laser_config_t *> (data);
-    this->intensity = config->intensity;
+	this->intensity = config->intensity != 0 ? true : false;
     this->scan_res =  (int)rint(RTOD(config->resolution)*100);
     this->min_angle = (int)rint(RTOD(config->min_angle)*100);
     this->max_angle = (int)rint(RTOD(config->max_angle)*100);

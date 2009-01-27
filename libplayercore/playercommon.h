@@ -47,7 +47,9 @@
 
 /* one of the following will define PATH_MAX */
 #include <limits.h>
-#include <sys/param.h>
+#if !defined WIN32
+  #include <sys/param.h>
+#endif
 
 #define MAX_FILENAME_SIZE PATH_MAX
 
@@ -63,8 +65,10 @@
 #define GETFIRSTUINT32(x) (*((uint32_t*)x))
 #define GETFIRSTINT32(x)  (*((int32_t*)x))
 
-#define LOBYTE(w) ((uint8_t) (w & 0xFF))
-#define HIBYTE(w) ((uint8_t) ((w >> 8) & 0xFF))
+#if !defined WIN32
+	#define LOBYTE(w) ((uint8_t) (w & 0xFF))
+	#define HIBYTE(w) ((uint8_t) ((w >> 8) & 0xFF))
+#endif
 #define MAKEUINT16(lo, hi) ((((uint16_t) (hi)) << 8) | ((uint16_t) (lo)))
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -89,7 +93,7 @@
 #define NORMALIZE(z) atan2(sin(z), cos(z))
 #endif
 
-#ifndef BOOL
+#if !defined BOOL && !defined WIN32
 	#define BOOL int
 #endif
 
@@ -111,7 +115,7 @@
 
 // Macro for returning array size
 //
-#ifndef ARRAYSIZE
+#if !defined ARRAYSIZE && !defined WIN32
 	// Note that the cast to int is used to suppress warning about
 	// signed/unsigned mismatches.
 	#define ARRAYSIZE(x) (int) (sizeof(x) / sizeof(x[0]))

@@ -51,7 +51,9 @@ Geoffrey Biggs, Richard Vaughan.
 #ifndef PLAYERC_H
 #define PLAYERC_H
 
-#include <netinet/in.h> /* need this for struct sockaddr_in */
+#if !defined (WIN32)
+  #include <netinet/in.h> /* need this for struct sockaddr_in */
+#endif
 #include <stdio.h>
 
 #include <playerconfig.h>
@@ -71,6 +73,9 @@ typedef void * GEOSGeom;
 #include <libplayercore/interface_util.h>
 #include <libplayerxdr/playerxdr.h>
 #include <libplayerxdr/functiontable.h>
+#if defined (WIN32)
+  #include <winsock2.h>
+#endif
 
 #ifndef MIN
   #define MIN(a,b) ((a < b) ? a : b)
@@ -78,6 +83,19 @@ typedef void * GEOSGeom;
 #ifndef MAX
   #define MAX(a,b) ((a > b) ? a : b)
 #endif
+
+#if defined (WIN32)
+  #if defined (PLAYER_STATIC)
+    #define PLAYERC_EXPORT
+  #elif defined (playerc_EXPORTS)
+    #define PLAYERC_EXPORT    __declspec (dllexport)
+  #else
+    #define PLAYERC_EXPORT    __declspec (dllimport)
+  #endif
+#else
+  #define PLAYERC_EXPORT
+#endif
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -329,7 +347,7 @@ the new packet pushed onto the end of the queue.
     in will return 0 on success and non-zero value on error; a
     descriptive error message can be obtained by calling this
     function. */
-const char *playerc_error_str(void);
+PLAYERC_EXPORT const char *playerc_error_str(void);
 
 /** Get the name for a given interface code. */
 /*const char *playerc_lookup_name(int code);*/
@@ -338,7 +356,7 @@ const char *playerc_error_str(void);
 /*int playerc_lookup_code(const char *name);*/
 
 /** Add new entries to the XDR function table. */
-int playerc_add_xdr_ftable(playerxdr_function_t *flist, int replace);
+PLAYERC_EXPORT int playerc_add_xdr_ftable(playerxdr_function_t *flist, int replace);
 
 /** @}*/
 /***************************************************************************/
@@ -389,21 +407,21 @@ typedef struct
 } playerc_mclient_t;
 
 /* Create a multi-client object*/
-playerc_mclient_t *playerc_mclient_create(void);
+PLAYERC_EXPORT playerc_mclient_t *playerc_mclient_create(void);
 
 /* Destroy a multi-client object*/
-void playerc_mclient_destroy(playerc_mclient_t *mclient);
+PLAYERC_EXPORT void playerc_mclient_destroy(playerc_mclient_t *mclient);
 
 /* Add a client to the multi-client (private).*/
-int playerc_mclient_addclient(playerc_mclient_t *mclient, struct _playerc_client_t *client);
+PLAYERC_EXPORT int playerc_mclient_addclient(playerc_mclient_t *mclient, struct _playerc_client_t *client);
 
 /* Test to see if there is pending data.
    Returns -1 on error, 0 or 1 otherwise.*/
-int playerc_mclient_peek(playerc_mclient_t *mclient, int timeout);
+PLAYERC_EXPORT int playerc_mclient_peek(playerc_mclient_t *mclient, int timeout);
 
 /* Read incoming data.  The timeout is in ms.  Set timeout to a
    negative value to wait indefinitely.*/
-int playerc_mclient_read(playerc_mclient_t *mclient, int timeout);
+PLAYERC_EXPORT int playerc_mclient_read(playerc_mclient_t *mclient, int timeout);
 
 /** @} */
 /***************************************************************************/
@@ -422,10 +440,10 @@ proxies are initialized.
 */
 
 /** @brief Typedef for proxy callback function */
-typedef void (*playerc_putmsg_fn_t) (void *device, char *header, char *data);
+PLAYERC_EXPORT typedef void (*playerc_putmsg_fn_t) (void *device, char *header, char *data);
 
 /** @brief Typedef for proxy callback function */
-typedef void (*playerc_callback_fn_t) (void *data);
+PLAYERC_EXPORT typedef void (*playerc_callback_fn_t) (void *data);
 
 
 /** @brief Info about an available (but not necessarily subscribed)
@@ -532,7 +550,7 @@ server configuration).
 playerc_client_destroy() to delete the object.
 
 */
-playerc_client_t *playerc_client_create(playerc_mclient_t *mclient,
+PLAYERC_EXPORT playerc_client_t *playerc_client_create(playerc_mclient_t *mclient,
                                         const char *host, int port);
 
 /** @brief Destroy a client object.
@@ -540,13 +558,13 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient,
 @param client Pointer to client object.
 
 */
-void playerc_client_destroy(playerc_client_t *client);
+PLAYERC_EXPORT void playerc_client_destroy(playerc_client_t *client);
 
 /** @brief Set the transport type.
 
 @param transport Either PLAYERC_TRANSPORT_UDP or PLAYERC_TRANSPORT_TCP
 */
-void playerc_client_set_transport(playerc_client_t* client,
+PLAYERC_EXPORT void playerc_client_set_transport(playerc_client_t* client,
                                   unsigned int transport);
 
 /** @brief Connect to the server.
@@ -557,7 +575,7 @@ void playerc_client_set_transport(playerc_client_t* client,
 playerc_error_str() to get a descriptive error message.
 
 */
-int playerc_client_connect(playerc_client_t *client);
+PLAYERC_EXPORT int playerc_client_connect(playerc_client_t *client);
 
 /** @brief Disconnect from the server.
 
@@ -567,7 +585,7 @@ int playerc_client_connect(playerc_client_t *client);
 playerc_error_str() to get a descriptive error message.
 
 */
-int playerc_client_disconnect(playerc_client_t *client);
+PLAYERC_EXPORT int playerc_client_disconnect(playerc_client_t *client);
 
 /** @brief Disconnect from the server, with potential retry. @internal
 
@@ -575,7 +593,7 @@ int playerc_client_disconnect(playerc_client_t *client);
 
 @returns Returns 0 on success, non-zero otherwise.
 */
-int playerc_client_disconnect_retry(playerc_client_t *client);
+PLAYERC_EXPORT int playerc_client_disconnect_retry(playerc_client_t *client);
 
 /** @brief Change the server's data delivery mode.
 
@@ -591,7 +609,7 @@ PLAYERC_DATAMODE_PUSH.
 playerc_error_str() to get a descriptive error message.
 
 */
-int playerc_client_datamode(playerc_client_t *client, uint8_t mode);
+PLAYERC_EXPORT int playerc_client_datamode(playerc_client_t *client, uint8_t mode);
 
 /** @brief Request a round of data.
 
@@ -604,7 +622,7 @@ playerc_client_read will do it for you if the client is in a PULL mode.
 Use @ref playerc_client_datamode to change modes.
 
 */
-int playerc_client_requestdata(playerc_client_t* client);
+PLAYERC_EXPORT int playerc_client_requestdata(playerc_client_t* client);
 
 /** @brief Set a replace rule for the client queue on the server
 
@@ -628,26 +646,26 @@ i.e. PLAYER_MSGTYPE_DATA
 playerc_error_str() to get a descriptive error message.
 
 */
-int playerc_client_set_replace_rule(playerc_client_t *client, int interf, int index, int type, int subtype, int replace);
+PLAYERC_EXPORT int playerc_client_set_replace_rule(playerc_client_t *client, int interf, int index, int type, int subtype, int replace);
 
 
 /** @brief Add a device proxy. @internal
  */
-int playerc_client_adddevice(playerc_client_t *client, struct _playerc_device_t *device);
+PLAYERC_EXPORT int playerc_client_adddevice(playerc_client_t *client, struct _playerc_device_t *device);
 
 
 /** @brief Remove a device proxy. @internal
  */
-int playerc_client_deldevice(playerc_client_t *client, struct _playerc_device_t *device);
+PLAYERC_EXPORT int playerc_client_deldevice(playerc_client_t *client, struct _playerc_device_t *device);
 
 /** @brief Add user callbacks (called when new data arrives). @internal
  */
-int  playerc_client_addcallback(playerc_client_t *client, struct _playerc_device_t *device,
+PLAYERC_EXPORT int  playerc_client_addcallback(playerc_client_t *client, struct _playerc_device_t *device,
                                 playerc_callback_fn_t callback, void *data);
 
 /** @brief Remove user callbacks (called when new data arrives). @internal
  */
-int  playerc_client_delcallback(playerc_client_t *client, struct _playerc_device_t *device,
+PLAYERC_EXPORT int  playerc_client_delcallback(playerc_client_t *client, struct _playerc_device_t *device,
                                 playerc_callback_fn_t callback, void *data);
 
 /** @brief Get the list of available device ids.
@@ -661,16 +679,16 @@ and write result to the devinfos list in the client object.
 playerc_error_str() to get a descriptive error message.
 
 */
-int playerc_client_get_devlist(playerc_client_t *client);
+PLAYERC_EXPORT int playerc_client_get_devlist(playerc_client_t *client);
 
 /** @brief Subscribe a device. @internal
  */
-int playerc_client_subscribe(playerc_client_t *client, int code, int index,
+PLAYERC_EXPORT int playerc_client_subscribe(playerc_client_t *client, int code, int index,
                              int access, char *drivername, size_t len);
 
 /** @brief Unsubscribe a device. @internal
  */
-int playerc_client_unsubscribe(playerc_client_t *client, int code, int index);
+PLAYERC_EXPORT int playerc_client_unsubscribe(playerc_client_t *client, int code, int index);
 
 /** @brief Issue a request to the server and await a reply (blocking). @internal
 
@@ -682,7 +700,7 @@ If an error is returned then no data will have been stored in rep_data.
 @returns Returns -1 on error and -2 on NACK.
 
 */
-int playerc_client_request(playerc_client_t *client,
+PLAYERC_EXPORT int playerc_client_request(playerc_client_t *client,
                            struct _playerc_device_t *device, uint8_t reqtype,
                            const void *req_data, void **rep_data);
 
@@ -710,7 +728,7 @@ currently queued data.
 @returns Returns -1 on error, 0 or 1 otherwise.
 
 */
-int playerc_client_peek(playerc_client_t *client, int timeout);
+PLAYERC_EXPORT int playerc_client_peek(playerc_client_t *client, int timeout);
 
 /** @brief Test to see if there is pending data. Don't send a request for data.
  * This function is reliant on a call being made elsewhere to request data from
@@ -724,7 +742,7 @@ currently queued data.
 @returns Returns -1 on error, 0 or 1 otherwise.
 
 */
-int playerc_client_internal_peek(playerc_client_t *client, int timeout);
+PLAYERC_EXPORT int playerc_client_internal_peek(playerc_client_t *client, int timeout);
 
 /** @brief Read data from the server (blocking).
 
@@ -737,14 +755,14 @@ PULL mode: Will return NULL on error, the ID of the client on success. Will
 never return the ID of a proxy other than the client.
 
 */
-void *playerc_client_read(playerc_client_t *client);
+PLAYERC_EXPORT void *playerc_client_read(playerc_client_t *client);
 
 /* Read and process a packet (nonblocking)
    returns 0 if no data recieved, 1 if data recieved and -1 on error*/
-int playerc_client_read_nonblock(playerc_client_t *client);
+PLAYERC_EXPORT int playerc_client_read_nonblock(playerc_client_t *client);
 /* Read and process a packet (nonblocking), fills in pointer to proxy that got data
    returns 0 if no data recieved, 1 if data recieved and -1 on error*/
-int playerc_client_read_nonblock_withproxy(playerc_client_t *client, void ** proxy);
+PLAYERC_EXPORT int playerc_client_read_nonblock_withproxy(playerc_client_t *client, void ** proxy);
 
 /** @brief Set the timeout for client requests.
 
@@ -752,7 +770,7 @@ int playerc_client_read_nonblock_withproxy(playerc_client_t *client, void ** pro
 @param seconds Seconds to wait for a reply.
 
 */
-void playerc_client_set_request_timeout(playerc_client_t* client, uint32_t seconds);
+PLAYERC_EXPORT void playerc_client_set_request_timeout(playerc_client_t* client, uint32_t seconds);
 
 /** @brief Set the connection retry limit.
 
@@ -760,18 +778,18 @@ void playerc_client_set_request_timeout(playerc_client_t* client, uint32_t secon
 @param limit The number of times to attempt to reconnect to the server.  Give -1 for
        infinite retry.
 */
-void playerc_client_set_retry_limit(playerc_client_t* client, int limit);
+PLAYERC_EXPORT void playerc_client_set_retry_limit(playerc_client_t* client, int limit);
 
 /** @brief Set the connection retry sleep time.
 
 @param client Pointer to the client object
 @param time The amount of time, in seconds, to sleep between reconnection attempts.
 */
-void playerc_client_set_retry_time(playerc_client_t* client, double time);
+PLAYERC_EXPORT void playerc_client_set_retry_time(playerc_client_t* client, double time);
 
 /** @brief Write data to the server.  @internal
 */
-int playerc_client_write(playerc_client_t *client,
+PLAYERC_EXPORT int playerc_client_write(playerc_client_t *client,
                          struct _playerc_device_t *device,
                          uint8_t subtype,
                          void *cmd, double* timestamp);
@@ -848,38 +866,38 @@ typedef struct _playerc_device_t
 
 
 /** @brief Initialise the device. Additional callbacks for geom and config @internal */
-void playerc_device_init(playerc_device_t *device, playerc_client_t *client,
+PLAYERC_EXPORT void playerc_device_init(playerc_device_t *device, playerc_client_t *client,
                          int code, int index, playerc_putmsg_fn_t putmsg);
 
 /** @brief Finalize the device. @internal */
-void playerc_device_term(playerc_device_t *device);
+PLAYERC_EXPORT void playerc_device_term(playerc_device_t *device);
 
 /** @brief Subscribe the device. @internal */
-int playerc_device_subscribe(playerc_device_t *device, int access);
+PLAYERC_EXPORT int playerc_device_subscribe(playerc_device_t *device, int access);
 
 /** @brief Unsubscribe the device. @internal */
-int playerc_device_unsubscribe(playerc_device_t *device);
+PLAYERC_EXPORT int playerc_device_unsubscribe(playerc_device_t *device);
 
 /** @brief Request capabilities of device */
-int playerc_device_hascapability(playerc_device_t *device, uint32_t type, uint32_t subtype);
+PLAYERC_EXPORT int playerc_device_hascapability(playerc_device_t *device, uint32_t type, uint32_t subtype);
 
 /** @brief Request an integer property */
-int playerc_device_get_intprop(playerc_device_t *device, char *property, int32_t *value);
+PLAYERC_EXPORT int playerc_device_get_intprop(playerc_device_t *device, char *property, int32_t *value);
 
 /** @brief Set an integer property */
-int playerc_device_set_intprop(playerc_device_t *device, char *property, int32_t value);
+PLAYERC_EXPORT int playerc_device_set_intprop(playerc_device_t *device, char *property, int32_t value);
 
 /** @brief Request a double property */
-int playerc_device_get_dblprop(playerc_device_t *device, char *property, double *value);
+PLAYERC_EXPORT int playerc_device_get_dblprop(playerc_device_t *device, char *property, double *value);
 
 /** @brief Set a double property */
-int playerc_device_set_dblprop(playerc_device_t *device, char *property, double value);
+PLAYERC_EXPORT int playerc_device_set_dblprop(playerc_device_t *device, char *property, double value);
 
 /** @brief Request a string property */
-int playerc_device_get_strprop(playerc_device_t *device, char *property, char **value);
+PLAYERC_EXPORT int playerc_device_get_strprop(playerc_device_t *device, char *property, char **value);
 
 /** @brief Set a string property */
-int playerc_device_set_strprop(playerc_device_t *device, char *property, char *value);
+PLAYERC_EXPORT int playerc_device_set_strprop(playerc_device_t *device, char *property, char *value);
 
 
 /** @} */
@@ -918,22 +936,22 @@ typedef struct
 
 
 /** Create a aio proxy. */
-playerc_aio_t *playerc_aio_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_aio_t *playerc_aio_create(playerc_client_t *client, int index);
 
 /** Destroy a aio proxy. */
-void playerc_aio_destroy(playerc_aio_t *device);
+PLAYERC_EXPORT void playerc_aio_destroy(playerc_aio_t *device);
 
 /** Subscribe to the aio device. */
-int playerc_aio_subscribe(playerc_aio_t *device, int access);
+PLAYERC_EXPORT int playerc_aio_subscribe(playerc_aio_t *device, int access);
 
 /** Un-subscribe from the aio device. */
-int playerc_aio_unsubscribe(playerc_aio_t *device);
+PLAYERC_EXPORT int playerc_aio_unsubscribe(playerc_aio_t *device);
 
 /** Set the output for the aio device. */
-int playerc_aio_set_output(playerc_aio_t *device, uint8_t id, float volt);
+PLAYERC_EXPORT int playerc_aio_set_output(playerc_aio_t *device, uint8_t id, float volt);
 
 /** get the aio data */
-float playerc_aio_get_data(playerc_aio_t *device, uint32_t index);
+PLAYERC_EXPORT float playerc_aio_get_data(playerc_aio_t *device, uint32_t index);
 
 /** @} */
 /***************************************************************************/
@@ -981,62 +999,62 @@ typedef struct
 } playerc_actarray_t;
 
 /** @brief Create an actarray proxy. */
-playerc_actarray_t *playerc_actarray_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_actarray_t *playerc_actarray_create(playerc_client_t *client, int index);
 
 /** @brief Destroy an actarray proxy. */
-void playerc_actarray_destroy(playerc_actarray_t *device);
+PLAYERC_EXPORT void playerc_actarray_destroy(playerc_actarray_t *device);
 
 /** @brief Subscribe to the actarray device. */
-int playerc_actarray_subscribe(playerc_actarray_t *device, int access);
+PLAYERC_EXPORT int playerc_actarray_subscribe(playerc_actarray_t *device, int access);
 
 /** @brief Un-subscribe from the actarray device. */
-int playerc_actarray_unsubscribe(playerc_actarray_t *device);
+PLAYERC_EXPORT int playerc_actarray_unsubscribe(playerc_actarray_t *device);
 
 /** Accessor method for the actuator data */
-player_actarray_actuator_t playerc_actarray_get_actuator_data(playerc_actarray_t *device, int index);
+PLAYERC_EXPORT player_actarray_actuator_t playerc_actarray_get_actuator_data(playerc_actarray_t *device, uint32_t index);
 
 /** Accessor method for the actuator geom */
-player_actarray_actuatorgeom_t playerc_actarray_get_actuator_geom(playerc_actarray_t *device, int index);
+PLAYERC_EXPORT player_actarray_actuatorgeom_t playerc_actarray_get_actuator_geom(playerc_actarray_t *device, uint32_t index);
 
 /** @brief Get the actarray geometry.  The writes the result into the proxy
     rather than returning it to the caller. */
-int playerc_actarray_get_geom(playerc_actarray_t *device);
+PLAYERC_EXPORT int playerc_actarray_get_geom(playerc_actarray_t *device);
 
 /** @brief Command a joint in the array to move to a specified position. */
-int playerc_actarray_position_cmd(playerc_actarray_t *device, int joint, float position);
+PLAYERC_EXPORT int playerc_actarray_position_cmd(playerc_actarray_t *device, int joint, float position);
 
 /** @brief Command all joints in the array to move to specified positions. */
-int playerc_actarray_multi_position_cmd(playerc_actarray_t *device, float *positions, int positions_count);
+PLAYERC_EXPORT int playerc_actarray_multi_position_cmd(playerc_actarray_t *device, float *positions, int positions_count);
 
 /** @brief Command a joint in the array to move at a specified speed. */
-int playerc_actarray_speed_cmd(playerc_actarray_t *device, int joint, float speed);
+PLAYERC_EXPORT int playerc_actarray_speed_cmd(playerc_actarray_t *device, int joint, float speed);
 
 /** @brief Command a joint in the array to move at a specified speed. */
-int playerc_actarray_multi_speed_cmd(playerc_actarray_t *device, float *speeds, int speeds_count);
+PLAYERC_EXPORT int playerc_actarray_multi_speed_cmd(playerc_actarray_t *device, float *speeds, int speeds_count);
 
 /** @brief Command a joint (or, if joint is -1, the whole array) to go to its home position. */
-int playerc_actarray_home_cmd(playerc_actarray_t *device, int joint);
+PLAYERC_EXPORT int playerc_actarray_home_cmd(playerc_actarray_t *device, int joint);
 
 /** @brief Command a joint in the array to move with a specified current. */
-int playerc_actarray_current_cmd(playerc_actarray_t *device, int joint, float current);
+PLAYERC_EXPORT int playerc_actarray_current_cmd(playerc_actarray_t *device, int joint, float current);
 
 /** @brief Command all joints in the array to move with specified currents. */
-int playerc_actarray_multi_current_cmd(playerc_actarray_t *device, float *currents, int currents_count);
+PLAYERC_EXPORT int playerc_actarray_multi_current_cmd(playerc_actarray_t *device, float *currents, int currents_count);
 
 
 /** @brief Turn the power to the array on or off. Be careful
 when turning power on that the array is not obstructed from its home
 position in case it moves to it (common behaviour). */
-int playerc_actarray_power(playerc_actarray_t *device, uint8_t enable);
+PLAYERC_EXPORT int playerc_actarray_power(playerc_actarray_t *device, uint8_t enable);
 
 /** @brief Turn the brakes of all actuators in the array that have them on or off. */
-int playerc_actarray_brakes(playerc_actarray_t *device, uint8_t enable);
+PLAYERC_EXPORT int playerc_actarray_brakes(playerc_actarray_t *device, uint8_t enable);
 
 /** @brief Set the speed of a joint (-1 for all joints) for all subsequent movement commands. */
-int playerc_actarray_speed_config(playerc_actarray_t *device, int joint, float speed);
+PLAYERC_EXPORT int playerc_actarray_speed_config(playerc_actarray_t *device, int joint, float speed);
 
 /* Set the accelration of a joint (-1 for all joints) for all subsequent movement commands*/
-int playerc_actarray_accel_config(playerc_actarray_t *device, int joint, float accel);
+PLAYERC_EXPORT int playerc_actarray_accel_config(playerc_actarray_t *device, int joint, float accel);
 
 
 /** @} */
@@ -1079,56 +1097,56 @@ typedef struct
 } playerc_audio_t;
 
 /** @brief Create an audio proxy. */
-playerc_audio_t *playerc_audio_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_audio_t *playerc_audio_create(playerc_client_t *client, int index);
 
 /** @brief Destroy an audio proxy. */
-void playerc_audio_destroy(playerc_audio_t *device);
+PLAYERC_EXPORT void playerc_audio_destroy(playerc_audio_t *device);
 
 /** @brief Subscribe to the audio device. */
-int playerc_audio_subscribe(playerc_audio_t *device, int access);
+PLAYERC_EXPORT int playerc_audio_subscribe(playerc_audio_t *device, int access);
 
 /** @brief Un-subscribe from the audio device. */
-int playerc_audio_unsubscribe(playerc_audio_t *device);
+PLAYERC_EXPORT int playerc_audio_unsubscribe(playerc_audio_t *device);
 
 /** @brief Command to play an audio block */
-int playerc_audio_wav_play_cmd(playerc_audio_t *device, uint32_t data_count, uint8_t data[], uint32_t format);
+PLAYERC_EXPORT int playerc_audio_wav_play_cmd(playerc_audio_t *device, uint32_t data_count, uint8_t data[], uint32_t format);
 
 /** @brief Command to set recording state */
-int playerc_audio_wav_stream_rec_cmd(playerc_audio_t *device, uint8_t state);
+PLAYERC_EXPORT int playerc_audio_wav_stream_rec_cmd(playerc_audio_t *device, uint8_t state);
 
 /** @brief Command to play prestored sample */
-int playerc_audio_sample_play_cmd(playerc_audio_t *device, int index);
+PLAYERC_EXPORT int playerc_audio_sample_play_cmd(playerc_audio_t *device, int index);
 
 /** @brief Command to play sequence of tones */
-int playerc_audio_seq_play_cmd(playerc_audio_t *device, player_audio_seq_t * tones);
+PLAYERC_EXPORT int playerc_audio_seq_play_cmd(playerc_audio_t *device, player_audio_seq_t * tones);
 
 /** @brief Command to set mixer levels for multiple channels */
-int playerc_audio_mixer_multchannels_cmd(playerc_audio_t *device, player_audio_mixer_channel_list_t * levels);
+PLAYERC_EXPORT int playerc_audio_mixer_multchannels_cmd(playerc_audio_t *device, player_audio_mixer_channel_list_t * levels);
 
 /** @brief Command to set mixer levels for a single channel */
-int playerc_audio_mixer_channel_cmd(playerc_audio_t *device, uint32_t index, float amplitude, uint8_t active);
+PLAYERC_EXPORT int playerc_audio_mixer_channel_cmd(playerc_audio_t *device, uint32_t index, float amplitude, uint8_t active);
 
 /** @brief Request to record a single audio block
 Value is returned into wav_data, block length is determined by device */
-int playerc_audio_wav_rec(playerc_audio_t *device);
+PLAYERC_EXPORT int playerc_audio_wav_rec(playerc_audio_t *device);
 
 /** @brief Request to load an audio sample */
-int playerc_audio_sample_load(playerc_audio_t *device, int index, uint32_t data_count, uint8_t data[], uint32_t format);
+PLAYERC_EXPORT int playerc_audio_sample_load(playerc_audio_t *device, int index, uint32_t data_count, uint8_t data[], uint32_t format);
 
 /** @brief Request to retrieve an audio sample
 Data is stored in wav_data */
-int playerc_audio_sample_retrieve(playerc_audio_t *device, int index);
+PLAYERC_EXPORT int playerc_audio_sample_retrieve(playerc_audio_t *device, int index);
 
 /** @brief Request to record new sample */
-int playerc_audio_sample_rec(playerc_audio_t *device, int index, uint32_t length);
+PLAYERC_EXPORT int playerc_audio_sample_rec(playerc_audio_t *device, int index, uint32_t length);
 
 /** @brief Request mixer channel data
 result is stored in mixer_data*/
-int playerc_audio_get_mixer_levels(playerc_audio_t *device);
+PLAYERC_EXPORT int playerc_audio_get_mixer_levels(playerc_audio_t *device);
 
 /** @brief Request mixer channel details list
 result is stored in channel_details_list*/
-int playerc_audio_get_mixer_details(playerc_audio_t *device);
+PLAYERC_EXPORT int playerc_audio_get_mixer_details(playerc_audio_t *device);
 
 /** @} */
 /**************************************************************************/
@@ -1163,42 +1181,42 @@ typedef struct playerc_blackboard
 } playerc_blackboard_t;
 
 /** @brief Create a blackboard proxy. */
-playerc_blackboard_t *playerc_blackboard_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_blackboard_t *playerc_blackboard_create(playerc_client_t *client, int index);
 
 /** @brief Destroy a blackboard proxy. */
-void playerc_blackboard_destroy(playerc_blackboard_t *device);
+PLAYERC_EXPORT void playerc_blackboard_destroy(playerc_blackboard_t *device);
 
 /** @brief Subscribe to the blackboard device. */
-int playerc_blackboard_subscribe(playerc_blackboard_t *device, int access);
+PLAYERC_EXPORT int playerc_blackboard_subscribe(playerc_blackboard_t *device, int access);
 
 /** @brief Un-subscribe from the blackboard device. */
-int playerc_blackboard_unsubscribe(playerc_blackboard_t *device);
+PLAYERC_EXPORT int playerc_blackboard_unsubscribe(playerc_blackboard_t *device);
 
 /** @brief Subscribe to a key. If entry is none null it will be filled in with the response. The caller is
  * responsible for freeing it. */
-int playerc_blackboard_subscribe_to_key(playerc_blackboard_t *device, const char* key, const char* group, player_blackboard_entry_t** entry);
+PLAYERC_EXPORT int playerc_blackboard_subscribe_to_key(playerc_blackboard_t *device, const char* key, const char* group, player_blackboard_entry_t** entry);
 
 /** @brief Get the current value of a key, without subscribing. If entry is none null it will be filled in with the response. The caller is
  * responsible for freeing it. */
-int playerc_blackboard_get_entry(playerc_blackboard_t *device, const char* key, const char* group, player_blackboard_entry_t** entry);
+PLAYERC_EXPORT int playerc_blackboard_get_entry(playerc_blackboard_t *device, const char* key, const char* group, player_blackboard_entry_t** entry);
 
 /** @brief Unsubscribe from a key. */
-int playerc_blackboard_unsubscribe_from_key(playerc_blackboard_t *device, const char* key, const char* group);
+PLAYERC_EXPORT int playerc_blackboard_unsubscribe_from_key(playerc_blackboard_t *device, const char* key, const char* group);
 
 /** @brief Subscribe to a group. The current entries are sent as data messages. */
-int playerc_blackboard_subscribe_to_group(playerc_blackboard_t *device, const char* group);
+PLAYERC_EXPORT int playerc_blackboard_subscribe_to_group(playerc_blackboard_t *device, const char* group);
 
 /** @brief Unsubscribe from a group. */
-int playerc_blackboard_unsubscribe_from_group(playerc_blackboard_t *device, const char* group);
+PLAYERC_EXPORT int playerc_blackboard_unsubscribe_from_group(playerc_blackboard_t *device, const char* group);
 
 /** @brief Set an entry value. */
-int playerc_blackboard_set_entry(playerc_blackboard_t *device, player_blackboard_entry_t* entry);
+PLAYERC_EXPORT int playerc_blackboard_set_entry(playerc_blackboard_t *device, player_blackboard_entry_t* entry);
 
-int playerc_blackboard_set_string(playerc_blackboard_t *device, const char* key, const char* group, const char* value);
+PLAYERC_EXPORT int playerc_blackboard_set_string(playerc_blackboard_t *device, const char* key, const char* group, const char* value);
 
-int playerc_blackboard_set_int(playerc_blackboard_t *device, const char* key, const char* group, const int value);
+PLAYERC_EXPORT int playerc_blackboard_set_int(playerc_blackboard_t *device, const char* key, const char* group, const int value);
 
-int playerc_blackboard_set_double(playerc_blackboard_t *device, const char* key, const char* group, const double value);
+PLAYERC_EXPORT int playerc_blackboard_set_double(playerc_blackboard_t *device, const char* key, const char* group, const double value);
 
 /** @} */
 
@@ -1226,30 +1244,30 @@ typedef struct
 
 
 /** Create a blinkenlight proxy. */
-playerc_blinkenlight_t *playerc_blinkenlight_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_blinkenlight_t *playerc_blinkenlight_create(playerc_client_t *client, int index);
 
 /** Destroy a blinkenlight proxy. */
-void playerc_blinkenlight_destroy(playerc_blinkenlight_t *device);
+PLAYERC_EXPORT void playerc_blinkenlight_destroy(playerc_blinkenlight_t *device);
 
 /** Subscribe to the blinkenlight device. */
-int playerc_blinkenlight_subscribe(playerc_blinkenlight_t *device, int access);
+PLAYERC_EXPORT int playerc_blinkenlight_subscribe(playerc_blinkenlight_t *device, int access);
 
 /** Un-subscribe from the blinkenlight device. */
-int playerc_blinkenlight_unsubscribe(playerc_blinkenlight_t *device);
+PLAYERC_EXPORT int playerc_blinkenlight_unsubscribe(playerc_blinkenlight_t *device);
 
 /** Enable/disable power to the blinkenlight device. */
-int playerc_blinkenlight_enable( playerc_blinkenlight_t *device,
+PLAYERC_EXPORT int playerc_blinkenlight_enable( playerc_blinkenlight_t *device,
 				 uint32_t enable );
 
 /** Set the output color for the blinkenlight device. */
-int playerc_blinkenlight_color( playerc_blinkenlight_t *device,
+PLAYERC_EXPORT int playerc_blinkenlight_color( playerc_blinkenlight_t *device,
 				uint32_t id,
 				uint8_t red,
 				uint8_t green,
 				uint8_t blue );
 /** Make the light blink, setting the period in seconds and the
     mark/space ratiom (0.0 to 1.0). */
-int playerc_blinkenlight_blink( playerc_blinkenlight_t *device,
+PLAYERC_EXPORT int playerc_blinkenlight_blink( playerc_blinkenlight_t *device,
 				uint32_t id,
 				float period,
 				float duty_cycle );
@@ -1285,16 +1303,16 @@ typedef struct
 
 
 /** @brief Create a blobfinder proxy. */
-playerc_blobfinder_t *playerc_blobfinder_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_blobfinder_t *playerc_blobfinder_create(playerc_client_t *client, int index);
 
 /** @brief Destroy a blobfinder proxy. */
-void playerc_blobfinder_destroy(playerc_blobfinder_t *device);
+PLAYERC_EXPORT void playerc_blobfinder_destroy(playerc_blobfinder_t *device);
 
 /** @brief Subscribe to the blobfinder device. */
-int playerc_blobfinder_subscribe(playerc_blobfinder_t *device, int access);
+PLAYERC_EXPORT int playerc_blobfinder_subscribe(playerc_blobfinder_t *device, int access);
 
 /** @brief Un-subscribe from the blobfinder device. */
-int playerc_blobfinder_unsubscribe(playerc_blobfinder_t *device);
+PLAYERC_EXPORT int playerc_blobfinder_unsubscribe(playerc_blobfinder_t *device);
 
 
 /** @} */
@@ -1335,16 +1353,16 @@ typedef struct
 
 
 /** @brief Create a bumper proxy. */
-playerc_bumper_t *playerc_bumper_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_bumper_t *playerc_bumper_create(playerc_client_t *client, int index);
 
 /** @brief Destroy a bumper proxy. */
-void playerc_bumper_destroy(playerc_bumper_t *device);
+PLAYERC_EXPORT void playerc_bumper_destroy(playerc_bumper_t *device);
 
 /** @brief Subscribe to the bumper device. */
-int playerc_bumper_subscribe(playerc_bumper_t *device, int access);
+PLAYERC_EXPORT int playerc_bumper_subscribe(playerc_bumper_t *device, int access);
 
 /** @brief Un-subscribe from the bumper device. */
-int playerc_bumper_unsubscribe(playerc_bumper_t *device);
+PLAYERC_EXPORT int playerc_bumper_unsubscribe(playerc_bumper_t *device);
 
 /** @brief Get the bumper geometry.
 
@@ -1352,7 +1370,7 @@ The writes the result into the proxy rather than returning it to the
 caller.
 
 */
-int playerc_bumper_get_geom(playerc_bumper_t *device);
+PLAYERC_EXPORT int playerc_bumper_get_geom(playerc_bumper_t *device);
 
 
 /** @} */
@@ -1404,22 +1422,22 @@ typedef struct
 
 
 /** @brief Create a camera proxy. */
-playerc_camera_t *playerc_camera_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_camera_t *playerc_camera_create(playerc_client_t *client, int index);
 
 /** @brief Destroy a camera proxy. */
-void playerc_camera_destroy(playerc_camera_t *device);
+PLAYERC_EXPORT void playerc_camera_destroy(playerc_camera_t *device);
 
 /** @brief Subscribe to the camera device. */
-int playerc_camera_subscribe(playerc_camera_t *device, int access);
+PLAYERC_EXPORT int playerc_camera_subscribe(playerc_camera_t *device, int access);
 
 /** @brief Un-subscribe from the camera device. */
-int playerc_camera_unsubscribe(playerc_camera_t *device);
+PLAYERC_EXPORT int playerc_camera_unsubscribe(playerc_camera_t *device);
 
 /** @brief Decompress the image (modifies the current proxy data). */
-void playerc_camera_decompress(playerc_camera_t *device);
+PLAYERC_EXPORT void playerc_camera_decompress(playerc_camera_t *device);
 
 /** @brief Saves the image to disk as a .ppm */
-void playerc_camera_save(playerc_camera_t *device, const char *filename);
+PLAYERC_EXPORT void playerc_camera_save(playerc_camera_t *device, const char *filename);
 
 /** @} */
 /**************************************************************************/
@@ -1450,19 +1468,19 @@ typedef struct
 
 
 /** Create a dio proxy. */
-playerc_dio_t *playerc_dio_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_dio_t *playerc_dio_create(playerc_client_t *client, int index);
 
 /** Destroy a dio proxy. */
-void playerc_dio_destroy(playerc_dio_t *device);
+PLAYERC_EXPORT void playerc_dio_destroy(playerc_dio_t *device);
 
 /** Subscribe to the dio device. */
-int playerc_dio_subscribe(playerc_dio_t *device, int access);
+PLAYERC_EXPORT int playerc_dio_subscribe(playerc_dio_t *device, int access);
 
 /** Un-subscribe from the dio device. */
-int playerc_dio_unsubscribe(playerc_dio_t *device);
+PLAYERC_EXPORT int playerc_dio_unsubscribe(playerc_dio_t *device);
 
 /** Set the output for the dio device. */
-int playerc_dio_set_output(playerc_dio_t *device, uint8_t output_count, uint32_t digout);
+PLAYERC_EXPORT int playerc_dio_set_output(playerc_dio_t *device, uint8_t output_count, uint32_t digout);
 
 
 /** @} */
@@ -1503,16 +1521,16 @@ typedef struct
 
 
 /** @brief Create a fiducial proxy. */
-playerc_fiducial_t *playerc_fiducial_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_fiducial_t *playerc_fiducial_create(playerc_client_t *client, int index);
 
 /** @brief Destroy a fiducial proxy. */
-void playerc_fiducial_destroy(playerc_fiducial_t *device);
+PLAYERC_EXPORT void playerc_fiducial_destroy(playerc_fiducial_t *device);
 
 /** @brief Subscribe to the fiducial device. */
-int playerc_fiducial_subscribe(playerc_fiducial_t *device, int access);
+PLAYERC_EXPORT int playerc_fiducial_subscribe(playerc_fiducial_t *device, int access);
 
 /** @brief Un-subscribe from the fiducial device. */
-int playerc_fiducial_unsubscribe(playerc_fiducial_t *device);
+PLAYERC_EXPORT int playerc_fiducial_unsubscribe(playerc_fiducial_t *device);
 
 /** @brief Get the fiducial geometry.
 
@@ -1520,7 +1538,7 @@ Ths writes the result into the proxy rather than returning it to the
 caller.
 
 */
-int playerc_fiducial_get_geom(playerc_fiducial_t *device);
+PLAYERC_EXPORT int playerc_fiducial_get_geom(playerc_fiducial_t *device);
 
 
 /** @} */
@@ -1574,16 +1592,16 @@ typedef struct
 
 
 /** @brief Create a gps proxy. */
-playerc_gps_t *playerc_gps_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_gps_t *playerc_gps_create(playerc_client_t *client, int index);
 
 /** @brief Destroy a gps proxy. */
-void playerc_gps_destroy(playerc_gps_t *device);
+PLAYERC_EXPORT void playerc_gps_destroy(playerc_gps_t *device);
 
 /** @brief Subscribe to the gps device. */
-int playerc_gps_subscribe(playerc_gps_t *device, int access);
+PLAYERC_EXPORT int playerc_gps_subscribe(playerc_gps_t *device, int access);
 
 /** @brief Un-subscribe from the gps device. */
-int playerc_gps_unsubscribe(playerc_gps_t *device);
+PLAYERC_EXPORT int playerc_gps_unsubscribe(playerc_gps_t *device);
 
 
 /** @} */
@@ -1611,40 +1629,40 @@ typedef struct
 
 
 /** @brief Create a graphics2d device proxy. */
-playerc_graphics2d_t *playerc_graphics2d_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_graphics2d_t *playerc_graphics2d_create(playerc_client_t *client, int index);
 
 /** @brief Destroy a graphics2d device proxy. */
-void playerc_graphics2d_destroy(playerc_graphics2d_t *device);
+PLAYERC_EXPORT void playerc_graphics2d_destroy(playerc_graphics2d_t *device);
 
 /** @brief Subscribe to the graphics2d device */
-int playerc_graphics2d_subscribe(playerc_graphics2d_t *device, int access);
+PLAYERC_EXPORT int playerc_graphics2d_subscribe(playerc_graphics2d_t *device, int access);
 
 /** @brief Un-subscribe from the graphics2d device */
-int playerc_graphics2d_unsubscribe(playerc_graphics2d_t *device);
+PLAYERC_EXPORT int playerc_graphics2d_unsubscribe(playerc_graphics2d_t *device);
 
 /** @brief Set the current drawing color */
-int playerc_graphics2d_setcolor(playerc_graphics2d_t *device,
+PLAYERC_EXPORT int playerc_graphics2d_setcolor(playerc_graphics2d_t *device,
                                 player_color_t col );
 
 /** @brief Draw some points */
-int playerc_graphics2d_draw_points(playerc_graphics2d_t *device,
+PLAYERC_EXPORT int playerc_graphics2d_draw_points(playerc_graphics2d_t *device,
            player_point_2d_t pts[],
            int count );
 
 /** @brief Draw a polyline that connects an array of points */
-int playerc_graphics2d_draw_polyline(playerc_graphics2d_t *device,
+PLAYERC_EXPORT int playerc_graphics2d_draw_polyline(playerc_graphics2d_t *device,
              player_point_2d_t pts[],
              int count );
 
 /** @brief Draw a polygon */
-int playerc_graphics2d_draw_polygon(playerc_graphics2d_t *device,
+PLAYERC_EXPORT int playerc_graphics2d_draw_polygon(playerc_graphics2d_t *device,
             player_point_2d_t pts[],
             int count,
             int filled,
             player_color_t fill_color );
 
 /** @brief Clear the canvas */
-int playerc_graphics2d_clear(playerc_graphics2d_t *device );
+PLAYERC_EXPORT int playerc_graphics2d_clear(playerc_graphics2d_t *device );
 
 
 /** @} */
@@ -1671,37 +1689,37 @@ typedef struct
 
 
 /** @brief Create a graphics3d device proxy. */
-playerc_graphics3d_t *playerc_graphics3d_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_graphics3d_t *playerc_graphics3d_create(playerc_client_t *client, int index);
 
 /** @brief Destroy a graphics3d device proxy. */
-void playerc_graphics3d_destroy(playerc_graphics3d_t *device);
+PLAYERC_EXPORT void playerc_graphics3d_destroy(playerc_graphics3d_t *device);
 
 /** @brief Subscribe to the graphics3d device */
-int playerc_graphics3d_subscribe(playerc_graphics3d_t *device, int access);
+PLAYERC_EXPORT int playerc_graphics3d_subscribe(playerc_graphics3d_t *device, int access);
 
 /** @brief Un-subscribe from the graphics3d device */
-int playerc_graphics3d_unsubscribe(playerc_graphics3d_t *device);
+PLAYERC_EXPORT int playerc_graphics3d_unsubscribe(playerc_graphics3d_t *device);
 
 /** @brief Set the current drawing color */
-int playerc_graphics3d_setcolor(playerc_graphics3d_t *device,
+PLAYERC_EXPORT int playerc_graphics3d_setcolor(playerc_graphics3d_t *device,
                                 player_color_t col );
 
 /** @brief Draw some points in the given mode */
-int playerc_graphics3d_draw(playerc_graphics3d_t *device,
+PLAYERC_EXPORT int playerc_graphics3d_draw(playerc_graphics3d_t *device,
            player_graphics3d_draw_mode_t mode,
            player_point_3d_t pts[],
            int count );
 
 /** @brief Clear the canvas */
-int playerc_graphics3d_clear(playerc_graphics3d_t *device );
+PLAYERC_EXPORT int playerc_graphics3d_clear(playerc_graphics3d_t *device );
 
 /** @brief Translate the drawing coordinate system in 3d */
-int playerc_graphics3d_translate(playerc_graphics3d_t *device,
+PLAYERC_EXPORT int playerc_graphics3d_translate(playerc_graphics3d_t *device,
 				 double x, double y, double z );
 
 
 /** @brief Rotate the drawing coordinate system by [a] radians about the vector described by [x,y,z] */
-int playerc_graphics3d_rotate( playerc_graphics3d_t *device,
+PLAYERC_EXPORT int playerc_graphics3d_rotate( playerc_graphics3d_t *device,
 			       double a, double x, double y, double z );
 /** @} */
 
@@ -1745,41 +1763,41 @@ typedef struct
 } playerc_gripper_t;
 
 /** @brief Create a gripper device proxy. */
-playerc_gripper_t *playerc_gripper_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_gripper_t *playerc_gripper_create(playerc_client_t *client, int index);
 
 /** @brief Destroy a gripper device proxy. */
-void playerc_gripper_destroy(playerc_gripper_t *device);
+PLAYERC_EXPORT void playerc_gripper_destroy(playerc_gripper_t *device);
 
 /** @brief Subscribe to the gripper device */
-int playerc_gripper_subscribe(playerc_gripper_t *device, int access);
+PLAYERC_EXPORT int playerc_gripper_subscribe(playerc_gripper_t *device, int access);
 
 /** @brief Un-subscribe from the gripper device */
-int playerc_gripper_unsubscribe(playerc_gripper_t *device);
+PLAYERC_EXPORT int playerc_gripper_unsubscribe(playerc_gripper_t *device);
 
 /** @brief Command the gripper to open */
-int playerc_gripper_open_cmd(playerc_gripper_t *device);
+PLAYERC_EXPORT int playerc_gripper_open_cmd(playerc_gripper_t *device);
 
 /** @brief Command the gripper to close */
-int playerc_gripper_close_cmd(playerc_gripper_t *device);
+PLAYERC_EXPORT int playerc_gripper_close_cmd(playerc_gripper_t *device);
 
 /** @brief Command the gripper to stop */
-int playerc_gripper_stop_cmd(playerc_gripper_t *device);
+PLAYERC_EXPORT int playerc_gripper_stop_cmd(playerc_gripper_t *device);
 
 /** @brief Command the gripper to store */
-int playerc_gripper_store_cmd(playerc_gripper_t *device);
+PLAYERC_EXPORT int playerc_gripper_store_cmd(playerc_gripper_t *device);
 
 /** @brief Command the gripper to retrieve */
-int playerc_gripper_retrieve_cmd(playerc_gripper_t *device);
+PLAYERC_EXPORT int playerc_gripper_retrieve_cmd(playerc_gripper_t *device);
 
 /** @brief Print a human-readable version of the gripper state. If
     set, the string &lt;prefix&gt; is printed before the state string. */
-void playerc_gripper_printout(playerc_gripper_t *device, const char* prefix);
+PLAYERC_EXPORT void playerc_gripper_printout(playerc_gripper_t *device, const char* prefix);
 
 /** @brief Get the gripper geometry.
 
 This writes the result into the proxy rather than returning it to the
 caller. */
-int playerc_gripper_get_geom(playerc_gripper_t *device);
+PLAYERC_EXPORT int playerc_gripper_get_geom(playerc_gripper_t *device);
 
 /** @} */
 /**************************************************************************/
@@ -1812,16 +1830,16 @@ typedef struct
 
 
 /** @brief Create a health proxy. */
-playerc_health_t *playerc_health_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_health_t *playerc_health_create(playerc_client_t *client, int index);
 
 /** @brief Destroy a health proxy. */
-void playerc_health_destroy(playerc_health_t *device);
+PLAYERC_EXPORT void playerc_health_destroy(playerc_health_t *device);
 
 /** @brief Subscribe to the health device. */
-int playerc_health_subscribe(playerc_health_t *device, int access);
+PLAYERC_EXPORT int playerc_health_subscribe(playerc_health_t *device, int access);
 
 /** @brief Un-subscribe from the health device. */
-int playerc_health_unsubscribe(playerc_health_t *device);
+PLAYERC_EXPORT int playerc_health_unsubscribe(playerc_health_t *device);
 
 
 /** @} */
@@ -1854,16 +1872,16 @@ typedef struct
 
 
 /** @brief Create a ir proxy. */
-playerc_ir_t *playerc_ir_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_ir_t *playerc_ir_create(playerc_client_t *client, int index);
 
 /** @brief Destroy a ir proxy. */
-void playerc_ir_destroy(playerc_ir_t *device);
+PLAYERC_EXPORT void playerc_ir_destroy(playerc_ir_t *device);
 
 /** @brief Subscribe to the ir device. */
-int playerc_ir_subscribe(playerc_ir_t *device, int access);
+PLAYERC_EXPORT int playerc_ir_subscribe(playerc_ir_t *device, int access);
 
 /** @brief Un-subscribe from the ir device. */
-int playerc_ir_unsubscribe(playerc_ir_t *device);
+PLAYERC_EXPORT int playerc_ir_unsubscribe(playerc_ir_t *device);
 
 /** @brief Get the ir geometry.
 
@@ -1871,7 +1889,7 @@ This writes the result into the proxy rather than returning it to the
 caller.
 
 */
-int playerc_ir_get_geom(playerc_ir_t *device);
+PLAYERC_EXPORT int playerc_ir_get_geom(playerc_ir_t *device);
 
 
 /** @} */
@@ -1904,16 +1922,16 @@ typedef struct
 
 
 /** @brief Create a joystick proxy. */
-playerc_joystick_t *playerc_joystick_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_joystick_t *playerc_joystick_create(playerc_client_t *client, int index);
 
 /** @brief Destroy a joystick proxy. */
-void playerc_joystick_destroy(playerc_joystick_t *device);
+PLAYERC_EXPORT void playerc_joystick_destroy(playerc_joystick_t *device);
 
 /** @brief Subscribe to the joystick device. */
-int playerc_joystick_subscribe(playerc_joystick_t *device, int access);
+PLAYERC_EXPORT int playerc_joystick_subscribe(playerc_joystick_t *device, int access);
 
 /** @brief Un-subscribe from the joystick device. */
-int playerc_joystick_unsubscribe(playerc_joystick_t *device);
+PLAYERC_EXPORT int playerc_joystick_unsubscribe(playerc_joystick_t *device);
 
 /** @} */
 /**************************************************************************/
@@ -2001,16 +2019,16 @@ typedef struct
 
 
 /** @brief Create a laser proxy. */
-playerc_laser_t *playerc_laser_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_laser_t *playerc_laser_create(playerc_client_t *client, int index);
 
 /** @brief Destroy a laser proxy. */
-void playerc_laser_destroy(playerc_laser_t *device);
+PLAYERC_EXPORT void playerc_laser_destroy(playerc_laser_t *device);
 
 /** @brief Subscribe to the laser device. */
-int playerc_laser_subscribe(playerc_laser_t *device, int access);
+PLAYERC_EXPORT int playerc_laser_subscribe(playerc_laser_t *device, int access);
 
 /** @brief Un-subscribe from the laser device. */
-int playerc_laser_unsubscribe(playerc_laser_t *device);
+PLAYERC_EXPORT int playerc_laser_unsubscribe(playerc_laser_t *device);
 
 /** @brief Configure the laser.
 
@@ -2034,7 +2052,7 @@ underlyling driver.
 playerc_error_str() to get a descriptive error message.
 
 */
-int playerc_laser_set_config(playerc_laser_t *device,
+PLAYERC_EXPORT int playerc_laser_set_config(playerc_laser_t *device,
                              double min_angle, double max_angle,
                              double resolution,
                              double range_res,
@@ -2063,7 +2081,7 @@ underlyling driver.
 playerc_error_str() to get a descriptive error message.
 
 */
-int playerc_laser_get_config(playerc_laser_t *device,
+PLAYERC_EXPORT int playerc_laser_get_config(playerc_laser_t *device,
                              double *min_angle,
                              double *max_angle,
                              double *resolution,
@@ -2077,17 +2095,17 @@ This writes the result into the proxy rather than returning it to the
 caller.
 
 */
-int playerc_laser_get_geom(playerc_laser_t *device);
+PLAYERC_EXPORT int playerc_laser_get_geom(playerc_laser_t *device);
 
 /** @brief Get the laser IDentification information.
 
 This writes the result into the proxy rather than returning it to the
 caller. */
-int playerc_laser_get_id (playerc_laser_t *device);
+PLAYERC_EXPORT int playerc_laser_get_id (playerc_laser_t *device);
 
 /** @brief Print a human-readable summary of the laser state on
     stdout. */
-void playerc_laser_printout( playerc_laser_t * device,
+PLAYERC_EXPORT void playerc_laser_printout( playerc_laser_t * device,
         const char* prefix );
 
 /** @} */
@@ -2115,48 +2133,48 @@ typedef struct
 } playerc_limb_t;
 
 /** @brief Create a limb proxy. */
-playerc_limb_t *playerc_limb_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_limb_t *playerc_limb_create(playerc_client_t *client, int index);
 
 /** @brief Destroy a limb proxy. */
-void playerc_limb_destroy(playerc_limb_t *device);
+PLAYERC_EXPORT void playerc_limb_destroy(playerc_limb_t *device);
 
 /** @brief Subscribe to the limb device. */
-int playerc_limb_subscribe(playerc_limb_t *device, int access);
+PLAYERC_EXPORT int playerc_limb_subscribe(playerc_limb_t *device, int access);
 
 /** @brief Un-subscribe from the limb device. */
-int playerc_limb_unsubscribe(playerc_limb_t *device);
+PLAYERC_EXPORT int playerc_limb_unsubscribe(playerc_limb_t *device);
 
 /** @brief Get the limb geometry.  The writes the result into the proxy
     rather than returning it to the caller. */
-int playerc_limb_get_geom(playerc_limb_t *device);
+PLAYERC_EXPORT int playerc_limb_get_geom(playerc_limb_t *device);
 
 /** @brief Command the end effector to move home. */
-int playerc_limb_home_cmd(playerc_limb_t *device);
+PLAYERC_EXPORT int playerc_limb_home_cmd(playerc_limb_t *device);
 
 /** @brief Command the end effector to stop immediatly. */
-int playerc_limb_stop_cmd(playerc_limb_t *device);
+PLAYERC_EXPORT int playerc_limb_stop_cmd(playerc_limb_t *device);
 
 /** @brief Command the end effector to move to a specified pose. */
-int playerc_limb_setpose_cmd(playerc_limb_t *device, float pX, float pY, float pZ, float aX, float aY, float aZ, float oX, float oY, float oZ);
+PLAYERC_EXPORT int playerc_limb_setpose_cmd(playerc_limb_t *device, float pX, float pY, float pZ, float aX, float aY, float aZ, float oX, float oY, float oZ);
 
 /** @brief Command the end effector to move to a specified position
 (ignoring approach and orientation vectors). */
-int playerc_limb_setposition_cmd(playerc_limb_t *device, float pX, float pY, float pZ);
+PLAYERC_EXPORT int playerc_limb_setposition_cmd(playerc_limb_t *device, float pX, float pY, float pZ);
 
 /** @brief Command the end effector to move along the provided vector from
 its current position for the provided distance. */
-int playerc_limb_vecmove_cmd(playerc_limb_t *device, float x, float y, float z, float length);
+PLAYERC_EXPORT int playerc_limb_vecmove_cmd(playerc_limb_t *device, float x, float y, float z, float length);
 
 /** @brief Turn the power to the limb on or off. Be careful
 when turning power on that the limb is not obstructed from its home
 position in case it moves to it (common behaviour). */
-int playerc_limb_power(playerc_limb_t *device, uint32_t enable);
+PLAYERC_EXPORT int playerc_limb_power(playerc_limb_t *device, uint32_t enable);
 
 /** @brief Turn the brakes of all actuators in the limb that have them on or off. */
-int playerc_limb_brakes(playerc_limb_t *device, uint32_t enable);
+PLAYERC_EXPORT int playerc_limb_brakes(playerc_limb_t *device, uint32_t enable);
 
 /** @brief Set the speed of the end effector (m/s) for all subsequent movement commands. */
-int playerc_limb_speed_config(playerc_limb_t *device, float speed);
+PLAYERC_EXPORT int playerc_limb_speed_config(playerc_limb_t *device, float speed);
 
 /** @} */
 /**************************************************************************/
@@ -2223,23 +2241,23 @@ typedef struct
 
 
 /** @brief Create a localize proxy. */
-playerc_localize_t *playerc_localize_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_localize_t *playerc_localize_create(playerc_client_t *client, int index);
 
 /** @brief Destroy a localize proxy. */
-void playerc_localize_destroy(playerc_localize_t *device);
+PLAYERC_EXPORT void playerc_localize_destroy(playerc_localize_t *device);
 
 /** @brief Subscribe to the localize device. */
-int playerc_localize_subscribe(playerc_localize_t *device, int access);
+PLAYERC_EXPORT int playerc_localize_subscribe(playerc_localize_t *device, int access);
 
 /** @brief Un-subscribe from the localize device. */
-int playerc_localize_unsubscribe(playerc_localize_t *device);
+PLAYERC_EXPORT int playerc_localize_unsubscribe(playerc_localize_t *device);
 
 /** @brief Set the the robot pose (mean and covariance). */
-int playerc_localize_set_pose(playerc_localize_t *device, double pose[3], double cov[3]);
+PLAYERC_EXPORT int playerc_localize_set_pose(playerc_localize_t *device, double pose[3], double cov[3]);
 
 /** @brief Request the particle set.  Caller must supply sufficient storage for
    the result. */
-int playerc_localize_get_particles(playerc_localize_t *device);
+PLAYERC_EXPORT int playerc_localize_get_particles(playerc_localize_t *device);
 
 /** @} */
 /**************************************************************************/
@@ -2271,35 +2289,35 @@ typedef struct
 
 
 /** @brief Create a log proxy. */
-playerc_log_t *playerc_log_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_log_t *playerc_log_create(playerc_client_t *client, int index);
 
 /** @brief Destroy a log proxy. */
-void playerc_log_destroy(playerc_log_t *device);
+PLAYERC_EXPORT void playerc_log_destroy(playerc_log_t *device);
 
 /** @brief Subscribe to the log device. */
-int playerc_log_subscribe(playerc_log_t *device, int access);
+PLAYERC_EXPORT int playerc_log_subscribe(playerc_log_t *device, int access);
 
 /** @brief Un-subscribe from the log device. */
-int playerc_log_unsubscribe(playerc_log_t *device);
+PLAYERC_EXPORT int playerc_log_unsubscribe(playerc_log_t *device);
 
 /** @brief Start/stop logging */
-int playerc_log_set_write_state(playerc_log_t* device, int state);
+PLAYERC_EXPORT int playerc_log_set_write_state(playerc_log_t* device, int state);
 
 /** @brief Start/stop playback */
-int playerc_log_set_read_state(playerc_log_t* device, int state);
+PLAYERC_EXPORT int playerc_log_set_read_state(playerc_log_t* device, int state);
 
 /** @brief Rewind playback */
-int playerc_log_set_read_rewind(playerc_log_t* device);
+PLAYERC_EXPORT int playerc_log_set_read_rewind(playerc_log_t* device);
 
 /** @brief Get logging/playback state.
 
 The result is written into the proxy.
 
 */
-int playerc_log_get_state(playerc_log_t* device);
+PLAYERC_EXPORT int playerc_log_get_state(playerc_log_t* device);
 
 /** @brief Change name of log file to write to. */
-int playerc_log_set_filename(playerc_log_t* device, const char* fname);
+PLAYERC_EXPORT int playerc_log_set_filename(playerc_log_t* device, const char* fname);
 
 
 /** @} */
@@ -2344,22 +2362,22 @@ typedef struct
 #define PLAYERC_MAP_INDEX(dev, i, j) ((dev->width) * (j) + (i))
 
 /** @brief Create a map proxy. */
-playerc_map_t *playerc_map_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_map_t *playerc_map_create(playerc_client_t *client, int index);
 
 /** @brief Destroy a map proxy. */
-void playerc_map_destroy(playerc_map_t *device);
+PLAYERC_EXPORT void playerc_map_destroy(playerc_map_t *device);
 
 /** @brief Subscribe to the map device. */
-int playerc_map_subscribe(playerc_map_t *device, int access);
+PLAYERC_EXPORT int playerc_map_subscribe(playerc_map_t *device, int access);
 
 /** @brief Un-subscribe from the map device. */
-int playerc_map_unsubscribe(playerc_map_t *device);
+PLAYERC_EXPORT int playerc_map_unsubscribe(playerc_map_t *device);
 
 /** @brief Get the map, which is stored in the proxy. */
-int playerc_map_get_map(playerc_map_t* device);
+PLAYERC_EXPORT int playerc_map_get_map(playerc_map_t* device);
 
 /** @brief Get the vector map, which is stored in the proxy. */
-int playerc_map_get_vector(playerc_map_t* device);
+PLAYERC_EXPORT int playerc_map_get_vector(playerc_map_t* device);
 
 /** @} */
 /**************************************************************************/
@@ -2392,32 +2410,32 @@ typedef struct
 } playerc_vectormap_t;
 
 /** @brief Create a vectormap proxy. */
-playerc_vectormap_t *playerc_vectormap_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_vectormap_t *playerc_vectormap_create(playerc_client_t *client, int index);
 
 /** @brief Destroy a vectormap proxy. */
-void playerc_vectormap_destroy(playerc_vectormap_t *device);
+PLAYERC_EXPORT void playerc_vectormap_destroy(playerc_vectormap_t *device);
 
 /** @brief Subscribe to the vectormap device. */
-int playerc_vectormap_subscribe(playerc_vectormap_t *device, int access);
+PLAYERC_EXPORT int playerc_vectormap_subscribe(playerc_vectormap_t *device, int access);
 
 /** @brief Un-subscribe from the vectormap device. */
-int playerc_vectormap_unsubscribe(playerc_vectormap_t *device);
+PLAYERC_EXPORT int playerc_vectormap_unsubscribe(playerc_vectormap_t *device);
 
 /** @brief Get the vectormap metadata, which is stored in the proxy. */
-int playerc_vectormap_get_map_info(playerc_vectormap_t* device);
+PLAYERC_EXPORT int playerc_vectormap_get_map_info(playerc_vectormap_t* device);
 
 /** @brief Get the layer data by index. Must only be used after a successfull call to playerc_vectormap_get_map_info. */
-int playerc_vectormap_get_layer_data(playerc_vectormap_t *device, unsigned layer_index);
+PLAYERC_EXPORT int playerc_vectormap_get_layer_data(playerc_vectormap_t *device, unsigned layer_index);
 
 /** @brief Write layer data. */
-int playerc_vectormap_write_layer(playerc_vectormap_t *device, const player_vectormap_layer_data_t * data);
+PLAYERC_EXPORT int playerc_vectormap_write_layer(playerc_vectormap_t *device, const player_vectormap_layer_data_t * data);
 
 /** @brief Clean up the dynamically allocated memory for the vectormap. */
-void playerc_vectormap_cleanup(playerc_vectormap_t *device);
+PLAYERC_EXPORT void playerc_vectormap_cleanup(playerc_vectormap_t *device);
 
 /** @brief Get an individual feature as a geos geometry. Must only be used after a successful call to playerc_vectormap_get_layer_data.
  *  The geos geometry is owned by the proxy, duplicate it if it is needed after the next call to get_feature_data. Non-reentrant. */
-GEOSGeom playerc_vectormap_get_feature_data(playerc_vectormap_t *device, unsigned layer_index, unsigned feature_index);
+PLAYERC_EXPORT GEOSGeom playerc_vectormap_get_feature_data(playerc_vectormap_t *device, unsigned layer_index, unsigned feature_index);
 
 /** @} */
 
@@ -2445,19 +2463,19 @@ typedef struct
 } playerc_opaque_t;
 
 /** @brief Create an opaque device proxy. */
-playerc_opaque_t *playerc_opaque_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_opaque_t *playerc_opaque_create(playerc_client_t *client, int index);
 
 /** @brief Destroy an opaque device proxy. */
-void playerc_opaque_destroy(playerc_opaque_t *device);
+PLAYERC_EXPORT void playerc_opaque_destroy(playerc_opaque_t *device);
 
 /** @brief Subscribe to the opaque device */
-int playerc_opaque_subscribe(playerc_opaque_t *device, int access);
+PLAYERC_EXPORT int playerc_opaque_subscribe(playerc_opaque_t *device, int access);
 
 /** @brief Un-subscribe from the opaque device */
-int playerc_opaque_unsubscribe(playerc_opaque_t *device);
+PLAYERC_EXPORT int playerc_opaque_unsubscribe(playerc_opaque_t *device);
 
 /** @brief Send a generic command */
-int playerc_opaque_cmd(playerc_opaque_t *device, player_opaque_data_t *data);
+PLAYERC_EXPORT int playerc_opaque_cmd(playerc_opaque_t *device, player_opaque_data_t *data);
 
 /** @brief Send a generic request
  *
@@ -2465,7 +2483,7 @@ int playerc_opaque_cmd(playerc_opaque_t *device, player_opaque_data_t *data);
  * and its pointer stored in reply. The caller is responsible for freeing this memory
  *
  * If an error is returned no memory will have been allocated*/
-int playerc_opaque_req(playerc_opaque_t *device, player_opaque_data_t *request, player_opaque_data_t **reply);
+PLAYERC_EXPORT int playerc_opaque_req(playerc_opaque_t *device, player_opaque_data_t *request, player_opaque_data_t **reply);
 
 /** @} */
 /**************************************************************************/
@@ -2516,19 +2534,19 @@ typedef struct
 } playerc_planner_t;
 
 /** @brief Create a planner device proxy. */
-playerc_planner_t *playerc_planner_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_planner_t *playerc_planner_create(playerc_client_t *client, int index);
 
 /** @brief Destroy a planner device proxy. */
-void playerc_planner_destroy(playerc_planner_t *device);
+PLAYERC_EXPORT void playerc_planner_destroy(playerc_planner_t *device);
 
 /** @brief Subscribe to the planner device */
-int playerc_planner_subscribe(playerc_planner_t *device, int access);
+PLAYERC_EXPORT int playerc_planner_subscribe(playerc_planner_t *device, int access);
 
 /** @brief Un-subscribe from the planner device */
-int playerc_planner_unsubscribe(playerc_planner_t *device);
+PLAYERC_EXPORT int playerc_planner_unsubscribe(playerc_planner_t *device);
 
 /** @brief Set the goal pose (gx, gy, ga) */
-int playerc_planner_set_cmd_pose(playerc_planner_t *device,
+PLAYERC_EXPORT int playerc_planner_set_cmd_pose(playerc_planner_t *device,
                                   double gx, double gy, double ga);
 
 /** @brief Get the list of waypoints.
@@ -2537,14 +2555,14 @@ Writes the result into the proxy rather than returning it to the
 caller.
 
 */
-int playerc_planner_get_waypoints(playerc_planner_t *device);
+PLAYERC_EXPORT int playerc_planner_get_waypoints(playerc_planner_t *device);
 
 /** @brief Enable / disable the robot's motion
 
 Set state to 1 to enable, 0 to disable.
 
 */
-int playerc_planner_enable(playerc_planner_t *device, int state);
+PLAYERC_EXPORT int playerc_planner_enable(playerc_planner_t *device, int state);
 
 /** @} */
 /**************************************************************************/
@@ -2596,44 +2614,44 @@ typedef struct
 } playerc_position1d_t;
 
 /** Create a position1d device proxy. */
-playerc_position1d_t *playerc_position1d_create(playerc_client_t *client,
+PLAYERC_EXPORT playerc_position1d_t *playerc_position1d_create(playerc_client_t *client,
                                                 int index);
 
 /** Destroy a position1d device proxy. */
-void playerc_position1d_destroy(playerc_position1d_t *device);
+PLAYERC_EXPORT void playerc_position1d_destroy(playerc_position1d_t *device);
 
 /** Subscribe to the position1d device */
-int playerc_position1d_subscribe(playerc_position1d_t *device, int access);
+PLAYERC_EXPORT int playerc_position1d_subscribe(playerc_position1d_t *device, int access);
 
 /** Un-subscribe from the position1d device */
-int playerc_position1d_unsubscribe(playerc_position1d_t *device);
+PLAYERC_EXPORT int playerc_position1d_unsubscribe(playerc_position1d_t *device);
 
 /** Enable/disable the motors */
-int playerc_position1d_enable(playerc_position1d_t *device, int enable);
+PLAYERC_EXPORT int playerc_position1d_enable(playerc_position1d_t *device, int enable);
 
 /** Get the position1d geometry.  The writes the result into the proxy
     rather than returning it to the caller. */
-int playerc_position1d_get_geom(playerc_position1d_t *device);
+PLAYERC_EXPORT int playerc_position1d_get_geom(playerc_position1d_t *device);
 
 /** Set the target speed. */
-int playerc_position1d_set_cmd_vel(playerc_position1d_t *device,
+PLAYERC_EXPORT int playerc_position1d_set_cmd_vel(playerc_position1d_t *device,
                                    double vel, int state);
 
 /** @brief Set the target position.
     -@arg pos The position to move to
  */
-int playerc_position1d_set_cmd_pos(playerc_position1d_t *device,
+PLAYERC_EXPORT int playerc_position1d_set_cmd_pos(playerc_position1d_t *device,
                                    double pos, int state);
 
 /** @brief Set the target position with movement velocity
     -@arg pos The position to move to
     -@arg vel The speed at which to move to the position
  */
-int playerc_position1d_set_cmd_pos_with_vel(playerc_position1d_t *device,
+PLAYERC_EXPORT int playerc_position1d_set_cmd_pos_with_vel(playerc_position1d_t *device,
                                             double pos, double vel, int state);
 
 /** Set the odometry offset */
-int playerc_position1d_set_odom(playerc_position1d_t *device,
+PLAYERC_EXPORT int playerc_position1d_set_odom(playerc_position1d_t *device,
                                 double odom);
 
 /** @} */
@@ -2677,49 +2695,49 @@ typedef struct
 } playerc_position2d_t;
 
 /** Create a position2d device proxy. */
-playerc_position2d_t *playerc_position2d_create(playerc_client_t *client,
+PLAYERC_EXPORT playerc_position2d_t *playerc_position2d_create(playerc_client_t *client,
                                                 int index);
 
 /** Destroy a position2d device proxy. */
-void playerc_position2d_destroy(playerc_position2d_t *device);
+PLAYERC_EXPORT void playerc_position2d_destroy(playerc_position2d_t *device);
 
 /** Subscribe to the position2d device */
-int playerc_position2d_subscribe(playerc_position2d_t *device, int access);
+PLAYERC_EXPORT int playerc_position2d_subscribe(playerc_position2d_t *device, int access);
 
 /** Un-subscribe from the position2d device */
-int playerc_position2d_unsubscribe(playerc_position2d_t *device);
+PLAYERC_EXPORT int playerc_position2d_unsubscribe(playerc_position2d_t *device);
 
 /** Enable/disable the motors */
-int playerc_position2d_enable(playerc_position2d_t *device, int enable);
+PLAYERC_EXPORT int playerc_position2d_enable(playerc_position2d_t *device, int enable);
 
 /** Get the position2d geometry.  The writes the result into the proxy
     rather than returning it to the caller. */
-int playerc_position2d_get_geom(playerc_position2d_t *device);
+PLAYERC_EXPORT int playerc_position2d_get_geom(playerc_position2d_t *device);
 
 /** Set the target speed.  vx : forward speed (m/s).  vy : sideways
     speed (m/s); this field is used by omni-drive robots only.  va :
     rotational speed (rad/s).  All speeds are defined in the robot
     coordinate system. */
-int playerc_position2d_set_cmd_vel(playerc_position2d_t *device,
+PLAYERC_EXPORT int playerc_position2d_set_cmd_vel(playerc_position2d_t *device,
                                    double vx, double vy, double va, int state);
 
 /** Set the target pose with given motion vel */
-int playerc_position2d_set_cmd_pose_with_vel(playerc_position2d_t *device,
+PLAYERC_EXPORT int playerc_position2d_set_cmd_pose_with_vel(playerc_position2d_t *device,
                                              player_pose2d_t pos,
                                              player_pose2d_t vel,
                                              int state);
 
 /** Set the target pose (gx, gy, ga) is the target pose in the
     odometric coordinate system. */
-int playerc_position2d_set_cmd_pose(playerc_position2d_t *device,
+PLAYERC_EXPORT int playerc_position2d_set_cmd_pose(playerc_position2d_t *device,
                                     double gx, double gy, double ga, int state);
 
 /** Set the target cmd for car like position */
-int playerc_position2d_set_cmd_car(playerc_position2d_t *device,
+PLAYERC_EXPORT int playerc_position2d_set_cmd_car(playerc_position2d_t *device,
                                     double vx, double a);
 
 /** Set the odometry offset */
-int playerc_position2d_set_odom(playerc_position2d_t *device,
+PLAYERC_EXPORT int playerc_position2d_set_odom(playerc_position2d_t *device,
                                 double ox, double oy, double oa);
 
 /** @} */
@@ -2770,64 +2788,64 @@ typedef struct
 
 
 /** Create a position3d device proxy. */
-playerc_position3d_t *playerc_position3d_create(playerc_client_t *client,
+PLAYERC_EXPORT playerc_position3d_t *playerc_position3d_create(playerc_client_t *client,
                                                 int index);
 
 /** Destroy a position3d device proxy. */
-void playerc_position3d_destroy(playerc_position3d_t *device);
+PLAYERC_EXPORT void playerc_position3d_destroy(playerc_position3d_t *device);
 
 /** Subscribe to the position3d device */
-int playerc_position3d_subscribe(playerc_position3d_t *device, int access);
+PLAYERC_EXPORT int playerc_position3d_subscribe(playerc_position3d_t *device, int access);
 
 /** Un-subscribe from the position3d device */
-int playerc_position3d_unsubscribe(playerc_position3d_t *device);
+PLAYERC_EXPORT int playerc_position3d_unsubscribe(playerc_position3d_t *device);
 
 /** Enable/disable the motors */
-int playerc_position3d_enable(playerc_position3d_t *device, int enable);
+PLAYERC_EXPORT int playerc_position3d_enable(playerc_position3d_t *device, int enable);
 
 /** Get the position3d geometry.  The writes the result into the proxy
     rather than returning it to the caller. */
-int playerc_position3d_get_geom(playerc_position3d_t *device);
+PLAYERC_EXPORT int playerc_position3d_get_geom(playerc_position3d_t *device);
 
 /** Set the target speed.  vx : forward speed (m/s).  vy : sideways
     speed (m/s); vz : vertical speed (m/s). vr : roll speed (rad/s) .
     vp : pitch speed (rad/s) . vt : theta speed (rad/s).
     All speeds are defined in the robot coordinate system. */
-int playerc_position3d_set_velocity(playerc_position3d_t *device,
+PLAYERC_EXPORT int playerc_position3d_set_velocity(playerc_position3d_t *device,
                                     double vx, double vy, double vz,
                                     double vr, double vp, double vt,
                                     int state);
 
 /** For compatibility with old position3d interface */
-int playerc_position3d_set_speed(playerc_position3d_t *device,
+PLAYERC_EXPORT int playerc_position3d_set_speed(playerc_position3d_t *device,
                                  double vx, double vy, double vz, int state);
 
 /** Set the target pose (gx, gy, ga, gr, gp, gt) is the target pose in the
     odometric coordinate system. */
-int playerc_position3d_set_pose(playerc_position3d_t *device,
+PLAYERC_EXPORT int playerc_position3d_set_pose(playerc_position3d_t *device,
                                 double gx, double gy, double gz,
                                 double gr, double gp, double gt);
 
 
 /** Set the target pose (pos,vel) define desired position and motion speed */
-int playerc_position3d_set_pose_with_vel(playerc_position3d_t *device,
+PLAYERC_EXPORT int playerc_position3d_set_pose_with_vel(playerc_position3d_t *device,
                                          player_pose3d_t pos,
                                          player_pose3d_t vel);
 
 /** For compatibility with old position3d interface */
-int playerc_position3d_set_cmd_pose(playerc_position3d_t *device,
+PLAYERC_EXPORT int playerc_position3d_set_cmd_pose(playerc_position3d_t *device,
                                     double gx, double gy, double gz);
 
 /** Set the velocity mode. This is driver dependent. */
-int playerc_position3d_set_vel_mode(playerc_position3d_t *device, int mode);
+PLAYERC_EXPORT int playerc_position3d_set_vel_mode(playerc_position3d_t *device, int mode);
 
 /** Set the odometry offset */
-int playerc_position3d_set_odom(playerc_position3d_t *device,
+PLAYERC_EXPORT int playerc_position3d_set_odom(playerc_position3d_t *device,
                                 double ox, double oy, double oz,
                                 double oroll, double opitch, double oyaw);
 
 /** Reset the odometry offset */
-int playerc_position3d_reset_odom(playerc_position3d_t *device);
+PLAYERC_EXPORT int playerc_position3d_reset_odom(playerc_position3d_t *device);
 
 /** @} */
 /**************************************************************************/
@@ -2873,16 +2891,16 @@ typedef struct
 
 
 /** @brief Create a power device proxy. */
-playerc_power_t *playerc_power_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_power_t *playerc_power_create(playerc_client_t *client, int index);
 
 /** @brief Destroy a power device proxy. */
-void playerc_power_destroy(playerc_power_t *device);
+PLAYERC_EXPORT void playerc_power_destroy(playerc_power_t *device);
 
 /** @brief Subscribe to the power device. */
-int playerc_power_subscribe(playerc_power_t *device, int access);
+PLAYERC_EXPORT int playerc_power_subscribe(playerc_power_t *device, int access);
 
 /** @brief Un-subscribe from the power device. */
-int playerc_power_unsubscribe(playerc_power_t *device);
+PLAYERC_EXPORT int playerc_power_unsubscribe(playerc_power_t *device);
 
 
 /** @} */
@@ -2920,16 +2938,16 @@ typedef struct
 
 
 /** @brief Create a ptz proxy. */
-playerc_ptz_t *playerc_ptz_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_ptz_t *playerc_ptz_create(playerc_client_t *client, int index);
 
 /** @brief Destroy a ptz proxy. */
-void playerc_ptz_destroy(playerc_ptz_t *device);
+PLAYERC_EXPORT void playerc_ptz_destroy(playerc_ptz_t *device);
 
 /** @brief Subscribe to the ptz device. */
-int playerc_ptz_subscribe(playerc_ptz_t *device, int access);
+PLAYERC_EXPORT int playerc_ptz_subscribe(playerc_ptz_t *device, int access);
 
 /** @brief Un-subscribe from the ptz device. */
-int playerc_ptz_unsubscribe(playerc_ptz_t *device);
+PLAYERC_EXPORT int playerc_ptz_unsubscribe(playerc_ptz_t *device);
 
 /** @brief Set the pan, tilt and zoom values.
 
@@ -2939,14 +2957,14 @@ int playerc_ptz_unsubscribe(playerc_ptz_t *device);
 @param zoom Zoom value, in radians (corresponds to camera field of view).
 
 */
-int playerc_ptz_set(playerc_ptz_t *device, double pan, double tilt, double zoom);
+PLAYERC_EXPORT int playerc_ptz_set(playerc_ptz_t *device, double pan, double tilt, double zoom);
 
 /** @brief Query the pan and tilt status.
 
 @param device Pointer to proxy object.
 
 */
-int playerc_ptz_query_status(playerc_ptz_t *device);
+PLAYERC_EXPORT int playerc_ptz_query_status(playerc_ptz_t *device);
 
 /** @brief Set the pan, tilt and zoom values (and speed)
 
@@ -2958,7 +2976,7 @@ int playerc_ptz_query_status(playerc_ptz_t *device);
 @param tiltspeed Tilt speed, in radians/sec.
 
 */
-int playerc_ptz_set_ws(playerc_ptz_t *device, double pan, double tilt, double zoom,
+PLAYERC_EXPORT int playerc_ptz_set_ws(playerc_ptz_t *device, double pan, double tilt, double zoom,
                        double panspeed, double tiltspeed);
 
 /** @brief Change control mode (select velocity or position control)
@@ -2968,7 +2986,7 @@ int playerc_ptz_set_ws(playerc_ptz_t *device, double pan, double tilt, double zo
 
   @returns 0 on success, -1 on error, -2 on NACK.
 */
-int playerc_ptz_set_control_mode(playerc_ptz_t *device, int mode);
+PLAYERC_EXPORT int playerc_ptz_set_control_mode(playerc_ptz_t *device, int mode);
 
 /** @} */
 /**************************************************************************/
@@ -3040,32 +3058,32 @@ typedef struct
 } playerc_ranger_t;
 
 /** @brief Create a ranger proxy. */
-playerc_ranger_t *playerc_ranger_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_ranger_t *playerc_ranger_create(playerc_client_t *client, int index);
 
 /** @brief Destroy a ranger proxy. */
-void playerc_ranger_destroy(playerc_ranger_t *device);
+PLAYERC_EXPORT void playerc_ranger_destroy(playerc_ranger_t *device);
 
 /** @brief Subscribe to the ranger device. */
-int playerc_ranger_subscribe(playerc_ranger_t *device, int access);
+PLAYERC_EXPORT int playerc_ranger_subscribe(playerc_ranger_t *device, int access);
 
 /** @brief Un-subscribe from the ranger device. */
-int playerc_ranger_unsubscribe(playerc_ranger_t *device);
+PLAYERC_EXPORT int playerc_ranger_unsubscribe(playerc_ranger_t *device);
 
 /** @brief Get the ranger geometry.
 
 This writes the result into the proxy rather than returning it to the caller.
 */
-int playerc_ranger_get_geom(playerc_ranger_t *device);
+PLAYERC_EXPORT int playerc_ranger_get_geom(playerc_ranger_t *device);
 
 /** @brief Turn device power on or off.
 
 @param value Set to TRUE to turn power on, FALSE to turn power off. */
-int playerc_ranger_power_config(playerc_ranger_t *device, uint8_t value);
+PLAYERC_EXPORT int playerc_ranger_power_config(playerc_ranger_t *device, uint8_t value);
 
 /** @brief Turn intensity data on or off.
 
 @param value Set to TRUE to turn the data on, FALSE to turn the data off. */
-int playerc_ranger_intns_config(playerc_ranger_t *device, uint8_t value);
+PLAYERC_EXPORT int playerc_ranger_intns_config(playerc_ranger_t *device, uint8_t value);
 
 /** @brief Set the ranger device's configuration. Not all values may be used.
 
@@ -3075,7 +3093,7 @@ int playerc_ranger_intns_config(playerc_ranger_t *device, uint8_t value);
 @param max_range Maximum range [m].
 @param range_res Range resolution [m].
 @param frequency Scanning frequency [Hz]. */
-int playerc_ranger_set_config(playerc_ranger_t *device, double min_angle,
+PLAYERC_EXPORT int playerc_ranger_set_config(playerc_ranger_t *device, double min_angle,
                               double max_angle, double resolution,
                               double max_range, double range_res,
                               double frequency);
@@ -3088,7 +3106,7 @@ int playerc_ranger_set_config(playerc_ranger_t *device, double min_angle,
 @param max_range Maximum range [m].
 @param range_res Range resolution [m].
 @param frequency Scanning frequency [Hz]. */
-int playerc_ranger_get_config(playerc_ranger_t *device, double *min_angle,
+PLAYERC_EXPORT int playerc_ranger_get_config(playerc_ranger_t *device, double *min_angle,
                               double *max_angle, double *resolution,
                               double *max_range, double *range_res,
                               double *frequency);
@@ -3129,23 +3147,23 @@ typedef struct
 
 
 /** @brief Create a sonar proxy. */
-playerc_sonar_t *playerc_sonar_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_sonar_t *playerc_sonar_create(playerc_client_t *client, int index);
 
 /** @brief Destroy a sonar proxy. */
-void playerc_sonar_destroy(playerc_sonar_t *device);
+PLAYERC_EXPORT void playerc_sonar_destroy(playerc_sonar_t *device);
 
 /** @brief Subscribe to the sonar device. */
-int playerc_sonar_subscribe(playerc_sonar_t *device, int access);
+PLAYERC_EXPORT int playerc_sonar_subscribe(playerc_sonar_t *device, int access);
 
 /** @brief Un-subscribe from the sonar device. */
-int playerc_sonar_unsubscribe(playerc_sonar_t *device);
+PLAYERC_EXPORT int playerc_sonar_unsubscribe(playerc_sonar_t *device);
 
 /** @brief Get the sonar geometry.
 
 This writes the result into the proxy
 rather than returning it to the caller.
 */
-int playerc_sonar_get_geom(playerc_sonar_t *device);
+PLAYERC_EXPORT int playerc_sonar_get_geom(playerc_sonar_t *device);
 
 /** @} */
 /**************************************************************************/
@@ -3202,19 +3220,19 @@ typedef struct
 
 
 /** @brief Create a wifi proxy. */
-playerc_wifi_t *playerc_wifi_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_wifi_t *playerc_wifi_create(playerc_client_t *client, int index);
 
 /** @brief Destroy a wifi proxy. */
-void playerc_wifi_destroy(playerc_wifi_t *device);
+PLAYERC_EXPORT void playerc_wifi_destroy(playerc_wifi_t *device);
 
 /** @brief Subscribe to the wifi device. */
-int playerc_wifi_subscribe(playerc_wifi_t *device, int access);
+PLAYERC_EXPORT int playerc_wifi_subscribe(playerc_wifi_t *device, int access);
 
 /** @brief Un-subscribe from the wifi device. */
-int playerc_wifi_unsubscribe(playerc_wifi_t *device);
+PLAYERC_EXPORT int playerc_wifi_unsubscribe(playerc_wifi_t *device);
 
 /** @brief Get link state. */
-playerc_wifi_link_t *playerc_wifi_get_link(playerc_wifi_t *device, int link);
+PLAYERC_EXPORT playerc_wifi_link_t *playerc_wifi_get_link(playerc_wifi_t *device, int link);
 
 
 /** @} */
@@ -3241,44 +3259,44 @@ typedef struct
 
 
 /** @brief Create a new simulation proxy */
-playerc_simulation_t *playerc_simulation_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_simulation_t *playerc_simulation_create(playerc_client_t *client, int index);
 
 /** @brief Destroy a simulation proxy */
-void playerc_simulation_destroy(playerc_simulation_t *device);
+PLAYERC_EXPORT void playerc_simulation_destroy(playerc_simulation_t *device);
 
 /** @brief Subscribe to the simulation device */
-int playerc_simulation_subscribe(playerc_simulation_t *device, int access);
+PLAYERC_EXPORT int playerc_simulation_subscribe(playerc_simulation_t *device, int access);
 
 /** @brief Un-subscribe from the simulation device */
-int playerc_simulation_unsubscribe(playerc_simulation_t *device);
+PLAYERC_EXPORT int playerc_simulation_unsubscribe(playerc_simulation_t *device);
 
 /** @brief Set the 2D pose of a named simulation object */
-int playerc_simulation_set_pose2d(playerc_simulation_t *device, char* name,
+PLAYERC_EXPORT int playerc_simulation_set_pose2d(playerc_simulation_t *device, char* name,
                                   double gx, double gy, double ga);
 
 /** @brief Get the 2D pose of a named simulation object */
-int playerc_simulation_get_pose2d(playerc_simulation_t *device, char* identifier,
+PLAYERC_EXPORT int playerc_simulation_get_pose2d(playerc_simulation_t *device, char* identifier,
 				  double *x, double *y, double *a);
 
 /** @brief Set the 3D pose of a named simulation object */
-int playerc_simulation_set_pose3d(playerc_simulation_t *device, char* name,
+PLAYERC_EXPORT int playerc_simulation_set_pose3d(playerc_simulation_t *device, char* name,
 				  double gx, double gy, double gz,
 				  double groll, double gpitch, double gyaw);
 
 /** @brief Get the 3D pose of a named simulation object */
-int playerc_simulation_get_pose3d(playerc_simulation_t *device, char* identifier,
+PLAYERC_EXPORT int playerc_simulation_get_pose3d(playerc_simulation_t *device, char* identifier,
 				  double *x, double *y, double *z,
 				  double *roll, double *pitch, double *yaw, double *time);
 
 /** @brief Set a property value */
-int playerc_simulation_set_property(playerc_simulation_t *device,
+PLAYERC_EXPORT int playerc_simulation_set_property(playerc_simulation_t *device,
                                     char* name,
                                     char* property,
                                     void* value,
 				    size_t value_len);
 
 /** @brief Get a property value */
-int playerc_simulation_get_property(playerc_simulation_t *device,
+PLAYERC_EXPORT int playerc_simulation_get_property(playerc_simulation_t *device,
                                     char* name,
                                     char* property,
                                     void* value,
@@ -3305,19 +3323,19 @@ typedef struct
 
 
 /** Create a speech proxy. */
-playerc_speech_t *playerc_speech_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_speech_t *playerc_speech_create(playerc_client_t *client, int index);
 
 /** Destroy a speech proxy. */
-void playerc_speech_destroy(playerc_speech_t *device);
+PLAYERC_EXPORT void playerc_speech_destroy(playerc_speech_t *device);
 
 /** Subscribe to the speech device. */
-int playerc_speech_subscribe(playerc_speech_t *device, int access);
+PLAYERC_EXPORT int playerc_speech_subscribe(playerc_speech_t *device, int access);
 
 /** Un-subscribe from the speech device. */
-int playerc_speech_unsubscribe(playerc_speech_t *device);
+PLAYERC_EXPORT int playerc_speech_unsubscribe(playerc_speech_t *device);
 
 /** Set the output for the speech device. */
-int playerc_speech_say (playerc_speech_t *device, char *);
+PLAYERC_EXPORT int playerc_speech_say (playerc_speech_t *device, char *);
 
 
 /** @} */
@@ -3347,16 +3365,16 @@ typedef struct
 
 
 /** Create a speech recognition proxy. */
-playerc_speechrecognition_t *playerc_speechrecognition_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_speechrecognition_t *playerc_speechrecognition_create(playerc_client_t *client, int index);
 
 /** Destroy a speech recognition proxy. */
-void playerc_speechrecognition_destroy(playerc_speechrecognition_t *device);
+PLAYERC_EXPORT void playerc_speechrecognition_destroy(playerc_speechrecognition_t *device);
 
 /** Subscribe to the speech recognition device. */
-int playerc_speechrecognition_subscribe(playerc_speechrecognition_t *device, int access);
+PLAYERC_EXPORT int playerc_speechrecognition_subscribe(playerc_speechrecognition_t *device, int access);
 
 /** Un-subscribe from the speech recognition device */
-int playerc_speechrecognition_unsubscribe(playerc_speechrecognition_t *device);
+PLAYERC_EXPORT int playerc_speechrecognition_unsubscribe(playerc_speechrecognition_t *device);
 
 /** @} */
 /***************************************************************************/
@@ -3396,16 +3414,16 @@ typedef struct
 
 
 /** @brief Create a rfid proxy. */
-playerc_rfid_t *playerc_rfid_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_rfid_t *playerc_rfid_create(playerc_client_t *client, int index);
 
 /** @brief Destroy a rfid proxy. */
-void playerc_rfid_destroy(playerc_rfid_t *device);
+PLAYERC_EXPORT void playerc_rfid_destroy(playerc_rfid_t *device);
 
 /** @brief Subscribe to the rfid device. */
-int playerc_rfid_subscribe(playerc_rfid_t *device, int access);
+PLAYERC_EXPORT int playerc_rfid_subscribe(playerc_rfid_t *device, int access);
 
 /** @brief Un-subscribe from the rfid device. */
-int playerc_rfid_unsubscribe(playerc_rfid_t *device);
+PLAYERC_EXPORT int playerc_rfid_unsubscribe(playerc_rfid_t *device);
 
 /** @} */
 /***************************************************************************/
@@ -3437,16 +3455,16 @@ typedef struct
 
 
 /** @brief Create a pointcloud3d proxy. */
-playerc_pointcloud3d_t *playerc_pointcloud3d_create (playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_pointcloud3d_t *playerc_pointcloud3d_create (playerc_client_t *client, int index);
 
 /** @brief Destroy a pointcloud3d proxy. */
-void playerc_pointcloud3d_destroy (playerc_pointcloud3d_t *device);
+PLAYERC_EXPORT void playerc_pointcloud3d_destroy (playerc_pointcloud3d_t *device);
 
 /** @brief Subscribe to the pointcloud3d device. */
-int playerc_pointcloud3d_subscribe (playerc_pointcloud3d_t *device, int access);
+PLAYERC_EXPORT int playerc_pointcloud3d_subscribe (playerc_pointcloud3d_t *device, int access);
 
 /** @brief Un-subscribe from the pointcloud3d device. */
-int playerc_pointcloud3d_unsubscribe (playerc_pointcloud3d_t *device);
+PLAYERC_EXPORT int playerc_pointcloud3d_unsubscribe (playerc_pointcloud3d_t *device);
 
 /** @} */
 /***************************************************************************/
@@ -3484,16 +3502,16 @@ typedef struct
 
 
 /** @brief Create a stereo proxy. */
-playerc_stereo_t *playerc_stereo_create (playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_stereo_t *playerc_stereo_create (playerc_client_t *client, int index);
 
 /** @brief Destroy a stereo proxy. */
-void playerc_stereo_destroy (playerc_stereo_t *device);
+PLAYERC_EXPORT void playerc_stereo_destroy (playerc_stereo_t *device);
 
 /** @brief Subscribe to the stereo device. */
-int playerc_stereo_subscribe (playerc_stereo_t *device, int access);
+PLAYERC_EXPORT int playerc_stereo_subscribe (playerc_stereo_t *device, int access);
 
 /** @brief Un-subscribe from the stereo device. */
-int playerc_stereo_unsubscribe (playerc_stereo_t *device);
+PLAYERC_EXPORT int playerc_stereo_unsubscribe (playerc_stereo_t *device);
 
 /** @} */
 /***************************************************************************/
@@ -3524,22 +3542,22 @@ typedef struct
 } playerc_imu_t;
 
 /** @brief Create a imu proxy. */
-playerc_imu_t *playerc_imu_create (playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_imu_t *playerc_imu_create (playerc_client_t *client, int index);
 
 /** @brief Destroy a imu proxy. */
-void playerc_imu_destroy (playerc_imu_t *device);
+PLAYERC_EXPORT void playerc_imu_destroy (playerc_imu_t *device);
 
 /** @brief Subscribe to the imu device. */
-int playerc_imu_subscribe (playerc_imu_t *device, int access);
+PLAYERC_EXPORT int playerc_imu_subscribe (playerc_imu_t *device, int access);
 
 /** @brief Un-subscribe from the imu device. */
-int playerc_imu_unsubscribe (playerc_imu_t *device);
+PLAYERC_EXPORT int playerc_imu_unsubscribe (playerc_imu_t *device);
 
 /** Change the data type to one of the predefined data structures. */
-int playerc_imu_datatype (playerc_imu_t *device, int value);
+PLAYERC_EXPORT int playerc_imu_datatype (playerc_imu_t *device, int value);
 
 /**  Reset orientation. */
-int playerc_imu_reset_orientation (playerc_imu_t *device, int value);
+PLAYERC_EXPORT int playerc_imu_reset_orientation (playerc_imu_t *device, int value);
 
 /** @} */
 /***************************************************************************/
@@ -3574,30 +3592,30 @@ typedef struct
 
 
 /** @brief Create a wsn proxy. */
-playerc_wsn_t *playerc_wsn_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_wsn_t *playerc_wsn_create(playerc_client_t *client, int index);
 
 /** @brief Destroy a wsn proxy. */
-void playerc_wsn_destroy(playerc_wsn_t *device);
+PLAYERC_EXPORT void playerc_wsn_destroy(playerc_wsn_t *device);
 
 /** @brief Subscribe to the wsn device. */
-int playerc_wsn_subscribe(playerc_wsn_t *device, int access);
+PLAYERC_EXPORT int playerc_wsn_subscribe(playerc_wsn_t *device, int access);
 
 /** @brief Un-subscribe from the wsn device. */
-int playerc_wsn_unsubscribe(playerc_wsn_t *device);
+PLAYERC_EXPORT int playerc_wsn_unsubscribe(playerc_wsn_t *device);
 
 /** Set the device state. */
-int playerc_wsn_set_devstate(playerc_wsn_t *device, int node_id,
+PLAYERC_EXPORT int playerc_wsn_set_devstate(playerc_wsn_t *device, int node_id,
                              int group_id, int devnr, int state);
 
 /** Put the node in sleep mode (0) or wake it up (1). */
-int playerc_wsn_power(playerc_wsn_t *device, int node_id, int group_id,
+PLAYERC_EXPORT int playerc_wsn_power(playerc_wsn_t *device, int node_id, int group_id,
                       int value);
 
 /** Change the data type to RAW or converted engineering units. */
-int playerc_wsn_datatype(playerc_wsn_t *device, int value);
+PLAYERC_EXPORT int playerc_wsn_datatype(playerc_wsn_t *device, int value);
 
 /** Change data delivery frequency. */
-int playerc_wsn_datafreq(playerc_wsn_t *device, int node_id, int group_id,
+PLAYERC_EXPORT int playerc_wsn_datafreq(playerc_wsn_t *device, int node_id, int group_id,
                          double frequency);
 
 /** @} */

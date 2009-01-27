@@ -40,11 +40,23 @@
 #ifndef __PROPERTY_H
 #define __PROPERTY_H
 
+#if defined (WIN32)
+  #if defined (PLAYER_STATIC)
+    #define PLAYERCORE_EXPORT
+  #elif defined (playercore_EXPORTS)
+    #define PLAYERCORE_EXPORT    __declspec (dllexport)
+  #else
+    #define PLAYERCORE_EXPORT    __declspec (dllimport)
+  #endif
+#else
+  #define PLAYERCORE_EXPORT
+#endif
+
 class ConfigFile;
 class Driver;
 
 // Property base class
-class Property
+class PLAYERCORE_EXPORT Property
 {
 	public:
 		Property (void);
@@ -71,7 +83,7 @@ class Property
 ////////////////////////////////////////////////////////////////////////////////
 
 // Integer property class
-class IntProperty : public Property
+class PLAYERCORE_EXPORT IntProperty : public Property
 {
 	public:
 		IntProperty (const char *newKey, int newValue, bool readOnly);
@@ -99,7 +111,7 @@ class IntProperty : public Property
 ////////////////////////////////////////////////////////////////////////////////
 
 // Double property class
-class DoubleProperty : public Property
+class PLAYERCORE_EXPORT DoubleProperty : public Property
 {
 	public:
 		DoubleProperty (const char *newKey, double newValue, bool readOnly);
@@ -126,7 +138,7 @@ class DoubleProperty : public Property
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-class StringProperty : public Property
+class PLAYERCORE_EXPORT StringProperty : public Property
 {
 	public:
 		StringProperty (const char *newKey, const char *newValue, bool readOnly);
@@ -162,7 +174,7 @@ typedef struct PropertyNode
 } PropertyNode;
 
 // Property bag class: stores registered properties
-class PropertyBag
+class PLAYERCORE_EXPORT PropertyBag
 {
 	public:
 		PropertyBag (void);

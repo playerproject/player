@@ -9,7 +9,9 @@
 #ifndef MAP_H
 #define MAP_H
 
-#include <stdint.h>
+#if !defined (WIN32)
+  #include <stdint.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {

@@ -109,7 +109,6 @@ any index number. The driver changes the header accordingly.
 
 
 
-#include <unistd.h>
 #include <string.h>
 
 #include <libplayercore/playercore.h>
@@ -161,6 +160,8 @@ void passthrough_Register(DriverTable* table) {
 
 PassThrough::PassThrough(ConfigFile* cf, int section)
         : ThreadedDriver(cf, section),
+		// TODO: This will probably blow up on Windows because the "this"
+		// pointer is invalid until after the constructor completes (see C4355)
         RemoteHost("remote_host","",false,this,cf,section),
         RemotePort("remote_port",-1,false,this,cf,section),
         RemoteIndex("remote_index",-1,false,this,cf,section),

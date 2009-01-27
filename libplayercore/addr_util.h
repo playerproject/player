@@ -45,8 +45,20 @@ extern "C" {
 
 #include <playerconfig.h>
 
-void packedaddr_to_dottedip(char* dest, size_t len, uint32_t addr);
-int hostname_to_packedaddr(uint32_t* dest, const char* hostname);
+#if defined (WIN32)
+  #if defined (PLAYER_STATIC)
+    #define PLAYERUTILS_EXPORT
+  #elif defined (playerutils_EXPORTS)
+    #define PLAYERUTILS_EXPORT    __declspec (dllexport)
+  #else
+    #define PLAYERUTILS_EXPORT    __declspec (dllimport)
+  #endif
+#else
+  #define PLAYERUTILS_EXPORT
+#endif
+
+PLAYERUTILS_EXPORT void packedaddr_to_dottedip(char* dest, size_t len, uint32_t addr);
+PLAYERUTILS_EXPORT int hostname_to_packedaddr(uint32_t* dest, const char* hostname);
 
 #ifdef __cplusplus
 }

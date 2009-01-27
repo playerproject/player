@@ -1,6 +1,5 @@
 PLAYERDRIVER_OPTION (unicapimage build_unicapimage ON)
 
-#SET (UNICAP_DIR "/usr/src/unicap")
 SET (UNICAP_DIR "" CACHE STRING "Directory containing the UniCap headers and libraries")
 MARK_AS_ADVANCED (UNICAP_DIR)
 IF ("${UNICAP_DIR}" STREQUAL "")

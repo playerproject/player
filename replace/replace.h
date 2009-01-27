@@ -32,7 +32,12 @@
 extern "C" {
 #endif
 
-#if !HAVE_POLL
+#if !defined (PATH_MAX)
+  // Windows limits the maximum path length to 260
+  #define PATH_MAX 260
+#endif
+
+#if !HAVE_POLLIN
 /* Event types that can be polled for.  These bits may be set in `events'
    to indicate the interesting event types; they will appear in `revents'
    to indicate the status of the file descriptor.  */
@@ -54,7 +59,9 @@ extern "C" {
 
 /* Canonical number of polling requests to read in at a time in poll.  */
 #define NPOLLFILE       30
+#endif // !HAVE_POLLIN
 
+#if !HAVE_POLLFD
 /* Data structure describing a polling request.  */
 struct pollfd
   {
@@ -62,8 +69,9 @@ struct pollfd
     short int events;		/* Types of events poller cares about.  */
     short int revents;		/* Types of events that actually occurred.  */
   };
+#endif // !HAVE_POLLFD
 
-
+#if !HAVE_POLL
 /* Poll the file descriptors described by the NFDS structures starting at
    FDS.  If TIMEOUT is nonzero and not -1, allow TIMEOUT milliseconds for
    an event to occur; if TIMEOUT is -1, block until an event occurs.
@@ -80,14 +88,18 @@ int poll (struct pollfd *fds, unsigned long int nfds, int timeout);
   #include <libgen.h> // for dirname(3)
 #endif // !HAVE_DIRNAME
 
-#if !HAVE_CFMAKERAW
+#if !HAVE_CFMAKERAW && !WIN32
   #include <termios.h>
   void cfmakeraw (struct termios *t);
-#endif // !HAVE_CFMAKERAW
+#endif // !HAVE_CFMAKERAW && !WIN32
 
 #if !HAVE_ROUND
   double round (double x);
 #endif // !HAVE_ROUND
+
+#if !HAVE_RINT
+  double rint (double x);
+#endif
 
 #if !HAVE_COMPRESSBOUND
   unsigned long compressBound (unsigned long sourceLen);
@@ -97,7 +109,34 @@ int poll (struct pollfd *fds, unsigned long int nfds, int timeout);
   #define CLOCK_REALTIME 0
   int clock_gettime(int clk_id, struct timespec *tp);
 #endif // !HAVE_CLOCK_GETTIME
-    
+
+#if !HAVE_STRUCT_TIMESPEC
+  struct timespec
+  {
+    long tv_sec;
+    long tv_nsec;
+  };
+  // Must define it here to stop Win32 pthreads from complaining, since that defines it as well
+  #define HAVE_STRUCT_TIMESPEC 1
+#endif
+
+#if !HAVE_USLEEP
+  int usleep (int usec);
+#endif
+
+#if !HAVE_NANOSLEEP
+  int nanosleep (const struct timespec *req, struct timespec *rem);
+#endif
+
+#if !HAVE_GETTIMEOFDAY && WIN32
+  struct timezone
+  {
+    int  tz_minuteswest; /* minutes W of Greenwich */
+    int  tz_dsttime;     /* type of dst correction */
+  };
+  int gettimeofday (struct timeval *tv, void *tzp);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

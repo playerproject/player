@@ -1,4 +1,3 @@
-
 /**************************************************************************
  * Desc: Path planner: plan generation
  * Author: Andrew Howard
@@ -13,7 +12,12 @@
 #include <limits.h>
 #include <float.h>
 
-#include <sys/time.h>
+#if defined (WIN32)
+  #include <replace/replace.h>
+  #include <winsock2.h> // For struct timeval
+#else
+  #include <sys/time.h>
+#endif
 static double get_time(void);
 
 #include "plan.h"
@@ -182,7 +186,7 @@ _plan_update_plan(plan_t *plan, double lx, double ly, double gx, double gy)
   old_occ_state = cell->occ_state_dyn;
   old_occ_dist = cell->occ_dist_dyn;
   cell->occ_state_dyn = -1;
-  cell->occ_dist_dyn = plan->max_radius;
+  cell->occ_dist_dyn = (float) plan->max_radius;
 
   cell = plan->cells + PLAN_INDEX(plan, gi, gj);
   cell->plan_cost = 0;
@@ -230,12 +234,12 @@ _plan_update_plan(plan_t *plan, double lx, double ly, double gx, double gy)
 
         cost = cell->plan_cost;
         if(ncell->lpathmark)
-          cost += (*p) * plan->hysteresis_factor;
+          cost += (float) ((*p) * plan->hysteresis_factor);
         else
           cost += *p;
 
         if(ncell->occ_dist_dyn < plan->max_radius)
-          cost += plan->dist_penalty * (plan->max_radius - ncell->occ_dist_dyn);
+          cost += (float) (plan->dist_penalty * (plan->max_radius - ncell->occ_dist_dyn));
 
         if(cost < ncell->plan_cost)
         {

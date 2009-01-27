@@ -46,16 +46,11 @@ INSTALL (FILES ${playerconfig_h} DESTINATION ${PLAYER_INCLUDE_INSTALL_DIR})
 INCLUDE (${PLAYER_CMAKE_DIR}/internal/LibraryUtils.cmake)
 
 # Set some common include directories, including the binary dir to get config.h
-INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR} ${PROJECT_BINARY_DIR}/libplayercore /opt/local/include )
+INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR} ${PROJECT_BINARY_DIR}/libplayercore)
 # Extra directories where needed libraries, etc may be located (set by the user)
 INCLUDE_DIRECTORIES (${PLAYER_EXTRA_INCLUDE_DIRS})
 LINK_DIRECTORIES (${PLAYER_EXTRA_LIB_DIRS})
 
-# rtv hack
-link_directories( /opt/local/lib )
-include_directories( /opt/local/include )
-
-# If on Windows, only build the client libraries. (this won't actually work yet cause libplayerc needs some stuff from core)
 ADD_SUBDIRECTORY (client_libs)
 ADD_SUBDIRECTORY (libplayercore)
 ADD_SUBDIRECTORY (libplayerxdr)
@@ -66,9 +61,14 @@ ADD_SUBDIRECTORY (libplayersd)
 ADD_SUBDIRECTORY (rtk2)
 ADD_SUBDIRECTORY (server)
 ADD_SUBDIRECTORY (examples)
-ADD_SUBDIRECTORY (utils)
-ADD_SUBDIRECTORY (doc)
+IF (NOT PLAYER_OS_WIN)
+    ADD_SUBDIRECTORY (utils)
+    ADD_SUBDIRECTORY (doc)
+ENDIF (NOT PLAYER_OS_WIN)
 ADD_SUBDIRECTORY (cmake)            # CMake modules for Player libraries
+IF (PLAYER_OS_WIN)
+    ADD_SUBDIRECTORY (replace)
+ENDIF (PLAYER_OS_WIN)
 MESSAGE (STATUS "")
 
 SET (PLAYER_EXTRA_LINK_LIBRARIES "" CACHE INTERNAL "Libs to link to" FORCE)

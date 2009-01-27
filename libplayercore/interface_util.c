@@ -40,6 +40,10 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#if defined WIN32
+  #define snprintf _snprintf
+  #define strdup _strdup
+#endif
 
 #include <libplayercore/player.h>  // for interface constants
 #include <libplayercore/interface_util.h> // for player_interface_t type
@@ -47,7 +51,7 @@
 #include "interface_table.h"
 
 static player_interface_t* itable;
-static int itable_len;
+static unsigned int itable_len;
 
 /*
  * A string table of the message types, used to print type strings in error
@@ -72,7 +76,7 @@ static char* msgTypeStrTable[7]=
  */
 int itable_init (void)
 {
-  int ii;
+  unsigned int ii;
 
   // An indirect way of avoiding duplicate initialization.  It would 
   // probably be better to delete the old table, but there may be some
@@ -131,7 +135,7 @@ int itable_grow (int newSize)
  */
 void itable_destroy (void)
 {
-  int ii;
+  unsigned int ii;
 
   for (ii = 0; ii < itable_len; ii++)
   {
@@ -144,7 +148,7 @@ void itable_destroy (void)
 /*
  * Add a new interface to the interface table.
  */
-int itable_add (const char *name, int code, int replace)
+int itable_add (const char *name, unsigned int code, int replace)
 {
   if(code < itable_len)
   {
@@ -191,14 +195,14 @@ int itable_add (const char *name, int code, int replace)
  * and zero is returned.  otherwise, -1 is returned.
  */
 int
-lookup_interface(const char* name, player_interface_t* interface)
+lookup_interface(const char* name, player_interface_t* interf)
 {
-  int i;
+  unsigned int i;
   for(i=0; i<itable_len; i++)
   {
     if(!strcmp(name, itable[i].name))
     {
-      *interface = itable[i];
+      *interf = itable[i];
       return 0;
     }
   }
@@ -211,14 +215,14 @@ lookup_interface(const char* name, player_interface_t* interface)
  * and zero is returned.  otherwise, -1 is returned.
  */
 int
-lookup_interface_code(int code, player_interface_t* interface)
+lookup_interface_code(int code, player_interface_t* interf)
 {
-  int i;
+  unsigned int i;
   for(i=0; i<itable_len; i++)
   {
     if(code == itable[i].interf)
     {
-      *interface = itable[i];
+      *interf = itable[i];
       return 0;
     }
   }
@@ -233,7 +237,7 @@ lookup_interface_code(int code, player_interface_t* interface)
 const char*
 lookup_interface_name(unsigned int startpos, int code)
 {
-  int i;
+  unsigned int i;
   if(startpos > itable_len)
     return 0;
   for(i = startpos; i<itable_len; i++)

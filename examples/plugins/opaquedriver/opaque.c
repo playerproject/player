@@ -1,7 +1,5 @@
 #include <stdio.h>
-//#include <stdint.h>
 #include <playerconfig.h>
-
 #include <libplayerc/playerc.h>
 
 #include "sharedstruct.h"
