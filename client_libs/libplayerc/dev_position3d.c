@@ -51,6 +51,9 @@
 #include "playerc.h"
 #include "error.h"
 
+#if defined (WIN32)
+  #define snprintf _snprintf
+#endif
 
 // Local declarations
 void playerc_position3d_putmsg(playerc_position3d_t *device,

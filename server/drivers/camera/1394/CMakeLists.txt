@@ -1,4 +1,5 @@
 PLAYERDRIVER_OPTION (camera1394 build_camera1394 ON)
+PLAYERDRIVER_REJECT_OS (camera1394 build_camera1394 PLAYER_OS_WIN)
 IF (build_camera1394)
     SET (c1394CFlags "-I${PROJECT_SOURCE_DIR}/server/drivers/blobfinder/cmvision -I${CMAKE_CURRENT_BINARY_DIR}")
     SET (DC1394_DMA_SETUP_CAPTURE_ARGS 0)

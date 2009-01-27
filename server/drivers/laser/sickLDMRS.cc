@@ -69,10 +69,12 @@ driver
 #define DEG2RAD(x) (((double)(x))*0.01745329251994)
 //#define RAD2DEG(x) (((double)(x))*57.29577951308232)
 
-#include <unistd.h>
+#if !defined (WIN32)
+  #include <unistd.h>
+  #include <arpa/inet.h>
+#endif
 #include <string.h>
 #include <iostream>
-#include <arpa/inet.h>
 //#include <stdint.h>
 //#include <sys/time.h>
 //#include <time.h>
@@ -414,21 +416,21 @@ bool sickLDMRS::ProcessLaserData()
 				uint16_t Distance_CM = htons(*reinterpret_cast<uint16_t *> (&data[SCAN_HEADER_LEN+SCAN_DATA_LEN*ii+6]));
 				assert(SCAN_HEADER_LEN + SCAN_DATA_LEN*ii+6+HEADER_LEN <= rx_count);
 				double distance_m = static_cast<double>(Distance_CM)/100.0;
-				data_packet.ranges[true_count] = distance_m;
+				data_packet.ranges[true_count] = static_cast<float> (distance_m);
 				int16_t angle_i = htons(*reinterpret_cast<uint16_t *> (&data[SCAN_HEADER_LEN+SCAN_DATA_LEN*ii+4]));
 				if (angle_i > 180*32)
 				{
 					angle_i -= 360*32;
 				}
 				double angle_d = DEG2RAD(angle_i)/32.0;
-				data_packet.angles[true_count] = angle_d;
+				data_packet.angles[true_count] = static_cast<float> (angle_d);
 				if (intensity == 1)
 				{
 					// echo width in cm
 					uint16_t tmp = htons(*reinterpret_cast<uint16_t *> (&data[SCAN_HEADER_LEN+SCAN_DATA_LEN*ii+8]));
 					if (tmp > 255)
 						tmp = 255;
-					data_packet.intensity[true_count] = tmp;
+					data_packet.intensity[true_count] = static_cast<uint8_t> (tmp);
 				}
 				else if (intensity == 2)
 					data_packet.intensity[true_count] = data[SCAN_HEADER_LEN+SCAN_DATA_LEN*ii+3];

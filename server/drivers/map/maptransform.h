@@ -29,7 +29,6 @@
 #define _MAPTRANSFORM_H_
 
 #include <sys/types.h> // required by Darwin
-#include <netinet/in.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>

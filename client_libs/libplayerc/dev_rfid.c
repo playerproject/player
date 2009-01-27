@@ -31,6 +31,10 @@
 #include "playerc.h"
 #include "error.h"
 
+#if defined (WIN32)
+  #define snprintf _snprintf
+#endif
+
 // Process incoming data
 void playerc_rfid_putmsg (playerc_rfid_t *device,
                           player_msghdr_t *header,

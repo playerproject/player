@@ -47,3 +47,25 @@ round(double x)
   else
     return(x);
 }
+
+// TODO: This is not quite the correct behaviour. See the rint() and round() manpages
+double
+rint(double x)
+{
+  if(x > 0.0)
+  {
+    if((ceil(x) - x) <= (x - floor(x)))
+      return(ceil(x));
+    else
+      return(floor(x));
+  }
+  else if(x < 0.0)
+  {
+    if((x - floor(x)) <= (ceil(x) - x))
+      return(floor(x));
+    else
+      return(ceil(x));
+  }
+  else
+    return(x);
+}

@@ -93,9 +93,28 @@ message.
 #ifndef _PLAYERTCP_H_
 #define _PLAYERTCP_H_
 
+#if defined (WIN32)
+  #if defined (PLAYER_STATIC)
+    #define PLAYERTCP_EXPORT
+  #elif defined (playertcp_EXPORTS)
+    #define PLAYERTCP_EXPORT    __declspec (dllexport)
+  #else
+    #define PLAYERTCP_EXPORT    __declspec (dllimport)
+  #endif
+#else
+  #define PLAYERTCP_EXPORT
+#endif
+
+#if defined (WIN32)
+  #include <winsock2.h>
+  #include <ws2tcpip.h>
+#else
+  #include <sys/socket.h>
+  #include <sys/ioctl.h>
+  #include <netdb.h>
+  #include <netinet/in.h>
+#endif
 #include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <pthread.h>
 
 #include <libplayercore/playercore.h>
@@ -117,7 +136,7 @@ struct pollfd;
 struct playertcp_listener;
 struct playertcp_conn;
 
-class PlayerTCP
+class PLAYERTCP_EXPORT PlayerTCP
 {
   private:
     uint32_t host;

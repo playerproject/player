@@ -49,6 +49,18 @@ This library provides miscellaneous utilities functions
 #ifndef _INTERFACE_UTIL_H
 #define _INTERFACE_UTIL_H
 
+#if defined (WIN32)
+  #if defined (PLAYER_STATIC)
+    #define PLAYERUTILS_EXPORT
+  #elif defined (playerutils_EXPORTS)
+    #define PLAYERUTILS_EXPORT    __declspec (dllexport)
+  #else
+    #define PLAYERUTILS_EXPORT    __declspec (dllimport)
+  #endif
+#else
+  #define PLAYERUTILS_EXPORT
+#endif
+
 #include <playerconfig.h>  // for uint16_t type
 
 #ifdef __cplusplus
@@ -66,73 +78,73 @@ typedef struct
 /*
  * Initialises the interface names/codes table.
  */
-int itable_init (void);
+PLAYERUTILS_EXPORT int itable_init (void);
 
 /*
  * Grows the interface table to newSize, filling each interface between the
  * old end and the new end with (0xFFFF, "nointerfXX").
  */
-int itable_grow (int newSize);
+PLAYERUTILS_EXPORT int itable_grow (int newSize);
 
 /*
  * Destroys the interface names/codes table.
  */
-void itable_destroy (void);
+PLAYERUTILS_EXPORT void itable_destroy (void);
 
 /*
  * Add a new interface to the interface table.
  */
-int itable_add (const char *name, int code, int replace);
+PLAYERUTILS_EXPORT int itable_add (const char *name, unsigned int code, int replace);
 
 /*
  * looks through the array of available interfaces for one which the given
  * name.  if found, interface is filled out (the caller must provide storage)
  * and zero is returned.  otherwise, -1 is returned.
  */
-int lookup_interface(const char* name, player_interface_t* interface);
+PLAYERUTILS_EXPORT int lookup_interface(const char* name, player_interface_t* interf);
 
 /*
  * looks through the array of available interfaces for one which the given
  * code.  if found, interface is filled out (the caller must provide storage)
  * and zero is returned.  otherwise, -1 is returned.
  */
-int
-lookup_interface_code(int code, player_interface_t* interface);
+PLAYERUTILS_EXPORT int
+lookup_interface_code(int code, player_interface_t* interf);
 
 /*
  * looks through the array of interfaces, starting at startpos, for the first
  * entry that has the given code, and returns the name.
  * returns 0 if the device is not found.
  */
-const char*
+PLAYERUTILS_EXPORT const char*
 lookup_interface_name(unsigned int startpos, int code);
 
 /*
  * Returns the name of an interface given its code. The result string must
  * not be altered.
  */
-const char*
+PLAYERUTILS_EXPORT const char*
 interf_to_str(uint16_t code);
 
 /*
  * Returns the code for an interface, given a string. If the name is not found,
  * 0xFFFF is returned.
  */
-uint16_t
+PLAYERUTILS_EXPORT uint16_t
 str_to_interf(const char *name);
 
 /*
  * Returns the name of a message type given its code. The result string must
  * not be altered.
  */
-const char*
+PLAYERUTILS_EXPORT const char*
 msgtype_to_str(uint8_t code);
 
 /*
  * Returns the code for a message type, given a string. If the name is not
  * found, 0xFF is returned.
  */
-uint8_t
+PLAYERUTILS_EXPORT uint8_t
 str_to_msgtype(const char *name);
 
 #ifdef __cplusplus

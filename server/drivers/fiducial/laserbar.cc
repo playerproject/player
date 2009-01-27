@@ -101,8 +101,6 @@ driver
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>       // for atoi(3)
-#include <netinet/in.h>   // for htons(3)
-#include <unistd.h>
 
 #define PLAYER_ENABLE_TRACE 0
 #define PLAYER_ENABLE_MSG 0

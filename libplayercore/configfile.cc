@@ -47,7 +47,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
+#if !defined WIN32
+  #include <unistd.h>
+#endif
 #include <math.h>
 #include <locale.h>
 
@@ -65,6 +67,13 @@
 #include <libplayercore/plugins.h>
 #include <libplayercore/addr_util.h>
 #include <libplayerxdr/functiontable.h>
+
+#if defined WIN32
+  #define snprintf _snprintf
+  #define strdup _strdup
+  #define getcwd _getcwd
+  #include <direct.h>   // For getcwd()
+#endif
 
 //extern int global_playerport;
 
@@ -2256,7 +2265,7 @@ ConfigFile::ParseDriver(int section)
 
   // Should this device be "always on"?
   if (driver)
-    driver->alwayson = this->ReadInt(section, "alwayson", driver->alwayson);
+    driver->alwayson = this->ReadInt(section, "alwayson", driver->alwayson) ? true : false;
 
   return true;
 }

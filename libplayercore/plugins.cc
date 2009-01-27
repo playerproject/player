@@ -40,7 +40,9 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include <unistd.h>
+#if !defined WIN32
+  #include <unistd.h>
+#endif
 
 // Shouldn't really need this; <libplayercore/playercommon.h> includes
 // it...
@@ -141,6 +143,7 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
 #else
   PLAYER_ERROR("Sorry, no support for shared libraries, so can't load plugins.");
   PLAYER_ERROR("You should install libltdl, which is part of GNU libtool, then re-compile player.");
+  PLAYER_ERROR("If you're on Windows, wait a little while as plugin loading is still under development.");
   return 0;
 #endif
 }
@@ -178,6 +181,7 @@ bool InitDriverPlugin(lt_dlhandle handle)
 #else
   PLAYER_ERROR("Sorry, no support for shared libraries, so can't load plugins.");
   PLAYER_ERROR("You should install libltdl, which is part of GNU libtool, then re-compile player.");
+  PLAYER_ERROR("If you're on Windows, wait a little while as plugin loading is still under development.");
   return(false);
 #endif
 }
@@ -216,6 +220,7 @@ playerxdr_function_t* InitInterfacePlugin(lt_dlhandle handle)
 #else
   PLAYER_ERROR("Sorry, no support for shared libraries, so can't load plugins.");
   PLAYER_ERROR("You should install libltdl, which is part of GNU libtool, then re-compile player.");
+  PLAYER_ERROR("If you're on Windows, wait a little while as plugin loading is still under development.");
   return(NULL);
 #endif
 }

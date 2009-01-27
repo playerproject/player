@@ -43,6 +43,18 @@
 #ifndef CONFFILE_H
 #define CONFFILE_H
 
+#if defined (WIN32)
+  #if defined (PLAYER_STATIC)
+    #define PLAYERCORE_EXPORT
+  #elif defined (playercore_EXPORTS)
+    #define PLAYERCORE_EXPORT    __declspec (dllexport)
+  #else
+    #define PLAYERCORE_EXPORT    __declspec (dllimport)
+  #endif
+#else
+  #define PLAYERCORE_EXPORT
+#endif
+
 #include <stdio.h>
 
 #include <libplayercore/player.h>
@@ -181,7 +193,7 @@ to retrieve information from the "requires" line of the configuration file.
 
 */
 
-class ConfigFile
+class PLAYERCORE_EXPORT ConfigFile
 {
   /// @brief Standard constructor
   public: ConfigFile(uint32_t _default_host, uint32_t _default_robot);

@@ -8,11 +8,15 @@
 #include <libplayercore/filewatcher.h>
 #include <libplayercore/message.h>
 #include <libplayercore/error.h>
-#include <sys/time.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <math.h>
 #include <string.h>
+#if defined (WIN32)
+  #include <windows.h>
+#else
+  #include <sys/time.h>
+#endif
 
 FileWatcher::FileWatcher()
 {

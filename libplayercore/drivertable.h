@@ -46,6 +46,18 @@
 #ifndef _DRIVERTABLE_H
 #define _DRIVERTABLE_H
 
+#if defined (WIN32)
+  #if defined (PLAYER_STATIC)
+    #define PLAYERCORE_EXPORT
+  #elif defined (playercore_EXPORTS)
+    #define PLAYERCORE_EXPORT    __declspec (dllexport)
+  #else
+    #define PLAYERCORE_EXPORT    __declspec (dllimport)
+  #endif
+#else
+  #define PLAYERCORE_EXPORT
+#endif
+
 #include <pthread.h>
 
 #include <libplayercore/device.h>
@@ -63,7 +75,7 @@ typedef int (*DriverPluginInitFn) (DriverTable* table);
 
 
 /// @brief Info about an individual driver class
-class DriverEntry
+class PLAYERCORE_EXPORT DriverEntry
 {
   public:
 
@@ -84,7 +96,7 @@ class DriverEntry
 ///
 /// This class maintains a list of driver names and factory functions;
 /// it is used to instantiate drivers at run-time.
-class DriverTable
+class PLAYERCORE_EXPORT DriverTable
 {
   private:
 

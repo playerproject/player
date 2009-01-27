@@ -33,7 +33,14 @@
 
 #include "cmvision.h"
 #include <string.h>
-#include <strings.h>
+#if !defined (WIN32)
+  #include <strings.h>
+#endif
+
+#if defined (WIN32)
+  #define strncasecmp _strnicmp
+  #define strdup _strdup
+#endif
 
 //==== Utility Functions ===========================================//
 // These could be coded as macros, but the inline versions seem to

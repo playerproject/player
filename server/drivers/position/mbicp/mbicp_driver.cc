@@ -330,24 +330,24 @@ mbicp::mbicp( ConfigFile* cf, int section)
            PLAYER_POSITION2D_CODE){
 
 
-	this->max_laser_range		=  cf->ReadFloat(section, "max_laser_range", 7.9);
-	this->Bw			=  cf->ReadFloat(section, "angular_window", 1.57/3.0);
-	this->Br			=  cf->ReadFloat(section, "radial_window", 0.3);
-	this->L				=  cf->ReadFloat(section, "L", 3.00);
-	this->laserStep			=  cf->ReadInt(section, "laserStep", 1);
-	this->MaxDistInter		=  cf->ReadFloat(section, "MaxDistInter", 0.5);
-	this->filter			=  cf->ReadFloat(section, "filter", 0.85);
-	this->ProjectionFilter		=  cf->ReadInt(section, "ProjectionFilter", 1);
-	this->AsocError			=  cf->ReadFloat(section, "AsocError", 0.1);
-	this->MaxIter			=  cf->ReadInt(section, "MaxIter", 50);
-	this->errorRatio		=  cf->ReadFloat(section, "errorRatio", 0.0001);
-	this->errx_out			=  cf->ReadFloat(section, "errx_out", 0.0001);
-	this->erry_out			=  cf->ReadFloat(section, "erry_out", 0.0001);
-	this->errt_out			=  cf->ReadFloat(section, "errt_out", 0.0001);
+	this->max_laser_range		= static_cast<float> (cf->ReadFloat(section, "max_laser_range", 7.9));
+	this->Bw			= static_cast<float> (cf->ReadFloat(section, "angular_window", 1.57/3.0));
+	this->Br			= static_cast<float> (cf->ReadFloat(section, "radial_window", 0.3));
+	this->L				= static_cast<float> (cf->ReadFloat(section, "L", 3.00));
+	this->laserStep			= cf->ReadInt(section, "laserStep", 1);
+	this->MaxDistInter		= static_cast<float> (cf->ReadFloat(section, "MaxDistInter", 0.5));
+	this->filter			= static_cast<float> (cf->ReadFloat(section, "filter", 0.85));
+	this->ProjectionFilter		= cf->ReadInt(section, "ProjectionFilter", 1);
+	this->AsocError			= static_cast<float> (cf->ReadFloat(section, "AsocError", 0.1));
+	this->MaxIter			= cf->ReadInt(section, "MaxIter", 50);
+	this->errorRatio		= static_cast<float> (cf->ReadFloat(section, "errorRatio", 0.0001));
+	this->errx_out			= static_cast<float> (cf->ReadFloat(section, "errx_out", 0.0001));
+	this->erry_out			= static_cast<float> (cf->ReadFloat(section, "erry_out", 0.0001));
+	this->errt_out			= static_cast<float> (cf->ReadFloat(section, "errt_out", 0.0001));
 	this->IterSmoothConv		=  cf->ReadInt(section, "IterSmoothConv", 2);
-	this->laserPoseTsc.x 		=  cf->ReadFloat(section, "laserPose_x", 0.16);
-  	this->laserPoseTsc.y 		=  cf->ReadFloat(section, "laserPose_y", 0);
-  	this->laserPoseTsc.tita 	=  cf->ReadFloat(section, "laserPose_th", 0);
+	this->laserPoseTsc.x 		= static_cast<float> (cf->ReadFloat(section, "laserPose_x", 0.16));
+  	this->laserPoseTsc.y 		= static_cast<float> (cf->ReadFloat(section, "laserPose_y", 0));
+  	this->laserPoseTsc.tita 	= static_cast<float> (cf->ReadFloat(section, "laserPose_th", 0));
 
 
    	if(cf->ReadDeviceAddr(&(posicion_addr), section, "provides",
@@ -657,9 +657,9 @@ Tsc mbicp::playerPose2Tsc(player_pose2d_t posicion)
 {
 	Tsc	posicionTsc;
 
-	posicionTsc.x = posicion.px;
-  	posicionTsc.y = posicion.py;
-  	posicionTsc.tita = posicion.pa;
+	posicionTsc.x = static_cast<float> (posicion.px);
+  	posicionTsc.y = static_cast<float> (posicion.py);
+  	posicionTsc.tita = static_cast<float> (posicion.pa);
   	return(posicionTsc);
 }
 

@@ -4,14 +4,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <vector>
-#include <unistd.h>
+#if !defined (WIN32)
+  #include <unistd.h>
+#endif
 #include <errno.h>
 #include <time.h>
 
 #include <libplayercore/playercore.h>
 #include "vfh_algorithm.h"
-
-extern PlayerTime *GlobalTime;
 
 /** @ingroup drivers */
 /** @{ */
@@ -457,12 +457,12 @@ int VFH_Class::SetupOdom()
   player_position2d_geom_t* geom = (player_position2d_geom_t*)msg->GetPayload();
 
   // take the bigger of the two dimensions and halve to get a radius
-  float robot_radius = MAX(geom->size.sl,geom->size.sw);
+  float robot_radius = static_cast<float> (MAX(geom->size.sl,geom->size.sw));
   robot_radius /= 2.0;
 
   delete msg;
 
-  vfh_Algorithm->SetRobotRadius( robot_radius * 1e3 );
+  vfh_Algorithm->SetRobotRadius( robot_radius * 1000 );
 
   this->odom_pose[0] = this->odom_pose[1] = this->odom_pose[2] = 0.0;
   this->odom_vel[0] = this->odom_vel[1] = this->odom_vel[2] = 0.0;
@@ -683,7 +683,7 @@ VFH_Class::ProcessSonar(player_sonar_data_t &data)
       // laser ranges, we must make the sonar ranges appear like laser ranges. To do this, we take
       // into account the offset of a sonar's geometry from the center. Simply add the distance from
       // the center of the robot to a sonar to the sonar's range reading.
-      sonarDistToCenter = sqrt(pow(this->sonar_poses[i].px,2) + pow(this->sonar_poses[i].py,2));
+      sonarDistToCenter = static_cast<float> (sqrt(pow(this->sonar_poses[i].px,2) + pow(this->sonar_poses[i].py,2)));
       this->laser_ranges[(int)rint(b * 2)][0] = (sonarDistToCenter + data.ranges[i]) * 1e3;
       this->laser_ranges[(int)rint(b * 2)][1] = b;
     }
@@ -879,8 +879,8 @@ void VFH_Class::DoOneUpdate()
       return;//continue;
 
     // Figure how far, in distance and orientation, we are from the goal
-    dist = sqrt(pow((goal_x - this->odom_pose[0]),2) +
-                pow((goal_y - this->odom_pose[1]),2));
+    dist = static_cast<float> (sqrt(pow((goal_x - this->odom_pose[0]),2) +
+                pow((goal_y - this->odom_pose[1]),2)));
     angdiff = this->angle_diff((double)this->goal_t,this->odom_pose[2]);
 
     // If we're currently escaping after a stall, check whether we've done
@@ -941,9 +941,9 @@ void VFH_Class::DoOneUpdate()
     //         get there.
     else if (dist > (this->dist_eps * 1e3))
     {
-      float Desired_Angle = (90 + atan2((goal_y - this->odom_pose[1]),
-                                        (goal_x - this->odom_pose[0]))
-                             * 180 / M_PI - this->odom_pose[2]);
+      float Desired_Angle = static_cast<float> ((90 + atan2((goal_y - this->odom_pose[1]),
+                                                (goal_x - this->odom_pose[0]))
+                                                * 180 / M_PI - this->odom_pose[2]));
 
       while (Desired_Angle > 360.0)
         Desired_Angle -= 360.0;
@@ -954,7 +954,7 @@ void VFH_Class::DoOneUpdate()
                                  (int)(this->odom_vel[0]),
                                  Desired_Angle,
                                  dist,
-                                 this->dist_eps * 1e3,
+                                 static_cast<float> (this->dist_eps * 1000),
                                  this->speed,
                                  this->turnrate );
 
@@ -1080,7 +1080,7 @@ VFH_Class::VFH_Class( ConfigFile* cf, int section)
   this->turnrate = 0;
 
   // read the synchronous flag from the cfg file: defaults to not synchronous
-  this->synchronous_mode = cf->ReadInt(section, "synchronous", 0 );
+  this->synchronous_mode = cf->ReadInt(section, "synchronous", 0 ) != 0 ? true : false;
 
   cell_size = cf->ReadLength(section, "cell_size", 0.1) * 1e3;
   window_diameter = cf->ReadInt(section, "window_diameter", 61);

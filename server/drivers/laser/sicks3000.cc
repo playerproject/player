@@ -103,17 +103,20 @@ driver
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <termios.h>
-#include <unistd.h>
-#include <sys/ioctl.h>
-#include <arpa/inet.h> // for htons etc
+#if !defined (WIN32)
+  #include <unistd.h>
+  #include <arpa/inet.h> // for htons etc
+#endif
 
 #include <libplayercore/playercore.h>
 //#include <replace/replace.h>
-extern PlayerTime* GlobalTime;
 
 // 1 second of data at 500kbaud
 #define DEFAULT_RX_BUFFER_SIZE 500*1024/8
+
+#if defined (WIN32)
+  typedef unsigned int ssize_t;
+#endif
 
 // The laser device class.
 class SickS3000 : public ThreadedDriver
@@ -225,15 +228,15 @@ SickS3000::SickS3000(ConfigFile* cf, int section)
   recognisedScanner = false;
 
   memset(&data_packet,0,sizeof(data_packet));
-  data_packet.min_angle = DTOR(-135);
-  data_packet.max_angle = DTOR(135);
-  data_packet.resolution = DTOR(0.5);
+  data_packet.min_angle = static_cast<float> (DTOR(-135));
+  data_packet.max_angle = static_cast<float> (DTOR(135));
+  data_packet.resolution = static_cast<float> (DTOR(0.5));
   data_packet.max_range = 49;
 
   memset(&config_packet,0,sizeof(config_packet));
-  config_packet.min_angle = DTOR(-135);
-  config_packet.max_angle = DTOR(135);
-  config_packet.resolution = DTOR(0.5);
+  config_packet.min_angle = static_cast<float> (DTOR(-135));
+  config_packet.max_angle = static_cast<float> (DTOR(135));
+  config_packet.resolution = static_cast<float> (DTOR(0.5));
   config_packet.max_range = 49;
 
   // Laser geometry.
@@ -268,14 +271,14 @@ void SickS3000::SetScannerParams(int data_count)
 {
 	if (data_count == 761) // sicks3000
 	{
-		data_packet.min_angle = DTOR(-95);
-		data_packet.max_angle = DTOR(95);
-		data_packet.resolution = DTOR(0.25);
+		data_packet.min_angle = static_cast<float> (DTOR(-95));
+		data_packet.max_angle = static_cast<float> (DTOR(95));
+		data_packet.resolution = static_cast<float> (DTOR(0.25));
 		data_packet.max_range = 49;
 
-		config_packet.min_angle = DTOR(-95);
-		config_packet.max_angle = DTOR(95);
-		config_packet.resolution = DTOR(0.25);
+		config_packet.min_angle = static_cast<float> (DTOR(-95));
+		config_packet.max_angle = static_cast<float> (DTOR(95));
+		config_packet.resolution = static_cast<float> (DTOR(0.25));
 		config_packet.max_range = 49;
 
 		recognisedScanner = true;
@@ -483,9 +486,9 @@ int SickS3000::ProcessLaserData()
             Distance_CM &= 0x1fff; // remove status bits
             double distance_m = static_cast<double>(Distance_CM)/100.0;
             if (mirror == 1)
-            	data_packet.ranges[data_count - ii - 1] = distance_m; // Reverse order.
+            	data_packet.ranges[data_count - ii - 1] = static_cast<float> (distance_m); // Reverse order.
             else
-            	data_packet.ranges[ii] = distance_m;
+            	data_packet.ranges[ii] = static_cast<float> (distance_m);
           }
 
           this->Publish(this->device_addr,

@@ -39,11 +39,13 @@
 
 #include <config.h>
 
+#if !defined (WIN32)
+  #include <unistd.h>
+  #include <errno.h>
+#endif
 #include <stdlib.h>
 #include <assert.h>
-#include <errno.h>
 #include <string.h>
-#include <unistd.h>
 #include <fcntl.h>
 
 #if HAVE_Z
@@ -56,6 +58,11 @@
 
 #include "playerudp.h"
 //#include "remote_driver.h"
+#include "playertcp_errutils.h"
+
+#if defined (WIN32)
+  #define snprintf _snprintf
+#endif
 
 int _create_and_bind_udp_socket(char blocking, unsigned int host, int portnum);
 
@@ -109,6 +116,16 @@ typedef struct playerudp_conn
 
 PlayerUDP::PlayerUDP()
 {
+#if defined (WIN32)
+  // Initialise Windows sockets API (this can safely be done as many times as we like)
+  WSADATA info;
+  int result;
+  if ((result = WSAStartup (MAKEWORD (2, 2), &info)) != 0)
+  {
+    PLAYER_ERROR1 ("Failed to initialise Windows sockets API with error %d", result);
+  }
+#endif
+
   this->thread = pthread_self();
   this->size_clients = 0;
   this->num_clients = 0;
@@ -145,6 +162,12 @@ PlayerUDP::~PlayerUDP()
   free(this->listeners);
   free(this->listen_ufds);
   free(this->decode_readbuffer);
+
+#if defined (WIN32)
+  // Clean up the Windows sockets API (this can safely be done as many times as we like)
+  if (WSACleanup () != 0)
+    PLAYER_ERROR1 ("Failed to clean up Windows sockets API with error %s", WSAGetLastError ());
+#endif
 }
 
 int
@@ -244,8 +267,13 @@ PlayerUDP::AddClient(struct sockaddr_in* cliaddr,
     memset(data,0,sizeof(data));
     snprintf((char*)data, sizeof(data)-1, "%s%s",
              PLAYER_IDENT_STRING, playerversion);
-    if(sendto(this->clients[j].fd, (void*)data, PLAYER_IDENT_STRLEN, 0,
+#if defined (WIN32)
+    if(sendto(this->clients[j].fd, reinterpret_cast<const char*> (data), PLAYER_IDENT_STRLEN, 0,
               (struct sockaddr*)&this->clients[j].addr, addrlen) < 0)
+#else
+    if(sendto(this->clients[j].fd, reinterpret_cast<void*> (data), PLAYER_IDENT_STRLEN, 0,
+              (struct sockaddr*)&this->clients[j].addr, addrlen) < 0)
+#endif
     {
       PLAYER_ERROR("failed to send ident string");
     }
@@ -274,6 +302,13 @@ PlayerUDP::Close(int cli)
   }
   free(this->clients[cli].dev_subs);
   fileWatcher->RemoveFileWatch(this->clients[cli].fd);
+#if defined (WIN32)
+  if (closesocket (this->clients[cli].fd) != 0)
+    STRERROR (PLAYER_WARN1, "closesocket() failed: %s");
+#else
+  if(close(this->clients[cli].fd) < 0)
+    STRERROR (PLAYER_WARN1, "close() failed: %s");
+#endif
   this->clients[cli].fd = -1;
   this->clients[cli].valid = 0;
   // FIXME
@@ -305,11 +340,11 @@ PlayerUDP::Read(int timeout)
   if((num_available = poll(this->listen_ufds, num_listeners, timeout)) < 0)
   {
     // Got interrupted by a signal; no problem
-    if(errno == EINTR)
+    if(ErrNo == EINTR)
       return(0);
 
     // A genuine problem
-    PLAYER_ERROR1("poll() failed: %s", strerror(errno));
+    STRERROR (PLAYER_ERROR1, "poll() failed: %s");
     return(-1);
   }
 
@@ -329,9 +364,15 @@ PlayerUDP::Read(int timeout)
                                                 (struct sockaddr*)&fromaddr,
                                                 &fromlen)) < 0)
       {
-        PLAYER_ERROR2("recvfrom() failed on port %d: %s",
-                      this->listeners[i].port,
-                      strerror(errno));
+#if defined (WIN32)
+          LPVOID buffer = NULL;
+          FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
+                        ErrNo, 0, reinterpret_cast<LPTSTR> (&buffer), 0, NULL);
+          PLAYER_ERROR2("recvfrom() failed on port %d: %s", this->listeners[i].port, reinterpret_cast<LPTSTR> (buffer));
+          LocalFree(buffer);
+#else
+          PLAYER_ERROR2("recvfrom() failed on port %d: %s", this->listeners[i].port, strerror(ErrNo));
+#endif
       }
       else
       {
@@ -531,14 +572,22 @@ PlayerUDP::WriteClient(int cli)
 
       if(numwritten < 0)
       {
-        if(errno == EAGAIN)
+        if(ErrNo == ERRNO_EAGAIN)
         {
           // buffers are full
           return(0);
         }
         else
         {
-          PLAYER_MSG1(2,"sendto() failed: %s", strerror(errno));
+#if defined (WIN32)
+          LPVOID buffer = NULL;
+          FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
+                        ErrNo, 0, reinterpret_cast<LPTSTR> (&buffer), 0, NULL);
+          PLAYER_MSG1(2, "sendto() failed: %s", reinterpret_cast<LPTSTR> (buffer));
+          LocalFree(buffer);
+#else
+          PLAYER_MSG1(2,"sendto() failed: %s", strerror(ErrNo));
+#endif
           return(-1);
         }
       }
@@ -1030,7 +1079,7 @@ PlayerUDP::HandlePlayerMessage(int cli, Message* msg)
 
             // Make up and push out the reply
             resp = new Message(resphdr, (void*)&devresp,
-                               sizeof(player_device_req_t));
+                               sizeof(player_device_req_t) != 0 ? true : false);
             assert(resp);
             client->queue->Push(*resp);
             delete resp;
@@ -1062,7 +1111,7 @@ PlayerUDP::HandlePlayerMessage(int cli, Message* msg)
           resphdr.type = PLAYER_MSGTYPE_RESP_ACK;
           // Make up and push out the reply
           resp = new Message(resphdr, (void*)&devlist,
-                             sizeof(player_device_devlist_t));
+                             sizeof(player_device_devlist_t) != 0 ? true : false);
           assert(resp);
           client->queue->Push(*resp);
           delete resp;
@@ -1109,7 +1158,7 @@ PlayerUDP::HandlePlayerMessage(int cli, Message* msg)
             resphdr.type = PLAYER_MSGTYPE_RESP_ACK;
             // Make up and push out the reply
             resp = new Message(resphdr, (void*)&inforesp,
-                               sizeof(player_device_driverinfo_t));
+                               sizeof(player_device_driverinfo_t) != 0 ? true : false);
             assert(resp);
             client->queue->Push(*resp);
             delete resp;
@@ -1199,7 +1248,11 @@ int
 _create_and_bind_udp_socket(char blocking, unsigned int host, int portnum)
 {
   int sock;                   /* socket we're creating */
+#if defined (WIN32)
+  unsigned long setting = 1;
+#else
   int flags;                  /* temp for old socket access flags */
+#endif
 
   struct sockaddr_in serverp;
 
@@ -1225,15 +1278,26 @@ _create_and_bind_udp_socket(char blocking, unsigned int host, int portnum)
    * let's say that our process should get the SIGIO's when it's
    * readable
    */
+#if !defined (WIN32)
+  // If it's not needed on Cygwin, it's probably not needed on Win32
   if(fcntl(sock, F_SETOWN, getpid()) == -1)
   {
     /* I'm making this non-fatal because it always fails under Cygwin and
      * yet doesn't seem to matter -BPG */
     PLAYER_WARN("fcntl() failed while setting socket pid ownership");
   }
+#endif
 
   if(!blocking)
   {
+#if defined (WIN32)
+    if (ioctlsocket(sock, FIONBIO, &setting) == SOCKET_ERROR)
+    {
+      STRERROR(PLAYER_ERROR1, "ioctlsocket error: %s");
+      closesocket(sock);
+      return(-1);
+    }
+#else
     /*
      * get the current access flags
      */
@@ -1255,6 +1319,7 @@ _create_and_bind_udp_socket(char blocking, unsigned int host, int portnum)
       close(sock);
       return(-1);
     }
+#endif
   }
 
   /*
@@ -1271,7 +1336,11 @@ _create_and_bind_udp_socket(char blocking, unsigned int host, int portnum)
   if(bind(sock, (struct sockaddr*)&serverp, sizeof(serverp)) == -1)
   {
     perror ("create_and_bind_socket():bind() failed; socket not created.");
+#if defined (WIN32)
+    closesocket(sock);
+#else
     close(sock);
+#endif
     return(-1);
   }
 

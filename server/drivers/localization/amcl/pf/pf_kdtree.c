@@ -15,7 +15,7 @@
 
 #include "pf_vector.h"
 #include "pf_kdtree.h"
-
+#include <libplayercore/playercommon.h>
 
 // Compare keys to see if they are equal
 static int pf_kdtree_equal(pf_kdtree_t *self, int key_a[], int key_b[]);
@@ -95,9 +95,9 @@ void pf_kdtree_insert(pf_kdtree_t *self, pf_vector_t pose, double value)
 {
   int key[3];
 
-  key[0] = floor(pose.v[0] / self->size[0]);
-  key[1] = floor(pose.v[1] / self->size[1]);
-  key[2] = floor(pose.v[2] / self->size[2]);
+  key[0] = (int) floor(pose.v[0] / self->size[0]);
+  key[1] = (int) floor(pose.v[1] / self->size[1]);
+  key[2] = (int) floor(pose.v[2] / self->size[2]);
 
   self->root = pf_kdtree_insert_node(self, NULL, self->root, key, value);
 
@@ -134,9 +134,9 @@ double pf_kdtree_get_prob(pf_kdtree_t *self, pf_vector_t pose)
   int key[3];
   pf_kdtree_node_t *node;
 
-  key[0] = floor(pose.v[0] / self->size[0]);
-  key[1] = floor(pose.v[1] / self->size[1]);
-  key[2] = floor(pose.v[2] / self->size[2]);
+  key[0] = (int) floor(pose.v[0] / self->size[0]);
+  key[1] = (int) floor(pose.v[1] / self->size[1]);
+  key[2] = (int) floor(pose.v[2] / self->size[2]);
 
   node = pf_kdtree_find_node(self, self->root, key);
   if (node == NULL)
@@ -152,9 +152,9 @@ int pf_kdtree_get_cluster(pf_kdtree_t *self, pf_vector_t pose)
   int key[3];
   pf_kdtree_node_t *node;
 
-  key[0] = floor(pose.v[0] / self->size[0]);
-  key[1] = floor(pose.v[1] / self->size[1]);
-  key[2] = floor(pose.v[2] / self->size[2]);
+  key[0] = (int) floor(pose.v[0] / self->size[0]);
+  key[1] = (int) floor(pose.v[1] / self->size[1]);
+  key[2] = (int) floor(pose.v[2] / self->size[2]);
 
   node = pf_kdtree_find_node(self, self->root, key);
   if (node == NULL)

@@ -8,8 +8,11 @@
 #define MAX(a, b) ((a)>(b)?(a):(b))
 #endif
 
-//#define n 3
-static int n = 3;
+#if defined (WIN32)
+  #define n 3
+#else
+  static int n = 3;
+#endif
 
 static double hypot2(double x, double y) {
   return sqrt(x*x+y*y);

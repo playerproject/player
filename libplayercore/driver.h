@@ -47,6 +47,18 @@
 #ifndef _DRIVER_H
 #define _DRIVER_H
 
+#if defined (WIN32)
+  #if defined (PLAYER_STATIC)
+    #define PLAYERCORE_EXPORT
+  #elif defined (playercore_EXPORTS)
+    #define PLAYERCORE_EXPORT    __declspec (dllexport)
+  #else
+    #define PLAYERCORE_EXPORT    __declspec (dllimport)
+  #endif
+#else
+  #define PLAYERCORE_EXPORT
+#endif
+
 #include <pthread.h>
 
 #include <libplayercore/playercommon.h>
@@ -54,7 +66,7 @@
 #include <libplayercore/player.h>
 #include <libplayercore/property.h>
 
-using namespace std;
+//using namespace std;
 
 /**
 @brief capabilities request handler macro
@@ -93,7 +105,7 @@ This class manages driver subscriptions, and data
 marshalling to/from device interfaces.  Non threaded drivers inherit directly from
 this class, and most will overload the Setup(), Shutdown() methods.
 */
-class Driver
+class PLAYERCORE_EXPORT Driver
 {
   private:
     /* @brief Last error value; useful for returning error codes from
@@ -448,7 +460,7 @@ typedef enum player_thread_state
 	PLAYER_THREAD_STATE_RESTARTING
 } player_thread_state_t;
 
-class PlayerBarrier
+class PLAYERCORE_EXPORT PlayerBarrier
 {
 public:
 	PlayerBarrier()
@@ -529,7 +541,7 @@ From RESTARTING the driver can transition to RUNNING once MainQuit has run and t
 StopThread is called before the original thread terminates.
 
 */
-class ThreadedDriver : public Driver
+class PLAYERCORE_EXPORT ThreadedDriver : public Driver
 {
   protected:
 
@@ -586,7 +598,7 @@ class ThreadedDriver : public Driver
 			int section,
 			bool overwrite_cmds,
 			size_t queue_maxlen,
-			int interface);
+			int interf);
 
     /** @brief Constructor for multiple-interface drivers.
 

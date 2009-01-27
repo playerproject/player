@@ -43,20 +43,27 @@
  * $Id$
  */
 
+#if defined (WIN32)
+  #include <winsock2.h>
+  #include <ws2tcpip.h>
+#else
+  #include <unistd.h>
+  #include <sys/socket.h>
+  #include <netdb.h>
+  #include <netinet/in.h>   /* for sockaddr_in type */
+#endif
 
 #include <sys/types.h>     /* for socket(2) */
-#include <sys/socket.h>     /* for socket(2) */
 #include <fcntl.h>     /* for fcntl(2) */
 #include <stdio.h>     /* for snprintf(3) */
 #include <string.h>     /* for strncpy(3) */
-#include <unistd.h>     /* for getpid(2),close(2) */
 #include <time.h>     /* for ctime(3) */
-#include <netdb.h>     /* for gethostbyname(3) */
-#include <netinet/in.h>   /* for sockaddr_in type */
 
 #include <libplayercore/error.h>
 #include <libplayercore/addr_util.h>
 #include "socket_util.h"
+
+#include "playertcp_errutils.h"
 
 /*
  * this function creates a socket of the indicated type and binds it to
@@ -86,8 +93,12 @@ create_and_bind_socket(char blocking, unsigned int host, int* portnum,
                        int playersocktype, int backlog)
 {
   int sock;                   /* socket we're creating */
-  int flags;                  /* temp for old socket access flags */
   int one = 1;
+#if defined (WIN32)
+  unsigned long setting = 1;
+#else
+  int flags;                  /* temp for old socket access flags */
+#endif
 
   struct sockaddr_in serverp;
   socklen_t serverp_len;
@@ -112,9 +123,13 @@ create_and_bind_socket(char blocking, unsigned int host, int* portnum,
    * Create the INET socket.
    *
    */
+#if defined (WIN32)
+  if((sock = socket(PF_INET, socktype, 0)) == INVALID_SOCKET)
+#else
   if((sock = socket(PF_INET, socktype, 0)) == -1)
+#endif
   {
-    perror("create_and_bind_socket:socket() failed; socket not created.");
+	  STRERROR (PLAYER_ERROR1, "create_and_bind_socket:socket() failed; socket not created: %s");
     return(-1);
   }
 
@@ -122,15 +137,26 @@ create_and_bind_socket(char blocking, unsigned int host, int* portnum,
    * let's say that our process should get the SIGIO's when it's
    * readable
    */
+#if !defined (WIN32)
+  // If it's not needed on Cygwin, it's probably not needed on Win32
   if(fcntl(sock, F_SETOWN, getpid()) == -1)
   {
     /* I'm making this non-fatal because it always fails under Cygwin and
      * yet doesn't seem to matter -BPG */
     PLAYER_WARN("fcntl() failed while setting socket pid ownership");
   }
+#endif
 
   if(!blocking)
   {
+#if defined (WIN32)
+    if (ioctlsocket(sock, FIONBIO, &setting) == SOCKET_ERROR)
+    {
+      STRERROR(PLAYER_ERROR1, "ioctlsocket error: %s");
+	  closesocket(sock);
+	  return(-1);
+    }
+#else
     /*
      * get the current access flags
      */
@@ -152,6 +178,7 @@ create_and_bind_socket(char blocking, unsigned int host, int* portnum,
       close(sock);
       return(-1);
     }
+#endif // defined (WIN32)
   }
 
   if(socktype == SOCK_STREAM)
@@ -180,7 +207,11 @@ create_and_bind_socket(char blocking, unsigned int host, int* portnum,
   if(bind(sock, (struct sockaddr*)&serverp, sizeof(serverp)) == -1)
   {
     perror ("create_and_bind_socket():bind() failed; socket not created.");
+#if defined (WIN32)
+    closesocket(sock);
+#else
     close(sock);
+#endif
     return(-1);
   }
 
@@ -190,7 +221,11 @@ create_and_bind_socket(char blocking, unsigned int host, int* portnum,
     if(listen(sock,backlog))
     {
       perror("create_and_bind_socket(): listen(2) failed:");
-      close(sock);
+#if defined (WIN32)
+    closesocket(sock);
+#else
+    close(sock);
+#endif
       return(-1);
     }
   }

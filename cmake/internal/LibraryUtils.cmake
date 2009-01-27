@@ -1,6 +1,12 @@
 # Useful macros for building the Player libraries
 INCLUDE (${PLAYER_CMAKE_DIR}/PlayerUtils.cmake)
 
+IF (PLAYER_OS_OSX)
+    SET (RPATH_VAL ${CMAKE_INSTALL_PREFIX}/lib)
+ELSE (PLAYER_OS_OSX)
+    SET (RPATH_VAL "@rpath")
+ENDIF (PLAYER_OS_OSX)
+
 ###############################################################################
 # PLAYER_ADD_LIBRARY (_name)
 # Adds a library to be built and installed and sets some common properties on it.
@@ -10,9 +16,7 @@ MACRO (PLAYER_ADD_LIBRARY _name)
     SET_TARGET_PROPERTIES (${_name} PROPERTIES
                             VERSION ${PLAYER_VERSION}
                             SOVERSION ${PLAYER_API_VERSION}
-# @rpath is not expanded on OS X, so I replaced this line with the version below [see patch 2318489]
-#                            INSTALL_NAME_DIR @rpath
-                            INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib"
+                            INSTALL_NAME_DIR ${RPATH_VAL}
                             INSTALL_RPATH "${INSTALL_RPATH};${CMAKE_INSTALL_PREFIX}/lib"
                             BUILD_WITH_INSTALL_RPATH TRUE)
     INSTALL (TARGETS ${_name} DESTINATION lib/)

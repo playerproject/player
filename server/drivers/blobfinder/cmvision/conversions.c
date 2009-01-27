@@ -20,7 +20,10 @@
 #include <string.h>
 #include "conversions.h"
 
-extern void swab();
+#if !defined (WIN32)
+  // This doesn't need to be extern on Windows (why does it need to be elsewhere?)
+  extern void swab();
+#endif
 
 // The following #define is there for the users who experience green/purple
 // images in the display. This seems to be a videocard driver problem.

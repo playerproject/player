@@ -50,6 +50,9 @@
 #include "playerc.h"
 #include "error.h"
 
+#if defined (WIN32)
+  #define snprintf _snprintf
+#endif
 
 // Create a new log proxy
 playerc_log_t *playerc_log_create(playerc_client_t *client, int index)

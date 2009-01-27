@@ -30,6 +30,10 @@
 #include <math.h>
 #include <stdio.h>
 
+#if defined (WIN32)
+  #include <winsock2.h> // For struct timeval
+#endif
+
 #include "readlog_time.h"
 
 

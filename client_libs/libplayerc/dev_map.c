@@ -57,6 +57,9 @@
 #include "playerc.h"
 #include "error.h"
 
+#if defined (WIN32)
+  #define snprintf _snprintf
+#endif
 
 // Create a new map proxy
 playerc_map_t *playerc_map_create(playerc_client_t *client, int index)

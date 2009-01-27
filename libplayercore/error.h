@@ -29,22 +29,36 @@
 #include <stdio.h>
 #include <errno.h>
 
+#include <playerconfig.h>
+
+#if defined (WIN32)
+  #if defined (PLAYER_STATIC)
+    #define PLAYERERROR_EXPORT
+  #elif defined (playererror_EXPORTS)
+    #define PLAYERERROR_EXPORT    __declspec (dllexport)
+  #else
+    #define PLAYERERROR_EXPORT    __declspec (dllimport)
+  #endif
+#else
+  #define PLAYERERROR_EXPORT
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /// @internal Initialize error logging
-void ErrorInit(int _msgLevel, FILE * logfile);
+PLAYERERROR_EXPORT void ErrorInit(int _msgLevel, FILE * logfile);
 
 /// @internal Function for print and logging errors.  Do not call this
 /// function directly; use the macros below.
-void DefaultErrorPrint(int msgType, int level, const char *file, int line, const char *fmt, ...);
+PLAYERERROR_EXPORT void DefaultErrorPrint(int msgType, int level, const char *file, int line, const char *fmt, ...);
 
-extern void (*ErrorPrint)(int msgType, int level, const char *file, int line, const char *fmt, ...);
-extern int msgLevel;
+PLAYERERROR_EXPORT extern void (*ErrorPrint)(int msgType, int level, const char *file, int line, const char *fmt, ...);
+PLAYERERROR_EXPORT extern int msgLevel;
 
 // File for logging messages
-extern FILE *msgFile;
+PLAYERERROR_EXPORT extern FILE *msgFile;
 
 #ifdef __cplusplus
 }

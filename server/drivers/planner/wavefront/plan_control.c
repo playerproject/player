@@ -5,6 +5,10 @@
 
 #include "plan.h"
 
+#if !defined (M_PI)
+  #include <libplayercore/playercommon.h>
+#endif
+
 static double _plan_check_path(plan_t* plan, plan_cell_t* s, plan_cell_t* g);
 static double _angle_diff(double a, double b);
 
@@ -116,7 +120,7 @@ plan_get_carrot(plan_t* plan, double* px, double* py,
   old_occ_state = cell->occ_state_dyn;
   old_occ_dist = cell->occ_dist_dyn;
   cell->occ_state_dyn = -1;
-  cell->occ_dist_dyn = plan->max_radius;
+  cell->occ_dist_dyn = (float) (plan->max_radius);
 
   // Step back from maxdist, looking for the best carrot
   bestcost = -1.0;
@@ -210,18 +214,18 @@ _plan_check_path(plan_t* plan, plan_cell_t* s, plan_cell_t* g)
     if(plan->cells[PLAN_INDEX(plan,y,x)].occ_dist_dyn < plan->abs_min_radius)
       return -1;
     else if(plan->cells[PLAN_INDEX(plan,y,x)].occ_dist_dyn < plan->max_radius)
-      obscost += plan->dist_penalty * 
+      obscost += (int) (plan->dist_penalty * 
               (plan->max_radius - 
-               plan->cells[PLAN_INDEX(plan,y,x)].occ_dist_dyn);
+               plan->cells[PLAN_INDEX(plan,y,x)].occ_dist_dyn));
   }
   else
   {
     if(plan->cells[PLAN_INDEX(plan,x,y)].occ_dist_dyn < plan->abs_min_radius)
       return -1;
     else if(plan->cells[PLAN_INDEX(plan,x,y)].occ_dist_dyn < plan->max_radius)
-      obscost += plan->dist_penalty * 
+      obscost += (int) (plan->dist_penalty * 
               (plan->max_radius - 
-               plan->cells[PLAN_INDEX(plan,x,y)].occ_dist_dyn);
+               plan->cells[PLAN_INDEX(plan,x,y)].occ_dist_dyn));
   }
 
   while(x != (x1 + xstep * 1))
@@ -239,18 +243,18 @@ _plan_check_path(plan_t* plan, plan_cell_t* s, plan_cell_t* g)
       if(plan->cells[PLAN_INDEX(plan,y,x)].occ_dist_dyn < plan->abs_min_radius)
         return -1;
       else if(plan->cells[PLAN_INDEX(plan,y,x)].occ_dist_dyn < plan->max_radius)
-        obscost += plan->dist_penalty * 
+        obscost += (int) (plan->dist_penalty * 
                 (plan->max_radius - 
-                 plan->cells[PLAN_INDEX(plan,y,x)].occ_dist_dyn);
+                 plan->cells[PLAN_INDEX(plan,y,x)].occ_dist_dyn));
     }
     else
     {
       if(plan->cells[PLAN_INDEX(plan,x,y)].occ_dist_dyn < plan->abs_min_radius)
         return -1;
       else if(plan->cells[PLAN_INDEX(plan,x,y)].occ_dist_dyn < plan->max_radius)
-        obscost += plan->dist_penalty * 
+        obscost += (int) (plan->dist_penalty * 
                 (plan->max_radius - 
-                 plan->cells[PLAN_INDEX(plan,x,y)].occ_dist_dyn);
+                 plan->cells[PLAN_INDEX(plan,x,y)].occ_dist_dyn));
     }
   }
 

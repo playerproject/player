@@ -46,16 +46,22 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <sys/socket.h>
-#include <netdb.h>       // for gethostbyname()
-#include <netinet/in.h>  // for struct sockaddr_in, htons(3)
 #include <errno.h>
+#if !defined (WIN32)
+  #include <sys/socket.h>
+  #include <unistd.h>
+  #include <netdb.h>       // for gethostbyname()
+  #include <netinet/in.h>  // for struct sockaddr_in, htons(3)
+#endif
 
 #include <replace/replace.h>  /* for poll */
 
 #include "playerc.h"
 #include "error.h"
+
+#if defined (WIN32)
+  #define snprintf _snprintf
+#endif
 
 // Create a multi-client
 playerc_mclient_t *playerc_mclient_create()

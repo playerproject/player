@@ -139,7 +139,7 @@ void laser_precompute(laser_t *self)
 
 
 // Determine the probability for the given range reading
-inline double laser_sensor_prob(laser_t *self, double obs_range, double map_range)
+double laser_sensor_prob(laser_t *self, double obs_range, double map_range)
 {
   int i, j;
   double p;

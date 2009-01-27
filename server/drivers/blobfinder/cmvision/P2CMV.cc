@@ -106,7 +106,9 @@ Ben Grocholsky, Brad Kratochvil
 
 #include <assert.h>
 #include <stdio.h>
-#include <unistd.h>  /* close(2),fcntl(2),getpid(2),usleep(3),execvp(3),fork(2)*/
+#if !defined (WIN32)
+  #include <unistd.h>  /* close(2),fcntl(2),getpid(2),usleep(3),execvp(3),fork(2)*/
+#endif
 #include <signal.h>  /* for kill(2) */
 #include <fcntl.h>   /* for fcntl(2) */
 #include <string.h>  /* for strncpy(3),memcpy(3) */

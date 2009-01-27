@@ -131,18 +131,20 @@ driver
 #include <config.h>
 
 #include <libplayercore/playercore.h>
-#include <libplayerxdr/playerxdr.h>
+//#include <libplayerxdr/playerxdr.h>
 
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 #include <sys/types.h>
-#include <sys/time.h>
+#if !defined (WIN32)
+  #include <sys/time.h>
+  #include <unistd.h>
+  #include <strings.h>
+#endif
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 #include <math.h>
-#include <unistd.h>
 
 #if HAVE_Z
   #include <zlib.h>
@@ -150,6 +152,10 @@ driver
 
 #include "encode.h"
 #include "readlog_time.h"
+
+#if defined (WIN32)
+  #define strdup _strdup
+#endif
 
 #if 0
 // we use this pointer to reset timestamps in the client objects when the
@@ -478,8 +484,8 @@ ReadLog::ReadLog(ConfigFile* cf, int section)
   }
 
   // Get replay options
-  this->enable = cf->ReadInt(section, "autoplay", 1);
-  this->autorewind = cf->ReadInt(section, "autorewind", 0);
+  this->enable = cf->ReadInt(section, "autoplay", 1) != 0 ? true : false;
+  this->autorewind = cf->ReadInt(section, "autorewind", 0) != 0 ? true : false;
 
   // Initialize other stuff
   this->format = strdup("unknown");
@@ -526,8 +532,12 @@ int ReadLog::MainSetup()
   ReadLogTime_timeDouble = 0.0;
 
   // Open the file (possibly compressed)
-  if (strlen(this->filename) >= 3 && \
+  if (strlen(this->filename) >= 3 &&
+#if defined (WIN32)
+      _strnicmp(this->filename + strlen(this->filename) - 3, ".gz", 3) == 0)
+#else
       strcasecmp(this->filename + strlen(this->filename) - 3, ".gz") == 0)
+#endif
   {
 #if HAVE_Z
     this->gzfile = gzopen(this->filename, "r");
@@ -1143,7 +1153,7 @@ ReadLog::ParseHeader(int linenum, int token_count, char **tokens,
                      unsigned short* type, unsigned short* subtype)
 {
   char *name;
-  player_interface_t interface;
+  player_interface_t interf;
 
   if (token_count < 7)
   {
@@ -1153,12 +1163,12 @@ ReadLog::ParseHeader(int linenum, int token_count, char **tokens,
 
   name = tokens[3];
 
-  if (lookup_interface(name, &interface) == 0)
+  if (lookup_interface(name, &interf) == 0)
   {
     *dtime = atof(tokens[0]);
     id->host = atoi(tokens[1]);
     id->robot = atoi(tokens[2]);
-    id->interf = interface.interf;
+    id->interf = interf.interf;
     id->index = atoi(tokens[4]);
     *type = atoi(tokens[5]);
     *subtype = atoi(tokens[6]);
@@ -1470,10 +1480,10 @@ int ReadLog::ParseLaser(player_devaddr_t id,
             }
 
             data.id = atoi(tokens[7]);
-            data.min_angle = atof(tokens[8]);
-            data.max_angle = atof(tokens[9]);
-            data.resolution = atof(tokens[10]);
-            data.max_range = atof(tokens[11]);
+            data.min_angle = static_cast<float> (atof(tokens[8]));
+            data.max_angle = static_cast<float> (atof(tokens[9]));
+            data.resolution = static_cast<float> (atof(tokens[10]));
+            data.max_range = static_cast<float> (atof(tokens[11]));
             data.ranges_count = atoi(tokens[12]);
             data.intensity_count = data.ranges_count;
 
@@ -1483,7 +1493,7 @@ int ReadLog::ParseLaser(player_devaddr_t id,
             count = 0;
             for (i = 13; i < token_count; i += 2)
             {
-              data.ranges[count] = atof(tokens[i + 0]);
+              data.ranges[count] = static_cast<float> (atof(tokens[i + 0]));
               data.intensity[count] = atoi(tokens[i + 1]);
               count += 1;
             }
@@ -1496,7 +1506,7 @@ int ReadLog::ParseLaser(player_devaddr_t id,
             }
             else
             {
-              this->Publish(id, type, subtype,
+              this->Publish(id, static_cast<uint8_t> (type), static_cast<uint8_t> (subtype),
                           (void*)&data, sizeof(data), &time);
             }
             delete [] data.ranges;
@@ -1520,10 +1530,10 @@ int ReadLog::ParseLaser(player_devaddr_t id,
             data.pose.px = atof(tokens[8]);
             data.pose.py = atof(tokens[9]);
             data.pose.pa = atof(tokens[10]);
-            data.scan.min_angle = atof(tokens[11]);
-            data.scan.max_angle = atof(tokens[12]);
-            data.scan.resolution = atof(tokens[13]);
-            data.scan.max_range = atof(tokens[14]);
+            data.scan.min_angle = static_cast<float> (atof(tokens[11]));
+            data.scan.max_angle = static_cast<float> (atof(tokens[12]));
+            data.scan.resolution = static_cast<float> (atof(tokens[13]));
+            data.scan.max_range = static_cast<float> (atof(tokens[14]));
             data.scan.ranges_count = atoi(tokens[15]);
             data.scan.intensity_count = data.scan.ranges_count;
 
@@ -1533,7 +1543,7 @@ int ReadLog::ParseLaser(player_devaddr_t id,
             count = 0;
             for (i = 16; i < token_count; i += 2)
             {
-              data.scan.ranges[count] = atof(tokens[i + 0]);
+              data.scan.ranges[count] = static_cast<float> (atof(tokens[i + 0]));
               data.scan.intensity[count] = atoi(tokens[i + 1]);
               count += 1;
             }
@@ -1546,7 +1556,7 @@ int ReadLog::ParseLaser(player_devaddr_t id,
             }
             else
             {
-              this->Publish(id, type, subtype,
+              this->Publish(id, static_cast<uint8_t> (type), static_cast<uint8_t> (subtype),
                           (void*)&data, sizeof(data), &time);
               delete [] data.scan.ranges;
               delete [] data.scan.intensity;
@@ -1566,7 +1576,7 @@ int ReadLog::ParseLaser(player_devaddr_t id,
 			  }
 
 			  data.id = atoi(tokens[7]);
-			  data.max_range = atof(tokens[8]);
+			  data.max_range = static_cast<float> (atof(tokens[8]));
 			  data.ranges_count = atoi(tokens[9]);
 			  data.intensity_count = data.ranges_count;
 			  data.angles_count = data.ranges_count;
@@ -1578,8 +1588,8 @@ int ReadLog::ParseLaser(player_devaddr_t id,
 			  count = 0;
 			  for (i = 10; i < token_count; i += 3)
 			  {
-				  data.ranges[count] = atof(tokens[i + 0]);
-				  data.angles[count] = atof(tokens[i + 1]);
+				  data.ranges[count] = static_cast<float> (atof(tokens[i + 0]));
+				  data.angles[count] = static_cast<float> (atof(tokens[i + 1]));
 				  data.intensity[count] = atoi(tokens[i + 2]);
 				  count += 1;
 			  }
@@ -1592,7 +1602,7 @@ int ReadLog::ParseLaser(player_devaddr_t id,
 			  }
 			  else
 			  {
-				  this->Publish(id, type, subtype,
+				  this->Publish(id, static_cast<uint8_t> (type), static_cast<uint8_t> (subtype),
 								(void*)&data, sizeof(data), &time);
 			  }
 			  delete [] data.ranges;
@@ -1697,13 +1707,20 @@ int ReadLog::ParseLocalize(player_devaddr_t id,
             count = 0;
             for (i = 10; i < token_count; i += 7)
             {
-	      hypoths.hypoths[count].mean.px = atof(tokens[i + 0]);
-	      hypoths.hypoths[count].mean.py = atof(tokens[i + 1]);
-	      hypoths.hypoths[count].mean.pa = atof(tokens[i + 2]);
-	      hypoths.hypoths[count].cov[0] = atof(tokens[i + 3]);
-	      hypoths.hypoths[count].cov[1] = atof(tokens[i + 4]);
-	      hypoths.hypoths[count].cov[2] = atof(tokens[i + 5]);
-	      hypoths.hypoths[count].alpha = atof(tokens[i + 6]);
+              // TODO: This will probably go boom, as it hasn't been updated to use
+              // use the dynamic message structures yet
+#if defined (WIN32)
+#pragma message ("Oh my! readlog.cc has not been updated to use the new dynamic message structures!")
+#else
+#pragma message "Oh my! readlog.cc has not been updated to use the new dynamic message structures!"
+#endif
+              hypoths.hypoths[count].mean.px = atof(tokens[i + 0]);
+              hypoths.hypoths[count].mean.py = atof(tokens[i + 1]);
+              hypoths.hypoths[count].mean.pa = atof(tokens[i + 2]);
+              hypoths.hypoths[count].cov[0] = atof(tokens[i + 3]);
+              hypoths.hypoths[count].cov[1] = atof(tokens[i + 4]);
+              hypoths.hypoths[count].cov[2] = atof(tokens[i + 5]);
+              hypoths.hypoths[count].alpha = atof(tokens[i + 6]);
               count += 1;
             }
 
@@ -1715,7 +1732,7 @@ int ReadLog::ParseLocalize(player_devaddr_t id,
 
             }
 
-            this->Publish(id,  type, subtype,
+            this->Publish(id, static_cast<uint8_t> (type), static_cast<uint8_t> (subtype),
                           (void*)&hypoths, sizeof(hypoths), &time);
             return(0);
           }
@@ -1804,7 +1821,14 @@ int ReadLog::ParseSonar(player_devaddr_t id,
             int count = 0;
             for(int i=8;i<token_count;i++)
             {
-              data.ranges[count++] = atof(tokens[i]);
+              // TODO: This will probably go boom, as it hasn't been updated to use
+              // use the dynamic message structures yet
+#if defined (WIN32)
+#pragma message ("Oh my! readlog.cc has not been updated to use the new dynamic message structures!")
+#else
+#pragma message "Oh my! readlog.cc has not been updated to use the new dynamic message structures!"
+#endif
+              data.ranges[count++] = static_cast<float> (atof(tokens[i]));
             }
             if(count != (int)data.ranges_count)
             {
@@ -1812,7 +1836,7 @@ int ReadLog::ParseSonar(player_devaddr_t id,
                             this->filename, linenum);
               return -1;
             }
-            this->Publish(id, type, subtype,
+            this->Publish(id, static_cast<uint8_t> (type), static_cast<uint8_t> (subtype),
                           (void*)&data, sizeof(data), &time);
             return(0);
           }
@@ -1828,6 +1852,13 @@ int ReadLog::ParseSonar(player_devaddr_t id,
             int count = 0;
             for(int i=8;i<token_count;i+=3)
             {
+              // TODO: This will probably go boom, as it hasn't been updated to use
+              // use the dynamic message structures yet
+#if defined (WIN32)
+#pragma message ("Oh my! readlog.cc has not been updated to use the new dynamic message structures!")
+#else
+#pragma message "Oh my! readlog.cc has not been updated to use the new dynamic message structures!"
+#endif
               geom.poses[count].px = atof(tokens[i]);
               geom.poses[count].py = atof(tokens[i+1]);
               geom.poses[count].pyaw = atof(tokens[i+2]);
@@ -1839,7 +1870,7 @@ int ReadLog::ParseSonar(player_devaddr_t id,
                             this->filename, linenum);
               return -1;
             }
-            this->Publish(id, type, subtype,
+            this->Publish(id, static_cast<uint8_t> (type), static_cast<uint8_t> (subtype),
                           (void*)&geom, sizeof(geom), &time);
             return(0);
           }
@@ -1937,7 +1968,7 @@ ReadLog::ParsePosition(player_devaddr_t id,
             data.vel.pa = atof(tokens[12]);
             data.stall = atoi(tokens[13]);
 
-            this->Publish(id, type, subtype,
+            this->Publish(id, static_cast<uint8_t> (type), static_cast<uint8_t> (subtype),
                           (void*)&data, sizeof(data), &time);
             return(0);
           }
@@ -2024,6 +2055,13 @@ int ReadLog::ParseOpaque(player_devaddr_t id,
             count = 0;
             for (i = 8; i < token_count; i++)
             {
+              // TODO: This will probably go boom, as it hasn't been updated to use
+              // use the dynamic message structures yet
+#if defined (WIN32)
+#pragma message ("Oh my! readlog.cc has not been updated to use the new dynamic message structures!")
+#else
+#pragma message "Oh my! readlog.cc has not been updated to use the new dynamic message structures!"
+#endif
               data.data[count] = atoi(tokens[i]);
               count++;
             }
@@ -2034,7 +2072,7 @@ int ReadLog::ParseOpaque(player_devaddr_t id,
                             this->filename, linenum);
               return -1;
            }
-            this->Publish(id,  type, subtype,
+            this->Publish(id, static_cast<uint8_t> (type), static_cast<uint8_t> (subtype),
                           (void*)&data, sizeof(data), &time);
             return(0);
           }
@@ -2064,6 +2102,13 @@ int ReadLog::ParseOpaque(player_devaddr_t id,
             count = 0;
             for (i = 8; i < token_count; i++)
             {
+              // TODO: This will probably go boom, as it hasn't been updated to use
+              // use the dynamic message structures yet
+#if defined (WIN32)
+#pragma message ("Oh my! readlog.cc has not been updated to use the new dynamic message structures!")
+#else
+#pragma message "Oh my! readlog.cc has not been updated to use the new dynamic message structures!"
+#endif
               data.data[count] = atoi(tokens[i]);
               count++;
             }
@@ -2074,7 +2119,7 @@ int ReadLog::ParseOpaque(player_devaddr_t id,
                             this->filename, linenum);
               return -1;
            }
-            this->Publish(id,  type, subtype,
+            this->Publish(id, static_cast<uint8_t> (type), static_cast<uint8_t> (subtype),
                           (void*)&data, sizeof(data), &time);
             return(0);
           }
@@ -2120,6 +2165,13 @@ int ReadLog::ParseWifi(player_devaddr_t id,
             data.links_count = 0;
             for(i = 8; (i+8) < token_count; i += 9)
             {
+              // TODO: This will probably go boom, as it hasn't been updated to use
+              // use the dynamic message structures yet
+#if defined (WIN32)
+#pragma message ("Oh my! readlog.cc has not been updated to use the new dynamic message structures!")
+#else
+#pragma message "Oh my! readlog.cc has not been updated to use the new dynamic message structures!"
+#endif
               link = data.links + data.links_count;
 
               memcpy(link->mac, tokens[i + 0]+1, strlen(tokens[i+0])-2);
@@ -2140,7 +2192,7 @@ int ReadLog::ParseWifi(player_devaddr_t id,
             if(data.links_count != reported_count)
               PLAYER_WARN("read fewer wifi link entries than expected");
 
-            this->Publish(id, type, subtype,
+            this->Publish(id, static_cast<uint8_t> (type), static_cast<uint8_t> (subtype),
                           (void*)&data, sizeof(data), &time);
             return(0);
           }
@@ -2179,18 +2231,18 @@ int ReadLog::ParseWSN(player_devaddr_t id,
                     data.node_id        = atoi(tokens[8]);
                     data.node_parent_id = atoi(tokens[9]);
 
-                    data.data_packet.light       = atof(tokens[10]);
-                    data.data_packet.mic         = atof(tokens[11]);
-                    data.data_packet.accel_x     = atof(tokens[12]);
-                    data.data_packet.accel_y     = atof(tokens[13]);
-                    data.data_packet.accel_z     = atof(tokens[14]);
-                    data.data_packet.magn_x      = atof(tokens[15]);
-                    data.data_packet.magn_y      = atof(tokens[16]);
-                    data.data_packet.magn_z      = atof(tokens[17]);
-                    data.data_packet.temperature = atof(tokens[18]);
-                    data.data_packet.battery     = atof(tokens[19]);
+                    data.data_packet.light       = static_cast<float> (atof(tokens[10]));
+                    data.data_packet.mic         = static_cast<float> (atof(tokens[11]));
+                    data.data_packet.accel_x     = static_cast<float> (atof(tokens[12]));
+                    data.data_packet.accel_y     = static_cast<float> (atof(tokens[13]));
+                    data.data_packet.accel_z     = static_cast<float> (atof(tokens[14]));
+                    data.data_packet.magn_x      = static_cast<float> (atof(tokens[15]));
+                    data.data_packet.magn_y      = static_cast<float> (atof(tokens[16]));
+                    data.data_packet.magn_z      = static_cast<float> (atof(tokens[17]));
+                    data.data_packet.temperature = static_cast<float> (atof(tokens[18]));
+                    data.data_packet.battery     = static_cast<float> (atof(tokens[19]));
 
-                    this->Publish(id, type, subtype,
+                    this->Publish(id, static_cast<uint8_t> (type), static_cast<uint8_t> (subtype),
                                   (void*)&data, sizeof(data), &time);
                     return(0);
                 }
@@ -2232,7 +2284,7 @@ int ReadLog::ParseIMU (player_devaddr_t id,
 		    data.pose.ppitch = atof (tokens[11]);
 		    data.pose.pyaw   = atof (tokens[12]);
 
-                    this->Publish (id, type, subtype,
+                    this->Publish (id, static_cast<uint8_t> (type), static_cast<uint8_t> (subtype),
                                   (void*)&data, sizeof(data), &time);
                     return (0);
                 }
@@ -2246,17 +2298,17 @@ int ReadLog::ParseIMU (player_devaddr_t id,
                     }
 		    player_imu_data_calib_t data;
 
-		    data.accel_x = atof (tokens[7]);
-		    data.accel_y = atof (tokens[8]);
-		    data.accel_z = atof (tokens[9]);
-		    data.gyro_x  = atof (tokens[10]);
-		    data.gyro_y  = atof (tokens[11]);
-		    data.gyro_z  = atof (tokens[12]);
-		    data.magn_x  = atof (tokens[13]);
-		    data.magn_y  = atof (tokens[14]);
-		    data.magn_z  = atof (tokens[15]);
+		    data.accel_x = static_cast<float> (atof (tokens[7]));
+		    data.accel_y = static_cast<float> (atof (tokens[8]));
+		    data.accel_z = static_cast<float> (atof (tokens[9]));
+		    data.gyro_x  = static_cast<float> (atof (tokens[10]));
+		    data.gyro_y  = static_cast<float> (atof (tokens[11]));
+		    data.gyro_z  = static_cast<float> (atof (tokens[12]));
+		    data.magn_x  = static_cast<float> (atof (tokens[13]));
+		    data.magn_y  = static_cast<float> (atof (tokens[14]));
+		    data.magn_z  = static_cast<float> (atof (tokens[15]));
 
-                    this->Publish (id, type, subtype,
+                    this->Publish (id, static_cast<uint8_t> (type), static_cast<uint8_t> (subtype),
                                   (void*)&data, sizeof(data), &time);
                     return (0);
 		}
@@ -2270,21 +2322,21 @@ int ReadLog::ParseIMU (player_devaddr_t id,
                     }
 		    player_imu_data_quat_t data;
 
-		    data.calib_data.accel_x = atof (tokens[7]);
-		    data.calib_data.accel_y = atof (tokens[8]);
-		    data.calib_data.accel_z = atof (tokens[9]);
-		    data.calib_data.gyro_x  = atof (tokens[10]);
-		    data.calib_data.gyro_y  = atof (tokens[11]);
-		    data.calib_data.gyro_z  = atof (tokens[12]);
-		    data.calib_data.magn_x  = atof (tokens[13]);
-		    data.calib_data.magn_y  = atof (tokens[14]);
-		    data.calib_data.magn_z  = atof (tokens[15]);
-		    data.q0      = atof (tokens[16]);
-		    data.q1      = atof (tokens[17]);
-		    data.q2      = atof (tokens[18]);
-		    data.q3      = atof (tokens[19]);
+		    data.calib_data.accel_x = static_cast<float> (atof (tokens[7]));
+		    data.calib_data.accel_y = static_cast<float> (atof (tokens[8]));
+		    data.calib_data.accel_z = static_cast<float> (atof (tokens[9]));
+		    data.calib_data.gyro_x  = static_cast<float> (atof (tokens[10]));
+		    data.calib_data.gyro_y  = static_cast<float> (atof (tokens[11]));
+		    data.calib_data.gyro_z  = static_cast<float> (atof (tokens[12]));
+		    data.calib_data.magn_x  = static_cast<float> (atof (tokens[13]));
+		    data.calib_data.magn_y  = static_cast<float> (atof (tokens[14]));
+		    data.calib_data.magn_z  = static_cast<float> (atof (tokens[15]));
+		    data.q0      = static_cast<float> (atof (tokens[16]));
+		    data.q1      = static_cast<float> (atof (tokens[17]));
+		    data.q2      = static_cast<float> (atof (tokens[18]));
+		    data.q3      = static_cast<float> (atof (tokens[19]));
 
-                    this->Publish (id, type, subtype,
+                    this->Publish (id, static_cast<uint8_t> (type), static_cast<uint8_t> (subtype),
                                   (void*)&data, sizeof(data), &time);
                     return (0);
 		}
@@ -2298,20 +2350,20 @@ int ReadLog::ParseIMU (player_devaddr_t id,
                     }
 		    player_imu_data_euler_t data;
 
-		    data.calib_data.accel_x = atof (tokens[7]);
-		    data.calib_data.accel_y = atof (tokens[8]);
-		    data.calib_data.accel_z = atof (tokens[9]);
-		    data.calib_data.gyro_x  = atof (tokens[10]);
-		    data.calib_data.gyro_y  = atof (tokens[11]);
-		    data.calib_data.gyro_z  = atof (tokens[12]);
-		    data.calib_data.magn_x  = atof (tokens[13]);
-		    data.calib_data.magn_y  = atof (tokens[14]);
-		    data.calib_data.magn_z  = atof (tokens[15]);
-		    data.orientation.proll  = atof (tokens[16]);
-		    data.orientation.ppitch = atof (tokens[17]);
-		    data.orientation.pyaw   = atof (tokens[18]);
+		    data.calib_data.accel_x = static_cast<float> (atof (tokens[7]));
+		    data.calib_data.accel_y = static_cast<float> (atof (tokens[8]));
+		    data.calib_data.accel_z = static_cast<float> (atof (tokens[9]));
+		    data.calib_data.gyro_x  = static_cast<float> (atof (tokens[10]));
+		    data.calib_data.gyro_y  = static_cast<float> (atof (tokens[11]));
+		    data.calib_data.gyro_z  = static_cast<float> (atof (tokens[12]));
+		    data.calib_data.magn_x  = static_cast<float> (atof (tokens[13]));
+		    data.calib_data.magn_y  = static_cast<float> (atof (tokens[14]));
+		    data.calib_data.magn_z  = static_cast<float> (atof (tokens[15]));
+		    data.orientation.proll  = static_cast<float> (atof (tokens[16]));
+		    data.orientation.ppitch = static_cast<float> (atof (tokens[17]));
+		    data.orientation.pyaw   = static_cast<float> (atof (tokens[18]));
 
-                    this->Publish (id, type, subtype,
+                    this->Publish (id, static_cast<uint8_t> (type), static_cast<uint8_t> (subtype),
                                   (void*)&data, sizeof(data), &time);
                     return (0);
 		}
@@ -2356,9 +2408,16 @@ int ReadLog::ParsePointCloud3d (player_devaddr_t id,
 			point.py = atof (tokens[9+i*3]);
 			point.pz = atof (tokens[10+i*3]);
 			element.point = point;
+            // TODO: This will probably go boom, as it hasn't been updated to use
+            // use the dynamic message structures yet
+#if defined (WIN32)
+#pragma message ("Oh my! readlog.cc has not been updated to use the new dynamic message structures!")
+#else
+#pragma message "Oh my! readlog.cc has not been updated to use the new dynamic message structures!"
+#endif
 			data.points[i] = element;
 		    }
-                    this->Publish (id, type, subtype,
+                    this->Publish (id, static_cast<uint8_t> (type), static_cast<uint8_t> (subtype),
                                   (void*)&data, sizeof(data), &time);
                     return (0);
                 }
@@ -2394,12 +2453,12 @@ int ReadLog::ParsePTZ (player_devaddr_t id,
                     }
 		    player_ptz_data_t data;
 
-		    data.pan  = atof (tokens[7]);
-		    data.tilt = atof (tokens[8]);
-		    data.zoom = atof (tokens[9]);
-		    data.panspeed  = atof (tokens[10]);
-		    data.tiltspeed = atof (tokens[11]);
-                    this->Publish (id, type, subtype,
+		    data.pan  = static_cast<float> (atof (tokens[7]));
+		    data.tilt = static_cast<float> (atof (tokens[8]));
+		    data.zoom = static_cast<float> (atof (tokens[9]));
+		    data.panspeed  = static_cast<float> (atof (tokens[10]));
+		    data.tiltspeed = static_cast<float> (atof (tokens[11]));
+                    this->Publish (id, static_cast<uint8_t> (type), static_cast<uint8_t> (subtype),
                                   (void*)&data, sizeof(data), &time);
                     return (0);
                 }
@@ -2439,16 +2498,16 @@ int ReadLog::ParseActarray (player_devaddr_t id,
             for (i = 0; i < data.actuators_count; i++)
             {
               player_actarray_actuator actuator;
-              actuator.position     = atof (tokens[5*i+8]);
-              actuator.speed        = atof (tokens[5*i+9]);
-              actuator.acceleration = atof (tokens[5*i+10]);
-              actuator.current      = atof (tokens[5*i+11]);
-              actuator.state        = atoi (tokens[5*i+12]);
+              actuator.position     = static_cast<float> (atof (tokens[5*i+8]));
+              actuator.speed        = static_cast<float> (atof (tokens[5*i+9]));
+              actuator.acceleration = static_cast<float> (atof (tokens[5*i+10]));
+              actuator.current      = static_cast<float> (atof (tokens[5*i+11]));
+              actuator.state        = static_cast<uint8_t> (atoi (tokens[5*i+12]));
               data.actuators[i] = actuator;
             }
             data.motor_state = atoi (tokens[data.actuators_count*5 + 8]);
 
-            this->Publish (id, type, subtype, (void*)&data, sizeof(data), &time);
+            this->Publish (id, static_cast<uint8_t> (type), static_cast<uint8_t> (subtype), (void*)&data, sizeof(data), &time);
             delete[] data.actuators;
             return (0);
           default:
@@ -2488,13 +2547,13 @@ int ReadLog::ParseAIO(player_devaddr_t id, unsigned short type,
               return -1;
             }
 
-            char **t(tokens + 8);
+            char **t = tokens + 8;
             inputs.voltages = new float[inputs.voltages_count];
             for (float *v(inputs.voltages);
                  v != inputs.voltages + inputs.voltages_count; ++v, ++t)
-              *v = atof(*t);
+              *v = static_cast<uint8_t> (atof(*t));
 
-            Publish(id, type, subtype, (void *)&inputs, sizeof(inputs),
+            Publish(id, static_cast<uint8_t> (type), static_cast<uint8_t> (subtype), (void *)&inputs, sizeof(inputs),
                     &time);
             delete [] inputs.voltages;
             return 0;
@@ -2544,13 +2603,13 @@ int ReadLog::ParseDIO(player_devaddr_t id, unsigned short type,
               return -1;
             }
 
-            char **t(tokens + 8);
+            char **t = tokens + 8;
             for (uint32_t mask(1); mask != (1ul << inputs.count);
                  mask <<=1, ++t) {
               if (strcmp(*t, "1") == 0) inputs.bits |= mask;
             }
 
-            Publish(id, type, subtype, (void *)&inputs, sizeof(inputs),
+            Publish(id, static_cast<uint8_t> (type), static_cast<uint8_t> (subtype), (void *)&inputs, sizeof(inputs),
                     &time);
             return 0;
           }
@@ -2607,7 +2666,7 @@ int ReadLog::ParseRFID(player_devaddr_t id, unsigned short type,
             }
 
 
-            char **t(tokens + 8);
+            char **t = tokens + 8;
             rdata.tags = new player_rfid_tag_t[ rdata.tags_count];
             for (player_rfid_tag_t *r(rdata.tags);
                  r != rdata.tags + rdata.tags_count; ++r, ++t) {
@@ -2618,9 +2677,15 @@ int ReadLog::ParseRFID(player_devaddr_t id, unsigned short type,
               DecodeHex(r->guid, r->guid_count, *t, strlen(*t));
             }
 
-            Publish(id, type, subtype, (void *)&rdata, sizeof(rdata),
+            Publish(id, static_cast<uint8_t> (type), static_cast<uint8_t> (subtype), (void *)&rdata, sizeof(rdata),
                     &time);
-            player_rfid_data_t_cleanup(&rdata);
+            player_cleanup_fn_t cleanupfunc;
+            if (!(cleanupfunc = playerxdr_get_cleanupfunc (PLAYER_RFID_CODE, PLAYER_MSGTYPE_DATA, PLAYER_RFID_DATA_TAGS)))
+            {
+              PLAYER_ERROR ("Couldn't fund clean up function to clean up RFID data");
+              return -1;
+            }
+            (*cleanupfunc) (&rdata);
             return 0;
           }
         default:

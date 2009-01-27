@@ -38,6 +38,18 @@
 
 #include <playerconfig.h>
 
+#if defined (WIN32)
+  #if defined (PLAYER_STATIC)
+    #define PLAYERCORE_EXPORT
+  #elif defined (playercore_EXPORTS)
+    #define PLAYERCORE_EXPORT    __declspec (dllexport)
+  #else
+    #define PLAYERCORE_EXPORT    __declspec (dllimport)
+  #endif
+#else
+  #define PLAYERCORE_EXPORT
+#endif
+
 #if HAVE_LIBLTDL
   #include <ltdl.h>
 #else
@@ -49,8 +61,8 @@
 /// @brief Function signature for interface plugin initialization functions
 typedef playerxdr_function_t* (*InterfPluginInitFn) (void);
 
-lt_dlhandle LoadPlugin(const char* pluginname, const char* cfgfile);
+PLAYERCORE_EXPORT lt_dlhandle LoadPlugin(const char* pluginname, const char* cfgfile);
 
-bool InitDriverPlugin(lt_dlhandle handle);
+PLAYERCORE_EXPORT bool InitDriverPlugin(lt_dlhandle handle);
 
-playerxdr_function_t* InitInterfacePlugin(lt_dlhandle handle);
+PLAYERCORE_EXPORT playerxdr_function_t* InitInterfacePlugin(lt_dlhandle handle);

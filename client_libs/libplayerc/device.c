@@ -50,6 +50,9 @@
 #include "playerc.h"
 #include "error.h"
 
+#if defined (WIN32)
+  #define strdup _strdup
+#endif
 
 void playerc_device_init(playerc_device_t *device, playerc_client_t *client,
                          int code, int index, playerc_putmsg_fn_t putmsg)

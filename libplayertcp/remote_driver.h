@@ -40,12 +40,24 @@
 #ifndef REMOTE_DRIVER_H
 #define REMOTE_DRIVER_H
 
+#if defined (WIN32)
+  #if defined (PLAYER_STATIC)
+    #define PLAYERTCP_EXPORT
+  #elif defined (playertcp_EXPORTS)
+    #define PLAYERTCP_EXPORT    __declspec (dllexport)
+  #else
+    #define PLAYERTCP_EXPORT    __declspec (dllimport)
+  #endif
+#else
+  #define PLAYERTCP_EXPORT
+#endif
+
 #include <libplayercore/playercore.h>
 #include "playertcp.h"
 
 #define DEFAULT_SETUP_TIMEOUT 1.0
 
-class TCPRemoteDriver : public Driver
+class PLAYERTCP_EXPORT TCPRemoteDriver : public Driver
 {
   private:
     PlayerTCP* ptcp;

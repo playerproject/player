@@ -58,9 +58,26 @@ This library moves messages between Player message queues and UDP sockets.
 #ifndef _PLAYERUDP_H_
 #define _PLAYERUDP_H_
 
+#if defined (WIN32)
+  #if defined (PLAYER_STATIC)
+    #define PLAYERUDP_EXPORT
+  #elif defined (playerudp_EXPORTS)
+    #define PLAYERUDP_EXPORT    __declspec (dllexport)
+  #else
+    #define PLAYERUDP_EXPORT    __declspec (dllimport)
+  #endif
+#else
+  #define PLAYERUDP_EXPORT
+#endif
+
+#if defined (WIN32)
+  #include <winsock2.h>
+  #include <ws2tcpip.h>
+#else
+  #include <sys/socket.h>
+  #include <netinet/in.h>
+#endif
 #include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <pthread.h>
 
 #include <libplayercore/playercore.h>
@@ -82,7 +99,7 @@ struct pollfd;
 struct playerudp_listener;
 struct playerudp_conn;
 
-class PlayerUDP
+class PLAYERUDP_EXPORT PlayerUDP
 {
   private:
     uint32_t host;

@@ -47,6 +47,18 @@
 #ifndef _FUNCTIONTABLE_H_
 #define _FUNCTIONTABLE_H_
 
+#if defined (WIN32)
+  #if defined (PLAYER_STATIC)
+    #define PLAYERXDR_EXPORT
+  #elif defined (playerxdr_EXPORTS)
+    #define PLAYERXDR_EXPORT    __declspec (dllexport)
+  #else
+    #define PLAYERXDR_EXPORT    __declspec (dllimport)
+  #endif
+#else
+  #define PLAYERXDR_EXPORT
+#endif
+
 #include <playerconfig.h>
 
 #ifdef __cplusplus
@@ -98,22 +110,22 @@ typedef struct
  * @returns A pointer to the appropriate function, or NULL if one cannot be
  * found.
  */
-player_pack_fn_t playerxdr_get_packfunc(uint16_t interf, uint8_t type,
+PLAYERXDR_EXPORT player_pack_fn_t playerxdr_get_packfunc(uint16_t interf, uint8_t type,
                                     uint8_t subtype);
 
-player_copy_fn_t playerxdr_get_copyfunc(uint16_t interf, uint8_t type,
+PLAYERXDR_EXPORT player_copy_fn_t playerxdr_get_copyfunc(uint16_t interf, uint8_t type,
                                     uint8_t subtype);
 
-player_cleanup_fn_t playerxdr_get_cleanupfunc(uint16_t interf, uint8_t type,
+PLAYERXDR_EXPORT player_cleanup_fn_t playerxdr_get_cleanupfunc(uint16_t interf, uint8_t type,
                                     uint8_t subtype);
 
-player_clone_fn_t playerxdr_get_clonefunc(uint16_t interf, uint8_t type,
+PLAYERXDR_EXPORT player_clone_fn_t playerxdr_get_clonefunc(uint16_t interf, uint8_t type,
                                     uint8_t subtype);
 
-player_free_fn_t playerxdr_get_freefunc(uint16_t interf, uint8_t type,
+PLAYERXDR_EXPORT player_free_fn_t playerxdr_get_freefunc(uint16_t interf, uint8_t type,
                                     uint8_t subtype);
 
-player_sizeof_fn_t playerxdr_get_sizeoffunc(uint16_t interf, uint8_t type,
+PLAYERXDR_EXPORT player_sizeof_fn_t playerxdr_get_sizeoffunc(uint16_t interf, uint8_t type,
                                     uint8_t subtype);
 
 /** @brief Add an entry to the function table.
@@ -126,7 +138,7 @@ player_sizeof_fn_t playerxdr_get_sizeoffunc(uint16_t interf, uint8_t type,
  * necessary), -1 on failure (an existing entry matched the given
  * signature, but @p replace was 0)
  */
-int playerxdr_ftable_add(playerxdr_function_t f, int replace);
+PLAYERXDR_EXPORT int playerxdr_ftable_add(playerxdr_function_t f, int replace);
 
 /** @brief Add multiple entries to the function table.
  *
@@ -136,7 +148,7 @@ int playerxdr_ftable_add(playerxdr_function_t f, int replace);
  *
  * @returns 0 on success, -1 on failure
  */
-int playerxdr_ftable_add_multi(playerxdr_function_t *flist, int replace);
+PLAYERXDR_EXPORT int playerxdr_ftable_add_multi(playerxdr_function_t *flist, int replace);
 
 /** @brief Initialize the XDR function table.
  *
@@ -146,7 +158,7 @@ int playerxdr_ftable_add_multi(playerxdr_function_t *flist, int replace);
  * @todo Add the ability to extend the function table for user-defined
  * message types.
  */
-void playerxdr_ftable_init(void);
+PLAYERXDR_EXPORT void playerxdr_ftable_init(void);
 
 /** @brief Deep copy a message structure.
  *
@@ -158,7 +170,7 @@ void playerxdr_ftable_init(void);
  *
  * @returns : The number of bytes copied.
  */
-unsigned int playerxdr_deepcopy_message(void* src, void* dest, uint16_t interf, uint8_t type,
+PLAYERXDR_EXPORT unsigned int playerxdr_deepcopy_message(void* src, void* dest, uint16_t interf, uint8_t type,
                                     uint8_t subtype);
 
 /** @brief Clones a message structure.
@@ -169,7 +181,7 @@ unsigned int playerxdr_deepcopy_message(void* src, void* dest, uint16_t interf, 
  *
  * @returns : The message clone
  */
-void * playerxdr_clone_message(void* msg, uint16_t interf, uint8_t type, uint8_t subtype);
+PLAYERXDR_EXPORT void * playerxdr_clone_message(void* msg, uint16_t interf, uint8_t type, uint8_t subtype);
 
 /** @brief Delete a message structure's dynamic elements.
  *
@@ -180,7 +192,7 @@ void * playerxdr_clone_message(void* msg, uint16_t interf, uint8_t type, uint8_t
  *
  * @returns: Nothing.
  */
-void playerxdr_free_message(void* msg, uint16_t interf, uint8_t type,
+PLAYERXDR_EXPORT void playerxdr_free_message(void* msg, uint16_t interf, uint8_t type,
                                     uint8_t subtype);
 
 /** @brief Cleanup a message structure's dynamic elements.
@@ -192,7 +204,7 @@ void playerxdr_free_message(void* msg, uint16_t interf, uint8_t type,
  *
  * @returns: Nothing.
  */
-void playerxdr_cleanup_message(void* msg, uint16_t interf, uint8_t type,
+PLAYERXDR_EXPORT void playerxdr_cleanup_message(void* msg, uint16_t interf, uint8_t type,
                                     uint8_t subtype);
 
 /** @} */

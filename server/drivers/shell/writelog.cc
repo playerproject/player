@@ -159,11 +159,19 @@ driver
 #include <sys/stat.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
+#if defined (WIN32)
+  #include <direct.h> // For _mkdir()
+#else
+  #include <unistd.h>
+#endif
 
 #include <libplayercore/playercore.h>
 
 #include "encode.h"
+
+#if defined (WIN32)
+  #define snprintf _snprintf
+#endif
 
 // Utility class for storing per-device info
 struct WriteLogDevice
@@ -317,7 +325,6 @@ class WriteLog: public ThreadedDriver
 
 ////////////////////////////////////////////////////////////////////////////
 // Pointer to the one-and-only time
-extern PlayerTime* GlobalTime;
 extern int global_playerport;
 
 
@@ -402,7 +409,7 @@ WriteLog::WriteLog(ConfigFile* cf, int section)
   this->device_count = 0;
 
   //write particles in case the localize interface is provided
-  this->write_particles = cf->ReadInt(section, "write_particles", 0);
+  this->write_particles = cf->ReadInt(section, "write_particles", 0) != 0 ? true : false;
 
   this->write_particles_now = false;
 
@@ -426,8 +433,8 @@ WriteLog::WriteLog(ConfigFile* cf, int section)
   }
 
   // Camera specific settings
-  this->cameraLogImages = cf->ReadInt(section, "camera_log_images", 1);
-  this->cameraSaveImages = cf->ReadInt(section, "camera_save_images", 0);
+  this->cameraLogImages = cf->ReadInt(section, "camera_log_images", 1) != 0 ? true : false;
+  this->cameraSaveImages = cf->ReadInt(section, "camera_save_images", 0) != 0 ? true : false;
 
   return;
 }
@@ -501,7 +508,11 @@ int
 WriteLog::OpenFile()
 {
   // Create directory
+#if defined (WIN32)
+  _mkdir(this->log_directory);
+#else
   mkdir(this->log_directory, 0755);
+#endif
 
   // Open the file
   this->file = fopen(this->filename, "w+");
@@ -1926,10 +1937,16 @@ WriteLog::WriteRFID(player_msghdr_t* hdr, void* data)
 
             for (player_rfid_tag_t *t(rdata->tags);
                  t != rdata->tags + rdata->tags_count; ++t) {
-              char str[t->guid_count * 2 + 1];
+              char *str;
+              if ((str = new char[t->guid_count * 2 + 1]) == NULL)
+              {
+                PLAYER_ERROR("Failed to allocate space for str");
+				return -1;
+              }
               memset(str, '\0', sizeof(str));
               EncodeHex(str, sizeof(str), t->guid, t->guid_count);
               fprintf(file, "%04lu %s ", (long)t->type, str);
+			  delete[] str;
             }
 
             return 0;

@@ -46,6 +46,18 @@
 #ifndef _DEVICE_H
 #define _DEVICE_H
 
+#if defined (WIN32)
+  #if defined (PLAYER_STATIC)
+    #define PLAYERCORE_EXPORT
+  #elif defined (playercore_EXPORTS)
+    #define PLAYERCORE_EXPORT    __declspec (dllexport)
+  #else
+    #define PLAYERCORE_EXPORT    __declspec (dllimport)
+  #endif
+#else
+  #define PLAYERCORE_EXPORT
+#endif
+
 #include <libplayercore/player.h>
 #include <libplayercore/message.h>
 
@@ -59,7 +71,7 @@ class Driver;
 /// A device describes an instantiated driver/interface
 /// combination.  Drivers may support more than one interface,
 /// and hence appear more than once in the device table.
-class Device
+class PLAYERCORE_EXPORT Device
 {
   public:
     /// @brief Constructor

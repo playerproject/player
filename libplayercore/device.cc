@@ -47,10 +47,11 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include <unistd.h>
+#if !defined WIN32
+  #include <unistd.h>
+  #include <netinet/in.h>
+#endif
 #include <assert.h>
-
-#include <netinet/in.h>
 
 #include <libplayercore/driver.h>
 #include <libplayercore/device.h>
@@ -216,7 +217,6 @@ Device::PutMsg(QueuePointer &resp_queue,
                size_t deprecated,
                double* timestamp)
 {
-  struct timeval ts;
   double t;
   player_msghdr_t hdr;
 
@@ -225,10 +225,7 @@ Device::PutMsg(QueuePointer &resp_queue,
   if(timestamp)
     t = *timestamp;
   else
-  {
-    GlobalTime->GetTime(&ts);
-    t = ts.tv_sec + ts.tv_usec/1e6;
-  }
+    GlobalTime->GetTimeDouble(&t);
 
   memset(&hdr,0,sizeof(player_msghdr_t));
   //hdr.stx = PLAYER_STXX;

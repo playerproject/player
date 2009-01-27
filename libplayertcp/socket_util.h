@@ -46,6 +46,18 @@
 #ifndef _PUBSUB_UTIL_H
 #define _PUBSUB_UTIL_H
 
+#if defined (WIN32)
+  #if defined (PLAYER_STATIC)
+    #define PLAYERTCP_EXPORT
+  #elif defined (playertcp_EXPORTS)
+    #define PLAYERTCP_EXPORT    __declspec (dllexport)
+  #else
+    #define PLAYERTCP_EXPORT    __declspec (dllimport)
+  #endif
+#else
+  #define PLAYERTCP_EXPORT
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -75,8 +87,8 @@ extern "C" {
  *  On success, the fd of the new socket is returned.  Otherwise, -1 
  *  is returned and an explanatory note is dumped to stderr.
  */
-int create_and_bind_socket(char blocking, unsigned int host, 
-                           int* portnum, int socktype, int backlog);
+PLAYERTCP_EXPORT int create_and_bind_socket(char blocking, unsigned int host, 
+                                    int* portnum, int socktype, int backlog);
 #ifdef __cplusplus
 }
 #endif

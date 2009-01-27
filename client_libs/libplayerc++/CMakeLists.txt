@@ -1,5 +1,10 @@
 ADD_SUBDIRECTORY (test)
 
+# Possibly use our own copy of XDR, and need gettimeofday replacement
+IF (NOT HAVE_XDR OR NOT HAVE_GETTIMEOFDAY)
+    INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/replace)
+ENDIF (NOT HAVE_XDR OR NOT HAVE_GETTIMEOFDAY)
+
 IF (HAVE_STL)
     OPTION (BUILD_PLAYERCC "Build the C++ client library" ON)
 ELSE (HAVE_STL)

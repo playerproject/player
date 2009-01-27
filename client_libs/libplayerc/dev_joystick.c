@@ -49,10 +49,16 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include <netinet/in.h>
+#if !defined (WIN32)
+  #include <netinet/in.h>
+#endif
 
 #include "playerc.h"
 #include "error.h"
+
+#if defined (WIN32)
+  #define snprintf _snprintf
+#endif
 
 // Local declarations
 void playerc_joystick_putmsg(playerc_joystick_t *device,
@@ -100,7 +106,7 @@ int playerc_joystick_unsubscribe(playerc_joystick_t *device)
 void playerc_joystick_putmsg(playerc_joystick_t *device, player_msghdr_t *header,
                             player_joystick_data_t *data, size_t len)
 {
-  int i;
+  uint32_t i;
   if((header->type == PLAYER_MSGTYPE_DATA) &&
      (header->subtype == PLAYER_JOYSTICK_DATA_STATE))
   {

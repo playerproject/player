@@ -34,7 +34,9 @@
 #include <sys/types.h> // required by Darwin
 #include <math.h>
 #include <stdlib.h>
-#include <unistd.h>
+#if !defined (WIN32)
+  #include <unistd.h>
+#endif
 
 #include <libplayercore/playercore.h>
 #include <libplayercore/error.h>

@@ -50,19 +50,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <signal.h>
-#include <netinet/in.h>
 #if ENABLE_TCP_NODELAY
   #include <netinet/tcp.h>
 #endif
-#include <sys/socket.h>
-#include <netdb.h>       // for gethostbyname()
 #include <errno.h>
-#include <sys/time.h>
 #include <time.h>
-#include <unistd.h>
 #include <fcntl.h>
+#if !defined (WIN32)
+  #include <sys/socket.h>
+  #include <netinet/in.h>
+  #include <unistd.h>
+  #include <netdb.h>       // for gethostbyname()
+  #include <sys/time.h>
+  #include <unistd.h>
+#endif
 
 #ifdef HAVE_POLL
 #include <sys/poll.h>
@@ -72,6 +74,23 @@
 
 #include "playerc.h"
 #include "error.h"
+
+#if defined (WIN32)
+  #define snprintf _snprintf
+  #define strdup _strdup
+  #define ErrNo WSAGetLastError()
+  const int ERRNO_EAGAIN = WSAEWOULDBLOCK;
+  LPVOID errBuffer = NULL;
+  #define STRERROR(errMacro,text) { \
+    FormatMessage (FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL, \
+    ErrNo, 0, (LPTSTR) &errBuffer, 0, NULL); \
+    errMacro (text, ErrNo, (LPTSTR) errBuffer); \
+    LocalFree (errBuffer);}
+#else
+  #define ErrNo errno
+  const int ERRNO_EAGAIN = EAGAIN;
+  #define STRERROR(errMacro,text) errMacro (text, ErrNo, strerror (ErrNo));
+#endif
 
 // Have we done one-time intialization work yet?
 static int init_done;
@@ -131,6 +150,18 @@ int timed_recv(int s, void *buf, size_t len, int flags, int timeout)
 playerc_client_t *playerc_client_create(playerc_mclient_t *mclient, const char *host, int port)
 {
   playerc_client_t *client;
+#if defined (WIN32)
+  // Initialise Windows sockets API (this can safely be done as many times as we like)
+  // Thus must be called once for every client creation, in order to match the calls on
+  // client destruction (winsocks uses an internal reference counter to ensure only the
+  // final call to WSACleanup actually does anything).
+  WSADATA info;
+  int result;
+  if ((result = WSAStartup (MAKEWORD (2, 2), &info)) != 0)
+  {
+    PLAYERC_ERR1 ("Failed to initialise Windows sockets API with error %d", result);
+  }
+#endif
 
   // Have we done one-time intialization work yet?
   if(!init_done)
@@ -193,6 +224,12 @@ void playerc_client_destroy(playerc_client_t *client)
 	  playerxdr_cleanup_message(client->data,header.addr.interf, header.type, header.subtype);
   }
 
+#if defined (WIN32)
+  // Clean up the Windows sockets API (this can safely be done as many times as we like)
+  if (WSACleanup () != 0)
+    PLAYER_ERROR1 ("Failed to clean up Windows sockets API with error %s", WSAGetLastError ());
+#endif
+
   free(client->data);
   free(client->write_xdrdata);
   free(client->read_xdrdata);
@@ -218,23 +255,31 @@ int playerc_client_connect(playerc_client_t *client)
   struct hostent* entp = NULL;
 #endif
   char banner[PLAYER_IDENT_STRLEN];
-  int old_flags;
   int ret;
   //double t;
   /*
   struct timeval last;
   struct timeval curr;
   */
+#if defined (WIN32)
+  unsigned long setting = 0;
+#else
+  int old_flags;
   struct itimerval timer;
-  struct sockaddr_in clientaddr;
   struct sigaction sigact;
+#endif
+  struct sockaddr_in clientaddr;
 
   // Construct socket
   if(client->transport == PLAYERC_TRANSPORT_UDP)
   {
+#if defined (WIN32)
+    if((client->sock = socket(PF_INET, SOCK_DGRAM, 0)) == INVALID_SOCKET)
+#else
     if((client->sock = socket(PF_INET, SOCK_DGRAM, 0)) < 0)
+#endif
     {
-      PLAYERC_ERR1("socket call failed with error [%s]", strerror(errno));
+      STRERROR(PLAYERC_ERR2, "socket() failed with error [%d: %s]");
       return -1;
     }
     /*
@@ -251,15 +296,19 @@ int playerc_client_connect(playerc_client_t *client)
     if(bind(client->sock,
             (struct sockaddr*)&clientaddr, sizeof(clientaddr)) < -1)
     {
-      PLAYERC_ERR1("bind call failed with error [%s]", strerror(errno));
+      STRERROR(PLAYERC_ERR2, "bind() failed with error [%d: %s]");
       return -1;
     }
   }
   else
   {
+#if defined (WIN32)
+    if((client->sock = socket(PF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET)
+#else
     if((client->sock = socket(PF_INET, SOCK_STREAM, 0)) < 0)
+#endif
     {
-      PLAYERC_ERR1("socket call failed with error [%s]", strerror(errno));
+      STRERROR(PLAYERC_ERR2, "socket() failed with error [%d: %s]");
       return -1;
     }
   }
@@ -309,7 +358,7 @@ int playerc_client_connect(playerc_client_t *client)
   if (entp == NULL)
   {
     playerc_client_disconnect(client);
-    PLAYERC_ERR1("gethostbyname() failed with error [%s]", strerror(errno));
+    STRERROR(PLAYERC_ERR2, "gethostbyname() failed with error [%d: %s]");
     return -1;
   }
   assert(entp->h_length <= sizeof (client->server.sin_addr));
@@ -336,6 +385,7 @@ int playerc_client_connect(playerc_client_t *client)
   } while (ret == -1 && (errno == EALREADY || errno == EAGAIN || errno == EINPROGRESS));
   */
 
+#if !defined (WIN32)
   /* Set up a timer to interrupt the connection process */
   timer.it_interval.tv_sec = 0;
   timer.it_interval.tv_usec = 0;
@@ -361,10 +411,12 @@ int playerc_client_connect(playerc_client_t *client)
       PLAYER_WARN("failed to set SIGALRM action data; "
                   "unexpected exit may result");
   }
+#endif
 
   ret = connect(client->sock, (struct sockaddr*)&client->server,
                 sizeof(client->server));
 
+#if !defined (WIN32)
   /* Turn off timer */
   timer.it_value.tv_sec = 0;
   timer.it_value.tv_usec = 0;
@@ -380,12 +432,21 @@ int playerc_client_connect(playerc_client_t *client)
 #endif
     PLAYER_WARN("failed to reset SIGALRM action data; "
                 "unexpected behavior may result");
+#endif
 
   if (ret < 0)
   {
     playerc_client_disconnect(client);
+#if defined (WIN32)
+    FormatMessage (FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
+                   ErrNo, 0, (LPTSTR) &errBuffer, 0, NULL);
+    PLAYERC_ERR4 ("connect call on [%s:%d] failed with error [%d:%s]",
+                 client->host, client->port, ErrNo, (LPTSTR) errBuffer);
+    LocalFree (errBuffer);
+#else
     PLAYERC_ERR4("connect call on [%s:%d] failed with error [%d:%s]",
-                 client->host, client->port, errno, strerror(errno));
+                 client->host, client->port, errno, strerror(ErrNo));
+#endif
     return -1;
   }
 
@@ -394,12 +455,21 @@ int playerc_client_connect(playerc_client_t *client)
   {
     if(send(client->sock, NULL, 0, 0) < 0)
     {
-      PLAYERC_ERR1("send() failed with error [%s]", strerror(errno));
+      STRERROR(PLAYERC_ERR2, "send() failed with error [%d: %s]");
       return -1;
     }
   }
 
   // set socket to be blocking
+#if defined (WIN32)
+  if (ioctlsocket (client->sock, FIONBIO, &setting) == SOCKET_ERROR)
+  {
+    FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
+                   ErrNo, 0, (LPTSTR) &errBuffer, 0, NULL);
+    PLAYERC_ERR1("error getting socket flags [%s]", (LPTSTR) errBuffer);
+    LocalFree(errBuffer);
+  }
+#else
   if ((old_flags = fcntl(client->sock, F_GETFL)) < 0)
   {
     PLAYERC_ERR1("error getting socket flags [%s]", strerror(errno));
@@ -410,6 +480,7 @@ int playerc_client_connect(playerc_client_t *client)
     PLAYERC_ERR1("error setting socket non-blocking [%s]", strerror(errno));
     return -1;
   }
+#endif
 
 
   // Get the banner
@@ -437,7 +508,7 @@ int playerc_client_disconnect_retry(playerc_client_t *client)
   int j;
   struct timespec sleeptime;
 
-  sleeptime.tv_sec = client->retry_time;
+  sleeptime.tv_sec = (long) client->retry_time;
   sleeptime.tv_nsec = 0;
 
   /* Disconnect */
@@ -500,12 +571,22 @@ int playerc_client_disconnect_retry(playerc_client_t *client)
 // Disconnect from the server
 int playerc_client_disconnect(playerc_client_t *client)
 {
+#if defined (WIN32)
+  if (closesocket(client->sock) != 0)
+  {
+    FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
+                   ErrNo, 0, (LPTSTR) &errBuffer, 0, NULL);
+    PLAYERC_ERR1("closesocket failed with error [%s]", (LPTSTR) errBuffer);
+    LocalFree(errBuffer);
+  }
+#else
   if (close(client->sock) < 0)
   {
     PLAYERC_ERR1("close failed with error [%s]", strerror(errno));
     client->sock = -1;
     return -1;
   }
+#endif
   client->sock = -1;
   client->connected = 0;
   return 0;
@@ -765,7 +846,7 @@ int playerc_client_write(playerc_client_t *client,
   return playerc_client_writepacket(client, &header, cmd);
 }
 
-inline double tdiff (const struct timeval t1, const struct timeval t2)
+double tdiff (const struct timeval t1, const struct timeval t2)
 {
 	return (double)(t2.tv_sec - t1.tv_sec) + (double)(t2.tv_usec - t1.tv_usec)/1e6;
 }
@@ -896,7 +977,7 @@ int playerc_client_deldevice(playerc_client_t *client, playerc_device_t *device)
 // proxy structure rather than returned to the caller.
 int playerc_client_get_devlist(playerc_client_t *client)
 {
-  int i;
+  uint32_t i;
   player_device_devlist_t *rep_config;
 
   if(playerc_client_request(client, NULL, PLAYER_PLAYER_REQ_DEVLIST,
@@ -1074,7 +1155,7 @@ int playerc_client_readpacket(playerc_client_t *client,
     nbytes = timed_recv(client->sock,
                         client->read_xdrdata + client->read_xdrdata_len,
                         PLAYERXDR_MSGHDR_SIZE - client->read_xdrdata_len,
-                        0, client->request_timeout * 1e3);
+                        0, (int) client->request_timeout * 1000);
     if (nbytes <= 0)
     {
       if(nbytes == 0)
@@ -1083,7 +1164,7 @@ int playerc_client_readpacket(playerc_client_t *client,
         continue;
       else
       {
-        PLAYERC_ERR1("recv failed with error [%s]", strerror(errno));
+        STRERROR (PLAYERC_ERR2, "recv failed with error [%d: %s]");
         //playerc_client_disconnect(client);
         if(playerc_client_disconnect_retry(client) < 0)
           return(-1);
@@ -1118,13 +1199,13 @@ int playerc_client_readpacket(playerc_client_t *client,
     nbytes = timed_recv(client->sock,
                         client->read_xdrdata + client->read_xdrdata_len,
                         header->size - client->read_xdrdata_len,
-                        0, client->request_timeout*1e3);
+                        0, (int) client->request_timeout*1000);
     if (nbytes <= 0)
     {
       if(errno == EINTR)
         continue;
       {
-        PLAYERC_ERR1("recv failed with error [%s]", strerror(errno));
+        STRERROR (PLAYERC_ERR2, "recv failed with error [%d: %s]");
         //playerc_client_disconnect(client);
         if(playerc_client_disconnect_retry(client) < 0)
           return(-1);
@@ -1251,9 +1332,13 @@ int playerc_client_writepacket(playerc_client_t *client,
     {
       bytes -= ret;
     }
-    else if (ret < 0 && (errno != EAGAIN && errno != EINPROGRESS && errno != EWOULDBLOCK))
+#if defined (WIN32)
+    else if (ret < 0 && (errno != ERRNO_EAGAIN && errno != WSAEINPROGRESS))
+#else
+    else if (ret < 0 && (errno != ERRNO_EAGAIN && errno != EINPROGRESS && errno != EWOULDBLOCK))
+#endif
     {
-      PLAYERC_ERR2("send on body failed with error [%d:%s]", errno, strerror(errno));
+      STRERROR (PLAYERC_ERR2, "send on body failed with error [%d: %s]");
       //playerc_client_disconnect(client);
       return(playerc_client_disconnect_retry(client));
     }

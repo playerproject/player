@@ -51,7 +51,15 @@
 #include "playerc.h"
 #include "error.h"
 #include <libplayerxdr/playerxdr.h>
-#include <sys/time.h>
+#if !defined (WIN32)
+  #include <sys/time.h>
+#endif
+
+#if defined (WIN32)
+  #define snprintf _snprintf
+  #define strdup _strdup
+  #include <replace.h>
+#endif
 
 player_blackboard_entry_t *playerc_pack_blackboard_entry_string(const char* key, const char* group, const char *str);
 player_blackboard_entry_t *playerc_pack_blackboard_entry_int(const char* key, const char* group, const int i);

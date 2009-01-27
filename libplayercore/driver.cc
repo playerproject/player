@@ -49,9 +49,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <unistd.h>
+#if !defined WIN32
+  #include <unistd.h>
+  #include <netinet/in.h>
+#endif
 #include <signal.h>
-#include <netinet/in.h>
 #include <assert.h>
 
 #include <libplayercore/playertime.h>

@@ -62,8 +62,10 @@ driver
 /** @} */
 
 #include <stdlib.h>
-#include <sys/time.h>
 #include <string.h>
+#if !defined (WIN32)
+  #include <sys/time.h>
+#endif
 
 // we'll use the C client facilities to connect to the remote server
 #include <libplayercore/playercore.h>

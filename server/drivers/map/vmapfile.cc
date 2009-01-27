@@ -220,10 +220,10 @@ VMapFile::Setup()
     return(-1);
   }
 
-  this->vmap->minx = ox/1e3;
-  this->vmap->miny = oy/1e3;
-  this->vmap->maxx = (w + ox)/1e3;
-  this->vmap->maxy = (h + oy)/1e3;
+  this->vmap->minx = ox/1000.0f;
+  this->vmap->miny = oy/1000.0f;
+  this->vmap->maxx = (w + ox)/1000.0f;
+  this->vmap->maxy = (h + oy)/1000.0f;
 
   assert(this->vmap);
 

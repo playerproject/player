@@ -755,7 +755,7 @@ int Nav200::ReadFromNav200(int timeout_usec)
 uint8_t Nav200::CreateCRC(uint8_t* data, ssize_t len)
 {
   uint8_t result = 0;
-  for (int ii = 0; ii < len; ++ii)
+  for (ssize_t ii = 0; ii < len; ++ii)
     result ^= data[ii];
   return result;
 }

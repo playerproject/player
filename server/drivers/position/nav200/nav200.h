@@ -12,12 +12,14 @@ interfaces was later added by Toby Collett.
 #include <libplayercore/playercore.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/time.h>
+#if !defined (WIN32)
+  #include <sys/time.h>
+  #include <termios.h>
+  #include <strings.h>
+  #include <unistd.h>
+#endif
 #include <fcntl.h>
-#include <termios.h>
 #include <stdio.h>
-#include <strings.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
@@ -25,6 +27,9 @@ interfaces was later added by Toby Collett.
 #include <math.h>
 //#include <stdint.h>
 
+#if defined (WIN32)
+  typedef unsigned int ssize_t;
+#endif
 
 #define STX     0x02
 #define MAXLEN	255
@@ -140,8 +145,8 @@ public:
 
 protected:
   // serial port descriptor
-  int fd;
-  struct termios oldtio;
+  //int fd;
+  //struct termios oldtio;
 
   uint8_t receivedBuffer[BUFFER_SIZE];
   int bytesReceived;

@@ -44,6 +44,10 @@
 #include "playerc.h"
 #include "error.h"
 
+#if defined (WIN32)
+  #define snprintf _snprintf
+#endif
+
 // Local declarations
 void playerc_actarray_putmsg(playerc_actarray_t *device,
                              player_msghdr_t *header,
@@ -87,7 +91,7 @@ void playerc_actarray_putmsg(playerc_actarray_t *device,
                              player_msghdr_t *header,
                              player_actarray_data_t *data, size_t len)
 {
-  int i = 0;
+  uint32_t i = 0;
 
   if((header->type == PLAYER_MSGTYPE_DATA) && (header->subtype == PLAYER_ACTARRAY_DATA_STATE))
   {
@@ -105,14 +109,14 @@ void playerc_actarray_putmsg(playerc_actarray_t *device,
 }
 
 /** Accessor method for the actuator data */
-player_actarray_actuator_t playerc_actarray_get_actuator_data(playerc_actarray_t *device, int index)
+player_actarray_actuator_t playerc_actarray_get_actuator_data(playerc_actarray_t *device, uint32_t index)
 {
 	assert(index < device->actuators_count);
 	return device->actuators_data[index];
 }
 
 /** Accessor method for the actuator geom */
-player_actarray_actuatorgeom_t playerc_actarray_get_actuator_geom(playerc_actarray_t *device, int index)
+player_actarray_actuatorgeom_t playerc_actarray_get_actuator_geom(playerc_actarray_t *device, uint32_t index)
 {
 	assert(index < device->actuators_geom_count);
 	return device->actuators_geom[index];
@@ -122,7 +126,7 @@ player_actarray_actuatorgeom_t playerc_actarray_get_actuator_geom(playerc_actarr
 int playerc_actarray_get_geom(playerc_actarray_t *device)
 {
   player_actarray_geom_t *geom;
-  int ii = 0, result = 0;
+  uint32_t ii = 0, result = 0;
 
   if((result = playerc_client_request(device->info.client, &device->info,
       PLAYER_ACTARRAY_REQ_GET_GEOM, NULL, (void*)&geom)) < 0)

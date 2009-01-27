@@ -34,7 +34,12 @@
 #define HASH_LEN (MD5_DIGEST_LENGTH / sizeof(unsigned int))
 #endif
 
-#include <sys/time.h>
+#if defined (WIN32)
+  #include <replace/replace.h>
+  #include <winsock2.h> // For struct timeval
+#else
+  #include <sys/time.h>
+#endif
 static double get_time(void);
 
 #if 0
@@ -156,7 +161,7 @@ plan_compute_dist_kernel(plan_t* plan)
   {
     for(i=-plan->dist_kernel_width/2;i<=plan->dist_kernel_width/2;i++,p++)
     {
-      *p = sqrt(i*i+j*j) * plan->scale;
+      *p = (float) (sqrt(i*i+j*j) * plan->scale);
     }
   }
   // also compute a 3x3 kernel, used when propagating distance from goal
@@ -165,7 +170,7 @@ plan_compute_dist_kernel(plan_t* plan)
   {
     for(i=-1;i<=1;i++,p++)
     {
-      *p = sqrt(i*i+j*j) * plan->scale;
+      *p = (float) (sqrt(i*i+j*j) * plan->scale);
     }
   }
 }
@@ -204,7 +209,7 @@ void plan_init(plan_t *plan)
       if(cell->occ_state >= 0)
         cell->occ_dist_dyn = cell->occ_dist = 0.0;
       else
-        cell->occ_dist_dyn = cell->occ_dist = plan->max_radius;
+        cell->occ_dist_dyn = cell->occ_dist = (float) (plan->max_radius);
       cell->plan_cost = PLAN_MAX_COST;
       cell->plan_next = NULL;
       cell->lpathmark = 0;

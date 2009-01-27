@@ -89,7 +89,9 @@ driver
 */
 /** @} */
 
-#include <unistd.h>
+#if !defined (WIN32)
+  #include <unistd.h>
+#endif
 #include <stddef.h>
 #include <stdlib.h>
 #include <time.h>
@@ -100,9 +102,13 @@ driver
 
 #define SLEEPTIME_NS 100000000
 
-#define min(x,y) ((x) < (y) ? (x) : (y))
+#if !defined (min)
+  #define min(x,y) ((x) < (y) ? (x) : (y))
+#endif
 
-using namespace std;
+#if defined (WIN32)
+  #define strdup _strdup
+#endif
 
 // Driver for computing the free c-space from a laser scan.
 class FakeLocalize : public ThreadedDriver
@@ -249,7 +255,8 @@ FakeLocalize::UpdateData()
   Message * Reply = sim->Request(InQueue, PLAYER_MSGTYPE_REQ, PLAYER_SIMULATION_REQ_GET_POSE2D,
   		reinterpret_cast<void *>(&cfg), sizeof cfg, NULL);
 
-  if (!Reply) return -1;
+  if (!Reply)
+    return -1;
   if (Reply->GetHeader()->type == PLAYER_MSGTYPE_RESP_ACK)
   {
     // we got a good reply so update our data
@@ -321,87 +328,82 @@ int FakeLocalize::ProcessMessage(QueuePointer &resp_queue,
 				 void * data)
 {
   // Is it a request to set the filter's pose?
-  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
-                           PLAYER_LOCALIZE_REQ_SET_POSE,
-                           this->localize_addr))
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_LOCALIZE_REQ_SET_POSE, this->localize_addr))
+  {
+    player_simulation_pose2d_req_t req;
+    player_localize_set_pose_t * setposereq = (player_localize_set_pose_t*)data;
+    assert(setposereq);
+    req.pose.px = setposereq->mean.px;
+    req.pose.py = setposereq->mean.py;
+    req.pose.pa = setposereq->mean.pa;
+
+    req.name = this->model;
+    req.name_count = strlen(req.name) + 1;
+
+    // look up the named model
+    Message * Reply = sim->Request(InQueue, PLAYER_MSGTYPE_REQ, PLAYER_SIMULATION_REQ_SET_POSE2D,
+		                           reinterpret_cast<void *>(&req), sizeof req, NULL);
+    if (!Reply)
+      return -1;
+    if (Reply->GetHeader()->type == PLAYER_MSGTYPE_RESP_ACK)
     {
-      player_simulation_pose2d_req_t req;
-      player_localize_set_pose_t * setposereq = (player_localize_set_pose_t*)data;
-      assert(setposereq);
-      req.pose.px = setposereq->mean.px;
-      req.pose.py = setposereq->mean.py;
-      req.pose.pa = setposereq->mean.pa;
-
-      req.name = this->model;
-      req.name_count = strlen(req.name) + 1;
-
-      // look up the named model
-      Message * Reply = sim->Request(InQueue, PLAYER_MSGTYPE_REQ,
-				     PLAYER_SIMULATION_REQ_SET_POSE2D,
-				     reinterpret_cast<void *>(&req), sizeof req, NULL);
-      if (!Reply) return -1;
-      if (Reply->GetHeader()->type == PLAYER_MSGTYPE_RESP_ACK)
-	{
-	  // Send an ACK
-	  this->Publish(this->localize_addr, resp_queue,
-			PLAYER_MSGTYPE_RESP_ACK,
-			PLAYER_LOCALIZE_REQ_SET_POSE);
-	  return 0;
-	}
-      else
-	{
-	  delete Reply;
-	  return -1;
-	}
+      // Send an ACK
+      this->Publish(this->localize_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_LOCALIZE_REQ_SET_POSE);
+      return 0;
     }
+    else
+    {
+      delete Reply;
+      return -1;
+    }
+  }
   // Is it a request for the current particle set?
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
-                                PLAYER_LOCALIZE_REQ_GET_PARTICLES,
-                                this->localize_addr))
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_LOCALIZE_REQ_GET_PARTICLES, this->localize_addr))
+  {
+    player_simulation_pose2d_req_t cfg;
+
+    // Request pose
+    cfg.name = this->model;
+    cfg.name_count = strlen(cfg.name) + 1;
+
+    Message * Reply = sim->Request(InQueue, PLAYER_MSGTYPE_REQ, PLAYER_SIMULATION_REQ_GET_POSE2D,
+                                   reinterpret_cast<void *>(&cfg), sizeof cfg, NULL);
+    if (!Reply)
+      return -1;
+    if (Reply->GetHeader()->type == PLAYER_MSGTYPE_RESP_ACK)
     {
-      player_simulation_pose2d_req_t cfg;
+      assert(Reply->GetDataSize() == sizeof cfg);
+      player_simulation_pose2d_req_t * ans = reinterpret_cast<player_simulation_pose2d_req_t *> (Reply->GetPayload());
+      assert(ans);
+      player_localize_get_particles_t resp;
+      resp.mean.px = ans->pose.px;
+      resp.mean.py = ans->pose.py;
+      resp.mean.pa = ans->pose.pa;
+      resp.variance = 0;
 
-      // Request pose
-      cfg.name = this->model;
-      cfg.name_count = strlen(cfg.name) + 1;
+      resp.particles_count = 1;
+	  // TODO: Potential boom! resp.particles_count hasn't been initialised yet!
+	  // Someone who understands what this driver is doing should fix this.
+      for(uint32_t i=0;i<resp.particles_count;i++)
+      {
+        resp.particles[i].pose.px = ans->pose.px;
+        resp.particles[i].pose.py = ans->pose.py;
+        resp.particles[i].pose.pa = ans->pose.pa;
+        resp.particles[i].alpha = 1;
+      }
 
-      Message * Reply = sim->Request(InQueue, PLAYER_MSGTYPE_REQ, PLAYER_SIMULATION_REQ_GET_POSE2D,
-				     reinterpret_cast<void *>(&cfg), sizeof cfg, NULL);
-      if (!Reply) return -1;
-      if (Reply->GetHeader()->type == PLAYER_MSGTYPE_RESP_ACK)
-	{
-	  assert(Reply->GetDataSize() == sizeof cfg);
-	  player_simulation_pose2d_req_t * ans = reinterpret_cast<player_simulation_pose2d_req_t *> (Reply->GetPayload());
-	  assert(ans);
-	  player_localize_get_particles_t resp;
-	  resp.mean.px = ans->pose.px;
-	  resp.mean.py = ans->pose.py;
-	  resp.mean.pa = ans->pose.pa;
-	  resp.variance = 0;
+      this->Publish(this->localize_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK,
+		            PLAYER_LOCALIZE_REQ_GET_PARTICLES, (void*)&resp, sizeof(resp), NULL);
+      delete Reply;
+      Reply = NULL;
 
-	  resp.particles_count = 1;
-	  for(uint32_t i=0;i<resp.particles_count;i++)
-	    {
-	      resp.particles[i].pose.px = ans->pose.px;
-	      resp.particles[i].pose.py = ans->pose.py;
-	      resp.particles[i].pose.pa = ans->pose.pa;
-	      resp.particles[i].alpha = 1;
-	    }
-
-	  this->Publish(this->localize_addr, resp_queue,
-			PLAYER_MSGTYPE_RESP_ACK,
-			PLAYER_LOCALIZE_REQ_GET_PARTICLES,
-			(void*)&resp, sizeof(resp), NULL);
-	  delete Reply;
-	  Reply = NULL;
-
-	  return 0;
-	}
-      else
-	{
-	  delete Reply;
-	  return -1;
-	}
+      return 0;
     }
+    else
+    {
+      delete Reply;
+      return -1;
+    }
+  }
   return -1;
 }

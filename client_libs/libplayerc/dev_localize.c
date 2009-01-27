@@ -51,6 +51,9 @@
 #include "playerc.h"
 #include "error.h"
 
+#if defined (WIN32)
+  #define snprintf _snprintf
+#endif
 
 // Local declarations
 void playerc_localize_putmsg(playerc_localize_t *device, player_msghdr_t *header,
@@ -100,7 +103,7 @@ int playerc_localize_unsubscribe(playerc_localize_t *device)
 void playerc_localize_putmsg(playerc_localize_t *device, player_msghdr_t *header,
                               player_localize_data_t *data, size_t len)
 {
-  int i;//, k;
+  uint32_t i;//, k;
   
   device->pending_count = data->pending_count;
   device->pending_time = data->pending_time;

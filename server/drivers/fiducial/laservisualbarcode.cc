@@ -129,8 +129,6 @@ driver
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>       // for atoi(3)
-#include <netinet/in.h>   // for htons(3)
-#include <unistd.h>
 
 #include <libplayercore/playercore.h>
 
@@ -766,9 +764,9 @@ void LaserVisualBarcode::ServoPtz(double time, player_ptz_data_t *data)
   }
 
   // Compose the command packet to send to the PTZ device.
-  cmd.pan = pan;
-  cmd.tilt = tilt;
-  cmd.zoom = zoom;
+  cmd.pan = static_cast<float> (pan);
+  cmd.tilt = static_cast<float> (tilt);
+  cmd.zoom = static_cast<float> (zoom);
 
   this->ptz->PutMsg(InQueue, PLAYER_MSGTYPE_CMD, PLAYER_PTZ_CMD_STATE, &cmd, sizeof(cmd), NULL);
 
