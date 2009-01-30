@@ -62,7 +62,9 @@
   #include <sys/time.h>
 #endif
 
-#include "replace/replace.h"
+#if !HAVE_GETTIMEOFDAY
+  #include "replace/replace.h"
+#endif
 
 class PLAYERCORE_EXPORT PlayerTime
 {
