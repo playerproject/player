@@ -521,7 +521,7 @@ Khepera::UpdateIRData(player_ir_data_t * d)
 
   for (unsigned int i =0; i < geometry->ir.poses_count; i++)
   {
-    d->ranges[i] = geometry->scale * geometry->ir_calib_a[i] * pow(d->voltages[i],geometry->ir_calib_b[i]);
+    d->ranges[i] = geometry->scale * geometry->ir_calib_a[i] * pow(static_cast<double> (d->voltages[i]),static_cast<double> (geometry->ir_calib_b[i]));
     d->voltages[i] = d->voltages[i];
   }
 }

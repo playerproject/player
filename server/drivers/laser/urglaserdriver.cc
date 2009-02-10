@@ -373,9 +373,8 @@ Driver*
 
 // Registers the driver in the driver table. Called from the
 // player_driver_init function that the loader looks for
-int
+void
   urglaser_Register (DriverTable* table)
 {
   table->AddDriver ("urglaser", URGLaserDriver_Init);
-  return (0);
 }

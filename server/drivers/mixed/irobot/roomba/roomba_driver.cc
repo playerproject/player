@@ -111,6 +111,7 @@ requires Player to be restarted
 #include <string.h>
 #include <pthread.h>
 #include <time.h>
+#include <stdlib.h>
 #include <libplayercore/playercore.h>
 
 #include "roomba_comms.h"
@@ -354,14 +355,20 @@ Roomba::Main()
      memset(&bumperdata,0,sizeof(bumperdata));
 
      bumperdata.bumpers_count = 2;
-     bumperdata.bumpers = new uint8_t[bumperdata.bumpers_count];
-     bumperdata.bumpers[0] = this->roomba_dev->bumper_left;
-     bumperdata.bumpers[1] = this->roomba_dev->bumper_right;
+     if ((bumperdata.bumpers = new uint8_t[bumperdata.bumpers_count]) == NULL)
+     {
+       PLAYER_ERROR ("Failed to allocate memory for bumper data in roomba driver.");
+     }
+     else
+     {
+       bumperdata.bumpers[0] = this->roomba_dev->bumper_left;
+       bumperdata.bumpers[1] = this->roomba_dev->bumper_right;
 
-     this->Publish(this->bumper_addr,
-                   PLAYER_MSGTYPE_DATA, PLAYER_BUMPER_DATA_STATE,
-                   (void*)&bumperdata);
-     delete [] bumperdata.bumpers;
+       this->Publish(this->bumper_addr,
+                     PLAYER_MSGTYPE_DATA, PLAYER_BUMPER_DATA_STATE,
+                     (void*)&bumperdata);
+       delete [] bumperdata.bumpers;
+     }
 
      ////////////////////////////
      // Update IR data
@@ -369,23 +376,29 @@ Roomba::Main()
      memset(&irdata,0,sizeof(irdata));
 
      irdata.ranges_count = 11;
-     irdata.ranges = new float [irdata.ranges_count];
-     irdata.ranges[0] = (float)this->roomba_dev->wall;
-     irdata.ranges[1] = (float)this->roomba_dev->cliff_left;
-     irdata.ranges[2] = (float)this->roomba_dev->cliff_frontleft;
-     irdata.ranges[3] = (float)this->roomba_dev->cliff_frontright;
-     irdata.ranges[4] = (float)this->roomba_dev->cliff_right;
-     irdata.ranges[5] = (float)this->roomba_dev->virtual_wall;
-     irdata.ranges[6] = (float)this->roomba_dev->dirtdetector_right;
-     irdata.ranges[7] = (float)this->roomba_dev->dirtdetector_left;
-     irdata.ranges[8] = (float)this->roomba_dev->wheeldrop_caster;
-     irdata.ranges[9] = (float)this->roomba_dev->wheeldrop_left;
-     irdata.ranges[10] = (float)this->roomba_dev->wheeldrop_right;
+     if ((irdata.ranges = new float [irdata.ranges_count]) == NULL)
+     {
+       PLAYER_ERROR ("Failed to allocate memory for IR data in roomba driver.");
+     }
+     else
+     {
+       irdata.ranges[0] = (float)this->roomba_dev->wall;
+       irdata.ranges[1] = (float)this->roomba_dev->cliff_left;
+       irdata.ranges[2] = (float)this->roomba_dev->cliff_frontleft;
+       irdata.ranges[3] = (float)this->roomba_dev->cliff_frontright;
+       irdata.ranges[4] = (float)this->roomba_dev->cliff_right;
+       irdata.ranges[5] = (float)this->roomba_dev->virtual_wall;
+       irdata.ranges[6] = (float)this->roomba_dev->dirtdetector_right;
+       irdata.ranges[7] = (float)this->roomba_dev->dirtdetector_left;
+       irdata.ranges[8] = (float)this->roomba_dev->wheeldrop_caster;
+       irdata.ranges[9] = (float)this->roomba_dev->wheeldrop_left;
+       irdata.ranges[10] = (float)this->roomba_dev->wheeldrop_right;
 
-     this->Publish(this->ir_addr,
-         PLAYER_MSGTYPE_DATA, PLAYER_IR_DATA_RANGES,
-         (void*)&irdata);
-     delete [] irdata.ranges;
+       this->Publish(this->ir_addr,
+           PLAYER_MSGTYPE_DATA, PLAYER_IR_DATA_RANGES,
+           (void*)&irdata);
+       delete [] irdata.ranges;
+     }
 
 
      ////////////////////////////
@@ -408,18 +421,23 @@ Roomba::Main()
      memset(&cpdata,0,sizeof(cpdata));
 
      cpdata.data_count=5;
-     cpdata.data = new uint8_t [cpdata.data_count];
+     if ((cpdata.data = new uint8_t [cpdata.data_count]) == NULL)
+     {
+       PLAYER_ERROR ("Failed to allocate memory for opaque data in roomba driver.");
+     }
+     else
+     {
+       cpdata.data[0]=this->roomba_dev->button_max;
+       cpdata.data[1]=this->roomba_dev->button_clean;
+       cpdata.data[2]=this->roomba_dev->button_spot;
+       cpdata.data[3]=this->roomba_dev->button_power;
+       cpdata.data[4]=this->roomba_dev->remote_opcode;
 
-     cpdata.data[0]=this->roomba_dev->button_max;
-     cpdata.data[1]=this->roomba_dev->button_clean;
-     cpdata.data[2]=this->roomba_dev->button_spot;
-     cpdata.data[3]=this->roomba_dev->button_power;
-     cpdata.data[4]=this->roomba_dev->remote_opcode;
-
-     this->Publish(this->opaque_addr,
-         PLAYER_MSGTYPE_DATA,PLAYER_OPAQUE_DATA_STATE,
-         (void*)&cpdata);
-     delete [] cpdata.data;
+       this->Publish(this->opaque_addr,
+           PLAYER_MSGTYPE_DATA,PLAYER_OPAQUE_DATA_STATE,
+           (void*)&cpdata);
+       delete [] cpdata.data;
+     }
 
      struct timespec ts;
      ts.tv_sec = 0;
@@ -576,8 +594,20 @@ Roomba::ProcessMessage(QueuePointer & resp_queue,
     {
       uint8_t index = opaque_data.data[1];
       uint8_t length = opaque_data.data[2];
-      uint8_t notes[length];
-      uint8_t note_lengths[length];
+      uint8_t *notes;
+      uint8_t *note_lengths;
+
+      if ((notes = new uint8_t[length]) == NULL)
+      {
+        PLAYER_ERROR ("Failed to allocate memory for notes in roomba driver.");
+        return -1;
+      }
+      if ((note_lengths = new uint8_t[length]) == NULL)
+      {
+        PLAYER_ERROR ("Failed to allocate memory for note_lengths in roomba driver.");
+        delete [] notes;
+        return -1;
+      }
 
       for (unsigned int i=0; i<length; i++)
       {
@@ -587,6 +617,8 @@ Roomba::ProcessMessage(QueuePointer & resp_queue,
 
       roomba_set_song(this->roomba_dev, index, length,
           notes, note_lengths);
+      delete [] notes;
+      delete [] note_lengths;
     }
     // Set the LEDs
     else if (opaque_data.data[0] == 2)
