@@ -70,5 +70,5 @@ void playerc_speech_recognition_putmsg(playerc_speechrecognition_t *device, play
         device->words[jj++] = &device->rawText[ii+1];
     }
   }
-};
+}
 

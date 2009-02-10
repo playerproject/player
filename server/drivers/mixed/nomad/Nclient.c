@@ -155,6 +155,7 @@ char cvsid_host_client_Nclient_c[] = "$Header: /home/cvs/host/client/Nclient.c,v
 #include <fcntl.h>
 #include <signal.h>
 #include <unistd.h>
+#include <string.h>
 #include "Nclient.h"
 
 #define DEBUG
@@ -3609,7 +3610,7 @@ long arm_zr(short override)
 {
   long result;
 
-  short b_index, b_length;
+  unsigned short b_index, b_length;
   unsigned char serial_number;
   unsigned char packet_type;
   unsigned char user_send_buffer[256];
@@ -3634,7 +3635,7 @@ long arm_ws(short l, short g, long timeout, long *time_remain)
 {
   long result;
 
-  short b_index, b_length;
+  unsigned short b_index, b_length;
   unsigned char serial_number;
   unsigned char packet_type;
   unsigned char user_send_buffer[256];
@@ -3664,7 +3665,7 @@ long arm_mv(long l_mode, long l_v, long g_mode, long g_v)
 {
   long result;
 
-  short b_index, b_length;
+  unsigned short b_index, b_length;
   unsigned char serial_number;
   unsigned char packet_type;
   unsigned char user_send_buffer[256];

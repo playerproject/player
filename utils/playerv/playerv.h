@@ -656,7 +656,7 @@ typedef struct
 
   // Image buffer
   int allocated_size;
-  char *img_buffer;
+  unsigned char *img_buffer;
 
   // Timestamp on most recent data
   double datatime;

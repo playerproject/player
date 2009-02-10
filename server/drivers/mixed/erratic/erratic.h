@@ -93,7 +93,7 @@ typedef enum command {
 	set_pid_trans_i =           82,
 	set_pid_rot_p =             83,
 	set_pid_rot_v =             84,
-	set_pid_rot_i =             85,
+	set_pid_rot_i =             85
 
 } command_e;
 

@@ -168,7 +168,7 @@ int rtk_menuitem_ischecked(rtk_menuitem_t *item)
 int rtk_menuitem_enable(rtk_menuitem_t *item, int enable)
 {
   gtk_widget_set_sensitive(GTK_WIDGET(item->item), enable);
-  return;
+  return 0;
 }
 
 

@@ -73,7 +73,7 @@ void geosprint(const char* format, ...)
 	vfprintf(stderr,format, ap);
 	fflush(stderr);
 	va_end(ap);
-};
+}
 
 // Create a new vectormap proxy
 playerc_vectormap_t *playerc_vectormap_create(playerc_client_t *client, int index)
