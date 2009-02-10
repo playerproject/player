@@ -97,7 +97,7 @@ driver
 
 typedef enum
 {
-  CIRCLE,
+  CIRCLE
 } robot_shape_t;
 
 class MapCspace : public MapTransform

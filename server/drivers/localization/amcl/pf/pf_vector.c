@@ -10,9 +10,12 @@
 //#include <gsl/gsl_matrix.h>
 //#include <gsl/gsl_eigen.h>
 //#include <gsl/gsl_linalg.h>
+#include <config.h>
 #if defined (WIN32)
   #include <float.h>
   #define finite _finite
+#elif defined (__sun) && defined (HAVE_IEEEFP_H)
+  #include <ieeefp.h>
 #endif
 
 #include "pf_vector.h"
@@ -36,11 +39,11 @@ pf_vector_t pf_vector_zero()
 int pf_vector_finite(pf_vector_t a)
 {
   int i;
-  
+
   for (i = 0; i < 3; i++)
     if (!finite(a.v[i]))
       return 0;
-  
+
   return 1;
 }
 

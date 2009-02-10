@@ -39,6 +39,8 @@
 
 #include <string.h>
 #include <math.h>
+#include <stddef.h>
+#include <stdlib.h>
 
 #include "playerc.h"
 #include "error.h"

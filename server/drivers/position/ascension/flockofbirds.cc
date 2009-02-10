@@ -95,7 +95,7 @@ class FlockOfBirdsSerial
 {
 public:
 
-  FlockOfBirdsSerial(char * port = FOB_DEFAULT_PORT, int rate = FOB_DEFAULT_RATE);
+  FlockOfBirdsSerial(const char * port = FOB_DEFAULT_PORT, int rate = FOB_DEFAULT_RATE);
   ~FlockOfBirdsSerial();
 
   bool Open() {return fd >0;};
@@ -132,7 +132,7 @@ protected:
 };
 
 
-FlockOfBirdsSerial::FlockOfBirdsSerial(char * port, int rate)
+FlockOfBirdsSerial::FlockOfBirdsSerial(const char * port, int rate)
 {
   fd = -1;
 

@@ -671,7 +671,7 @@ uint8_t *rtk_canvas_get_image_rgb24(rtk_canvas_t *canvas)
 {
   GdkImage *im;
   int ix, iy;
-  char *pixel;
+  unsigned char *pixel;
   guint32 c;
   unsigned char r, g, b;
   uint8_t *image;

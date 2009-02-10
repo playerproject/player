@@ -21,4 +21,5 @@
 #cmakedefine HAVE_SYS_STAT_H 1
 #cmakedefine HAVE_SYS_TYPES_H 1
 #cmakedefine HAVE_UNISTD_H 1
+#cmakedefine HAVE_IEEEFP_H 1
 #cmakedefine WORDS_BIGENDIAN 1
