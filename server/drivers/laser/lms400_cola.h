@@ -91,7 +91,7 @@ class lms400_cola
     const char* hostname;
     int sockfd, portno, n;
     struct sockaddr_in serv_addr;
-#if defined (HAVE_GETADDRINFO)
+#if HAVE_GETADDRINFO
     struct addrinfo *addr_ptr;
 #else
     struct hostent *server;

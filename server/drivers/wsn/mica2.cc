@@ -1050,8 +1050,8 @@ int Mica2::DecodeSerial (unsigned char *buffer, int length)
 
 			    wsn_data.data_packet.temperature =
 					(1 / (0.001307050f + 0.000214381f *
-					log (rthr) + 0.000000093f *
-					pow (log (rthr),3))) - 273.15;
+					log (static_cast<double> (rthr)) + 0.000000093f *
+					pow (log (static_cast<double> (rthr)),3))) - 273.15;
 
 			    // Convert the magnetometer data to Gauss
 			    wsn_data.data_packet.magn_x      =

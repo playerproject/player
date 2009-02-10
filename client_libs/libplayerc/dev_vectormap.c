@@ -54,6 +54,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#include <stddef.h>
 
 #include "playerc.h"
 #include "error.h"

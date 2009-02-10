@@ -527,9 +527,20 @@ Create::ProcessMessage(QueuePointer &resp_queue,
     {
       uint8_t index = opaque_data.data[1];
       uint8_t length = opaque_data.data[2];
-      uint8_t notes[length];
-      uint8_t note_lengths[length];
+      uint8_t *notes;
+      uint8_t *note_lengths;
 
+      if ((notes = new uint8_t[length]) == NULL)
+      {
+        PLAYER_ERROR("Failed to allocate memory for notes in create driver.");
+        return(-1);
+      }
+      if ((note_lengths = new uint8_t [length]) == NULL)
+      {
+        PLAYER_ERROR("Failed to allocate memory for note_lengths in create driver.");
+        delete [] notes;
+        return -1;
+      }
       for (unsigned int i=0; i<length; i++)
       {
         notes[i] = opaque_data.data[3+i*2];
@@ -538,6 +549,8 @@ Create::ProcessMessage(QueuePointer &resp_queue,
 
       create_set_song(this->create_dev, index, length,
           notes, note_lengths);
+      delete [] notes;
+      delete [] note_lengths;
     }
     // Set the LEDs
     else if (opaque_data.data[0] == 2)
