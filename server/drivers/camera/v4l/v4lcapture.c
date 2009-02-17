@@ -442,7 +442,7 @@ FRAME* fg_grab_frame( FRAMEGRABBER* fg, FRAME* fr )
 
     if ((fg->picture.palette) == VIDEO_PALETTE_JPEG)
     {
-        buf = (unsigned char *)(fg->mb_map + fg->mbuf.offsets[fg->cur_frame]);
+        buf = ((unsigned char *)(fg->mb_map)) + fg->mbuf.offsets[fg->cur_frame];
 	insize = frame_get_size(fr) - sizeof(int);
 	count = insize - 1;
 	for (i = 1024; i < count; i++)
@@ -459,7 +459,7 @@ FRAME* fg_grab_frame( FRAMEGRABBER* fg, FRAME* fr )
     {
 	// Save video buffer into our own memory
 	memcpy( fr->data,
-        	fg->mb_map + fg->mbuf.offsets[fg->cur_frame],
+        	((unsigned char *)(fg->mb_map)) + fg->mbuf.offsets[fg->cur_frame],
         	frame_get_size( fr ) );
     }
 

@@ -429,12 +429,25 @@ void SkyetekM1::SelectTags ()
 		if (response_buf[0] == 0x02)
 			len = response_buf[1];
 
-		unsigned char TID[len];
-		memset (&TID, 0, sizeof (TID)); // clear the struct for new port settings
+		unsigned char *TID;
+		if (len <= 0)
+		{
+			PLAYER_WARN ("skyetekM1: len <= 0 after serial read");
+			return;
+		}
+		if ((TID = new unsigned char[len]) == NULL)
+		{
+			PLAYER_ERROR ("Failed to allocate memory for TID in skyetekM1 driver.");
+			return;
+		}
+		memset (&TID, 0, len); // clear the struct for new port settings
 		usleep (10000); // sleep for 10ms
 		ReadSerial (TID, len);
 		if (response_buf[2] == 0x94)
+		{
+			delete[] TID;
 			break;
+		}
 
 		if (response_buf[0] == 0x02)
 		{
@@ -455,6 +468,7 @@ void SkyetekM1::SelectTags ()
 				this->Data.tags[this->Data.tags_count].guid[j] = TID[j+1];
 			this->Data.tags_count++;
 		}
+		delete[] TID;
 	}
 }
 
