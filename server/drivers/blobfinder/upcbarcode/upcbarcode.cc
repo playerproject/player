@@ -225,7 +225,7 @@ int UPCBarcode::MainSetup()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device (called by server thread).
-int UPCBarcode::MainQuit()
+void UPCBarcode::MainQuit()
 {
   ImageBase::MainQuit();
 
@@ -252,7 +252,13 @@ int UPCBarcode::ProcessFrame()
 
   width = this->stored_data.width;
   height = this->stored_data.height;
-  int symbols[height][2];
+  int symbols[][2];
+
+  if ((symbols = new int[height][2]) == NULL)
+  {
+    PLAYER_ERROR ("Failed to allocate memory for symbols in upcbarcode");
+    return -1;
+  }
 
   // Create input image if it doesnt exist
   if (this->inpImage == NULL)
@@ -271,6 +277,7 @@ int UPCBarcode::ProcessFrame()
     default:
     {
       PLAYER_WARN1("image format [%d] is not supported", this->stored_data.format);
+      delete[] symbols;
       return -1;
     }
   }
@@ -299,7 +306,7 @@ int UPCBarcode::ProcessFrame()
   for (x = 0; x < width; x += step_x)
   {
     // Extract raw symbols
-    symbol_count = this->ExtractSymbols(x, sizeof(symbols) / sizeof(symbols[0]), symbols);
+    symbol_count = this->ExtractSymbols(x, height * 2, symbols);
 
     // Identify barcode
     id = this->ExtractCode(symbol_count, symbols, &min, &max);
@@ -345,6 +352,7 @@ int UPCBarcode::ProcessFrame()
 
   WriteBlobfinderData();
 
+  delete[] symbols;
   return 0;
 }
 

@@ -53,8 +53,10 @@ extern "C"
 #include <sys/mman.h>
 #include <sys/ioctl.h>
 
-#include <linux/fs.h>
-#include <linux/kernel.h>
+#if !defined (sun)
+  #include <linux/fs.h>
+  #include <linux/kernel.h>
+#endif
 #include <linux/videodev.h>
 
 #include "v4lframe.h"

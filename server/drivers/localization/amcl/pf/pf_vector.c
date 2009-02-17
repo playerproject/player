@@ -14,7 +14,7 @@
 #if defined (WIN32)
   #include <float.h>
   #define finite _finite
-#elif defined (__sun) && defined (HAVE_IEEEFP_H)
+#elif defined (sun) && defined (HAVE_IEEEFP_H)
   #include <ieeefp.h>
 #endif
 
