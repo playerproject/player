@@ -252,7 +252,7 @@ int UPCBarcode::ProcessFrame()
 
   width = this->stored_data.width;
   height = this->stored_data.height;
-  int symbols[][2];
+  int (*symbols)[2];
 
   if ((symbols = new int[height][2]) == NULL)
   {
