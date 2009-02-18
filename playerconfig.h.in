@@ -13,7 +13,7 @@
 #cmakedefine INCLUDE_RTK 1
 #cmakedefine INCLUDE_RTKGUI 1
 #cmakedefine HAVE_CLOCK_GETTIME 1
-#cmakedefine HAVE_XDR
+#cmakedefine HAVE_XDR 1
 #cmakedefine HAVE_XDR_LONGLONG_T 1
 #cmakedefine HAVE_STL 1
 #cmakedefine HAVE_M 1
