@@ -1,5 +1,7 @@
 #include "test.h"
-#include <unistd.h>
+#if !defined (WIN32)
+  #include <unistd.h>
+#endif
 
 int
 test_ranger(PlayerClient* client, int index)

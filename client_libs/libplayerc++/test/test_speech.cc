@@ -3,8 +3,12 @@
  */
 
 #include "test.h"
-#include <unistd.h>
+#if !defined (WIN32)
+  #include <unistd.h>
+#endif
 #include <string>
+
+#include <replace.h>
 
 using namespace std;
 

@@ -48,6 +48,19 @@
 
 #ifndef PLAYERCC_CLIENTPROXY_H
 #define PLAYERCC_CLIENTPROXY_H
+
+#if defined (WIN32)
+  #if defined (PLAYER_STATIC)
+    #define PLAYERCC_EXPORT
+  #elif defined (playerc___EXPORTS)
+    #define PLAYERCC_EXPORT    __declspec (dllexport)
+  #else
+    #define PLAYERCC_EXPORT    __declspec (dllimport)
+  #endif
+#else
+  #define PLAYERCC_EXPORT
+#endif
+
 namespace PlayerCc
 {
 
@@ -63,7 +76,7 @@ namespace PlayerCc
  * depending on Boost's presence in the system.  See the @em configure script
  * for more information.
 */
-class ClientProxy
+class PLAYERCC_EXPORT ClientProxy
 {
   friend class PlayerClient;
 

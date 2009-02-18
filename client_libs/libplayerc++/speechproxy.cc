@@ -45,6 +45,10 @@
 #include <cstring>
 #include "playerc++.h"
 
+#if defined (WIN32)
+  #define strdup _strdup
+#endif
+
 using namespace PlayerCc;
 
 SpeechProxy::SpeechProxy(PlayerClient *aPc, uint32_t aIndex)

@@ -3,6 +3,11 @@ IF (BUILD_PLAYERCC)
     OPTION (BUILD_CC_TESTS "Build the C++ client library tests" ON)
 
     IF (BUILD_CC_TESTS)
+        # Possibly use our own copy of XDR, and need gettimeofday replacement
+        IF (NOT HAVE_XDR OR NOT HAVE_GETTIMEOFDAY)
+            INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/replace)
+        ENDIF (NOT HAVE_XDR OR NOT HAVE_GETTIMEOFDAY)
+
         INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/client_libs ${PROJECT_BINARY_DIR}/client_libs)
         SET (testsSrcs  test.cc
                         test.h
@@ -23,6 +28,13 @@ IF (BUILD_PLAYERCC)
                         test_aio.cc
                         test_speech.cc
                         test_ranger.cc)
+
+        IF (NOT HAVE_USLEEP)
+            SET (testsSrcs ${testsSrcs} ${PROJECT_SOURCE_DIR}/replace/usleep.c)
+        ENDIF (NOT HAVE_USLEEP)
+        IF (NOT HAVE_ROUND)
+            SET (testsSrcs ${testsSrcs} ${PROJECT_SOURCE_DIR}/replace/round.c)
+        ENDIF (NOT HAVE_ROUND)
 
         ADD_DEFINITIONS (${PLAYERCC_DEFINITIONS})
         ADD_EXECUTABLE (playerc++_test ${testsSrcs})

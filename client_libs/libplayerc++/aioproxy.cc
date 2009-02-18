@@ -87,7 +87,7 @@ void
 AioProxy::SetVoltage(uint32_t aIndex, double aVoltage)
 {
   scoped_lock_t lock(mPc->mMutex);
-  playerc_aio_set_output(mDevice, aIndex, aVoltage);
+  playerc_aio_set_output(mDevice, aIndex, static_cast<float> (aVoltage));
 }
 
 std::ostream&

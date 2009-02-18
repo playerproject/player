@@ -5,7 +5,11 @@
  */
 
 #include "test.h"
-#include <unistd.h>
+#if !defined (WIN32)
+  #include <unistd.h>
+#endif
+
+#include <replace.h>
 
 using namespace PlayerCc;
 

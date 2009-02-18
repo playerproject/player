@@ -84,6 +84,9 @@ inline double normalize(double z)
 }
 
 /// Return the minimum of a, b
+#if defined (min)
+  #undef min
+#endif
 template<typename T>
 inline T min(T a, T b)
 {
@@ -94,6 +97,9 @@ inline T min(T a, T b)
 }
 
 /// Return the maximum of a, b
+#if defined (max)
+  #undef max
+#endif
 template<typename T>
 inline T max(T a, T b)
 {

@@ -5,10 +5,14 @@
  */
 
 #include "test.h"
-#include <unistd.h>
+#if !defined (WIN32)
+  #include <unistd.h>
+#endif
 #include <math.h>
 
-
+#if defined (WIN32)
+  #include <replace.h>
+#endif
 
 int
 test_laser(PlayerClient* client, int index)
@@ -33,14 +37,24 @@ test_laser(PlayerClient* client, int index)
   lp.RequestConfigure();
   
   TEST("check configuration sanity");
+#if defined (WIN32)
+  if((((int)round(RTOD(lp.GetMinAngle()))) != min) ||
+     (((int)round(RTOD(lp.GetMaxAngle()))) != max))
+#else
   if((((int)rint(RTOD(lp.GetMinAngle()))) != min) ||
      (((int)rint(RTOD(lp.GetMaxAngle()))) != max))
+#endif
   {
     FAIL();
     return(-1);
   }
+#if defined (WIN32)
+  else if((((int)round(RTOD(lp.GetScanRes())*100.0)) != resolution) ||
+          (lp.GetRangeRes() != range_res))
+#else
   else if((((int)rint(RTOD(lp.GetScanRes())*100.0)) != resolution) ||
           (lp.GetRangeRes() != range_res))
+#endif
   {
     FAIL();
     return(-1);

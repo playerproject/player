@@ -13,6 +13,7 @@ WRITE_DRIVER_REPORT ()
 # Build the server app
 # Extra include dir for the server (why do we need this directoy?)
 INCLUDE_DIRECTORIES (${CMAKE_CURRENT_SOURCE_DIR}/drivers/shell)
+
 IF (PLAYER_OS_WIN)
     INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/replace)
 ENDIF (PLAYER_OS_WIN)
@@ -22,11 +23,15 @@ ENDIF (NOT PTHREAD_INCLUDE_DIR STREQUAL "")
 IF (NOT PTHREAD_LIB_DIR STREQUAL "")
     LINK_DIRECTORIES (${PTHREAD_LIB_DIR})
 ENDIF (NOT PTHREAD_LIB_DIR STREQUAL "")
+IF (NOT HAVE_GETOPT)
+    INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/replace)
+    SET (getoptSrc ${PROJECT_SOURCE_DIR}/replace/getopt.c)
+ENDIF (NOT HAVE_GETOPT)
 
 # Source files
 SET (playerSrcs server.cc)
 # Server executable
-ADD_EXECUTABLE (player ${playerSrcs})
+ADD_EXECUTABLE (player ${playerSrcs} ${getoptSrc})
 TARGET_LINK_LIBRARIES (player playerdrivers playercore playererror playerutils playertcp playerudp playerxdr ${PLAYER_EXTRA_LINK_LIBRARIES})
 IF (INCLUDE_RTKGUI)
     TARGET_LINK_LIBRARIES (player rtk)

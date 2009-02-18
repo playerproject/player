@@ -48,6 +48,10 @@
 #include <cmath>
 #include <climits>
 
+#if defined (WIN32)
+  #define snprintf _snprintf
+#endif
+
 using namespace PlayerCc;
 
 RFIDProxy::RFIDProxy(PlayerClient *aPc, uint32_t aIndex)

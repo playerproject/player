@@ -50,6 +50,18 @@
 #include <string>
 #include <list>
 
+#if defined (WIN32)
+  #if defined (PLAYER_STATIC)
+    #define PLAYERCC_EXPORT
+  #elif defined (playerc___EXPORTS)
+    #define PLAYERCC_EXPORT    __declspec (dllexport)
+  #else
+    #define PLAYERCC_EXPORT    __declspec (dllimport)
+  #endif
+#else
+  #define PLAYERCC_EXPORT
+#endif
+
 #ifdef HAVE_BOOST_SIGNALS
   #include <boost/signal.hpp>
 #endif
@@ -65,13 +77,13 @@
   // in all the proxies
   namespace boost
   {
-    class thread
+    class PLAYERCC_EXPORT thread
     {
       public:
         thread() {};
     };
 
-    class mutex
+    class PLAYERCC_EXPORT mutex
     {
       public:
         mutex() {};
@@ -100,7 +112,7 @@ class ClientProxy;
  * library being present on the system.  The StartThread() and StopThread() are
  * the only functions conditionally available based on this.
 */
-class PlayerClient
+class PLAYERCC_EXPORT PlayerClient
 {
   friend class ClientProxy;
 
@@ -292,7 +304,7 @@ class PlayerClient
 
 namespace std
 {
-  std::ostream& operator << (std::ostream& os, const PlayerCc::PlayerClient& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::PlayerClient& c);
 }
 
 #endif

@@ -49,7 +49,7 @@ using namespace std;
 using namespace PlayerCc;
 
 // Constructor
-BlackBoardProxy::BlackBoardProxy(PlayerClient *aPc, uint aIndex) : ClientProxy(aPc, aIndex),
+BlackBoardProxy::BlackBoardProxy(PlayerClient *aPc, uint32_t aIndex) : ClientProxy(aPc, aIndex),
                                mDevice(NULL)
 {
   Subscribe(aIndex);
@@ -63,7 +63,7 @@ BlackBoardProxy::~BlackBoardProxy()
 }
 
 // Subscribe
-void BlackBoardProxy::Subscribe(uint aIndex)
+void BlackBoardProxy::Subscribe(uint32_t aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_blackboard_create(mClient, aIndex);

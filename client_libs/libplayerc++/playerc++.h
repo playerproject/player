@@ -62,6 +62,18 @@
 #include "libplayerc++/clientproxy.h"
 #include "libplayercore/interface_util.h"
 
+#if defined (WIN32)
+  #if defined (PLAYER_STATIC)
+    #define PLAYERCC_EXPORT
+  #elif defined (playerc___EXPORTS)
+    #define PLAYERCC_EXPORT    __declspec (dllexport)
+  #else
+    #define PLAYERCC_EXPORT    __declspec (dllimport)
+  #endif
+#else
+  #define PLAYERCC_EXPORT
+#endif
+
 // Don't think we need to include these here
 /*
 #ifdef HAVE_BOOST_SIGNALS
@@ -125,7 +137,7 @@ namespace PlayerCc
 The @p ActArrayProxy class is used to control a @ref interface_actarray
 device.
  */
-class ActArrayProxy : public ClientProxy
+class PLAYERCC_EXPORT ActArrayProxy : public ClientProxy
 {
   private:
 
@@ -191,7 +203,7 @@ class ActArrayProxy : public ClientProxy
 /**
 The @p AioProxy class is used to read from a @ref interface_aio
 (analog I/O) device.  */
-class AioProxy : public ClientProxy
+class PLAYERCC_EXPORT AioProxy : public ClientProxy
 {
   private:
 
@@ -229,7 +241,7 @@ class AioProxy : public ClientProxy
 /**
 The @p AudioProxy class controls an @ref interface_audio device.
 */
-class AudioProxy : public ClientProxy
+class PLAYERCC_EXPORT AudioProxy : public ClientProxy
 {
 
   private:
@@ -330,10 +342,10 @@ class AudioProxy : public ClientProxy
  * to that entries key.
  * If an entry does not exist, the default value of that entry is returned.
  */
-class BlackBoardProxy : public ClientProxy
+class PLAYERCC_EXPORT BlackBoardProxy : public ClientProxy
 {
   private:
-    void Subscribe(uint aIndex);
+    void Subscribe(uint32_t aIndex);
     void Unsubscribe();
 
     // libplayerc data structure
@@ -341,7 +353,7 @@ class BlackBoardProxy : public ClientProxy
 
   public:
 	  /** Constructor */
-  	BlackBoardProxy(PlayerClient *aPc, uint aIndex=0);
+  	BlackBoardProxy(PlayerClient *aPc, uint32_t aIndex=0);
   	/** Destructor */
   	~BlackBoardProxy();
   	/** Subscribe to a key. If the key does not exist the default value is returned. The user must free the entry. */
@@ -364,7 +376,7 @@ class BlackBoardProxy : public ClientProxy
 // The @p BlinkenlightProxy class is used to enable and disable
 // a flashing indicator light, and to set its period, via a @ref
 // interface_blinkenlight device */
-// class BlinkenLightProxy : public ClientProxy
+// class PLAYERCC_EXPORT BlinkenLightProxy : public ClientProxy
 // {
 //   private:
 //
@@ -403,7 +415,7 @@ interface_blobfinder device.  It contains no methods.  The latest
 color blob data is stored in @p blobs, a dynamically allocated 2-D array,
 indexed by color channel.
 */
-class BlobfinderProxy : public ClientProxy
+class PLAYERCC_EXPORT BlobfinderProxy : public ClientProxy
 {
   private:
 
@@ -454,7 +466,7 @@ class BlobfinderProxy : public ClientProxy
 The @p BumperProxy class is used to read from a @ref
 interface_bumper device.
 */
-class BumperProxy : public ClientProxy
+class PLAYERCC_EXPORT BumperProxy : public ClientProxy
 {
 
   private:
@@ -494,14 +506,14 @@ class BumperProxy : public ClientProxy
     ///    For example, given a @p BumperProxy named @p bp, the following
     ///    expressions are equivalent: @p bp.IsBumped[0] and @p bp[0].
     bool operator [](uint32_t aIndex) const
-      { return IsBumped(aIndex); }
+	  { return IsBumped(aIndex) != 0 ? true : false; }
 
 };
 
 /**
 The @p CameraProxy class can be used to get images from a @ref
 interface_camera device. */
-class CameraProxy : public ClientProxy
+class PLAYERCC_EXPORT CameraProxy : public ClientProxy
 {
 
   private:
@@ -574,7 +586,7 @@ class CameraProxy : public ClientProxy
 The @p DioProxy class is used to read from a @ref interface_dio
 (digital I/O) device.
 */
-class DioProxy : public ClientProxy
+class PLAYERCC_EXPORT DioProxy : public ClientProxy
 {
   private:
 
@@ -615,7 +627,7 @@ The @p FiducialProxy class is used to control @ref
 interface_fiducial devices.  The latest set of detected beacons
 is stored in the @p beacons array.
 */
-class FiducialProxy : public ClientProxy
+class PLAYERCC_EXPORT FiducialProxy : public ClientProxy
 {
   private:
     void Subscribe(uint32_t aIndex);
@@ -663,7 +675,7 @@ class FiducialProxy : public ClientProxy
 /**
 The @p GpsProxy class is used to control a @ref interface_gps
 device.  The latest pose data is stored in three class attributes.  */
-class GpsProxy : public ClientProxy
+class PLAYERCC_EXPORT GpsProxy : public ClientProxy
 {
 
   private:
@@ -719,7 +731,7 @@ class GpsProxy : public ClientProxy
  * so you can draw into the Stage window. This is very useful to
  * visualize what's going on in your controller.
  */
-class Graphics2dProxy : public ClientProxy
+class PLAYERCC_EXPORT Graphics2dProxy : public ClientProxy
 {
 
   private:
@@ -765,7 +777,7 @@ class Graphics2dProxy : public ClientProxy
  * rendering device provided by Player using the graphics3d
  * interface.
  */
-class Graphics3dProxy : public ClientProxy
+class PLAYERCC_EXPORT Graphics3dProxy : public ClientProxy
 {
 
   private:
@@ -802,7 +814,7 @@ class Graphics3dProxy : public ClientProxy
 The @p GripperProxy class is used to control a @ref interface_gripper device.
 The latest gripper data is held in a handful of class attributes.
 */
-class GripperProxy : public ClientProxy
+class PLAYERCC_EXPORT GripperProxy : public ClientProxy
 {
 
   private:
@@ -855,7 +867,7 @@ class GripperProxy : public ClientProxy
 
 /**
 The @p HealthProxy class is used to get infos of the player-server. */
-class HealthProxy : public ClientProxy
+class PLAYERCC_EXPORT HealthProxy : public ClientProxy
 {
 
   private:
@@ -915,7 +927,7 @@ class HealthProxy : public ClientProxy
 The @p ImuProxy class is used to control an @ref interface_imu
 device.
  */
-class ImuProxy : public ClientProxy
+class PLAYERCC_EXPORT ImuProxy : public ClientProxy
 {
   private:
     void Subscribe(uint32_t aIndex);
@@ -961,7 +973,7 @@ class ImuProxy : public ClientProxy
 The @p IrProxy class is used to control an @ref interface_ir
 device.
 */
-class IrProxy : public ClientProxy
+class PLAYERCC_EXPORT IrProxy : public ClientProxy
 {
 
   private:
@@ -1010,7 +1022,7 @@ The @p LaserProxy class is used to control a @ref interface_laser
 device.  The latest scan data is held in two arrays: @p ranges and @p
 intensity.  The laser scan range, resolution and so on can be configured
 using the Configure() method.  */
-class LaserProxy : public ClientProxy
+class PLAYERCC_EXPORT LaserProxy : public ClientProxy
 {
   private:
 
@@ -1061,7 +1073,7 @@ class LaserProxy : public ClientProxy
     double GetConfMaxAngle() const { return max_angle; };
 
     /// Whether or not reflectance (i.e., intensity) values are being returned.
-    bool IntensityOn() const { return GetVar(mDevice->intensity_on); };
+	bool IntensityOn() const { return GetVar(mDevice->intensity_on) != 0 ? true : false; };
 
 //    /// Scan data (polar): range (m) and bearing (radians)
 //    double GetScan(uint32_t aIndex) const
@@ -1183,7 +1195,7 @@ class LaserProxy : public ClientProxy
 The @p LimbProxy class is used to control a @ref interface_limb
 device.
  */
-class LimbProxy : public ClientProxy
+class PLAYERCC_EXPORT LimbProxy : public ClientProxy
 {
   private:
 
@@ -1235,7 +1247,7 @@ The @p LinuxjoystickProxy class is used to control a @ref interface_joystick
 device.  The most recent joystick range measuremts can be read from the
 range attribute, or using the the [] operator.
 */
-class LinuxjoystickProxy : public ClientProxy
+class PLAYERCC_EXPORT LinuxjoystickProxy : public ClientProxy
 {
   private:
 
@@ -1285,7 +1297,7 @@ The @p LocalizeProxy class is used to control a @ref
 interface_localize device, which can provide multiple pose
 hypotheses for a robot.
 */
-class LocalizeProxy : public ClientProxy
+class PLAYERCC_EXPORT LocalizeProxy : public ClientProxy
 {
 
   private:
@@ -1356,7 +1368,7 @@ class LocalizeProxy : public ClientProxy
 /**
 The @p LogProxy proxy provides access to a @ref interface_log device.
 */
-class LogProxy : public ClientProxy
+class PLAYERCC_EXPORT LogProxy : public ClientProxy
 {
   private:
 
@@ -1403,7 +1415,7 @@ class LogProxy : public ClientProxy
 /**
 The @p map proxy provides access to a @ref interface_map device.
 */
-class MapProxy : public ClientProxy
+class PLAYERCC_EXPORT MapProxy : public ClientProxy
 {
   private:
 
@@ -1458,7 +1470,7 @@ The @p OpaqueProxy proxy provides an interface to a generic @ref
 interface_opaque. See examples/plugins/opaquedriver for an example of using
 this interface in combination with a custom plugin.
 */
-class OpaqueProxy : public ClientProxy
+class PLAYERCC_EXPORT OpaqueProxy : public ClientProxy
 {
 
   private:
@@ -1498,7 +1510,7 @@ class OpaqueProxy : public ClientProxy
 /**
 The @p PlannerProxy proxy provides an interface to a 2D motion @ref
 interface_planner. */
-class PlannerProxy : public ClientProxy
+class PLAYERCC_EXPORT PlannerProxy : public ClientProxy
 {
 
   private:
@@ -1640,7 +1652,7 @@ class PlannerProxy : public ClientProxy
 /**
 The Pointcloud3d proxy provides an interface to a pointcloud3d device.
 */
-class Pointcloud3dProxy : public ClientProxy
+class PLAYERCC_EXPORT Pointcloud3dProxy : public ClientProxy
 {
   private:
 
@@ -1675,7 +1687,7 @@ class Pointcloud3dProxy : public ClientProxy
 The @p Position1dProxy class is used to control a @ref
 interface_position1d device.  The latest position data is contained
 in the attributes pos, vel , etc.  */
-class Position1dProxy : public ClientProxy
+class PLAYERCC_EXPORT Position1dProxy : public ClientProxy
 {
 
   private:
@@ -1758,7 +1770,7 @@ class Position1dProxy : public ClientProxy
     double  GetVel() const { return GetVar(mDevice->vel); };
 
     /// Accessor method
-    bool GetStall() const { return GetVar(mDevice->stall); };
+	bool GetStall() const { return GetVar(mDevice->stall) != 0 ? true : false; };
 
     /// Accessor method
     uint8_t GetStatus() const { return GetVar(mDevice->status); };
@@ -1799,7 +1811,7 @@ class Position1dProxy : public ClientProxy
 The @p Position2dProxy class is used to control a @ref
 interface_position2d device.  The latest position data is contained
 in the attributes xpos, ypos, etc.  */
-class Position2dProxy : public ClientProxy
+class PLAYERCC_EXPORT Position2dProxy : public ClientProxy
 {
 
   private:
@@ -1838,12 +1850,12 @@ class Position2dProxy : public ClientProxy
 
     /// Same as the previous GoTo(), but doesn't take speed
     void GoTo(player_pose2d_t pos)
-      {GoTo(pos,(player_pose2d_t) {0,0,0}); }
+      { player_pose2d_t vel = {0,0,0}; GoTo(pos, vel); }
 
     /// Same as the previous GoTo(), but only takes position arguments,
     /// no motion speed setting
     void GoTo(double aX, double aY, double aYaw)
-      {GoTo((player_pose2d_t) {aX,aY,aYaw},(player_pose2d_t) {0,0,0}); }
+      { player_pose2d_t pos = {aX,aY,aYaw}; player_pose2d_t vel = {0,0,0}; GoTo(pos, vel); }
 
     /// Sets command for carlike robot
     void SetCarlike(double aXSpeed, double aDriveAngle);
@@ -1945,7 +1957,7 @@ class Position2dProxy : public ClientProxy
     double  GetYawSpeed() const { return GetVar(mDevice->va); };
 
     /// Accessor method
-    bool GetStall() const { return GetVar(mDevice->stall); };
+	bool GetStall() const { return GetVar(mDevice->stall) != 0 ? true : false; };
 
 };
 
@@ -1955,7 +1967,7 @@ The @p Position3dProxy class is used to control
 a interface_position3d device.  The latest position data is
 contained in the attributes xpos, ypos, etc.
 */
-class Position3dProxy : public ClientProxy
+class PLAYERCC_EXPORT Position3dProxy : public ClientProxy
 {
 
   private:
@@ -2006,15 +2018,16 @@ class Position3dProxy : public ClientProxy
 
     /// Same as the previous GoTo(), but does'n take vel argument
     void GoTo(player_pose3d_t aPos)
-      { GoTo(aPos, (player_pose3d_t) {0,0,0,0,0,0}); }
+      { player_pose3d_t vel = {0,0,0,0,0,0}; GoTo(aPos, vel); }
 
 
     /// Same as the previous GoTo(), but only takes position arguments,
     /// no motion speed setting
     void GoTo(double aX, double aY, double aZ,
               double aRoll, double aPitch, double aYaw)
-      { GoTo((player_pose3d_t) {aX,aY,aZ,aRoll,aPitch,aYaw},
-              (player_pose3d_t) {0,0,0,0,0,0});
+      { player_pose3d_t pos = {aX,aY,aZ,aRoll,aPitch,aYaw}; 
+        player_pose3d_t vel = {0,0,0,0,0,0}; 
+        GoTo(pos, vel);
       }
 
     /// Enable/disable the motors.
@@ -2091,11 +2104,11 @@ class Position3dProxy : public ClientProxy
     double  GetYawSpeed() const { return GetVar(mDevice->vel_yaw); };
 
     /// Accessor method
-    bool GetStall () const { return GetVar(mDevice->stall); };
+	bool GetStall () const { return GetVar(mDevice->stall) != 0 ? true : false; };
 };
 /**
 The @p PowerProxy class controls a @ref interface_power device. */
-class PowerProxy : public ClientProxy
+class PLAYERCC_EXPORT PowerProxy : public ClientProxy
 {
   private:
 
@@ -2124,10 +2137,10 @@ class PowerProxy : public ClientProxy
     double GetWatts() const {return GetVar(mDevice->watts); };
 
     /// Returns whether charging is taking place
-    bool GetCharging() const {return GetVar(mDevice->charging);};
+    bool GetCharging() const {return GetVar(mDevice->charging) != 0 ? true : false;};
 
     // Return whether the power data is valid
-    bool IsValid() const {return GetVar(mDevice->valid);};
+    bool IsValid() const {return GetVar(mDevice->valid) != 0 ? true : false;};
 };
 
 /**
@@ -2136,7 +2149,7 @@ The @p PtzProxy class is used to control a @ref interface_ptz
 device.  The state of the camera can be read from the pan, tilt, zoom
 attributes and changed using the SetCam() method.
 */
-class PtzProxy : public ClientProxy
+class PLAYERCC_EXPORT PtzProxy : public ClientProxy
 {
 
   private:
@@ -2182,7 +2195,7 @@ class PtzProxy : public ClientProxy
 
 /**
 The @p RangerProxy class is used to control a @ref interface_ranger device. */
-class RangerProxy : public ClientProxy
+class PLAYERCC_EXPORT RangerProxy : public ClientProxy
 {
   private:
 
@@ -2270,7 +2283,7 @@ class RangerProxy : public ClientProxy
 
 /**
 The @p RFIDProxy class is used to control a  @ref interface_rfid device. */
-class RFIDProxy : public ClientProxy
+class PLAYERCC_EXPORT RFIDProxy : public ClientProxy
 {
 
   private:
@@ -2305,7 +2318,7 @@ class RFIDProxy : public ClientProxy
 The @p SimulationProxy proxy provides access to a
 @ref interface_simulation device.
 */
-class SimulationProxy : public ClientProxy
+class PLAYERCC_EXPORT SimulationProxy : public ClientProxy
 {
   private:
 
@@ -2352,7 +2365,7 @@ The @p SonarProxy class is used to control a @ref interface_sonar
 device.  The most recent sonar range measuremts can be read from the
 range attribute, or using the the [] operator.
 */
-class SonarProxy : public ClientProxy
+class PLAYERCC_EXPORT SonarProxy : public ClientProxy
 {
   private:
 
@@ -2400,7 +2413,7 @@ class SonarProxy : public ClientProxy
 The @p SpeechProxy class is used to control a @ref interface_speech
 device.  Use the say method to send things to say.
 */
-class SpeechProxy : public ClientProxy
+class PLAYERCC_EXPORT SpeechProxy : public ClientProxy
 {
 
   private:
@@ -2425,7 +2438,7 @@ class SpeechProxy : public ClientProxy
 /**
  The @p SpeechRecognition proxy provides access to a @ref interface_speech_recognition device.
  */
-class SpeechRecognitionProxy : public ClientProxy
+class PLAYERCC_EXPORT SpeechRecognitionProxy : public ClientProxy
 {
    void Subscribe(uint32_t aIndex);
    void Unsubscribe();
@@ -2453,7 +2466,7 @@ class SpeechRecognitionProxy : public ClientProxy
 /**
 * The @p VectorMapProxy class is used to interface to a vectormap.
 */
-class VectorMapProxy : public ClientProxy
+class PLAYERCC_EXPORT VectorMapProxy : public ClientProxy
 {
 
   private:
@@ -2484,7 +2497,7 @@ class VectorMapProxy : public ClientProxy
 
 /**
 The @p WiFiProxy class controls a @ref interface_wifi device.  */
-class WiFiProxy: public ClientProxy
+class PLAYERCC_EXPORT WiFiProxy: public ClientProxy
 {
 
   private:
@@ -2552,7 +2565,7 @@ class WiFiProxy: public ClientProxy
 
 /**
 The @p WSNProxy class is used to control a @ref interface_wsn device. */
-class WSNProxy : public ClientProxy
+class PLAYERCC_EXPORT WSNProxy : public ClientProxy
 {
 
   private:
@@ -2587,52 +2600,52 @@ class WSNProxy : public ClientProxy
 
 namespace std
 {
-  std::ostream& operator << (std::ostream& os, const player_point_2d_t& c);
-  std::ostream& operator << (std::ostream& os, const player_pose2d_t& c);
-  std::ostream& operator << (std::ostream& os, const player_pose3d_t& c);
-  std::ostream& operator << (std::ostream& os, const player_bbox2d_t& c);
-  std::ostream& operator << (std::ostream& os, const player_bbox3d_t& c);
-  std::ostream& operator << (std::ostream& os, const player_segment_t& c);
-  std::ostream& operator << (std::ostream& os, const player_extent2d_t& c);
-  std::ostream& operator << (std::ostream& os, const playerc_device_info_t& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const player_point_2d_t& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const player_pose2d_t& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const player_pose3d_t& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const player_bbox2d_t& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const player_bbox3d_t& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const player_segment_t& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const player_extent2d_t& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const playerc_device_info_t& c);
 
-  std::ostream& operator << (std::ostream& os, const PlayerCc::ClientProxy& c);
-  std::ostream& operator << (std::ostream& os, const PlayerCc::ActArrayProxy& c);
-  std::ostream& operator << (std::ostream& os, const PlayerCc::AioProxy& c);
-  std::ostream& operator << (std::ostream& os, const PlayerCc::AudioProxy& a);
-  //std::ostream& operator << (std::ostream& os, const PlayerCc::BlinkenLightProxy& c);
-  std::ostream& operator << (std::ostream& os, const PlayerCc::BlobfinderProxy& c);
-  std::ostream& operator << (std::ostream& os, const PlayerCc::BumperProxy& c);
-  std::ostream& operator << (std::ostream& os, const PlayerCc::CameraProxy& c);
-  std::ostream& operator << (std::ostream& os, const PlayerCc::DioProxy& c);
-  std::ostream& operator << (std::ostream& os, const PlayerCc::FiducialProxy& c);
-  std::ostream& operator << (std::ostream& os, const PlayerCc::GpsProxy& c);
-  std::ostream& operator << (std::ostream& os, const PlayerCc::GripperProxy& c);
-  std::ostream& operator << (std::ostream& os, const PlayerCc::ImuProxy& c);
-  std::ostream& operator << (std::ostream& os, const PlayerCc::IrProxy& c);
-  std::ostream& operator << (std::ostream& os, const PlayerCc::LaserProxy& c);
-  std::ostream& operator << (std::ostream& os, const PlayerCc::LimbProxy& c);
-  std::ostream& operator << (std::ostream& os, const PlayerCc::LinuxjoystickProxy& c);
-  std::ostream& operator << (std::ostream& os, const PlayerCc::LocalizeProxy& c);
-  std::ostream& operator << (std::ostream& os, const PlayerCc::LogProxy& c);
-  std::ostream& operator << (std::ostream& os, const PlayerCc::MapProxy& c);
-  std::ostream& operator << (std::ostream& os, const PlayerCc::OpaqueProxy& c);
-  std::ostream& operator << (std::ostream& os, const PlayerCc::PlannerProxy& c);
-  std::ostream& operator << (std::ostream& os, const PlayerCc::Position1dProxy& c);
-  std::ostream& operator << (std::ostream& os, const PlayerCc::Position2dProxy& c);
-  std::ostream& operator << (std::ostream& os, const PlayerCc::Position3dProxy& c);
-  std::ostream& operator << (std::ostream& os, const PlayerCc::PowerProxy& c);
-  std::ostream& operator << (std::ostream& os, const PlayerCc::PtzProxy& c);
-  std::ostream& operator << (std::ostream &os, const PlayerCc::RangerProxy &c);
-  std::ostream& operator << (std::ostream& os, const PlayerCc::SimulationProxy& c);
-  std::ostream& operator << (std::ostream& os, const PlayerCc::SonarProxy& c);
-  std::ostream& operator << (std::ostream& os, const PlayerCc::SpeechProxy& c);
-  std::ostream& operator << (std::ostream& os, const PlayerCc::SpeechRecognitionProxy& c);
-  std::ostream& operator << (std::ostream& os, const PlayerCc::VectorMapProxy& c);
-  //std::ostream& operator << (std::ostream& os, const PlayerCc::WafeformProxy& c);
-  std::ostream& operator << (std::ostream& os, const PlayerCc::WiFiProxy& c);
-  std::ostream& operator << (std::ostream& os, const PlayerCc::RFIDProxy& c);
-  std::ostream& operator << (std::ostream& os, const PlayerCc::WSNProxy& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::ClientProxy& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::ActArrayProxy& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::AioProxy& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::AudioProxy& a);
+  //PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::BlinkenLightProxy& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::BlobfinderProxy& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::BumperProxy& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::CameraProxy& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::DioProxy& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::FiducialProxy& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::GpsProxy& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::GripperProxy& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::ImuProxy& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::IrProxy& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::LaserProxy& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::LimbProxy& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::LinuxjoystickProxy& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::LocalizeProxy& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::LogProxy& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::MapProxy& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::OpaqueProxy& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::PlannerProxy& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::Position1dProxy& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::Position2dProxy& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::Position3dProxy& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::PowerProxy& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::PtzProxy& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream &os, const PlayerCc::RangerProxy &c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::SimulationProxy& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::SonarProxy& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::SpeechProxy& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::SpeechRecognitionProxy& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::VectorMapProxy& c);
+  //PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::WafeformProxy& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::WiFiProxy& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::RFIDProxy& c);
+  PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::WSNProxy& c);
 }
 
 #endif

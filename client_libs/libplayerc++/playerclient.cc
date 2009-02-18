@@ -56,6 +56,8 @@
 
 #include "debug.h"
 
+#include <replace.h>
+
 using namespace PlayerCc;
 
 PlayerClient::PlayerClient(const std::string aHostname, uint32_t aPort,
@@ -212,7 +214,7 @@ bool PlayerClient::Peek(uint32_t aTimeout)
   int ret = playerc_client_peek(mClient, aTimeout);
   if (ret < 0)
     throw PlayerError("PlayerClient::Peek()", playerc_error_str());
-  return ret;
+  return ret != 0 ? true : false;
 }
 
 

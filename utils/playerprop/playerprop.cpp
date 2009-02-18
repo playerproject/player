@@ -20,10 +20,17 @@
  *
  */
 
-#include <unistd.h>
+#if !defined (WIN32)
+  #include <unistd.h>
+#endif
 #include <iostream>
 #include <string>
 #include <cstring>
+
+#include <config.h>
+#if !HAVE_GETOPT
+  #include <replace.h>
+#endif
 
 #include <libplayerc++/playerc++.h>
 
