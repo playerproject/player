@@ -8,7 +8,10 @@
 #endif
 #include <string>
 
-#include <replace.h>
+#include <playerconfig.h>
+#if !HAVE_USLEEP
+  #include <replace.h>
+#endif
 
 using namespace std;
 
