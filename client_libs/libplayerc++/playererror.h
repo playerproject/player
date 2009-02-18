@@ -43,6 +43,18 @@
 #include <string>
 #include <iostream>
 
+#if defined (WIN32)
+  #if defined (PLAYER_STATIC)
+    #define PLAYERCC_EXPORT
+  #elif defined (playerc___EXPORTS)
+    #define PLAYERCC_EXPORT    __declspec (dllexport)
+  #else
+    #define PLAYERCC_EXPORT    __declspec (dllimport)
+  #endif
+#else
+  #define PLAYERCC_EXPORT
+#endif
+
 namespace PlayerCc
 {
 
@@ -51,7 +63,7 @@ namespace PlayerCc
  * When @em libplayerc++ receives an error from @em libplayerc
  * it throws a PlayerError exception.
  */
-class PlayerError
+class PLAYERCC_EXPORT PlayerError
 {
   private:
 
@@ -82,7 +94,7 @@ class PlayerError
 
 namespace std
 {
-std::ostream& operator << (std::ostream& os, const PlayerCc::PlayerError& e);
+PLAYERCC_EXPORT std::ostream& operator << (std::ostream& os, const PlayerCc::PlayerError& e);
 }
 
 #endif

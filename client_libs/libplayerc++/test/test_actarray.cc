@@ -5,7 +5,9 @@
  */
 
 #include "test.h"
-#include <unistd.h>
+#if !defined (WIN32)
+  #include <unistd.h>
+#endif
 
 using namespace PlayerCc;
 
@@ -86,7 +88,7 @@ test_actarray(PlayerClient* client, int index)
   PASS();
 
   TEST("moving #0 at speed -0.3, then setting speed to 0");
-  aap.MoveAtSpeed(0, -0.3);
+  aap.MoveAtSpeed(0, -0.3f);
   for(int i = 0; i < wait_iters; ++i)
   {
     client->Read();

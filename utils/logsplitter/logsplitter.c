@@ -27,12 +27,19 @@
 */
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
 #include <sys/types.h>
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
 #include <sys/stat.h>
+#if !defined (WIN32)
+    #include <unistd.h>
+#endif
+
+#if defined (WIN32)
+    #define snprintf _snprintf
+    #define fileno _fileno
+#endif
 
 // Splits a logfile and returns the new file handle
 FILE
@@ -116,7 +123,11 @@ FILE
 	fflush (rest);
 
 	// Truncate the remainings from the source file
-        ftruncate (fileno (input), currentPos - before);
+#if defined (WIN32)
+    _chsize_s (_fileno (input), currentPos - before);
+#else
+    ftruncate (fileno (input), currentPos - before);
+#endif
 	fclose (input);
 
 	return rest;
@@ -152,7 +163,7 @@ main (int argc, const char **argv)
     }
 
     // Get the minimum time difference between two consecutive timestamps
-    min_timedifference = atof (argv[1]);
+    min_timedifference = (float) atof (argv[1]);
     base_filename = argv[2];
 
     printf ("I: Minimum time difference is: %f seconds.\n", min_timedifference);
@@ -228,8 +239,10 @@ main (int argc, const char **argv)
 	if ((fabs (t2 - t1) > min_timedifference) && (after - before > 0))
 	{
         time_t t = (time_t)t1;
-#if defined (__SVR4) && defined (__sun)
+#if defined (__SVR4) && defined (sun)
         ctime_r (&t, btime, sizeof (btime));
+#elif defined (WIN32)
+        ctime_s (btime, sizeof (btime), &t);
 #else
         ctime_r (&t, btime);
 #endif

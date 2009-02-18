@@ -4,7 +4,7 @@ IF (BUILD_UTILS_PMAP)
 
     INCLUDE (FindPkgConfig)
     IF (NOT PKG_CONFIG_FOUND)
-        MESSAGE (STATUS "WARNING: Could not find pkg-config; cannot build pmap utility.")
+        MESSAGE (STATUS "pmap utilities will not be built - pkg-config not found")
     ELSE (NOT PKG_CONFIG_FOUND)
         pkg_check_modules (GSL_PKG gsl)
 

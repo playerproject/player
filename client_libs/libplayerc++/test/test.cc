@@ -6,12 +6,18 @@
  **************************************************************************/
 
 #include <cstring>
-#include <unistd.h>
 #include <cstring>
+#if !defined (WIN32)
+  #include <unistd.h>
+#endif
 
 #include <config.h>
 
 #include "test.h"
+
+#if defined (WIN32)
+  #define strdup _strdup
+#endif
 
 bool use_stage;
 

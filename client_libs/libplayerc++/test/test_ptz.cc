@@ -5,7 +5,11 @@
  */
 
 #include "test.h"
-#include <unistd.h>
+#if !defined (WIN32)
+  #include <unistd.h>
+#endif
+
+#include <replace.h>
 
 using namespace PlayerCc;
 
@@ -28,32 +32,32 @@ test_ptz(PlayerClient* client, int index)
 
     TEST("panning left");
     zp.SetCam(DTOR(90),0,0);
-    sleep(3);
+    usleep(3000000);
     PASS();
 
     TEST("panning right");
     zp.SetCam(DTOR(-90),0,0);
-    sleep(3);
+    usleep(3000000);
     PASS();
 
     TEST("tilting up");
     zp.SetCam(0,DTOR(25),0);
-    sleep(3);
+    usleep(3000000);
     PASS();
 
     TEST("tilting down");
     zp.SetCam(0,DTOR(-25),0);
-    sleep(3);
+    usleep(3000000);
     PASS();
 
     TEST("zooming in");
     zp.SetCam(0,0,DTOR(10));
-    sleep(3);
+    usleep(3000000);
     PASS();
 
     TEST("zooming out");
     zp.SetCam(0,0,DTOR(60));
-    sleep(3);
+    usleep(3000000);
     PASS();
 
 

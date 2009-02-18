@@ -5,8 +5,12 @@
  */
 
 #include "test.h"
-#include <unistd.h>
+#if !defined (WIN32)
+  #include <unistd.h>
+#endif
 #include <math.h>
+
+#include <replace.h>
 
 using namespace PlayerCc;
 
@@ -55,7 +59,11 @@ test_position2d(PlayerClient* client, int index)
   
   if((p2d.GetXPos() != ox) || 
      (p2d.GetYPos() != oy) || 
+#if defined (WIN32)
+     ((int)round(RTOD(p2d.GetYaw())) != oa))
+#else
      ((int)rint(RTOD(p2d.GetYaw())) != oa))
+#endif
   {
     FAIL();
     //return(-1);
@@ -67,7 +75,7 @@ test_position2d(PlayerClient* client, int index)
 
   TEST("resetting odometry");
   p2d.ResetOdometry();
-  sleep(1);
+  usleep(1000000);
   PASS();
 
   TEST("enabling motors");
@@ -76,54 +84,54 @@ test_position2d(PlayerClient* client, int index)
 
   TEST("moving forward");
   p2d.SetSpeed(0.1,0);
-  sleep(3);
+  usleep(3000000);
   PASS();
   
   TEST("moving backward");
   p2d.SetSpeed(-0.1,0);
-  sleep(3);
+  usleep(3000000);
   PASS();
   
   TEST("moving left");
   p2d.SetSpeed(0,0.1,0);
-  sleep(3);
+  usleep(3000000);
   PASS();
   
   TEST("moving right");
   p2d.SetSpeed(0,-0.1,0);
-  sleep(3);
+  usleep(3000000);
   PASS();
   
   TEST("turning right");
   p2d.SetSpeed(0,DTOR(-25.0));
-  sleep(3);
+  usleep(3000000);
   PASS();
 
   TEST("turning left");
   p2d.SetSpeed(0,DTOR(25.0));
-  sleep(3);
+  usleep(3000000);
   PASS();
 
   TEST("moving left and anticlockwise (testing omnidrive)");
   p2d.SetSpeed( 0, 0.1, DTOR(45.0) );
-  sleep(3);
+  usleep(3000000);
   PASS();
   
   
   TEST("moving right and clockwise (testing omnidrive)");
   p2d.SetSpeed( 0, -0.1, DTOR(-45) );
-  sleep(3);
+  usleep(3000000);
   PASS();
   
   TEST("stopping");
   p2d.SetSpeed(0,0);
-  sleep(3);
+  usleep(3000000);
   PASS();
 
 
   TEST("disabling motors");
   p2d.SetMotorEnable(0);
-  sleep(1);
+  usleep(1000000);
   PASS();
   
   /*
@@ -140,7 +148,7 @@ test_position2d(PlayerClient* client, int index)
   
   TEST("resetting odometry");
   p2d.ResetOdometry();
-      sleep(1);
+      usleep(1000000);
       PASS();
     
   

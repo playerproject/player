@@ -137,6 +137,12 @@ int poll (struct pollfd *fds, unsigned long int nfds, int timeout);
   int gettimeofday (struct timeval *tv, void *tzp);
 #endif
 
+#if !HAVE_GETOPT
+  int getopt (int argc, char * const argv[], const char *optstring);
+  extern char *optarg;
+  extern int optind, opterr, optopt;
+#endif
+
 #ifdef __cplusplus
 }
 #endif

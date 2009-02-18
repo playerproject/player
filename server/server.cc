@@ -108,6 +108,9 @@ Listening on ports: 6665
   #include <libplayersd/playersd.h>
 #endif
 
+#if !HAVE_GETOPT
+  #include <replace.h>
+#endif
 
 void PrintVersion();
 void PrintCopyrightMsg();
@@ -417,13 +420,6 @@ int
 ParseArgs(int* port, int* debuglevel, char** cfgfilename, int* gz_serverid, char **logfilename,
           int argc, char** argv)
 {
-#if defined (WIN32)
-  // TODO: write some option parsing code or put a getopt implementation in replace.
-  if (argc > 1)
-    *cfgfilename = argv[1];
-  else
-    return -1;
-#else
   int ch;
   const char* optflags = "d:p:hq";
 
@@ -456,7 +452,6 @@ ParseArgs(int* port, int* debuglevel, char** cfgfilename, int* gz_serverid, char
     return(-1);
 
   *cfgfilename = argv[optind];
-#endif
 
   return(0);
 }

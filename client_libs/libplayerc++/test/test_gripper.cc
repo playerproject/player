@@ -5,7 +5,11 @@
  */
 
 #include "test.h"
-#include <unistd.h>
+#if !defined (WIN32)
+  #include <unistd.h>
+#endif
+
+#include <replace.h>
 
 using namespace PlayerCc;
 
@@ -30,27 +34,27 @@ test_gripper(PlayerClient* client, int index)
 
   TEST("gripper open");
   gp.Open();
-  sleep(5);
+  usleep(5000000);
   PASS();
 
   TEST("gripper close");
   gp.Close();
-  sleep(8);
+  usleep(8000000);
   PASS();
 
   TEST("gripper open");
   gp.Open();
-  sleep(5);
+  usleep(5000000);
   PASS();
 
   TEST("gripper store object (only on some grippers, e.g. stage)");
   gp.Store();
-  sleep(3);
+  usleep(3000000);
   PASS();
 
   TEST("gripper retrieve object (only on some grippers, e.g. stage");
   gp.Retrieve();
-  sleep(3);
+  usleep(3000000);
   PASS();
 
   PASS();

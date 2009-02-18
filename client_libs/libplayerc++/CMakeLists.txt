@@ -202,6 +202,10 @@ IF (BUILD_PLAYERCC)
                         wifiproxy.cc
                         wsnproxy.cc)
 
+    IF (NOT HAVE_NANOSLEEP)
+        SET (playerccSrcs ${playerccSrcs} ${PROJECT_SOURCE_DIR}/replace/nanosleep.c)
+    ENDIF (NOT HAVE_NANOSLEEP)
+
     PLAYER_ADD_LIBRARY (playerc++ ${playerccSrcs} ${playercppconfig_h})
     TARGET_LINK_LIBRARIES (playerc++ playerxdr playerutils playerc ${PLAYERCC_EXTRA_LINK_LIBRARIES})
     IF (PLAYER_OS_SOLARIS)
