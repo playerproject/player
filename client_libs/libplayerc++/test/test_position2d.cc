@@ -10,7 +10,10 @@
 #endif
 #include <math.h>
 
-#include <replace.h>
+#include <playerconfig.h>
+#if !HAVE_USLEEP
+  #include <replace.h>
+#endif
 
 using namespace PlayerCc;
 

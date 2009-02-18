@@ -4,9 +4,9 @@ IF (BUILD_PLAYERCC)
 
     IF (BUILD_CC_TESTS)
         # Possibly use our own copy of XDR, and need gettimeofday replacement
-        IF (NOT HAVE_XDR OR NOT HAVE_GETTIMEOFDAY)
+        IF (NOT HAVE_XDR OR NOT HAVE_GETTIMEOFDAY OR NOT HAVE_USLEEP)
             INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/replace)
-        ENDIF (NOT HAVE_XDR OR NOT HAVE_GETTIMEOFDAY)
+        ENDIF (NOT HAVE_XDR OR NOT HAVE_GETTIMEOFDAY OR NOT HAVE_USLEEP)
 
         INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/client_libs ${PROJECT_BINARY_DIR}/client_libs)
         SET (testsSrcs  test.cc

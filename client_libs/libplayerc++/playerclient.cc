@@ -56,7 +56,10 @@
 
 #include "debug.h"
 
-#include <replace.h>
+#include <playerconfig.h>
+#if !HAVE_NANOSLEEP
+  #include <replace.h>
+#endif
 
 using namespace PlayerCc;
 
