@@ -215,10 +215,23 @@ IF (BUILD_PLAYERCC)
         SET (pkgconfigLibFlags)
     ENDIF (PLAYER_OS_SOLARIS)
 
+    IF (Boost_LIBRARY_DIRS)
+        SET (pkgconfigLibFlags "${pkgconfigLibFlags} -L${Boost_LIBRARY_DIRS}")
+    ENDIF (Boost_LIBRARY_DIRS)
+    IF (bostIncludeDir)
+        SET (pkgconfigIncFlags "-I${boostIncludeDir}")
+    ENDIF (bostIncludeDir)
+    IF (boostThreadLib)
+        SET (pkgconfigLibFlags "${pkgconfigLibFlags} -l${boostThreadLib}")
+    ENDIF (boostThreadLib)
+    IF (boostSignalsLib)
+        SET (pkgconfigLibFlags "${pkgconfigLibFlags} -l${boostSignalsLib}")
+    ENDIF (boostSignalsLib)
     PLAYER_MAKE_PKGCONFIG ("playerc++"
                            "C++ wrapper for libplayerc - part of the Player Project"
-                           "playerxdr playerc" "" "-I${boostIncludeDir}"
-                           "-lm -L${Boost_LIBRARY_DIRS} -l${boostThreadLib} -l${boostSignalsLib}")
+                           "playerxdr playerc" "" "${pkgconfigIncFlags}"
+                           "-lm ${pkgconfigLibFlags}")
+    CONFIGURE_FILE (${PLAYER_CMAKE_DIR}/UsePlayerC++.cmake.in ${CMAKE_BINARY_DIR}/cmake/UsePlayerC++.cmake @ONLY)
 
     PLAYER_INSTALL_HEADERS (playerc++ ${playercppconfig_h}
                                       clientproxy.h

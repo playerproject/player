@@ -1,6 +1,4 @@
 MESSAGE (STATUS "===== Client Libraries =====")
 ADD_SUBDIRECTORY (libplayerc)
-#IF (NOT PLAYER_OS_WIN)
-    ADD_SUBDIRECTORY (libplayerc++)
-#ENDIF (NOT PLAYER_OS_WIN)
+ADD_SUBDIRECTORY (libplayerc++)
 MESSAGE (STATUS "============================")
