@@ -11,7 +11,6 @@ ENDIF (PLAYER_OS_OSX)
 # PLAYER_ADD_LIBRARY (_name)
 # Adds a library to be built and installed and sets some common properties on it.
 MACRO (PLAYER_ADD_LIBRARY _name)
-#     MESSAGE (STATUS "Building library ${name} with sources ${ARGN}")
     ADD_LIBRARY (${_name} ${ARGN})
     SET_TARGET_PROPERTIES (${_name} PROPERTIES
                             VERSION ${PLAYER_VERSION}
@@ -19,7 +18,7 @@ MACRO (PLAYER_ADD_LIBRARY _name)
                             INSTALL_NAME_DIR ${RPATH_VAL}
                             INSTALL_RPATH "${INSTALL_RPATH};${CMAKE_INSTALL_PREFIX}/lib"
                             BUILD_WITH_INSTALL_RPATH TRUE)
-    INSTALL (TARGETS ${_name} DESTINATION lib/)
+    INSTALL (TARGETS ${_name} DESTINATION lib/ COMPONENT libraries)
 ENDMACRO (PLAYER_ADD_LIBRARY)
 
 
@@ -27,12 +26,11 @@ ENDMACRO (PLAYER_ADD_LIBRARY)
 # PLAYER_ADD_EXECUTABLE (_name)
 # Adds an executable to be built and installed and sets some common properties on it.
 MACRO (PLAYER_ADD_EXECUTABLE _name)
-#     MESSAGE (STATUS "Building library ${name} with sources ${ARGN}")
     ADD_EXECUTABLE (${_name} ${ARGN})
     SET_TARGET_PROPERTIES (${_name} PROPERTIES
                             INSTALL_RPATH "${INSTALL_RPATH};${CMAKE_INSTALL_PREFIX}/lib"
                             BUILD_WITH_INSTALL_RPATH TRUE)
-    INSTALL (TARGETS ${_name} RUNTIME DESTINATION bin/)
+    INSTALL (TARGETS ${_name} RUNTIME DESTINATION bin/ COMPONENT applications)
 ENDMACRO (PLAYER_ADD_EXECUTABLE)
 
 
@@ -143,7 +141,7 @@ MACRO (PLAYER_MAKE_PKGCONFIG _name _desc _extDeps _intDeps _cFlags _libFlags)
     ENDIF (${_intDeps})
 
     CONFIGURE_FILE (${PLAYER_CMAKE_DIR}/pkgconfig.cmake ${CMAKE_CURRENT_BINARY_DIR}/${_name}.pc @ONLY)
-    INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/${_name}.pc DESTINATION lib/pkgconfig/)
+    INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/${_name}.pc DESTINATION lib/pkgconfig/ COMPONENT pkgconfig)
 ENDMACRO (PLAYER_MAKE_PKGCONFIG)
 
 
@@ -152,5 +150,6 @@ ENDMACRO (PLAYER_MAKE_PKGCONFIG)
 # Installs header files
 MACRO (PLAYER_INSTALL_HEADERS _subdir)
     INSTALL (FILES ${ARGN}
-        DESTINATION ${PLAYER_INCLUDE_INSTALL_DIR}/lib${_subdir})
+            DESTINATION ${PLAYER_INCLUDE_INSTALL_DIR}/lib${_subdir}
+            COMPONENT headers)
 ENDMACRO (PLAYER_INSTALL_HEADERS)
