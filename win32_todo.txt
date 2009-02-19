@@ -8,5 +8,4 @@ This list is incomplete.
 - Use DLL loading for plugins on Win32 instead of ltdl (I have plenty of experience here, it shouldn't take long to do)
 - Installing and setting paths
 - Make examples work
-- Make the CMake modules not require pkg-config to build clients and plugins, to reduce dependencies for windows users
 - Clean up all the places that add srcdir/replace as an include directory

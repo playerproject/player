@@ -97,6 +97,7 @@ PLAYER_ADD_LIBRARY (playercore ${playercoreSrcs} ${player_interfaces_h} ${player
 TARGET_LINK_LIBRARIES (playercore ${coreLibs})
 PLAYER_MAKE_PKGCONFIG ("playercore" "Player core library - part of the Player Project"
                        "playererror" "" "" "${corePCLibs}")
+CONFIGURE_FILE (${PLAYER_CMAKE_DIR}/UsePlayerPlugin.cmake.in ${CMAKE_BINARY_DIR}/cmake/UsePlayerPlugin.cmake @ONLY)
 
 
 SET (playererrorSrcs error.c)

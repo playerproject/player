@@ -127,7 +127,7 @@ TEST_BIG_ENDIAN (WORDS_BIGENDIAN)
 # GTK checks
 INCLUDE (FindPkgConfig)
 IF (NOT PKG_CONFIG_FOUND)
-    MESSAGE (STATUS "WARNING: Could not find pkg-config; cannot search for GTK or related.")
+    MESSAGE (STATUS "WARNING: Could not find pkg-config. This will prevent searching for GTK and building many drivers.")
 ELSE (NOT PKG_CONFIG_FOUND)
     pkg_check_modules (GNOMECANVAS_PKG libgnomecanvas-2.0)
     IF (GNOMECANVAS_PKG_FOUND)
