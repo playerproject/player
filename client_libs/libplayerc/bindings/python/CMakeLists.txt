@@ -17,16 +17,21 @@ IF (PYTHONINTERP_FOUND)
 
             SET (CMAKE_SWIG_FLAGS "")
 
-            # Generate player_oo.i from playerc.h
-            SET (playerc_oo_i "${CMAKE_CURRENT_BINARY_DIR}/playerc_oo.i")
-            ADD_CUSTOM_COMMAND (OUTPUT ${playerc_oo_i}
-                COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/playerc_swig_parse.py ${PROJECT_SOURCE_DIR}/client_libs/libplayerc/playerc.h ${playerc_oo_i}
+            # Generate playerc_wrap.i and playerc_wrap.h from playerc.h
+            SET (playerc_wrap_prefix "${CMAKE_CURRENT_BINARY_DIR}/playerc_wrap")
+            ADD_CUSTOM_COMMAND (OUTPUT "${playerc_wrap_prefix}.i"
+                COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/playerc_swig_parse.py ${PROJECT_SOURCE_DIR}/client_libs/libplayerc/playerc.h ${playerc_wrap_prefix}
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                VERBATIM
-            )
-            # Empty target to ensure playerc_oo.i gets created
-            ADD_CUSTOM_TARGET (playerc_oo_i_target ALL
-                DEPENDS ${playerc_oo_i})
+                VERBATIM)
+
+            ADD_CUSTOM_COMMAND(OUTPUT "${playerc_wrap_prefix}.h"
+                DEPENDS "${playerc_wrap_prefix}.i")
+
+            # Empty target to ensure playerc_wrap.i and playerc_wrap.h get created
+            ADD_CUSTOM_TARGET (playerc_wrap_i_target ALL
+                DEPENDS "${playerc_wrap_prefix}.i"
+                DEPENDS "${playerc_wrap_prefix}.h")
+
             # Copy playerc.i to the build directory
             SET (playerc_i_in "${CMAKE_CURRENT_SOURCE_DIR}/playerc.i")
             SET (playerc_i "${CMAKE_CURRENT_BINARY_DIR}/playerc.i")
@@ -34,18 +39,27 @@ IF (PYTHONINTERP_FOUND)
 
             SWIG_ADD_MODULE (playerc python ${playerc_i})
             SWIG_LINK_LIBRARIES (playerc ${PYTHON_LIBRARIES})
-            ADD_DEPENDENCIES (${SWIG_MODULE_playerc_REAL_NAME} playerc_oo_i_target)
+            ADD_DEPENDENCIES (${SWIG_MODULE_playerc_REAL_NAME} playerc_wrap_i_target)
             TARGET_LINK_LIBRARIES (${SWIG_MODULE_playerc_REAL_NAME} playerxdr playerc playererror)
             IF (HAVE_JPEG)
                 TARGET_LINK_LIBRARIES (${SWIG_MODULE_playerc_REAL_NAME} playerjpeg)
             ENDIF (HAVE_JPEG)
 
-            # Generate the set up script
-#             CONFIGURE_FILE (${CMAKE_CURRENT_SOURCE_DIR}/setup.py.cmake ${CMAKE_CURRENT_BINARY_DIR}/setup.py)
-#             INSTALL (SCRIPT ${PLAYER_CMAKE_DIR}/internal/InstallPythonModule.cmake)
+            IF (PYTHON_OS_WIN)
+                GET_FILENAME_COMPONENT (playercpyInstallDir ${PYTHON_EXECUTABLE} PATH)
+            ELSE (PYTHON_OS_WIN)
+                # Get the Python version
+                EXECUTE_PROCESS (COMMAND ${PYTHON_EXECUTABLE} --version
+                                 ERROR_VARIABLE pythonVersionString
+                                 ERROR_STRIP_TRAILING_WHITESPACE)
+                STRING (REGEX REPLACE "^Python ([0-9]+\\.[0-9]+).*" "\\1" pythonVersion ${pythonVersionString})
+                SET (playercpyInstallDir lib/python${pythonVersion}/site-packages)
+            ENDIF (PYTHON_OS_WIN)
+            SET (PYTHON_BINDINGS_INSTALL_DIR ${playercpyInstallDir} CACHE PATH "Python bindings installation directory under $prefix")
+            MARK_AS_ADVANCED (PYTHON_BINDINGS_INSTALL_DIR)
 
             INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/playerc.py ${CMAKE_CURRENT_BINARY_DIR}/_playerc.so
-                DESTINATION lib/python/site-packages)
+                DESTINATION ${PYTHON_BINDINGS_INSTALL_DIR})
         ELSE (SWIG_FOUND)
             MESSAGE (STATUS "Python bindings for C client library will not be built - could not find Swig")
         ENDIF (SWIG_FOUND)
@@ -55,3 +69,4 @@ IF (PYTHONINTERP_FOUND)
 ELSE (PYTHONINTERP_FOUND)
     MESSAGE (STATUS "Python bindings for C client library will not be built - could not find Python")
 ENDIF (PYTHONINTERP_FOUND)
+

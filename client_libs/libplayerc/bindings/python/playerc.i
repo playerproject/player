@@ -2,7 +2,7 @@
 %module playerc
 
 %{
-#include "playerc.h"
+#include "playerc_wrap.h"
 
 #ifndef Py_RETURN_NONE
 #define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
@@ -408,30 +408,7 @@
 // Use this for object-oriented bindings;
 // e.g., client.connect(...)
 // This file is created by running ../parse_header.py
-%include "playerc_oo.i"
-
-%extend playerc_laser
-{
-double get_range (int index)
-{
-	if (index < self->scan_count)
-		return self->ranges[index];
-	else
-		return 0;
-};
-}
-
-%extend playerc_sonar
-{
-double get_scan (int index)
-{
-	if (index < self->scan_count)
-		return self->scan[index];
-	else
-		return 0;
-};
-}
-
+%include "playerc_wrap.i"
 
 %extend playerc_blackboard
 {

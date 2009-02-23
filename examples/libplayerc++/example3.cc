@@ -2,6 +2,7 @@
 #include <iostream>
 #include <list>
 #include <algorithm>
+#include <functional>
 
 int main(int argc, char** argv)
 {
