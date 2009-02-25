@@ -172,6 +172,7 @@ class CMVisionBF: public ThreadedDriver
                                void * data);
     virtual void Main();
     int MainSetup();
+    void MainQuit();
     
     void ProcessImageData();
 };
@@ -246,13 +247,19 @@ CMVisionBF::MainSetup()
   memset(&mData,0,sizeof(mData));
   allocated_blobs = 0;
   puts("done.");
+
+  return(0);
+}
+
+void 
+CMVisionBF::MainQuit()
+{
   // Unsubscribe from the camera
   this->mCameraDev->Unsubscribe(this->InQueue);
 
   delete mVision; mVision = NULL;
 
   puts("CMVision server has been shutdown");
-  return(0);
 }
 
 void
