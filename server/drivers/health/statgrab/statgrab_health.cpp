@@ -123,7 +123,7 @@ StatGrabDriver::StatGrabDriver(ConfigFile* cf, int section)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
-int StatGrabDriver::Setup()
+int StatGrabDriver::MainSetup()
 {
   // Initialise statgrab
   sg_init();
