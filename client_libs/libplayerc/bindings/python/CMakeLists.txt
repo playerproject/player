@@ -49,7 +49,7 @@ IF (PYTHONINTERP_FOUND)
                 GET_FILENAME_COMPONENT (playercpyInstallDir ${PYTHON_EXECUTABLE} PATH)
             ELSE (PYTHON_OS_WIN)
                 # Get the Python version
-                EXECUTE_PROCESS (COMMAND ${PYTHON_EXECUTABLE} --version
+                EXECUTE_PROCESS (COMMAND ${PYTHON_EXECUTABLE} -V
                                  ERROR_VARIABLE pythonVersionString
                                  ERROR_STRIP_TRAILING_WHITESPACE)
                 STRING (REGEX REPLACE "^Python ([0-9]+\\.[0-9]+).*" "\\1" pythonVersion ${pythonVersionString})
