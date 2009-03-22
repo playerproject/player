@@ -1085,6 +1085,10 @@ int VFH_Algorithm::Set_Motion( int &speed, int &turnrate, int actual_speed )
 //        speed = 0;
 //      }
     }
+    //check min_turnrate
+    if(turnrate < 0 && turnrate > -MIN_TURNRATE){turnrate = 0;}
+    if(turnrate > 0 && turnrate <  MIN_TURNRATE){turnrate = 0;}
+
   }
 
 //  speed and turnrate have been set for the calling function -- return.
