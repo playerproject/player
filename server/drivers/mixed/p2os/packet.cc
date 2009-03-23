@@ -56,14 +56,10 @@ void P2OSPacket::PrintHex() {
 
 
 bool P2OSPacket::Check() {
-  short chksum;
-  chksum = CalcChkSum();
+  unsigned short recv_chksum = static_cast<unsigned short> (CalcChkSum() & 0xffff);
+  unsigned short pkt_chksum = (static_cast<unsigned short>(packet[size-2]) << 8) | packet[size-1];
 
-  if ( chksum == (packet[size-2] << 8 | packet[size-1]))
-    return(true);
-
-
-  return(false);
+  return recv_chksum == pkt_chksum;
 }
 
 int P2OSPacket::CalcChkSum() {
