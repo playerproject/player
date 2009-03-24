@@ -91,9 +91,7 @@ Try to use BuildWKB() method as in sicknav200 driver instead of GEOS. Note that 
 #include <pthread.h>
 #include <libplayercore/playercore.h>
 #ifdef HAVE_GEOS
-#ifndef GEOS_VERSION
-#include <geos_c.h>
-#endif
+#include <libplayercore/player_geos.h>
 #endif
 
 #define EPS 0.00001
@@ -124,7 +122,7 @@ class Vec2Map : public ThreadedDriver
 
     // some helper functions
 #ifdef HAVE_GEOS
-    void dumpFeature(GEOSGeom geom, vector<player_segment_t> & segments);
+    void dumpFeature(const_GEOSGeom geom, vector<player_segment_t> & segments);
 #endif
     void line(int a, int b, int c, int d, int8_t * cells, int maxx, int maxy);
     int over(int x, int min, int max);
@@ -274,9 +272,9 @@ void Vec2Map::Main()
 }
 
 #ifdef HAVE_GEOS
-void Vec2Map::dumpFeature(GEOSGeom geom, vector<player_segment_t> & segments)
+void Vec2Map::dumpFeature(const_GEOSGeom geom, vector<player_segment_t> & segments)
 {
-    GEOSCoordSeq seq;
+    const_GEOSCoordSeq seq;
     double x0, y0, x1, y1;
     unsigned int numcoords;
     player_segment_t segment;

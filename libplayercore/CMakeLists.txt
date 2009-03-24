@@ -130,6 +130,7 @@ PLAYER_INSTALL_HEADERS (playercore addr_util.h
                                    playercommon.h
                                    ${playerconfig_h}
                                    playercore.h
+                                   player_geos.h
                                    player.h
                                    ${player_interfaces_h}
                                    playertime.h
