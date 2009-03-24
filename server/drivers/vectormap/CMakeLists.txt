@@ -13,11 +13,11 @@ PLAYERDRIVER_ADD_DRIVER (postgis build_postgis
 
 IF (HAVE_GEOS)
     IF (HAVE_STL)
-        PLAYERDRIVER_OPTION (vec2map build_vec2map OFF "const problems to be fixed soon (I hope)")
+        PLAYERDRIVER_OPTION (vec2map build_vec2map ON)
     ELSE (HAVE_STL)
         PLAYERDRIVER_OPTION (vec2map build_vec2map OFF "STL not found")
     ENDIF (HAVE_STL)
 ELSE (HAVE_GEOS)
     PLAYERDRIVER_OPTION (vec2map build_vec2map OFF "Geos not found")
 ENDIF (HAVE_GEOS)
-PLAYERDRIVER_ADD_DRIVER (vec2map build_vec2map LINKFLAGS "-lgeos" SOURCES vec2map.cc)
+PLAYERDRIVER_ADD_DRIVER (vec2map build_vec2map LINKFLAGS "-lgeos -lgeos_c" SOURCES vec2map.cc)

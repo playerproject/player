@@ -6,9 +6,7 @@
 #include <cctype>
 #include "dbconn.h"
 #ifdef HAVE_GEOS
-#ifndef GEOS_VERSION_MAJOR
-#include <geos_c.h>
-#endif
+#include <libplayercore/player_geos.h>
 #endif
 
 using namespace std;
@@ -69,7 +67,7 @@ VectorMapInfoHolder PostgresConn::GetVectorMapInfo(vector<string> layerNames)
     cerr << "No extent value found." << endl;
     cerr << "GetVectorMapInfo() failed" << endl;
   }
- 
+
   uint32_t length = PQgetlength(res, 0, 0);
   uint8_t * wkb = new uint8_t[length];
   assert(wkb);
@@ -280,7 +278,7 @@ int PostgresConn::WriteLayerData(LayerDataHolder & data)
       }
       if (PQresultStatus(res) != PGRES_COMMAND_OK) PLAYER_ERROR1("%s", PQresultErrorMessage(res));
       PQclear(res);
-      return -1;      
+      return -1;
     }
     PQclear(res);
   }
@@ -314,13 +312,13 @@ BoundingBox PostgresConn::BinaryToBBox(const uint8_t* wkb, uint32_t length)
     printf("GEOSGeomFromWKB_buf returned NULL!\n");
     return res;
   }
-  GEOSGeom linestring = GEOSGetExteriorRing(polygon);
+  const_GEOSGeom linestring = GEOSGetExteriorRing(polygon);
   if (linestring == NULL)
   {
     printf("GEOSGetExteriorRing returned NULL!\n");
     return res;
   }
-  GEOSCoordSeq coords = GEOSGeom_getCoordSeq(linestring);
+  const_GEOSCoordSeq coords = GEOSGeom_getCoordSeq(linestring);
   if (coords == NULL)
   {
     printf("GEOSGeom_getCoordSeq returned NULL!\n");
