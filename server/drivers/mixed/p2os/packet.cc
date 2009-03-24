@@ -132,7 +132,7 @@ int P2OSPacket::Receive( int fd )
 }
 
 int P2OSPacket::Build( unsigned char *data, unsigned char datasize ) {
-  short chksum;
+  unsigned short chksum;
 
   size = datasize + 5;
 
@@ -148,7 +148,7 @@ int P2OSPacket::Build( unsigned char *data, unsigned char datasize ) {
 
   memcpy( &packet[3], data, datasize );
 
-  chksum = CalcChkSum();
+  chksum = static_cast<unsigned short> (CalcChkSum() & 0xffff);
   packet[3+datasize] = chksum >> 8;
   packet[3+datasize+1] = chksum & 0xFF;
 
