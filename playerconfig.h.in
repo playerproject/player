@@ -1,3 +1,6 @@
+/* Player version string */
+#cmakedefine PLAYER_VERSION "${PLAYER_VERSION}"
+
 #cmakedefine HAVE_GEOS 1
 #cmakedefine HAVE_CFMAKERAW 1
 #cmakedefine HAVE_DIRNAME 1
