@@ -264,12 +264,20 @@ TCPRemoteDriver::SubscribeRemote(unsigned char mode)
 
   while(numbytes < encode_msglen)
   {
-    if((thisnumbytes = write(this->sock, buf+numbytes,
-                             encode_msglen-numbytes)) < 0)
+    thisnumbytes = send(this->sock, reinterpret_cast<const char*> (buf+numbytes), encode_msglen-numbytes, 0);
+    if(thisnumbytes < 0)
     {
-      if(errno != ERRNO_EAGAIN)
+      if(ErrNo != ERRNO_EAGAIN)
       {
-        PLAYER_ERROR1("write failed: %s", strerror(errno));
+#if defined (WIN32)
+        LPVOID buffer = NULL;
+        FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
+                      ErrNo, 0, reinterpret_cast<LPTSTR> (&buffer), 0, NULL);
+        PLAYER_MSG1(2, "send() failed: %s", reinterpret_cast<LPTSTR> (buffer));
+        LocalFree(buffer);
+#else
+        PLAYER_MSG1(2,"send() failed: %s", strerror(ErrNo));
+#endif
         return(-1);
       }
     }
@@ -295,7 +303,7 @@ TCPRemoteDriver::SubscribeRemote(unsigned char mode)
   numbytes = 0;
   while(numbytes < PLAYERXDR_MSGHDR_SIZE)
   {
-    thisnumbytes = recv(this->sock, buf+numbytes, PLAYERXDR_MSGHDR_SIZE-numbytes, 0);
+    thisnumbytes = recv(this->sock, reinterpret_cast<char*> (buf+numbytes), PLAYERXDR_MSGHDR_SIZE-numbytes, 0);
     if(thisnumbytes < 0)
     {
       if(ErrNo != ERRNO_EAGAIN)
@@ -351,7 +359,7 @@ TCPRemoteDriver::SubscribeRemote(unsigned char mode)
   numbytes = 0;
   while(numbytes < (int)hdr.size)
   {
-    thisnumbytes = recv(this->sock, buf+PLAYERXDR_MSGHDR_SIZE+numbytes, hdr.size-numbytes, 0);
+    thisnumbytes = recv(this->sock, reinterpret_cast<char*> (buf+PLAYERXDR_MSGHDR_SIZE+numbytes), hdr.size-numbytes, 0);
     if(thisnumbytes < 0)
     {
       if(ErrNo != ERRNO_EAGAIN)
