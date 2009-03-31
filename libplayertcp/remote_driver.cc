@@ -38,9 +38,7 @@
 
 #include <config.h>
 
-#if defined (WIN32)
-  #include <io.h> // For read() and write()
-#else
+#if !defined (WIN32)
   #include <unistd.h>
 #endif
 #include <errno.h>
@@ -156,14 +154,29 @@ TCPRemoteDriver::Setup()
   numread=0;
   while(numread < (int)sizeof(banner))
   {
-    if((thisnumread = read(this->sock, banner+numread,
-                           sizeof(banner)-numread)) < 0)
+    thisnumread = recv(this->sock, banner+numread, sizeof(banner)-numread, 0);
+    if(thisnumread < 0)
     {
-      if(errno != ERRNO_EAGAIN)
+      if(ErrNo != ERRNO_EAGAIN)
       {
+        // Error on the socket
+#if defined (WIN32)
+        LPVOID buffer = NULL;
+        FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
+                      ErrNo, 0, reinterpret_cast<LPTSTR> (&buffer), 0, NULL);
+        PLAYER_MSG1(2, "recv() failed: %s", reinterpret_cast<LPTSTR> (buffer));
+        LocalFree(buffer);
+#else
+        PLAYER_MSG1(2,"recv() failed: %s", strerror(ErrNo));
+#endif
         PLAYER_ERROR("error reading banner from remote device");
         return(-1);
       }
+    }
+    else if(thisnumread == 0)
+    {
+      PLAYER_ERROR("error reading banner from remote device (connection closed by peer)");
+      return(-1);
     }
     else
       numread += thisnumread;
@@ -282,14 +295,29 @@ TCPRemoteDriver::SubscribeRemote(unsigned char mode)
   numbytes = 0;
   while(numbytes < PLAYERXDR_MSGHDR_SIZE)
   {
-    if((thisnumbytes = read(this->sock, buf+numbytes,
-                            PLAYERXDR_MSGHDR_SIZE-numbytes)) < 0)
+    thisnumbytes = recv(this->sock, buf+numbytes, PLAYERXDR_MSGHDR_SIZE-numbytes, 0);
+    if(thisnumbytes < 0)
     {
-      if(errno != ERRNO_EAGAIN)
+      if(ErrNo != ERRNO_EAGAIN)
       {
-        PLAYER_ERROR1("read failed: %s", strerror(errno));
+        // Error on the socket
+#if defined (WIN32)
+        LPVOID buffer = NULL;
+        FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
+                      ErrNo, 0, reinterpret_cast<LPTSTR> (&buffer), 0, NULL);
+        PLAYER_MSG1(2, "recv() failed: %s", reinterpret_cast<LPTSTR> (buffer));
+        LocalFree(buffer);
+#else
+        PLAYER_MSG1(2, "recv() failed: %s", strerror(ErrNo));
+#endif
+        PLAYER_ERROR("error reading message header from remote device");
         return(-1);
       }
+    }
+    else if(thisnumbytes == 0)
+    {
+      PLAYER_ERROR("error reading message header from remote device (connection closed by peer)");
+      return(-1);
     }
     else
       numbytes += thisnumbytes;
@@ -323,14 +351,29 @@ TCPRemoteDriver::SubscribeRemote(unsigned char mode)
   numbytes = 0;
   while(numbytes < (int)hdr.size)
   {
-    if((thisnumbytes = read(this->sock, buf+PLAYERXDR_MSGHDR_SIZE+numbytes,
-                            hdr.size-numbytes)) < 0)
+    thisnumbytes = recv(this->sock, buf+PLAYERXDR_MSGHDR_SIZE+numbytes, hdr.size-numbytes, 0);
+    if(thisnumbytes < 0)
     {
-      if(errno != ERRNO_EAGAIN)
+      if(ErrNo != ERRNO_EAGAIN)
       {
-        PLAYER_ERROR1("read failed: %s", strerror(errno));
+        // Error on the socket
+#if defined (WIN32)
+        LPVOID buffer = NULL;
+        FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
+                      ErrNo, 0, reinterpret_cast<LPTSTR> (&buffer), 0, NULL);
+        PLAYER_MSG1(2, "recv() failed: %s", reinterpret_cast<LPTSTR> (buffer));
+        LocalFree(buffer);
+#else
+        PLAYER_MSG1(2, "recv() failed: %s", strerror(ErrNo));
+#endif
+        PLAYER_ERROR("error reading message body from remote device");
         return(-1);
       }
+    }
+    else if(thisnumbytes == 0)
+    {
+      PLAYER_ERROR("error reading message body from remote device (connection closed by peer)");
+      return(-1);
     }
     else
       numbytes += thisnumbytes;
