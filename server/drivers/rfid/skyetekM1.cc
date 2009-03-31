@@ -83,6 +83,8 @@ driver
 #include <string.h>
 #include <termios.h>
 #include <unistd.h>
+#include <stddef.h>
+#include <time.h>
 
 // Includes needed for player
 #include <libplayercore/playercore.h>
@@ -441,7 +443,10 @@ void SkyetekM1::SelectTags ()
 			return;
 		}
 		memset (&TID, 0, len); // clear the struct for new port settings
-		usleep (10000); // sleep for 10ms
+		struct timespec ts;
+		ts.tv_sec = 0;
+		ts.tv_nsec = 10000000; // sleep for 10ms
+		nanosleep(&ts, NULL);
 		ReadSerial (TID, len);
 		if (response_buf[2] == 0x94)
 		{
@@ -490,7 +495,10 @@ int SkyetekM1::S_ReadWrite (unsigned char *mdmData,
 	WriteSerial (temp, length + 1);
 
 	// sleep for 10ms
-	usleep (10000);
+	struct timespec ts;
+	ts.tv_sec = 0;
+	ts.tv_nsec = 10000000; // sleep for 10ms
+	nanosleep(&ts, NULL);
 
 	while (!read_done)
 	{
@@ -512,7 +520,9 @@ int SkyetekM1::S_ReadWrite (unsigned char *mdmData,
 		if ((read_data[0] = 0x02) && (read_data[1] <= 0x50))
 			read_done = TRUE;
 
-		usleep (10000);               // Sleep for 10ms
+		ts.tv_sec = 0;
+		ts.tv_nsec = 10000000; // sleep for 10ms
+		nanosleep(&ts, NULL);
 	}
 
 	return 0;
