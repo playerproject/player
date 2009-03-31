@@ -23,6 +23,7 @@
   CVS: $Id$
  */
 #include "pmapconfig.h"
+#include <config.h>
 
 #include <assert.h>
 #include <math.h>
@@ -30,6 +31,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#if defined (HAVE_IEEEFP_H)
+  #include <ieeefp.h>
+#endif
 #include <gsl/gsl_randist.h>
 
 #ifdef GLUT_FOUND
@@ -177,7 +181,7 @@ void pmap_init_nbors(pmap_t *self)
       nbor = self->nbors + count;
       nbor->dx = dx;
       nbor->dy = dy;
-      nbor->dist = sqrt(dx * dx + dy * dy);
+      nbor->dist = sqrt(static_cast<double> (dx * dx + dy * dy));
       if (nbor->dist * self->grid_res < self->max_err)
         count++;
     }
