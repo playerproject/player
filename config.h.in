@@ -20,5 +20,4 @@
 #cmakedefine HAVE_UNISTD_H 1
 #cmakedefine HAVE_IEEEFP_H 1
 #cmakedefine WORDS_BIGENDIAN 1
-#cmakedefine HAVE_GETOPT 1
 
