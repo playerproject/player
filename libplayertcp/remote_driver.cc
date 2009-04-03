@@ -157,17 +157,18 @@ TCPRemoteDriver::Setup()
     thisnumread = recv(this->sock, banner+numread, sizeof(banner)-numread, 0);
     if(thisnumread < 0)
     {
-      if(ErrNo != ERRNO_EAGAIN)
+      // ErrNo is zero on solaris if the call would block
+      if(ErrNo && ErrNo != ERRNO_EAGAIN && ErrNo != ERRNO_EWOULDBLOCK)
       {
         // Error on the socket
 #if defined (WIN32)
         LPVOID buffer = NULL;
         FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
                       ErrNo, 0, reinterpret_cast<LPTSTR> (&buffer), 0, NULL);
-        PLAYER_MSG1(2, "recv() failed: %s", reinterpret_cast<LPTSTR> (buffer));
+        PLAYER_ERROR1("recv() failed: %s", reinterpret_cast<LPTSTR> (buffer));
         LocalFree(buffer);
 #else
-        PLAYER_MSG1(2,"recv() failed: %s", strerror(ErrNo));
+        PLAYER_ERROR1("recv() failed: %s", strerror(ErrNo));
 #endif
         PLAYER_ERROR("error reading banner from remote device");
         return(-1);
@@ -267,7 +268,8 @@ TCPRemoteDriver::SubscribeRemote(unsigned char mode)
     thisnumbytes = send(this->sock, reinterpret_cast<const char*> (buf+numbytes), encode_msglen-numbytes, 0);
     if(thisnumbytes < 0)
     {
-      if(ErrNo != ERRNO_EAGAIN)
+      // ErrNo is zero on solaris if the call would block
+      if(ErrNo && ErrNo != ERRNO_EAGAIN && ErrNo != ERRNO_EWOULDBLOCK)
       {
 #if defined (WIN32)
         LPVOID buffer = NULL;
@@ -306,17 +308,18 @@ TCPRemoteDriver::SubscribeRemote(unsigned char mode)
     thisnumbytes = recv(this->sock, reinterpret_cast<char*> (buf+numbytes), PLAYERXDR_MSGHDR_SIZE-numbytes, 0);
     if(thisnumbytes < 0)
     {
-      if(ErrNo != ERRNO_EAGAIN)
+      // ErrNo is zero on solaris if the call would block
+      if(ErrNo && ErrNo != ERRNO_EAGAIN && ErrNo != ERRNO_EWOULDBLOCK)
       {
         // Error on the socket
 #if defined (WIN32)
         LPVOID buffer = NULL;
         FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
                       ErrNo, 0, reinterpret_cast<LPTSTR> (&buffer), 0, NULL);
-        PLAYER_MSG1(2, "recv() failed: %s", reinterpret_cast<LPTSTR> (buffer));
+        PLAYER_ERROR1("recv() failed: %s", reinterpret_cast<LPTSTR> (buffer));
         LocalFree(buffer);
 #else
-        PLAYER_MSG1(2, "recv() failed: %s", strerror(ErrNo));
+        PLAYER_ERROR1("recv() failed: %s", strerror(ErrNo));
 #endif
         PLAYER_ERROR("error reading message header from remote device");
         return(-1);
@@ -362,17 +365,18 @@ TCPRemoteDriver::SubscribeRemote(unsigned char mode)
     thisnumbytes = recv(this->sock, reinterpret_cast<char*> (buf+PLAYERXDR_MSGHDR_SIZE+numbytes), hdr.size-numbytes, 0);
     if(thisnumbytes < 0)
     {
-      if(ErrNo != ERRNO_EAGAIN)
+      // ErrNo is zero on solaris if the call would block
+      if(ErrNo && ErrNo != ERRNO_EAGAIN && ErrNo != ERRNO_EWOULDBLOCK)
       {
         // Error on the socket
 #if defined (WIN32)
         LPVOID buffer = NULL;
         FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
                       ErrNo, 0, reinterpret_cast<LPTSTR> (&buffer), 0, NULL);
-        PLAYER_MSG1(2, "recv() failed: %s", reinterpret_cast<LPTSTR> (buffer));
+        PLAYER_ERROR1("recv() failed: %s", reinterpret_cast<LPTSTR> (buffer));
         LocalFree(buffer);
 #else
-        PLAYER_MSG1(2, "recv() failed: %s", strerror(ErrNo));
+        PLAYER_ERROR1("recv() failed: %s", strerror(ErrNo));
 #endif
         PLAYER_ERROR("error reading message body from remote device");
         return(-1);
