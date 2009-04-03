@@ -24,6 +24,7 @@
 #cmakedefine HAVE_USLEEP 1
 #cmakedefine HAVE_NANOSLEEP 1
 #cmakedefine HAVE_STRUCT_TIMESPEC 1
+#cmakedefine HAVE_GETOPT 1
 
 #if defined HAVE_STDINT_H
   #include <stdint.h>

@@ -29,7 +29,7 @@
 
 #include <config.h>
 #if !HAVE_GETOPT
-  #include <replace.h>
+  #include <replace/replace.h>
 #endif
 
 #include <libplayerc++/playerc++.h>
