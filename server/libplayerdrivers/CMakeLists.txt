@@ -101,6 +101,11 @@ ENDIF (HAVE_JPEG)
 IF (PLAYER_OS_SOLARIS)
     TARGET_LINK_LIBRARIES (playerdrivers rt)
 ENDIF (PLAYER_OS_SOLARIS)
+IF (PLAYER_DRIVERSLIB_LINKLIBS)
+    FILTER_EMPTY (driverLinkLibs "${PLAYER_DRIVERSLIB_LINKLIBS}")
+    FILTER_DUPLICATES (driverLinkLibs "${driverLinkLibs}")
+    TARGET_LINK_LIBRARIES (playerdrivers ${driverLinkLibs})
+ENDIF (PLAYER_DRIVERSLIB_LINKLIBS)
 
 # Set C flags on source files that need them
 FOREACH (driverName ${PLAYER_BUILT_DRIVERS})

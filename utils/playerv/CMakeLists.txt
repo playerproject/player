@@ -27,9 +27,11 @@ IF (BUILD_UTILS_PLAYERV)
                             pv_dev_ranger.c
                             pv_dev_vectormap.c)
 
-        INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/client_libs ${GTK_INCLUDEDIR})
+        INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/client_libs ${GTK_PKG_INCLUDE_DIRS})
+        LINK_DIRECTORIES (${GTK_PKG_LIBRARY_DIRS})
         PLAYER_ADD_EXECUTABLE (playerv ${playervSrcs})
-        TARGET_LINK_LIBRARIES (playerv playerc playerxdr playererror playerutils rtk ${PLAYERC_EXTRA_LINK_LIBRARIES})
+        TARGET_LINK_LIBRARIES (playerv playerc playerxdr playererror
+            playerutils rtk ${PLAYERC_EXTRA_LINK_LIBRARIES} ${GTK_PKG_LIBRARIES})
         IF (PLAYER_OS_SOLARIS)
             TARGET_LINK_LIBRARIES (playerv rt)
         ENDIF (PLAYER_OS_SOLARIS)

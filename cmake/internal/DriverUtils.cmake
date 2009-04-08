@@ -14,6 +14,7 @@ SET (PLAYER_BUILT_DRIVEREXTRAS_DESC "List of extra components for playerdrivers 
 SET (PLAYER_DRIVERSLIB_SOURCES_MAP_DESC "Source files for libplayerdrivers")
 SET (PLAYER_DRIVERSLIB_INCLUDEDIRS_DESC "Include dirs for libplayerdrivers")
 SET (PLAYER_DRIVERSLIB_LIBDIRS_DESC "Lib dirs for libplayerdrivers")
+SET (PLAYER_DRIVERSLIB_LINKLIBS_DESC "Libraries for libplayerdrivers")
 SET (PLAYER_DRIVERSLIB_LINKFLAGS_DESC "Link flags for libplayerdrivers")
 SET (PLAYER_DRIVERSLIB_CFLAGS_DESC "Compile flags for libplayerdrivers")
 SET (PLAYER_NOT_BUILT_DRIVERS_DESC "List of drivers that will not be built")
@@ -32,7 +33,7 @@ SET (PLAYERDRIVER_DEFINES_DESC "List of defines for driver_config.h")
 # CFLAGS <compile flags list>
 MACRO (PLAYERDRIVER_ADD_DRIVER _name _cumulativeVar)
     IF (${_cumulativeVar})
-        PLAYER_PROCESS_ARGUMENTS (_srcs _includeDirs _libDirs _linkFlags _cFlags _junk ${ARGN})
+        PLAYER_PROCESS_ARGUMENTS (_srcs _includeDirs _libDirs _linkLibs _linkFlags _cFlags _junk ${ARGN})
         IF (_junk)
             MESSAGE (STATUS "WARNING: Unkeyworded arguments found in PLAYERDRIVER_ADD_DRIVER: ${_junk}")
         ENDIF (_junk)
@@ -41,7 +42,7 @@ MACRO (PLAYERDRIVER_ADD_DRIVER _name _cumulativeVar)
             MESSAGE (STATUS "WARNING: No sources given for driver ${_name}")
         ENDIF (NOT _srcs)
         # Add this driver's list of sources to the list of sources for libplayerdrivers
-        PLAYERDRIVER_ADD_TO_BUILT (${_name} "${_includeDirs}" "${_libDir}" "${_linkFlags}" "${_cFlags}" ${_srcs})
+        PLAYERDRIVER_ADD_TO_BUILT (${_name} "${_includeDirs}" "${_libDirs}" "${_linkLibs}" "${_linkFlags}" "${_cFlags}" ${_srcs})
     ENDIF (${_cumulativeVar})
 ENDMACRO (PLAYERDRIVER_ADD_DRIVER)
 
@@ -56,13 +57,13 @@ ENDMACRO (PLAYERDRIVER_ADD_DRIVER)
 # LINKFLAGS <link flags list>
 # CFLAGS <compile flags list>
 MACRO (PLAYERDRIVER_ADD_EXTRA _name)
-    PLAYER_PROCESS_ARGUMENTS (_srcs _includeDirs _libDirs _linkFlags _cFlags _junk ${ARGN})
+    PLAYER_PROCESS_ARGUMENTS (_srcs _includeDirs _libDirs _linkLibs _linkFlags _cFlags _junk ${ARGN})
     IF (_junk)
         MESSAGE (STATUS "WARNING: Unkeyworded arguments found in PLAYERDRIVER_ADD_EXTRA: ${_junk}")
     ENDIF (_junk)
     LIST_TO_STRING (_cFlags "${_cFlags}")
     # Add the list of sources to the list of sources for libplayerdrivers, and add various flags
-    PLAYERDRIVER_ADD_EXTRA_TO_BUILT (${_name} "${_includeDir}" "${_libDir}" "${_linkFlags}" "${_cFlags}" ${_srcs})
+    PLAYERDRIVER_ADD_EXTRA_TO_BUILT (${_name} "${_includeDir}" "${_libDirs}" "${_linkLibs}" "${_linkFlags}" "${_cFlags}" ${_srcs})
 ENDMACRO (PLAYERDRIVER_ADD_EXTRA)
 
 
@@ -150,7 +151,7 @@ ENDMACRO (PLAYERDRIVER_REJECT_OS)
 
 
 ###############################################################################
-# PLAYERDRIVER_REQUIRE_PKG (_name _cumulativeVar _package _includeDir _libDir _linkFlags _cFlags [_version])
+# PLAYERDRIVER_REQUIRE_PKG (_name _cumulativeVar _package _includeDirs _libDirs _linkLibs _linkFlags _cFlags [_version])
 # Check if a required package is available.
 # If a minimum version is required, supply it as an optional argument with no spaces. For example,
 # ">=0.9.6".
@@ -160,7 +161,7 @@ ENDMACRO (PLAYERDRIVER_REJECT_OS)
 #                   the driver has been enabled.
 # _package:         Name (and possibly version) of the package to look for.
 INCLUDE (FindPkgConfig)
-MACRO (PLAYERDRIVER_REQUIRE_PKG _name _cumulativeVar _package _includeDir _libDir _linkFlags _cFlags)
+MACRO (PLAYERDRIVER_REQUIRE_PKG _name _cumulativeVar _package _includeDirs _libDirs _linkLibs _linkFlags _cFlags)
     IF (NOT PKG_CONFIG_FOUND)
         MESSAGE (STATUS "Could not find pkg-config; cannot search for ${_package} for driver ${_name}.")
         IF (${_cumulativeVar})
@@ -186,7 +187,8 @@ MACRO (PLAYERDRIVER_REQUIRE_PKG _name _cumulativeVar _package _includeDir _libDi
             APPEND_TO_CACHED_LIST (PLAYERDRIVER_HAVE_DEFINES ${PLAYERDRIVER_HAVE_DEFINES_DESC} "HAVE_PKG_${_packageNameUpper}")
             # Set the values
             SET (${_includeDir} ${${_pkgVar}_INCLUDE_DIRS})
-            SET (${_libDir} ${${_pkgVar}_LIBRARY_DIRS})
+            SET (${_libDirs} ${${_pkgVar}_LIBRARY_DIRS})
+            SET (${_linkLibs} ${${_pkgVar}_LIBRARIES})
             LIST_TO_STRING (${_cFlags} "${${_pkgVar}_CFLAGS}")
             LIST_TO_STRING (${_linkFlags} "${${_pkgVar}_LDFLAGS}")
         ELSEIF (${_cumulativeVar})
@@ -395,7 +397,7 @@ ENDMACRO (PLAYERDRIVER_MAKE_OPTION_NAME)
 
 ###############################################################################
 # Add a driver to the list of drivers to be built.
-MACRO (PLAYERDRIVER_ADD_TO_BUILT _name _includeDir _libDir _linkFlags _cFlags)
+MACRO (PLAYERDRIVER_ADD_TO_BUILT _name _includeDir _libDirs _linkLibs _linkFlags _cFlags)
     # Source files go into a map so we can set the cflags on them later on
     SET (tempList)
     FOREACH (sourceFile ${ARGN})
@@ -411,7 +413,8 @@ MACRO (PLAYERDRIVER_ADD_TO_BUILT _name _includeDir _libDir _linkFlags _cFlags)
 
     # Append the various build options
     APPEND_TO_CACHED_LIST (PLAYER_DRIVERSLIB_INCLUDEDIRS ${PLAYER_DRIVERSLIB_INCLUDEDIRS_DESC} ${_includeDir})
-    APPEND_TO_CACHED_LIST (PLAYER_DRIVERSLIB_LIBDIRS ${PLAYER_DRIVERSLIB_LIBDIRS_DESC} ${_libDir})
+    APPEND_TO_CACHED_LIST (PLAYER_DRIVERSLIB_LIBDIRS ${PLAYER_DRIVERSLIB_LIBDIRS_DESC} ${_libDirs})
+    APPEND_TO_CACHED_LIST (PLAYER_DRIVERSLIB_LINKLIBS ${PLAYER_DRIVERSLIB_LINKLIBS_DESC} ${_linkLibs})
 #     APPEND_TO_CACHED_LIST (PLAYER_DRIVERSLIB_LINKFLAGS ${PLAYER_DRIVERSLIB_LINKFLAGS_DESC} ${_linkFlags})
     SET (PLAYER_DRIVERSLIB_LINKFLAGS "${PLAYER_DRIVERSLIB_LINKFLAGS} ${_linkFlags}" CACHE INTERNAL ${PLAYER_DRIVERSLIB_LINKFLAGS_DESC} FORCE)
     # C flags go into a map indexed by name because they're driver-specific
@@ -424,7 +427,7 @@ ENDMACRO (PLAYERDRIVER_ADD_TO_BUILT)
 
 ###############################################################################
 # Add some extra code to playerdrivers.
-MACRO (PLAYERDRIVER_ADD_EXTRA_TO_BUILT _name _includeDir _libDir _linkFlags _cFlags)
+MACRO (PLAYERDRIVER_ADD_EXTRA_TO_BUILT _name _includeDir _libDirs _linkLibs _linkFlags _cFlags)
     # Source files go into a map so we can set the cflags on them later on
     SET (tempList)
     FOREACH (sourceFile ${ARGN})
@@ -434,7 +437,8 @@ MACRO (PLAYERDRIVER_ADD_EXTRA_TO_BUILT _name _includeDir _libDir _linkFlags _cFl
 
     # Append the various build options
     APPEND_TO_CACHED_LIST (PLAYER_DRIVERSLIB_INCLUDEDIRS ${PLAYER_DRIVERSLIB_INCLUDEDIRS_DESC} ${_includeDir})
-    APPEND_TO_CACHED_LIST (PLAYER_DRIVERSLIB_LIBDIRS ${PLAYER_DRIVERSLIB_LIBDIRS_DESC} ${_libDir})
+    APPEND_TO_CACHED_LIST (PLAYER_DRIVERSLIB_LIBDIRS ${PLAYER_DRIVERSLIB_LIBDIRS_DESC} ${_libDirs})
+    APPEND_TO_CACHED_LIST (PLAYER_DRIVERSLIB_LINKLIBS ${PLAYER_DRIVERSLIB_LINKLIBS_DESC} ${_linkLibs})
     SET (PLAYER_DRIVERSLIB_LINKFLAGS "${PLAYER_DRIVERSLIB_LINKFLAGS} ${_linkFlags}" CACHE INTERNAL ${PLAYER_DRIVERSLIB_LINKFLAGS_DESC} FORCE)
     # C flags go into a map indexed by name because they're driver-specific
     INSERT_INTO_GLOBAL_MAP (PLAYER_DRIVERSLIB_CFLAGS ${_name} "${_cFlags}")
@@ -493,6 +497,7 @@ MACRO (PLAYERDRIVER_RESET_LISTS)
     SET (PLAYER_DRIVERSLIB_SOURCES_MAP "" CACHE INTERNAL ${PLAYER_DRIVERSLIB_SOURCES_MAP_DESC} FORCE)
     SET (PLAYER_DRIVERSLIB_INCLUDEDIRS "" CACHE INTERNAL ${PLAYER_DRIVERSLIB_INCLUDEDIRS_DESC} FORCE)
     SET (PLAYER_DRIVERSLIB_LIBDIRS "" CACHE INTERNAL ${PLAYER_DRIVERSLIB_LIBDIRS_DESC} FORCE)
+    SET (PLAYER_DRIVERSLIB_LINKLIBS "" CACHE INTERNAL ${PLAYER_DRIVERSLIB_LINKLIBS_DESC} FORCE)
     SET (PLAYER_DRIVERSLIB_LINKFLAGS "" CACHE INTERNAL ${PLAYER_DRIVERSLIB_LINKFLAGS_DESC} FORCE)
     SET (PLAYER_DRIVERSLIB_CFLAGS "" CACHE INTERNAL ${PLAYER_DRIVERSLIB_CFLAGS_DESC} FORCE)
 

@@ -41,7 +41,6 @@ IF (BUILD_PLAYERCC)
             IF (Boost_FOUND)
                 INCLUDE_DIRECTORIES (${Boost_INCLUDE_DIR})
                 PLAYERCC_ADD_INCLUDE_DIR (${Boost_INCLUDE_DIR})
-                LINK_DIRECTORIES (${Boost_LIBRARY_DIRS})
                 PLAYERCC_ADD_LINK_DIR (${Boost_LIBRARY_DIRS})
 
                 IF (Boost_THREAD_FOUND)
@@ -208,31 +207,29 @@ IF (BUILD_PLAYERCC)
         SET (playerccSrcs ${playerccSrcs} ${PROJECT_SOURCE_DIR}/replace/nanosleep.c)
     ENDIF (NOT HAVE_NANOSLEEP)
 
-    PLAYER_ADD_LIBRARY (playerc++ ${playerccSrcs} ${playercppconfig_h})
-    TARGET_LINK_LIBRARIES (playerc++ playerxdr playerutils playerc ${PLAYERCC_EXTRA_LINK_LIBRARIES})
+    IF (HAVE_M)
+        PLAYERCC_ADD_LINK_LIB (m)
+    ENDIF (HAVE_M)
+
     IF (PLAYER_OS_SOLARIS)
-        TARGET_LINK_LIBRARIES (playerc++ socket nsl)
-        SET (pkgconfigLibFlags "-lsocket -lnsl")
-    ELSE (PLAYER_OS_SOLARIS)
-        SET (pkgconfigLibFlags)
+        PLAYERCC_ADD_LINK_LIB ("socket")
+        PLAYERCC_ADD_LINK_LIB ("nsl")
     ENDIF (PLAYER_OS_SOLARIS)
 
-    IF (Boost_LIBRARY_DIRS)
-        SET (pkgconfigLibFlags "${pkgconfigLibFlags} -L${Boost_LIBRARY_DIRS}")
-    ENDIF (Boost_LIBRARY_DIRS)
-    IF (bostIncludeDir)
-        SET (pkgconfigIncFlags "-I${boostIncludeDir}")
-    ENDIF (bostIncludeDir)
-    IF (boostThreadLib)
-        SET (pkgconfigLibFlags "${pkgconfigLibFlags} -l${boostThreadLib}")
-    ENDIF (boostThreadLib)
-    IF (boostSignalsLib)
-        SET (pkgconfigLibFlags "${pkgconfigLibFlags} -l${boostSignalsLib}")
-    ENDIF (boostSignalsLib)
+    LINK_DIRECTORIES (${PLAYERCC_EXTRA_LINK_DIRS})
+    PLAYER_ADD_LIBRARY (playerc++ ${playerccSrcs} ${playercppconfig_h})
+    TARGET_LINK_LIBRARIES (playerc++ playerxdr playerutils playerc ${PLAYERCC_EXTRA_LINK_LIBRARIES})
+
+    SET (pkgconfigCFlags)
+    SET (pkgconfigLinkDirs)
+    SET (pkgconfigLinkLibs)
+    LIST_TO_STRING_WITH_PREFIX (pkgconfigCFlags "-I" ${PLAYERCC_EXTRA_INCLUDE_DIRS})
+    LIST_TO_STRING_WITH_PREFIX (pkgconfigLinkDirs "-L" ${PLAYERCC_EXTRA_LINK_DIRS})
+    LIST_TO_STRING_WITH_PREFIX (pkgconfigLinkLibs "-l" ${PLAYERCC_EXTRA_LINK_LIBRARIES})
     PLAYER_MAKE_PKGCONFIG ("playerc++"
                            "C++ wrapper for libplayerc - part of the Player Project"
-                           "playerxdr playerc" "" "${pkgconfigIncFlags}"
-                           "-lm ${pkgconfigLibFlags}")
+                           "playerxdr playerc" "" "${pkgconfigCFlags}"
+                           "${pkgconfigLinkDirs} ${pkgconfigLinkLibs}")
     CONFIGURE_FILE (${PLAYER_CMAKE_DIR}/UsePlayerC++.cmake.in ${CMAKE_BINARY_DIR}/cmake/UsePlayerC++.cmake @ONLY)
 
     PLAYER_INSTALL_HEADERS (playerc++ ${playercppconfig_h}
