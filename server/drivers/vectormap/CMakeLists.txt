@@ -5,11 +5,11 @@ ELSE (HAVE_STL)
 ENDIF (HAVE_STL)
 PLAYERDRIVER_REQUIRE_HEADER (postgis build_postgis geos_c.h)
 PLAYERDRIVER_REQUIRE_PKG (postgis build_postgis libpqxx
-    postgis_includeDir postgis_libDir postgis_linkFlags postgis_cFlags)
+    postgis_includeDirs postgis_libDirs postgis_linkLibs postgis_linkFlags postgis_cFlags)
 PLAYERDRIVER_ADD_DRIVER (postgis build_postgis
-    INCLUDEDIRS "${postgis_includeDir}" LIBDIRS "${postgis_libDir}"
-    LINKFLAGS "-lgeos ${postgis_linkFlags}" CFLAGS "${postgis_cFlags}"
-    SOURCES postgis.cc dbconn.cc)
+    INCLUDEDIRS "${postgis_includeDirs}" LIBDIRS "${postgis_libDirs}" LINKLIBS
+    "${postgis_linkLibs}" LINKFLAGS "-lgeos ${postgis_linkFlags}"
+    CFLAGS "${postgis_cFlags}" SOURCES postgis.cc dbconn.cc)
 
 IF (HAVE_GEOS)
     IF (HAVE_STL)

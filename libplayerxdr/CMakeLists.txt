@@ -63,7 +63,7 @@ ENDIF (PLAYER_OS_WIN)
 SET_SOURCE_FILES_PROPERTIES (${playerxdr_h} ${playerxdr_c} PROPERTIES GENERATED TRUE)
 IF (PLAYER_OS_QNX)
     TARGET_LINK_LIBRARIES (playerxdr rpc)
-    PLAYER_ADD_LINK_LIB (rpc)
+    PLAYERCORE_ADD_INT_LINK_LIB (rpc)
 ENDIF (PLAYER_OS_QNX)
 PLAYER_MAKE_PKGCONFIG ("playerxdr" "Player XDR messaging library - part of the Player Project" "" "" "" "${xdrLibFlag}")
 

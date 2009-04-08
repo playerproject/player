@@ -1,8 +1,9 @@
 PLAYERDRIVER_OPTION (flexiport build_flexiport ON)
-PLAYERDRIVER_REQUIRE_PKG (flexiport build_flexiport flexiport flexiport_includeDir flexiport_libDir
-    flexiport_linkFlags flexiport_cFlags)
-PLAYERDRIVER_ADD_DRIVER (flexiport build_flexiport INCLUDEDIRS "${flexiport_includeDir}"
-    LIBDIRS "${flexiport_libDir}" LINKFLAGS "${flexiport_linkFlags}" CFLAGS "${flexiport_cFlags}"
+PLAYERDRIVER_REQUIRE_PKG (flexiport build_flexiport flexiport flexiport_includeDirs
+    flexiport_libDirs flexiport_linkLibs flexiport_linkFlags flexiport_cFlags)
+PLAYERDRIVER_ADD_DRIVER (flexiport build_flexiport
+    INCLUDEDIRS "${flexiport_includeDirs}" LIBDIRS "${flexiport_libDirs}"
+    LINKLIBS "${flexiport_linkLibs}" LINKFLAGS "${flexiport_linkFlags}" CFLAGS "${flexiport_cFlags}"
     SOURCES flexiport.cc)
 
 PLAYERDRIVER_OPTION (serialstream build_serialstream ON)

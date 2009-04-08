@@ -3,9 +3,11 @@ IF (BUILD_UTILS_PLAYERCAM)
     IF (WITH_GTK AND WITH_GDKPIXBUF)
         SET (playercamSrcs playercam.c)
 
-        INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/client_libs ${GTK_INCLUDEDIR})
+        INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/client_libs ${GTK_PKG_INCLUDE_DIRS})
+        LINK_DIRECTORIES (${GTK_PKG_LIBRARY_DIRS})
         PLAYER_ADD_EXECUTABLE (playercam ${playercamSrcs})
-        TARGET_LINK_LIBRARIES (playercam playerc playerxdr playererror ${PLAYERC_EXTRA_LINK_LIBRARIES})
+        TARGET_LINK_LIBRARIES (playercam playerc playerxdr playererror
+            ${PLAYERC_EXTRA_LINK_LIBRARIES} ${GTK_PKG_LIBRARIES})
         SET_SOURCE_FILES_PROPERTIES (${playercamSrcs} PROPERTIES
             COMPILE_FLAGS "${GTK_CFLAGS}")
         SET_TARGET_PROPERTIES (playercam PROPERTIES

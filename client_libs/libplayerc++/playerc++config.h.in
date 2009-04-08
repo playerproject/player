@@ -1,8 +1,8 @@
 #ifndef __PLAYER_CPP_CONFIG_H__
 #define __PLAYER_CPP_CONFIG_H__
 
-#cmakedefine HAVE_BOOST_THREAD
-#cmakedefine HAVE_BOOST_SIGNALS
+#cmakedefine HAVE_BOOST_THREAD 1
+#cmakedefine HAVE_BOOST_SIGNALS 1
 
 #if defined (HAVE_BOOST_THREAD)
 #define _POSIX_PTHREAD_SEMANTICS

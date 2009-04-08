@@ -136,6 +136,16 @@ ENDMACRO (LIST_TO_STRING)
 
 
 ###############################################################################
+# LIST_TO_STRING_WITH_PREFIX
+# Macro to turn a list into a string, prefixing each item
+MACRO (LIST_TO_STRING_WITH_PREFIX _string _prefix)
+    SET (${_string})
+    FOREACH (_item ${ARGN})
+        SET (${_string} "${${_string}} ${_prefix}${_item}")
+    ENDFOREACH (_item)
+ENDMACRO (LIST_TO_STRING_WITH_PREFIX)
+
+###############################################################################
 # This macro processes a list of arguments into separate lists based on
 # keywords found in the argument stream. For example:
 # BUILDBLAG (miscArg INCLUDEDIRS /usr/include LIBDIRS /usr/local/lib
@@ -145,10 +155,11 @@ ENDMACRO (LIST_TO_STRING)
 # as normal, then pass ${ARGN} to this macro to parse the dynamic-length
 # arguments (so if ${_otherArgs} comes back non-empty, you've ignored something
 # or the user has passed in some arguments without a keyword).
-MACRO (PLAYER_PROCESS_ARGUMENTS _sourcesArgs _includeDirsArgs _libDirsArgs _linkFlagsArgs _cFlagsArgs _otherArgs)
+MACRO (PLAYER_PROCESS_ARGUMENTS _sourcesArgs _includeDirsArgs _libDirsArgs _linkLibsArgs _linkFlagsArgs _cFlagsArgs _otherArgs)
     SET (${_sourcesArgs})
     SET (${_includeDirsArgs})
     SET (${_libDirsArgs})
+    SET (${_linkLibsArgs})
     SET (${_linkFlagsArgs})
     SET (${_cFlagsArgs})
     SET (${_otherArgs})
@@ -160,6 +171,8 @@ MACRO (PLAYER_PROCESS_ARGUMENTS _sourcesArgs _includeDirsArgs _libDirsArgs _link
             SET (_currentDest ${_includeDirsArgs})
         ELSEIF (_arg STREQUAL "LIBDIRS")
             SET (_currentDest ${_libDirsArgs})
+        ELSEIF (_arg STREQUAL "LINKLIBS")
+            SET (_currentDest ${_linkLibsArgs})
         ELSEIF (_arg STREQUAL "LINKFLAGS")
             SET (_currentDest ${_linkFlagsArgs})
         ELSEIF (_arg STREQUAL "CFLAGS")

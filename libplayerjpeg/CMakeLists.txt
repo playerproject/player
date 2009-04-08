@@ -3,7 +3,7 @@ IF (HAVE_JPEG)
 
     PLAYER_ADD_LIBRARY (playerjpeg ${playerjpegSrcs})
     TARGET_LINK_LIBRARIES (playerjpeg jpeg)
-    PLAYER_ADD_LINK_LIB (jpeg)
+    PLAYERCORE_ADD_INT_LINK_LIB (jpeg)
     PLAYER_INSTALL_HEADERS (playerjpeg playerjpeg.h)
 ELSE (HAVE_JPEG)
     MESSAGE (STATUS "JPEG support not included.")

@@ -50,7 +50,7 @@ INSTALL (FILES ${playerconfig_h} DESTINATION ${PLAYER_INCLUDE_INSTALL_DIR})
 # Include some useful macros
 INCLUDE (${PLAYER_CMAKE_DIR}/internal/LibraryUtils.cmake)
 
-# Set some common include directories, including the binary dir to get config.h
+# Set some common include directories, including the binary dir to get config.h and playerconfig.h
 INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR} ${PROJECT_BINARY_DIR}/libplayercore)
 # Extra directories where needed libraries, etc may be located (set by the user)
 INCLUDE_DIRECTORIES (${PLAYER_EXTRA_INCLUDE_DIRS})
@@ -74,8 +74,17 @@ IF (PLAYER_OS_WIN)
 ENDIF (PLAYER_OS_WIN)
 MESSAGE (STATUS "")
 
-SET (PLAYER_EXTRA_LINK_LIBRARIES "" CACHE INTERNAL "Libs to link to" FORCE)
+#SET (PLAYERCORE_INT_INCLUDE_DIRS "" CACHE INTERNAL "Extra include directories for playercore" FORCE)
+#SET (PLAYERCORE_INT_LINK_DIRS "" CACHE INTERNAL "Library directories to link playercore to" FORCE)
+SET (PLAYERCORE_INT_LINK_LIBRARIES "" CACHE INTERNAL "Libs to link playercore to" FORCE)
+#SET (PLAYERCORE_EXTRA_INCLUDE_DIRS "" CACHE INTERNAL "Extra include directories with playercore" FORCE)
+#SET (PLAYERCORE_EXTRA_LINK_DIRS "" CACHE INTERNAL "Library directories to link in with playercore" FORCE)
+SET (PLAYERCORE_EXTRA_LINK_LIBRARIES "" CACHE INTERNAL "Libs to link to with playercore" FORCE)
+#SET (PLAYERC_EXTRA_INCLUDE_DIRS "" CACHE INTERNAL "Extra include directories with playerc" FORCE)
+#SET (PLAYERC_EXTRA_LINK_DIRS "" CACHE INTERNAL "Library directories to link in with playerc" FORCE)
 SET (PLAYERC_EXTRA_LINK_LIBRARIES "" CACHE INTERNAL "Libs to link to with playerc" FORCE)
+#SET (PLAYERCC_EXTRA_INCLUDE_DIRS "" CACHE INTERNAL "Extra include directories with playercc" FORCE)
+#SET (PLAYERCC_EXTRA_LINK_DIRS "" CACHE INTERNAL "Library directories to link in with playercc" FORCE)
 SET (PLAYERCC_EXTRA_LINK_LIBRARIES "" CACHE INTERNAL "Libs to link to with playercc" FORCE)
 
 # Create packages

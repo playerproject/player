@@ -3,9 +3,11 @@ IF (BUILD_UTILS_PLAYERWRITEMAP)
     IF (WITH_GDKPIXBUF)
         SET (playerwritemapSrcs playerwritemap.c)
 
-        INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/client_libs ${GTK_INCLUDEDIR})
+        INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/client_libs ${GTK_PKG_INCLUDE_DIRS})
+        LINK_DIRECTORIES (${GTK_PKG_LIBRARY_DIRS})
         PLAYER_ADD_EXECUTABLE (playerwritemap ${playerwritemapSrcs})
-        TARGET_LINK_LIBRARIES (playerwritemap playerc playerxdr playererror playerutils ${PLAYERC_EXTRA_LINK_LIBRARIES})
+        TARGET_LINK_LIBRARIES (playerwritemap playerc playerxdr playererror
+            playerutils ${PLAYERC_EXTRA_LINK_LIBRARIES} ${GTK_PKG_LIBRARIES})
         SET_SOURCE_FILES_PROPERTIES (${playerwritemapSrcs} PROPERTIES
             COMPILE_FLAGS "${GTK_CFLAGS}")
         SET_TARGET_PROPERTIES (playerwritemap PROPERTIES

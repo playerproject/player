@@ -55,13 +55,63 @@ ENDMACRO (PLAYER_ADD_LINK_DIR)
 
 
 ###############################################################################
-# PLAYER_ADD_LINK_LIB (library1 [library2 ...])
-# Add libraries to the link line for stuff that links to the core libraries.
-MACRO (PLAYER_ADD_LINK_LIB)
-    SET (tempList ${PLAYER_EXTRA_LINK_LIBRARIES})
+# PLAYERCORE_ADD_INT_INCLUDE_DIR (dir1 [dir2 ...])
+# Add include directories for the core libraries.
+MACRO (PLAYERCORE_ADD_INT_INCLUDE_DIR)
+    SET (tempList ${PLAYERCORE_INT_INCLUDE_DIRS})
     LIST (APPEND tempList ${ARGN})
-    SET (PLAYER_EXTRA_LINK_LIBRARIES ${tempList} CACHE INTERNAL "Libs to link to" FORCE)
-ENDMACRO (PLAYER_ADD_LINK_LIB)
+    SET (PLAYERCORE_INT_INCLUDE_DIRS ${tempList} CACHE INTERNAL "Extra include directories for playercore" FORCE)
+ENDMACRO (PLAYERCORE_ADD_INT_INCLUDE_DIR)
+
+
+###############################################################################
+# PLAYERCORE_ADD_INT_LINK_DIR (dir1 [dir2 ...])
+# Add link directories for the core libraries.
+MACRO (PLAYERCORE_ADD_INT_LINK_DIR)
+    SET (tempList ${PLAYERCORE_INT_LINK_DIRS})
+    LIST (APPEND tempList ${ARGN})
+    SET (PLAYERCORE_INT_LINK_DIRS ${tempList} CACHE INTERNAL "Library directories to link playercore to" FORCE)
+ENDMACRO (PLAYERCORE_ADD_INT_LINK_DIR)
+
+
+###############################################################################
+# PLAYERCORE_ADD_INT_LINK_LIB (library1 [library2 ...])
+# Add libraries to the link line for the core libraries.
+MACRO (PLAYERCORE_ADD_INT_LINK_LIB)
+    SET (tempList ${PLAYERCORE_INT_LINK_LIBRARIES})
+    LIST (APPEND tempList ${ARGN})
+    SET (PLAYERCORE_INT_LINK_LIBRARIES ${tempList} CACHE INTERNAL "Libs to link playercore to" FORCE)
+ENDMACRO (PLAYERCORE_ADD_INT_LINK_LIB)
+
+
+###############################################################################
+# PLAYERCORE_ADD_INCLUDE_DIR (dir1 [dir2 ...])
+# Add include directories for stuff that uses the core libraries.
+MACRO (PLAYERCORE_ADD_INCLUDE_DIR)
+    SET (tempList ${PLAYERCORE_EXTRA_INCLUDE_DIRS})
+    LIST (APPEND tempList ${ARGN})
+    SET (PLAYERCORE_EXTRA_INCLUDE_DIRS ${tempList} CACHE INTERNAL "Extra include directories with playercore" FORCE)
+ENDMACRO (PLAYERCORE_ADD_INCLUDE_DIR)
+
+
+###############################################################################
+# PLAYERCORE_ADD_LINK_DIR (dir1 [dir2 ...])
+# Add link directories for stuff that links to the core libraries.
+MACRO (PLAYERCORE_ADD_LINK_DIR)
+    SET (tempList ${PLAYERCORE_EXTRA_LINK_DIRS})
+    LIST (APPEND tempList ${ARGN})
+    SET (PLAYERCORE_EXTRA_LINK_DIRS ${tempList} CACHE INTERNAL "Library directories to link in with playercore" FORCE)
+ENDMACRO (PLAYERCORE_ADD_LINK_DIR)
+
+
+###############################################################################
+# PLAYERCORE_ADD_LINK_LIB (library1 [library2 ...])
+# Add libraries to the link line for stuff that links to the core libraries.
+MACRO (PLAYERCORE_ADD_LINK_LIB)
+    SET (tempList ${PLAYERCORE_EXTRA_LINK_LIBRARIES})
+    LIST (APPEND tempList ${ARGN})
+    SET (PLAYERCORE_EXTRA_LINK_LIBRARIES ${tempList} CACHE INTERNAL "Libs to link to with playercore" FORCE)
+ENDMACRO (PLAYERCORE_ADD_LINK_LIB)
 
 
 ###############################################################################
