@@ -83,6 +83,9 @@
  - verbose (boolean)
    - Default: false
    - Enable verbose debugging information in the underlying library.
+ - ignoreunknowns (boolean)
+   - Default: false
+   - Ignore unknown lines sent by the laser in response to sensor info request commands.
 
  @par Properties
 
@@ -145,7 +148,7 @@ class HokuyoDriver : public ThreadedDriver
 		bool AllocateDataSpace (void);
 
 		// Configuration parameters
-		bool _verbose, _powerOnStartup, _getIntensities;
+		bool _verbose, _powerOnStartup, _getIntensities, _ignoreUnknowns;
 		double _minAngle, _maxAngle;
 		IntProperty _baudRate, _speedLevel, _highSensitivity;
 		std::string _portOpts;
@@ -184,6 +187,7 @@ HokuyoDriver::HokuyoDriver (ConfigFile* cf, int section) :
 	_maxAngle = cf->ReadFloat (section, "max_angle", 2.08);
 	_portOpts = cf->ReadString (section, "portopts", "type=serial,device=/dev/ttyACM0,timeout=1");
 	_verbose = cf->ReadBool (section, "verbose", false);
+	_ignoreUnknowns = cf->ReadBool (section, "ignoreunknowns", false);
 	_powerOnStartup = cf->ReadBool (section, "power", true);
 
 	// Set up geometry information
@@ -534,6 +538,7 @@ int HokuyoDriver::MainSetup (void)
 {
 	try
 	{
+		_device.IgnoreUnknowns (_ignoreUnknowns);
 		// Open the laser
 		_device.OpenWithProbing (_portOpts);
 		// Get the sensor information and check _minAngle and _maxAngle are OK
@@ -561,14 +566,23 @@ int HokuyoDriver::MainSetup (void)
 		}
 		catch (hokuyo_aist::HokuyoError &e)
 		{
-			if (e.Code () != hokuyo_aist::HOKUYO_ERR_NOTSERIAL)
-				throw;
-			PLAYER_WARN ("hokuyo_aist: Cannot change the baud rate of a non-serial connection.");
+			if (e.Code () == hokuyo_aist::HOKUYO_ERR_NOTSERIAL)
+				PLAYER_WARN ("hokuyo_aist: Cannot change the baud rate of a non-serial connection.");
+			else
+				PLAYER_WARN2 ("hokuyo_aist: Error changing baud rate: (%d) %s", e.Code (), e.what ());
 		}
-		_device.SetMotorSpeed (_speedLevel.GetValue ());
 		try
 		{
 			// Catch any errors here as this is an optional setting not supported by all models
+			_device.SetMotorSpeed (_speedLevel.GetValue ());
+		}
+		catch (hokuyo_aist::HokuyoError &e)
+		{
+			PLAYER_WARN2 ("hokuyo_aist: Unable to set motor speed: (%d) %s", e.Code (), e.what ());
+		}
+		try
+		{
+			// Optional setting
 			_device.SetHighSensitivity (_highSensitivity.GetValue () != 0);
 		}
 		catch (hokuyo_aist::HokuyoError &e)
