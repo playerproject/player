@@ -20,22 +20,22 @@
  */
 ///////////////////////////////////////////////////////////////////////////
 //
-// Desc: Driver for converting laser-interface devices to ranger-interface
+// Desc: Driver for converting ranger-interface devices to laser-interface
 //       devices
 // Author: Geoffrey Biggs
 // Date: 06/05/2007
 //
-// Requires - Laser device.
+// Requires - Ranger device.
 //
 ///////////////////////////////////////////////////////////////////////////
 
 /** @ingroup drivers */
 /** @{ */
-/** @defgroup driver_lasertoranger RangerToLaser
- * @brief Laser-to-Ranger converter
+/** @defgroup driver_rangertolaser RangerToLaser
+ * @brief Ranger-to-Laser converter
 
-This driver translates data provided via the @ref interface_laser interface into
-the @ref interface_ranger interface.
+This driver translates data provided via the @ref interface_ranger interface into
+the @ref interface_laser interface.
 
 @par Compile-time dependencies
 
@@ -43,11 +43,11 @@ the @ref interface_ranger interface.
 
 @par Provides
 
-- @ref interface_ranger : Output ranger interface
+- @ref interface_laser : Output laser interface
 
 @par Requires
 
-- @ref interface_laser : Laser interface to translate
+- @ref interface_ranger : Ranger interface to translate
 
 @par Configuration requests
 
@@ -65,13 +65,12 @@ the @ref interface_ranger interface.
 @verbatim
 driver
 (
-  name "sicklms200"
-  provides ["laser:0"]
-  port "/dev/ttyS0"
+  name "hokuyo_aist"
+  provides ["ranger:0"]
 )
 driver
 (
-  name "RangerToLaser"
+  name "rangertolaser"
   requires ["ranger:0"] # read from ranger:0
   provides ["laser:0"] # output results on laser:0
 )
@@ -104,7 +103,7 @@ class RangerToLaser : public FromRanger
 		int SetPower (QueuePointer &respQueue, player_msghdr *hdr, uint8_t state);
 		// Set intensity data state
 		int SetIntensity (QueuePointer &respQueue, player_msghdr *hdr, uint8_t state);
-		// Convert laser data to ranger data
+		// Convert ranger data to laser data
 		int ConvertData (player_msghdr *hdr, void *data);
 		// Convert geometry data
 		bool HandleGeomRequest (player_laser_geom_t *dest, player_ranger_geom_t *data);
@@ -133,11 +132,11 @@ void rangertolaser_Register (DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 
 // Constructor
-// Sets up the input laser interface
+// Sets up the input ranger interface
 RangerToLaser::RangerToLaser (ConfigFile* cf, int section)
 	: FromRanger (cf, section)
 {
-	// Need a laser device as input
+	// Need a ranger device as input
 	if (cf->ReadDeviceAddr(&inputDeviceAddr, section, "requires", PLAYER_RANGER_CODE, -1, NULL) != 0)
 	{
 		SetError (-1);
@@ -156,10 +155,10 @@ int RangerToLaser::Setup (void)
 	memset (&config, 0, sizeof (config));
 	startup = true;
 
-	// Subscribe to the laser.
+	// Subscribe to the ranger.
 	if ((inputDevice = deviceTable->GetDevice (inputDeviceAddr)) == NULL)
 	{
-		PLAYER_ERROR ("Could not find input laser device");
+		PLAYER_ERROR ("Could not find input ranger device");
 		return -1;
 	}
 
@@ -178,7 +177,7 @@ int RangerToLaser::Setup (void)
 // Shutdown function
 int RangerToLaser::Shutdown (void)
 {
-	// Unsubscribe from the laser device
+	// Unsubscribe from the ranger device
 	inputDevice->Unsubscribe (InQueue);
 
 	// Call the base shutdown function
