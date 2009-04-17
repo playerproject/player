@@ -1,36 +1,20 @@
 This is the MRICP driver for player/stage.
 
-This Driver is used as a localizer and Occupancy Grid Map Builder using simple Bayesian 
-Probability Update. It uses Iterative Closest Point method to allign laser scans and estimate
+This Driver is used as a localizer and Occupancy Grid Map Builder using simple Bayesian
+Probability Update. It uses Iterative Closest Point method to align laser scans and estimate
 the change of pose.
-
-COMPILATION
-
-- pk-config should have the player package pointing to the libs and cflags
-- Use the make file script to compile the driver and generate the shared object "MrIcpDriver.so"
-  
-"make"
-
-to install, copy MrIcpDriver.so to /usr/local/lib/
-or 
-create a symbolic link where you're running your configuration file
-	ln -s MRICP_PATH/MrIcpDriver.so
-where MRICP_PATH is the path where the mricp driver is compiled
 
 USE
 
-The file "amigo_mricp.cfg" provides an example of driver use for an 
-amigo (or pioneer) robot with a mounted Hokuyo URG laser.
-
-The driver requires at least one laser interface, and optionally a position 
-interface (the latter is required if you actually want to drive the 
-robot via this driver).  The driver provides a position interface which 
-returns the position of the robot in the current patch as calculated by 
+The driver requires at least one laser interface, and optionally a position
+interface (the latter is required if you actually want to drive the
+robot via this driver).  The driver provides a position interface which
+returns the position of the robot in the current patch as calculated by
 mricp.
 
 	Specifications / Operation
-- Upon start, the driver initializes the initial pose to [0 0 0] m,m,rd	
-- When the driver recieves a PLAYER_POSITION_RESET_ODOM_REQ configuration 
+- Upon start, the driver initializes the initial pose to [0 0 0] m,m,rd
+- When the driver recieves a PLAYER_POSITION_RESET_ODOM_REQ configuration
   request, it:
   1- Saves the current map patch and starts a new one.
   2- Raves the pose of the new patch in respect to the old one.
@@ -43,7 +27,7 @@ mricp.
 
 - The driver computes the Occupancy Grid using Bayesian probability update. It computes
   the uncertainty in the sensor readings and uses the prior knowledge of each cell to get
-  the postirior (new estimation) of the cells state.
+  the posterior (new estimation) of the cells state.
 
 |********************|
 | CONFIG PARAMETERS  |
@@ -58,16 +42,16 @@ mricp.
   - Minimium Laser Range
 - period (double)
   - Default: "0.1"
-  - Time in sec defining how frequently to grab laser scans 
-    for scan matching. It is not a good idea to use maximum scans available on a SICK.  
+  - Time in sec defining how frequently to grab laser scans
+    for scan matching. It is not a good idea to use maximum scans available on a SICK.
     0.1 to 0.2 works well depending on robot turnrate and speed.
 - map_resolution (double)
   - Default: "0.05"
-  - Pixel resolution in meter of the map to be build , a number close to the laser 
+  - Pixel resolution in meter of the map to be build , a number close to the laser
     precision is wise.
 - map_size (double)
   - Default: 20
-  - This is defined from the origin to the boundary, so is actually half the size of the 
+  - This is defined from the origin to the boundary, so is actually half the size of the
     map PATCH, not the whole map.
 - interpolate (bool)
   - Default "1"
@@ -82,7 +66,7 @@ mricp.
   - Default "0.05"
   - 2nd data association gate for each point in scan
 - debug (bool)
-  - Defult: 0 
+  - Defult: 0
   - Display Debug Messeges
 - Log (bool)
   - Default: 0
@@ -90,7 +74,6 @@ mricp.
 - map_path(string)
   - Default: "maps/"
   - Specifies the locations where patches and logs are to be saved,
-    (make sure the directory exists)
 - start_in(int)
   - Default : 2
   - Delay Before starting, unit is in seconds
@@ -101,40 +84,39 @@ mricp.
   - Default : 1
   - The number of lasers to be used in the scan matching (index starts from 0) all lasers
     should be declared in the requires section
-@par Example 
+@par Example
 
 @verbatim
 driver
 (
-  name "MRICP_Driver"
-  requires ["position:0" "laser:0"]
-  provides ["position:1" "opaque:0" "map:0"]
-  plugin "MRICP.so"
-  MINR 0.05
+  name "mricp"
+  provides ["position2d:1" "map:0"]
+  requires ["position2d:0" "laser:0"]
+  number_of_lasers 1
+  laser0_ranges [-120 120]
+  playerv_debug 0
+  period 0.2
   MAXR 3.9
-  period 1
-  map_resolution 0.6
-  map_path maps/
-  number_of_lasers 2
-  start_in 1
-  interpolate 0
-  robot_id 1
-  NIT 15
+  MINR 0.05
+  map_resolution 0.05
+  map_saving_period 5
+  map_size 10
+  use_max_range 4
+  sparse_scans_rate 3
+  map_path "logs/"
+  debug 0
+  alwayson 1
   log 1
 )
 |****************|
 | STAGE TESTING  |
 |****************|
 
-- The directory stage_test contains a stage configuration for testing 
+- The directory stage_test contains a stage configuration for testing
   mricp.  Simply run:
   "player stage_mricp.cfg"
 
-- Also in the stage_test directory is a simple client program, which 
-  controls a robot with arrow keys and sends 
-  PLAYER_POSITION_RESET_ODOM_REQ configuration requests when the "c" key 
-  is pressed.  Compile this utility with the "./compile_tclient" command.
-- To test multiple laser support, modify the world file and add X laser models 
+- To test multiple laser support, modify the world file and add X laser models
   to your robot (X is the number of lasers). Then modify your configuration file
   so that stage provides that X laser interfaces.
   Note: Laser pose is essential for the Mricp to work, specify the correct laser
@@ -162,9 +144,9 @@ driver
 		  pose [-0.10 0.15 -180 ]
 		)
 		# extend the wheelchair definition from wheelchair.inc
-		
+
 		wheelchair
-		( 
+		(
 		   name "robot"
 		   pose [14.2 -4.6 180]
 		   sicklaser1()
@@ -172,10 +154,10 @@ driver
 		)
 	and your configuration should contain something like:
 		driver
-		( 
+		(
 		  name "stage"
 		  provides ["position:0" "laser:0" "laser:1"]
-		  model "robot" 
+		  model "robot"
 		)
 		driver
 		(
@@ -195,5 +177,5 @@ driver
 		)
 
 JP 21/4/06
-modified 
+modified
 TT 16/5/06
