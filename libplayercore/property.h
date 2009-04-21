@@ -55,7 +55,7 @@
 class ConfigFile;
 class Driver;
 
-// Property base class
+/// Property base class
 class PLAYERCORE_EXPORT Property
 {
 	public:
@@ -82,7 +82,7 @@ class PLAYERCORE_EXPORT Property
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-// Integer property class
+/// Integer property class
 class PLAYERCORE_EXPORT IntProperty : public Property
 {
 	public:
@@ -110,7 +110,7 @@ class PLAYERCORE_EXPORT IntProperty : public Property
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-// Double property class
+/// Double property class
 class PLAYERCORE_EXPORT DoubleProperty : public Property
 {
 	public:
@@ -138,6 +138,7 @@ class PLAYERCORE_EXPORT DoubleProperty : public Property
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+/// String Property Class
 class PLAYERCORE_EXPORT StringProperty : public Property
 {
 	public:
@@ -166,6 +167,7 @@ class PLAYERCORE_EXPORT StringProperty : public Property
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+/// Property node structure
 typedef struct PropertyNode
 {
 	char *key;
@@ -173,7 +175,7 @@ typedef struct PropertyNode
 	struct PropertyNode *next;
 } PropertyNode;
 
-// Property bag class: stores registered properties
+/// Property bag class: stores registered properties
 class PLAYERCORE_EXPORT PropertyBag
 {
 	public:
