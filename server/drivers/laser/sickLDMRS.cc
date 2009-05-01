@@ -74,7 +74,6 @@ driver
   #include <arpa/inet.h>
 #endif
 #include <string.h>
-#include <iostream>
 //#include <stdint.h>
 //#include <sys/time.h>
 //#include <time.h>
@@ -180,7 +179,7 @@ sickLDMRS::sickLDMRS(ConfigFile* cf, int section)
 	if (cf->ReadDeviceAddr(&this->opaque_id, section, "requires",
                        PLAYER_OPAQUE_CODE, -1, NULL) != 0)
 	{
-		puts ("No Opaque driver specified");
+		PLAYER_ERROR("No Opaque driver specified");
 		this->SetError(-1);
 		return;
 	}
@@ -210,7 +209,7 @@ sickLDMRS::~sickLDMRS()
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
 int sickLDMRS::MainSetup()
 {
-	puts("Setting up sickLDMRS driver");
+	PLAYER_WARN("Setting up sickLDMRS driver");
 
 	if(Device::MatchDeviceAddress(this->opaque_id, this->device_addr))
 	{
@@ -242,7 +241,7 @@ int sickLDMRS::MainSetup()
 	delete [] buffer;
 	buffer = NULL;
 
-	puts("sickLDMRS driver ready");
+	PLAYER_WARN("sickLDMRS driver ready");
 
 	return(0);
 }
@@ -263,11 +262,11 @@ void sickLDMRS::MainQuit()
 
 	delete [] buffer;
 
-	puts("sickLDMRS driver shutting down");
+	PLAYER_WARN("sickLDMRS driver shutting down");
 
 	opaque->Unsubscribe(InQueue);
 
-	puts("sickLDMRS driver has been shutdown");
+	PLAYER_WARN("sickLDMRS driver has been shutdown");
 }
 
 
@@ -284,7 +283,7 @@ int sickLDMRS::ProcessMessage(QueuePointer & resp_queue,
 	{
 		//GlobalTime->GetTime(&(this->debug_time));
 		//PLAYER_MSG2(1,"LUX driver received data packet at %d:%d", this->debug_time.tv_sec, this->debug_time.tv_usec);
-		//puts("Received tcp data");
+		//PLAYER_WARN("Received tcp data");
 		player_opaque_data_t * recv = reinterpret_cast<player_opaque_data_t * > (data);
 		unsigned int messageOffset = rx_count;
 		rx_count += recv->data_count;
@@ -330,7 +329,7 @@ bool sickLDMRS::ProcessLaserData()
 	//TODO: Implement a timeout here so that if it gets no data back in a time frame it either errors or sends a reset and stuff
 	while(rx_count > HEADER_LEN)
 	{
-		//puts("Got enough data");
+		//PLAYER_WARN("Got enough data");
 		// find our continuous data header
 		unsigned int ii;
 		bool found = false;
