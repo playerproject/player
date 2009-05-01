@@ -9,7 +9,8 @@ IF (BUILD_UTILS_PMAP)
         pkg_check_modules (GSL_PKG gsl)
 
         IF (GSL_PKG_FOUND)
-            LIST_TO_STRING (GSL_CFLAGS "${GSL_PKG_CFLAGS}")
+            LIST_TO_STRING (GSL_CFLAGS "${GSL_PKG_CFLAGS_OTHER}")
+            LIST_TO_STRING (GSL_LDFLAGS "${GSL_PKG_LDFLAGS_OTHER}")
             LINK_DIRECTORIES (${GSL_PKG_LIBRARY_DIRS})
 
             INCLUDE (FindOpenGL)
@@ -25,7 +26,8 @@ IF (BUILD_UTILS_PMAP)
             SET (lododriverSrcs lodo_driver.cc)
 
             INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/client_libs
-                                 ${CMAKE_CURRENT_BINARY_DIR})
+                                 ${CMAKE_CURRENT_BINARY_DIR}
+                                 ${GSL_PKG_INCLUDE_DIRS})
             IF (GLUT_FOUND)
                 INCLUDE_DIRECTORIES (${GLUT_INCLUDE_DIR})
             ENDIF (GLUT_FOUND)
@@ -43,6 +45,7 @@ IF (BUILD_UTILS_PMAP)
             ENDIF (GLUT_FOUND)
             SET_SOURCE_FILES_PROPERTIES (${pmapSrcs} PROPERTIES
                 COMPILE_FLAGS "${GSL_CFLAGS} --fast-math")
+            SET_TARGET_PROPERTIES (pmap PROPERTIES LINK_FLAGS "${GSL_LDFLAGS}")
             TARGET_LINK_LIBRARIES (pmap ${GSL_PKG_LIBRARIES})
 
             PLAYER_ADD_LIBRARY (lodo ${lodoSrcs})
@@ -52,6 +55,7 @@ IF (BUILD_UTILS_PMAP)
             ENDIF (GLUT_FOUND)
             SET_SOURCE_FILES_PROPERTIES (${lodoSrcs} PROPERTIES
                 COMPILE_FLAGS "${GSL_CFLAGS} --fast-math")
+            SET_TARGET_PROPERTIES (lodo PROPERTIES LINK_FLAGS "${GSL_LDFLAGS}")
             TARGET_LINK_LIBRARIES (lodo ${GSL_PKG_LIBRARIES})
 
             PLAYER_ADD_LIBRARY (lododriver ${lododriverSrcs})
