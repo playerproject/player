@@ -6,12 +6,14 @@
 #include <iostream>
 using namespace std;
 
-namespace Geom2D 
-	{
+namespace Geom2D
+{
 	ICP::ICP()
+		: warning_misalign(true)
 		{
 			index.push_back(0);
-			index.push_back(0);			
+			index.push_back(0);
+			index.push_back(0);
 		};
 	ICP::~ICP()
 		{
@@ -25,25 +27,25 @@ Pose ICP::align(vector<Point> reference, vector<Point> obs,Pose init, double gat
 {
 	ref = reference;
 	nn = new SweepSearch(reference, gate);
-	Pose pse = init; 
-	double gate_sqr = sqr(gate); 
+	Pose pse = init;
+	double gate_sqr = sqr(gate);
 	int size_obs = obs.size();
 
 	 // used if interp == true
-	while (nits-- > 0) 
+	while (nits-- > 0)
 	{
 		Transform2D tr(pse);
 		a.clear();
 		b.clear();
 		// For each point in obs, find its NN in ref
-		for (int i = 0; i < size_obs; ++i) 
+		for (int i = 0; i < size_obs; ++i)
 		{
 			Point p = obs[i];
 			tr.transform_to_global(p); // transform obs[i] to estimated ref coord-frame
 
 			Point q;
 			// simple ICP
-			if (interp == false) 
+			if (interp == false)
 			{
 				int idx = nn->query(p);
 				if (idx == SweepSearch::NOT_FOUND)
@@ -64,7 +66,7 @@ Pose ICP::align(vector<Point> reference, vector<Point> obs,Pose init, double gat
 				lne.second = ref[index[1]];
 				intersection_line_point(q, lne, p);
 			}
-			if (dist_sqr(p,q) < gate_sqr) // check if NN is close enough 
+			if (dist_sqr(p,q) < gate_sqr) // check if NN is close enough
 			{
 				a.push_back(obs[i]);
 				b.push_back(q);
@@ -74,7 +76,8 @@ Pose ICP::align(vector<Point> reference, vector<Point> obs,Pose init, double gat
 		//If Less than half of the Observation is paired => not good alignment
 		if( a.size() < obs.size()/2.0)
 		{
-			cout<<"\n Detected Possible misalignment --- Skipping this Laser Set! Gate is:"<<gate;;
+			if (this->warning_misalign)
+				cout<<"\n Detected Possible misalignment --- Skipping this Laser Set! Gate is:"<<gate;
 			pse.p.x = -1 ; pse.p.y=-1 ; pse.phi = -1;
 			break;
 		}
