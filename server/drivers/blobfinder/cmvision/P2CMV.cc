@@ -115,6 +115,7 @@ Ben Grocholsky, Brad Kratochvil
 #include <stdlib.h>  /* for atexit(3),atoi(3) */
 #include <pthread.h> /* for pthread stuff */
 #include <math.h>    /* for rint */
+#include <stddef.h>  /* for size_t and NULL */
 
 #include <libplayercore/playercore.h>
 #include <libplayercore/error.h>
@@ -421,8 +422,17 @@ CMVisionBF::ProcessMessage(QueuePointer & resp_queue,
     //assert(hdr->size == sizeof(player_camera_data_t));
     player_camera_data_t* camera_data = reinterpret_cast<player_camera_data_t *>(data);
     uint8_t* ptr;
+    uint8_t* ptr1;
+    size_t mSize;
+    int i;
 
     assert(camera_data);
+
+    if (camera_data->format != PLAYER_CAMERA_FORMAT_RGB888)
+    {
+      PLAYER_ERROR("No support for formats other than PLAYER_CAMERA_FORMAT_RGB888");
+      return(-1);
+    }
 
 #if !HAVE_JPEG
     if (camera_data->compression == PLAYER_CAMERA_COMPRESS_JPEG)
@@ -432,7 +442,6 @@ CMVisionBF::ProcessMessage(QueuePointer & resp_queue,
     }
 #endif
 
-    assert(camera_data->bpp == 24);
     if ((camera_data->width) && (camera_data->height))
     {
       if ((mWidth != camera_data->width) || (mHeight != camera_data->height) || (!mImg) || (!mTmp))
@@ -442,21 +451,46 @@ CMVisionBF::ProcessMessage(QueuePointer & resp_queue,
         if (mImg) delete []mImg; mImg = NULL;
         if (mTmp) delete []mTmp; mTmp = NULL;
         // we need to allocate some memory
-        if (!mImg) mImg = new uint8_t[mWidth*mHeight*2];
-        if (!mTmp) mTmp = new uint8_t[mWidth*mHeight*3];
+        if (!mImg) mImg = new uint8_t[mWidth * mHeight * 2];
+        if (!mTmp) mTmp = new uint8_t[mWidth * mHeight * 3];
       }
-      ptr = camera_data->image;
+      ptr = NULL;
       if (camera_data->compression == PLAYER_CAMERA_COMPRESS_JPEG)
       {
+        assert(camera_data->bpp == 24);
 #if HAVE_JPEG
-	jpeg_decompress((unsigned char*)mTmp,
-			mWidth*mHeight*3,
+	jpeg_decompress(reinterpret_cast<unsigned char *>(mTmp),
+			mWidth * mHeight * 3,
                         camera_data->image,
                         camera_data->image_count
                        );
 #endif
         ptr = mTmp;
+      } else switch (camera_data->bpp)
+      {
+      case 24:
+        ptr = camera_data->image;
+        break;
+      case 32:
+        ptr = camera_data->image;
+        ptr1 = mTmp;
+        mSize = camera_data->width * camera_data->height;
+        for (i = 0; i < static_cast<int>(mSize); i++)
+        {
+          ptr1[0] = ptr[0];
+          ptr1[1] = ptr[1];
+          ptr1[2] = ptr[2];
+          ptr += 4;
+          ptr1 += 3;
+        }
+        ptr = mTmp;
+        break;
+      default:
+        PLAYER_ERROR1("Unsupported depth %u", camera_data->bpp);
+        return(-1);
       }
+      assert(ptr);
+
       // now deal with the data
       rgb2uyvy(ptr, mImg, mWidth*mHeight);
 
