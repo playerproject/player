@@ -121,6 +121,8 @@ void power_update(power_t *power)
 void power_draw(power_t *power)
 {
   char text[256];
+  int size = 0;
+  int ret;
 
   rtk_fig_show(power->fig, 1);
   rtk_fig_clear(power->fig);
@@ -131,8 +133,6 @@ void power_draw(power_t *power)
   rtk_fig_color_rgb32(power->fig, COLOR_POWER);
 
   text[0] = 0;
-  int size = 0;
-  int ret;
 
   if( power->proxy->valid & PLAYER_POWER_MASK_VOLTS )
   {
