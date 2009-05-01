@@ -95,13 +95,13 @@ future releases to clock in around the 5ms mark.
 #ifndef LODO_H
 #define LODO_H
 
+#include <gsl/gsl_min.h>
+#include "slap.h"
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
-
-#include <gsl/gsl_min.h>
-#include "slap.h"
 
 
 /// Limits

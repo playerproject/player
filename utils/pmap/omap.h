@@ -27,12 +27,12 @@
 #ifndef OMAP_H
 #define OMAP_H
 
+#include "slap.h"
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
-
-#include "slap.h"
 
 
 /// @brief omap object data

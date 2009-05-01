@@ -32,12 +32,12 @@ using it.
 #ifndef RMAP_H
 #define RMAP_H
 
+#include "slap.h"
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
-
-#include "slap.h"
 
 /// Limits
 #define RMAP_MAX_RANGES 1024
