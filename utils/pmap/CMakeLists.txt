@@ -32,7 +32,12 @@ IF (BUILD_UTILS_PMAP)
                 INCLUDE_DIRECTORIES (${GLUT_INCLUDE_DIR})
             ENDIF (GLUT_FOUND)
 
-            PLAYER_ADD_EXECUTABLE (pmaptest ${pmaptestSrcs})
+            IF (NOT HAVE_GETOPT)
+                INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/replace)
+                SET (getoptSrc ${PROJECT_SOURCE_DIR}/replace/getopt.c)
+            ENDIF (NOT HAVE_GETOPT)
+
+            PLAYER_ADD_EXECUTABLE (pmaptest ${pmaptestSrcs} ${getoptSrc})
             TARGET_LINK_LIBRARIES (pmaptest pmap lodo)
             IF (GLUT_FOUND)
                 TARGET_LINK_LIBRARIES (pmaptest ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})
