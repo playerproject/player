@@ -139,8 +139,11 @@ them named:
   - Default "0.05"
   - 2nd data association gate for each point in scan
 - debug (bool)
-  - Defult: 0
-  - Display Debug Messeges
+  - Default: 0
+  - Display Debug Messages
+- warning (bool)
+  - Default: 1
+  - Display Warning Messages about misalignment problems
 - Log (bool)
   - Default: 0
   - Loggs the Odom Data (x,y,theta,ltics,rtics,lspeed,rspeed)
@@ -216,6 +219,7 @@ driver
   sparse_scans_rate 3
   map_path "logs/"
   debug 0
+  warning 1
   alwayson 1
   log 1
 )
@@ -335,20 +339,21 @@ void mricp_Register(DriverTable* table)
 MrIcp::MrIcp(ConfigFile* cf, int section)  : ThreadedDriver(cf, section)
 {
 	char config_temp[40];
-  	this->maxr =             cf->ReadFloat(section,"MAXR",7.8);
-  	this->start_in =         cf->ReadFloat(section,"start_in",2);
-  	this->minr =             cf->ReadFloat(section,"MINR",0.05);
-  	this->period =           cf->ReadFloat(section,"period",0.1);
-  	this->map_resolution =   cf->ReadFloat(section,"map_resolution",0.05); // In METERS
-  	this->map_size = 	     cf->ReadFloat(section,"map_size",20);         // In METERS
-  	this->nit =              cf->ReadInt  (section,"NIT",10);
-  	this->robot_id =         cf->ReadInt  (section,"robot_id",0);
-  	this->number_of_lasers = cf->ReadInt  (section,"number_of_lasers",1);
-  	this->gate1 =            cf->ReadFloat(section,"gate1",0.5);
-  	this->gate2 =            cf->ReadFloat(section,"gate2",0.05);
-  	this->interpolate =      cf->ReadInt  (section, "interpolate", 1);
-  	this->map_path	=(char *)cf->ReadString(section,"map_path","maps/");
+	this->maxr =             cf->ReadFloat(section,"MAXR",7.8);
+	this->start_in =         cf->ReadFloat(section,"start_in",2);
+	this->minr =             cf->ReadFloat(section,"MINR",0.05);
+	this->period =           cf->ReadFloat(section,"period",0.1);
+	this->map_resolution =   cf->ReadFloat(section,"map_resolution",0.05); // In METERS
+	this->map_size = 	     cf->ReadFloat(section,"map_size",20);         // In METERS
+	this->nit =              cf->ReadInt  (section,"NIT",10);
+	this->robot_id =         cf->ReadInt  (section,"robot_id",0);
+	this->number_of_lasers = cf->ReadInt  (section,"number_of_lasers",1);
+	this->gate1 =            cf->ReadFloat(section,"gate1",0.5);
+	this->gate2 =            cf->ReadFloat(section,"gate2",0.05);
+	this->interpolate =      cf->ReadInt  (section, "interpolate", 1);
+	this->map_path	=(char *)cf->ReadString(section,"map_path","maps/");
 	this->debug = 			 cf->ReadInt(section,"debug",0);
+	this->warning_misalign = icp.warning_misalign = cf->ReadInt(section,"warning",1);
 	this->log =   			 cf->ReadInt(section,  "log",0);
 	this->use_odom = 		 cf->ReadInt(section,  "use_odom",0);
 	this->playerv_debug =    cf->ReadInt(section,  "playerv_debug",0);
@@ -1312,7 +1317,8 @@ void MrIcp::BuildMap()
 	delta_pose = icp.align(laser_set_1,laser_set_2,delta_pose, gate1, nit, interpolate);
 	if(delta_pose.p.x ==-1 && delta_pose.p.y ==-1 && delta_pose.phi==-1)
 	{
-		cout <<"\nWARNING: possible misalignment ICP: 1 - skipping scan";
+		if (this->warning_misalign)
+			cout <<"\nWARNING: possible misalignment ICP: 1 - skipping scan";
 		//laser_set_1 = laser_set_2;
 		return;
 	}
@@ -1338,7 +1344,8 @@ void MrIcp::BuildMap()
 	global_pose = icp.align(this->local_map,laser_set_2,global_pose, gate1, nit, interpolate);
 	if(global_pose.p.x ==-1 && global_pose.p.y ==-1 && global_pose.phi==-1)
 	{
-		cout <<"\nWARNING: possible misalignment ICP: 2 - skipping scan";
+		if (this->warning_misalign)
+			cout <<"\nWARNING: possible misalignment ICP: 2 - skipping scan";
 		global_pose.p.x = global_pose_prev.p.x;
 		global_pose.p.y = global_pose_prev.p.y;
 		global_pose.phi = global_pose_prev.phi;
@@ -1350,7 +1357,8 @@ void MrIcp::BuildMap()
 	global_pose = icp.align(this->local_map,laser_set_2,global_pose, gate2, nit, interpolate);
 	if(global_pose.p.x ==-1 && global_pose.p.y ==-1 && global_pose.phi==-1)
 	{
-		cout <<"\nWARNING: possible misalignment ICP: 3 - skipping scan";
+		if (this->warning_misalign)
+			cout <<"\nWARNING: possible misalignment ICP: 3 - skipping scan";
 		global_pose.p.x = global_pose_prev.p.x;
 		global_pose.p.y = global_pose_prev.p.y;
 		global_pose.phi = global_pose_prev.phi;

@@ -42,6 +42,7 @@ public:
 	Pose align(std::vector<Point> , std::vector<Point>,Pose , double , int , bool );
 	const std::vector<Point> get_ref_points() { return b; }
 	const std::vector<Point> get_obs_points() { return a; }
+	bool warning_misalign;
 private:
 	vector<Point>   ref;
 	SweepSearch * nn;
