@@ -56,14 +56,13 @@ slow.
 #ifndef PMAP_H
 #define PMAP_H
 
+#include "gsl/gsl_rng.h"
+#include "slap.h"
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
-
-#include "gsl/gsl_rng.h"
-#include "slap.h"
-
 
 /// Limits
 #define PMAP_MAX_RANGES 1024
