@@ -1,17 +1,32 @@
+INCLUDE (CheckFunctionExists)
 OPTION (BUILD_UTILS_PLAYERVCR "Build the playervcr utility" ON)
 IF (BUILD_UTILS_PLAYERVCR)
     IF (WITH_GTK)
-        SET (playervcrSrcs playervcr.c)
+        SET (CMAKE_REQUIRED_FLAGS ${GTK_CFLAGS})
+        SET (CMAKE_REQUIRED_INCLUDES ${GTK_PKG_INCLUDE_DIRS})
+        SET (CMAKE_REQUIRED_LIBRARIES ${GTK_PKG_LIBRARIES})
+        CHECK_FUNCTION_EXISTS (gtk_dialog_new_with_buttons HAVE_GTK_DIALOG_NEW_WITH_BUTTONS)
+        CHECK_FUNCTION_EXISTS (gtk_button_set_use_stock HAVE_GTK_BUTTON_SET_USE_STOCK)
+        CHECK_FUNCTION_EXISTS (gtk_dialog_run HAVE_GTK_DIALOG_RUN)
+        SET (CMAKE_REQUIRED_FLAGS)
+        SET (CMAKE_REQUIRED_INCLUDES)
+        SET (CMAKE_REQUIRED_LIBRARIES)
 
-        INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/client_libs ${GTK_PKG_INCLUDE_DIRS})
-        LINK_DIRECTORIES (${GTK_PKG_LIBRARY_DIRS})
-        PLAYER_ADD_EXECUTABLE (playervcr ${playervcrSrcs})
-        TARGET_LINK_LIBRARIES (playervcr playerc playerxdr playererror
-            playerutils ${PLAYERC_EXTRA_LINK_LIBRARIES} ${GTK_PKG_LIBRARIES})
-        SET_SOURCE_FILES_PROPERTIES (${playervcrSrcs} PROPERTIES
-            COMPILE_FLAGS "${GTK_CFLAGS}")
-        SET_TARGET_PROPERTIES (playervcr PROPERTIES
-            LINK_FLAGS "${GTK_LINKFLAGS}")
+        IF (HAVE_GTK_DIALOG_NEW_WITH_BUTTONS AND HAVE_GTK_BUTTON_SET_USE_STOCK AND HAVE_GTK_DIALOG_RUN)
+            SET (playervcrSrcs playervcr.c)
+
+            INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/client_libs ${GTK_PKG_INCLUDE_DIRS})
+            LINK_DIRECTORIES (${GTK_PKG_LIBRARY_DIRS})
+            PLAYER_ADD_EXECUTABLE (playervcr ${playervcrSrcs})
+            TARGET_LINK_LIBRARIES (playervcr playerc playerxdr playererror
+                playerutils ${PLAYERC_EXTRA_LINK_LIBRARIES} ${GTK_PKG_LIBRARIES})
+            SET_SOURCE_FILES_PROPERTIES (${playervcrSrcs} PROPERTIES
+                COMPILE_FLAGS "${GTK_CFLAGS}")
+            SET_TARGET_PROPERTIES (playervcr PROPERTIES
+                LINK_FLAGS "${GTK_LINKFLAGS}")
+        ELSE (HAVE_GTK_DIALOG_NEW_WITH_BUTTONS AND HAVE_GTK_BUTTON_SET_USE_STOCK AND HAVE_GTK_DIALOG_RUN)
+            MESSAGE (STATUS "playervcr will not be built - GTK version is too old")
+        ENDIF (HAVE_GTK_DIALOG_NEW_WITH_BUTTONS AND HAVE_GTK_BUTTON_SET_USE_STOCK AND HAVE_GTK_DIALOG_RUN)
     ELSE (WITH_GTK)
         MESSAGE (STATUS "playervcr will not be built - GTK not found")
     ENDIF (WITH_GTK)
