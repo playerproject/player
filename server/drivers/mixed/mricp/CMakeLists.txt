@@ -6,7 +6,11 @@ SET (mricpSrcs  src/geometry2D.cpp
                 src/nn.cpp
                 src/Timer.cpp)
 
-PLAYERDRIVER_OPTION (mricp build_mricp ON)
+IF (HAVE_STL)
+    PLAYERDRIVER_OPTION (mricp build_mricp ON)
+ELSE (HAVE_STL)
+    PLAYERDRIVER_OPTION (mricp build_mricp OFF "STL not found")
+ENDIF (HAVE_STL)
 PLAYERDRIVER_REQUIRE_PKG (mricp build_mricp gtk+-2.0 gtk_includeDirs gtk_libDirs gtk_linkLibs gtk_linkFlags gtk_cFlags)
 PLAYERDRIVER_REQUIRE_PKG (mricp build_mricp gdk-pixbuf-2.0 gdk_pixbuf_includeDirs gdk_pixbuf_libDirs gdk_pixbuf_linkLibs gdk_pixbuf_linkFlags gdk_pixbuf_cFlags)
 PLAYERDRIVER_ADD_DRIVER (mricp build_mricp
