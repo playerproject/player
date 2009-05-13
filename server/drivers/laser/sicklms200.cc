@@ -127,6 +127,10 @@ The sicklms200 driver controls the SICK LMS 200 and PLS scanning laser range-fin
   - Default: [0.15 0.15]
   - Footprint (x,y) of the laser.
 
+- pls_mode (integer)
+  - Default: 0
+  - set this to 1 to connect to a pls laser
+
 @par Example
 
 @verbatim
@@ -322,6 +326,8 @@ class SickLMS200 : public ThreadedDriver
 
   protected:
 
+	IntProperty PLSMode;
+
     // Laser pose in robot cs.
     double pose[3];
     double size[2];
@@ -415,7 +421,8 @@ void sicklms200_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 SickLMS200::SickLMS200(ConfigFile* cf, int section)
-    : ThreadedDriver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LASER_CODE)
+    : ThreadedDriver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LASER_CODE),
+      PLSMode("pls_mode",0,true,this,cf,section)
 {
   // Laser geometry.
   this->pose[0] = cf->ReadTupleLength(section, "pose", 0, 0.0);
@@ -583,20 +590,31 @@ int SickLMS200::MainSetup()
   // Display the laser type
 //  char type[64];
   memset(this->laser_type,0,sizeof(this->laser_type));
-  if (GetLaserType(this->laser_type, sizeof(this->laser_type)))
-    return 1;
-  PLAYER_MSG3(2, "SICK laser type [%s] at [%s:%d]", this->laser_type, this->device_name, this->transfer_rate);
+  if (PLSMode)
+  {
+    strcpy(this->laser_type,"PLS");
+    this->scan_width = 180;
+    this->scan_res = 50;
+  }
+  else
+  {
+    if (GetLaserType(this->laser_type, sizeof(this->laser_type)))
+    {
+      return 1;
+    }
+    PLAYER_MSG3(2, "SICK laser type [%s] at [%s:%d]", this->laser_type, this->device_name, this->transfer_rate);
 
-  if (SetLaserMode())
-    return 1;
+    if (SetLaserMode())
+      return 1;
 
 
-  // Configure the laser
-  if (SetLaserRes(this->scan_width, this->scan_res))
-    return 1;
+    // Configure the laser
+    if (SetLaserRes(this->scan_width, this->scan_res))
+      return 1;
 
-  if (SetLaserConfig(this->intensity, this->high_avail))
-    return 1;
+    if (SetLaserConfig(this->intensity, this->high_avail))
+      return 1;
+  }
 
   this->scan_id = 0;
 
@@ -908,9 +926,16 @@ int SickLMS200::OpenTerm()
     RETURN_ERROR(1, "Unable to get serial port attributes");
 
   cfmakeraw( &term );
+  if (PLSMode)
+  {
+    term.c_iflag |= INPCK; 
+    term.c_iflag &= ~IXOFF;
+    term.c_cflag |= PARENB;
+  }
+
   cfsetispeed( &term, B9600 );
   cfsetospeed( &term, B9600 );
-
+  
   if( tcsetattr( this->laser_fd, TCSAFLUSH, &term ) < 0 )
     RETURN_ERROR(1, "Unable to set serial port attributes");
 
@@ -991,6 +1016,13 @@ int SickLMS200::ChangeTermSpeed(int speed)
         RETURN_ERROR(1, "unable to get device attributes");
 
       cfmakeraw( &term );
+      if (PLSMode)
+      {
+        term.c_iflag |= INPCK; 
+        term.c_iflag &= ~IXOFF;
+        term.c_cflag |= PARENB;
+      }
+
       cfsetispeed( &term, B9600 );
       cfsetospeed( &term, B9600 );
 
