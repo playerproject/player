@@ -5,6 +5,7 @@ PLAYERDRIVER_OPTION (pbslaser build_pbslaser ON)
 PLAYERDRIVER_REJECT_OS (pbslaser build_pbslaser PLAYER_OS_WIN)
 PLAYERDRIVER_ADD_DRIVER (pbslaser build_pbslaser SOURCES pbs_driver.cc)
 
+PLAYERDRIVER_OPTION (sicklms200 build_sicklms200 ON)
 CHECK_INCLUDE_FILES (linux/serial.h HAVE_LINUX_SERIAL_H)
 SET (laser_config_h_in ${CMAKE_CURRENT_SOURCE_DIR}/laser_config.h.in)
 SET (laser_config_h ${CMAKE_CURRENT_BINARY_DIR}/laser_config.h)
