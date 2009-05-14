@@ -1,0 +1,7 @@
+Test:
+  use wifi.rb to test uint8_t arrays (stage support wifi devices?
+  double arrays of arrays (other double arrays are needed?)
+  rfid tags
+  catch-all rule
+
+  c to ruby communication

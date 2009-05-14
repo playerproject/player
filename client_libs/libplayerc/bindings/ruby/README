@@ -1,0 +1,28 @@
+These are the Ruby bindings for Player (part of the PlayerStage project).
+http://playerstage.sourceforge.net/
+
+THIS BINDINGS WILL NOT BE COMPILED BY DEFAULT!
+
+If you want to install this bindings edit the CMakeList file on 
+$PLAYER_SOURCES_ROOT/client_libs/libplayerc/bindings/CMakefile.txt
+
+
+This is a work in progress, examples in examples/  
+show what is hopefully working so far. 
+
+The ruby examples connect to a local Player running in the default port. 
+Start Player before running any examples.
+The examples will access underlying hardware so either you have Player running in the real robotic hardware
+or read Player documentation to run Player with the Stage or Gazebo simulators. 
+
+For instance, laser.rb can be run with Player and Gazebo as follows:
+
+gazebo worlds/pioneer2dx.cfg
+player GAZEBO_ROOT/player-cfgs/gazebo.cfg
+ruby test.rb laser
+
+Gazebo provides of an environment with an specific robot and laser (defined in pioneer2dx.cfg)
+Player connects to gazebo and provides of robot and laser generic interfaces (defined in gazebo.cfg)
+laser.rb controls a generic robot with a generic laser
+
+
