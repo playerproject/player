@@ -1184,6 +1184,12 @@ int SickLMS200::SetLaserSpeed(int speed)
   ssize_t len;
   uint8_t packet[20];
 
+  if (PLSMode)
+  {
+    if (SetLaserMode() != 0)
+      RETURN_ERROR(1,"request for config mode failed");
+  }
+
   for (tries = 0; tries < DEFAULT_LASER_RETRIES; tries++)
   {
     packet[0] = 0x20;
