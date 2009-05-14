@@ -928,14 +928,14 @@ int SickLMS200::OpenTerm()
   cfmakeraw( &term );
   if (PLSMode)
   {
-    term.c_iflag |= INPCK; 
+    term.c_iflag |= INPCK;
     term.c_iflag &= ~IXOFF;
     term.c_cflag |= PARENB;
   }
 
   cfsetispeed( &term, B9600 );
   cfsetospeed( &term, B9600 );
-  
+
   if( tcsetattr( this->laser_fd, TCSAFLUSH, &term ) < 0 )
     RETURN_ERROR(1, "Unable to set serial port attributes");
 
@@ -976,7 +976,18 @@ int SickLMS200::ChangeTermSpeed(int speed)
 {
   struct termios term;
 
-  //current_rate = speed;
+  // First set the common terminal settings
+  if( tcgetattr( this->laser_fd, &term ) < 0 )
+    RETURN_ERROR(1, "unable to get device attributes");
+
+  cfmakeraw( &term );
+  if (PLSMode)
+  {
+    term.c_iflag |= INPCK;
+    term.c_iflag &= ~IXOFF;
+    term.c_cflag |= PARENB;
+  }
+
 
 #ifdef HAVE_HI_SPEED_SERIAL
   struct serial_struct serial;
@@ -1012,16 +1023,6 @@ int SickLMS200::ChangeTermSpeed(int speed)
   {
     case 9600:
       //PLAYER_MSG0(2, "terminal speed to 9600");
-      if( tcgetattr( this->laser_fd, &term ) < 0 )
-        RETURN_ERROR(1, "unable to get device attributes");
-
-      cfmakeraw( &term );
-      if (PLSMode)
-      {
-        term.c_iflag |= INPCK; 
-        term.c_iflag &= ~IXOFF;
-        term.c_cflag |= PARENB;
-      }
 
       cfsetispeed( &term, B9600 );
       cfsetospeed( &term, B9600 );
@@ -1032,10 +1033,7 @@ int SickLMS200::ChangeTermSpeed(int speed)
 
     case 38400:
       //PLAYER_MSG0(2, "terminal speed to 38400");
-      if( tcgetattr( this->laser_fd, &term ) < 0 )
-        RETURN_ERROR(1, "unable to get device attributes");
 
-      cfmakeraw( &term );
       cfsetispeed( &term, B38400 );
       cfsetospeed( &term, B38400 );
 
@@ -1068,10 +1066,6 @@ int SickLMS200::ChangeTermSpeed(int speed)
 	      // even if we are doing 500kbps, we have to set the speed to 38400...
 	      // the FTDI will know we want 500000 instead.
 
-	      if( tcgetattr( this->laser_fd, &term ) < 0 )
-	        RETURN_ERROR(1, "unable to get device attributes");
-
-	      cfmakeraw( &term );
 	      cfsetispeed( &term, B38400 );
 	      cfsetospeed( &term, B38400 );
 
@@ -1087,23 +1081,15 @@ int SickLMS200::ChangeTermSpeed(int speed)
 	        if(this->laser_fd < 0)
 	                RETURN_ERROR(1, "error opening");
 
-	        if( tcgetattr( this->laser_fd, &term ) < 0 )
-	                 RETURN_ERROR(1, "unable to get device attributes");
-
 	        term.c_cflag = this->serial_high_speed_baudremap | CS8 | CLOCAL | CREAD;
-	              cfmakeraw( &term );
-	              cfsetispeed( &term, this->serial_high_speed_baudremap );
-	              cfsetospeed( &term, this->serial_high_speed_baudremap );
+	        cfsetispeed( &term, this->serial_high_speed_baudremap );
+	        cfsetospeed( &term, this->serial_high_speed_baudremap );
 	        tcflush(this->laser_fd, TCIFLUSH);
 	        tcsetattr(this->laser_fd, TCSANOW, &term);
 	        tcflush(this->laser_fd, TCIFLUSH);
 	}
     else if (this->serial_high_speed_mode == 2)
     {
-      if (tcgetattr(this->laser_fd, &term) < 0)
-        RETURN_ERROR(1, "unable to get device attributes");
-
-      cfmakeraw(&term);
       if (tcsetattr(this->laser_fd, TCSAFLUSH, &term) < 0)
         RETURN_ERROR(1, "unable to set device attributes");
 
