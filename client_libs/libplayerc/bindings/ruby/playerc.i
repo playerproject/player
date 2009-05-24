@@ -150,7 +150,7 @@ TODO: surely this is not the best interface to this data ever thought ...
     //generate an Int from the tag type
     VALUE type = UINT2NUM((long) (unsigned long long) $1[i].type);
 
-    //set the previous objects into the tuple
+    //set the previous objects into the hash
     rb_hash_aset(hash, "type", type);
     rb_hash_aset(hash, "guid", guid);
 
@@ -160,7 +160,91 @@ TODO: surely this is not the best interface to this data ever thought ...
 }
 
 
+// Provide array access doubly-dimensioned arrays
+%typemap(out) player_point_2d_t [ANY] 
+{
+    VALUE ary;
+    int i,j;
+    ary = rb_ary_new2($1_dim0);
 
+    for (i = 0; i < $1_dim0; i++)
+    {
+        inner_ary =  rb_ary_new2(2);
+        rb_ary_push(inner_ary, $1[i].px);
+        rb_ary_push(inner_ary, $1[i].py);
+        rb_ary_push(ary, inner_ary);
+    }
+    $result = ary;
+}
+
+
+
+// Provide array access doubly-dimensioned arrays
+%typemap(out) player_point_3d_t [ANY] 
+{
+    VALUE ary;
+    int i,j;
+    ary = rb_ary_new2($1_dim0);
+
+    for (i = 0; i < $1_dim0; i++)
+    {
+        inner_ary =  rb_ary_new2(2);
+        rb_ary_push(inner_ary, $1[i].px);
+        rb_ary_push(inner_ary, $1[i].py);
+        rb_ary_push(inner_ary, $1[i].pz);
+        rb_ary_push(ary, inner_ary);
+
+/*
+change to hash when we know how to use hash_lookup
+        hash = rb_hash_new();
+        rb_hash_aset(hash, "px", $1[i].px);
+        rb_hash_aset(hash, "py", $1[i].py);
+        rb_hash_aset(hash, "pz", $1[i].pz);
+        rb_ary_push(ary, hash);
+*/
+
+    }
+    $result = ary;
+}
+
+/*
+// Provide array access doubly-dimensioned arrays
+// when I know how to use hash_lookup, change this to array of hashes  
+%typemap(out) player_color_t [ANY] 
+{
+    VALUE ary;
+    int i,j;
+    ary = rb_ary_new2($1_dim0);
+   $result = ary;
+}
+
+
+// typemap for tuples to colours
+%typemap(in) player_color_t (player_color_t temp)
+{
+	// Check it is a tuple
+	if (PyTuple_Check ($input))
+	{
+		// Check the tuple has four elements
+		if (PyTuple_GET_SIZE ($input) != 4)
+		{
+			PyErr_SetString (PyExc_ValueError, "tuple must have 4 items");
+			return NULL;
+		}
+		temp.alpha = PyInt_AsLong (PyTuple_GET_ITEM ($input, 0));
+		temp.red = PyInt_AsLong (PyTuple_GET_ITEM ($input, 1));
+		temp.green = PyInt_AsLong (PyTuple_GET_ITEM ($input, 2));
+		temp.blue = PyInt_AsLong (PyTuple_GET_ITEM ($input, 3));
+	}
+	else
+	{
+		PyErr_SetString (PyExc_TypeError, "not a tuple");
+		return NULL;
+	}
+}
+
+
+*/
 
 
 // Catch-all rule to converts arrays of structures to arrays of proxies for
@@ -269,24 +353,42 @@ TODO: surely this is not the best interface to this data ever thought ...
 }
 
 
-
-/*// typemap to free the array created in the previous typemap
-%typemap(freearg) uint8_t data[]
+// Provide array of array (write) access
+%typemap(in) double [ANY] [ANY] (double temp[$1_dim0][$1_dim1])
 {
-  if ($input) free ((uint8_t*) $input);
-}*/
+  //TODO check if the input is a correct Ruby array
+  //TODO: NUM2DBL and friends can return errors?
+  int i;
+  VALUE row;
 
-/*
+  if (RARRAY_LEN($input) != $1_dim0) 
+  {
+    SWIG_exception( SWIG_TypeError, "Size mismatch on the array" );
+    return 0;
+  }
+
+  for (i = 0; i < $1_dim0; i++)
+  {
+    row = rb_ary_entry ($input, i)
+    for (j = 0;j< $1_dim1;j++)
+      temp[i][j] = (double) NUM2DBL( rb_ary_entry(row, i) );
+  }
+  $1 = temp;
+}
+
+
+
+
 // typemap for passing points into the graphics2d interface
 // in C is an array of structures, where each structure has two doubles: px and py
-// in Ruby an array of arrays is OK?
+// in Ruby an array of arrays 
 %typemap(in) player_point_2d_t pts[]
 {
 //TODO: check we have a double array
 //check it has doubles
   int i;
   int size;
-  VALUE *structure;
+  VALUE structure;
   
   size = RARRAY_LEN($input);
 
@@ -294,10 +396,75 @@ TODO: surely this is not the best interface to this data ever thought ...
   for (i = 0; i < size; i++)
   {
     structure = rb_ary_entry($input, i);
-    $1[i][0] = (double) NUM2DBL( rb_ary_entry(structure, 0) );
-    $1[i][1] = (double) NUM2DBL( rb_ary_entry(structure, 1) );
+    $1[i].px = (double) NUM2DBL( rb_ary_entry(structure, 0) );
+    $1[i].py = (double) NUM2DBL( rb_ary_entry(structure, 1) );
+//    $1[i].px = (double) NUM2DBL( rb_hash_lookup(structure, "px") );
+//    $1[i].py = (double) NUM2DBL( rb_hash_lookup(structure, "py") );
   }
 
+}
+
+%typemap(in) player_point_3d_t pts[]
+{
+//TODO: check we have a double array
+//check it has doubles
+  int i;
+  int size;
+  VALUE structure;
+  
+  size = RARRAY_LEN($input);
+
+  $1 = (player_point_3d_t*) malloc (size * sizeof (player_point_3d_t));
+  for (i = 0; i < size; i++)
+  {
+    structure = rb_ary_entry($input, i);
+    $1[i].px = (double) NUM2DBL( rb_ary_entry(structure, 0) );
+    $1[i].py = (double) NUM2DBL( rb_ary_entry(structure, 1) );
+    $1[i].pz = (double) NUM2DBL( rb_ary_entry(structure, 2) );
+
+//    $1[i].px = (double) NUM2DBL( rb_hash_lookup(structure, "px") );
+//    $1[i].py = (double) NUM2DBL( rb_hash_lookup(structure, "py") );
+//    $1[i].pz = (double) NUM2DBL( rb_hash_lookup(structure, "pz") );
+  }
+
+}
+
+
+
+
+// typemap to free the array created in the previous typemap
+%typemap(freearg) player_point2d_t pts[]
+{
+	if ($input) free ((player_point2d_t*) $input);
+}
+
+
+
+/*
+
+What is this structure in ruby?
+// typemap for tuples to colours
+%typemap(in) player_color_t (player_color_t temp)
+{
+	// Check it is a tuple
+	if (PyTuple_Check ($input))
+	{
+		// Check the tuple has four elements
+		if (PyTuple_GET_SIZE ($input) != 4)
+		{
+			PyErr_SetString (PyExc_ValueError, "tuple must have 4 items");
+			return NULL;
+		}
+		temp.alpha = PyInt_AsLong (PyTuple_GET_ITEM ($input, 0));
+		temp.red = PyInt_AsLong (PyTuple_GET_ITEM ($input, 1));
+		temp.green = PyInt_AsLong (PyTuple_GET_ITEM ($input, 2));
+		temp.blue = PyInt_AsLong (PyTuple_GET_ITEM ($input, 3));
+	}
+	else
+	{
+		PyErr_SetString (PyExc_TypeError, "not a tuple");
+		return NULL;
+	}
 }
 
 */
