@@ -1,15 +1,21 @@
-INCLUDE (FindPythonInterp)
-IF (PYTHONINTERP_FOUND)
+FIND_PACKAGE (Ruby)
+
+
+if(RUBY_LIBRARY AND RUBY_INCLUDE_PATH)
+    SET(RUBY_FOUND TRUE)
+endif (RUBY_LIBRARY AND RUBY_INCLUDE_PATH)
+
+
+  IF(RUBY_FOUND)
     OPTION (BUILD_RUBY_BINDINGS "Build the Ruby bindings for the C client library" ON)
 
     IF (BUILD_RUBY_BINDINGS)
         FIND_PACKAGE (SWIG)
         IF (SWIG_FOUND)
-            MESSAGE (STATUS "Python bindings for C client library will be built")
+            MESSAGE (STATUS "Ruby bindings for C client library will be built")
 
             INCLUDE (${SWIG_USE_FILE})
 
-            FIND_PACKAGE (Ruby)
             INCLUDE_DIRECTORIES (${RUBY_INCLUDE_PATH})
             INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR})
             INCLUDE_DIRECTORIES (${PROJECT_BINARY_DIR})
@@ -48,22 +54,13 @@ IF (PYTHONINTERP_FOUND)
                 TARGET_LINK_LIBRARIES (${SWIG_MODULE_playercr_REAL_NAME} playerjpeg)
             ENDIF (HAVE_JPEG)
 
-            #TODO: find ruby in windows, check install dir is correct
-            IF (PYTHON_OS_WIN)
-                GET_FILENAME_COMPONENT (playercruInstallDir ${RUBY_EXECUTABLE} PATH)
-            ELSE (PYTHON_OS_WIN)
-                # Get the Python version
-                EXECUTE_PROCESS (COMMAND ${PYTHON_EXECUTABLE} -V
-                                 ERROR_VARIABLE pythonVersionString
-                                 ERROR_STRIP_TRAILING_WHITESPACE)
-                STRING (REGEX REPLACE "^Python ([0-9]+\\.[0-9]+).*" "\\1" pythonVersion ${pythonVersionString})
-                SET (playercruInstallDir lib/python${pythonVersion}/site-packages)
-            ENDIF (PYTHON_OS_WIN)
-            SET (RUBY_BINDINGS_INSTALL_DIR ${playercruInstallDir} CACHE PATH "Ruby bindings installation directory under $prefix")
+
+            #TODO: find ruby in windows, check install dir is correct  
+            SET (RUBY_BINDINGS_INSTALL_DIR ${RUBY_SITELIB_DIR} CACHE PATH "Ruby bindings installation directory under $RUBY_SITELIB_DIR")
             MARK_AS_ADVANCED (RUBY_BINDINGS_INSTALL_DIR)
 
             INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/playercr.so
-                DESTINATION ${RUBY_SITELIB_DIR}
+                DESTINATION ${RUBY_BINDINGS_INSTALL_DIR}
                 RENAME playerc.so)
         ELSE (SWIG_FOUND)
             MESSAGE (STATUS "Ruby bindings for C client library will not be built - could not find Swig")
@@ -71,7 +68,7 @@ IF (PYTHONINTERP_FOUND)
     ELSE (BUILD_RUBY_BINDINGS)
         MESSAGE (STATUS "Ruby bindings for C client library will not be built - disabled by user")
     ENDIF (BUILD_RUBY_BINDINGS)
-ELSE (PYTHONINTERP_FOUND)
-    MESSAGE (STATUS "Ruby bindings for C client library will not be built - could not find Python")
-ENDIF (PYTHONINTERP_FOUND)
+ELSE (RUBY_FOUND)
+    MESSAGE (STATUS "Ruby bindings for C client library will not be built - could not find Ruby")
+ENDIF (RUBY_FOUND)
 
