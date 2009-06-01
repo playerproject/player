@@ -1190,39 +1190,35 @@ int SickLMS200::SetLaserSpeed(int speed)
       RETURN_ERROR(1,"request for config mode failed");
   }
 
-  for (tries = 0; tries < DEFAULT_LASER_RETRIES; tries++)
+  packet[0] = 0x20;
+  packet[1] = (speed == 9600 ? 0x42 : (speed == 38400 ? 0x40 : 0x48));
+  len = 2;
+
+  //PLAYER_MSG0(2, "sending baud rate request to laser");
+  if (WriteToLaser(packet, len) < 0)
+    return 1;
+
+  // Wait for laser to return ack
+  //PLAYER_MSG0(2, "waiting for acknowledge");
+  len = ReadFromLaser(packet, sizeof(packet), true, 20000, 5000);
+  if (len < 0)
+    return 1;
+  else if (len < 1)
   {
-    packet[0] = 0x20;
-    packet[1] = (speed == 9600 ? 0x42 : (speed == 38400 ? 0x40 : 0x48));
-    len = 2;
-
-    //PLAYER_MSG0(2, "sending baud rate request to laser");
-    if (WriteToLaser(packet, len) < 0)
-      return 1;
-
-    // Wait for laser to return ack
-    //PLAYER_MSG0(2, "waiting for acknowledge");
-    len = ReadFromLaser(packet, sizeof(packet), true, 20000, 5000);
-    if (len < 0)
-      return 1;
-    else if (len < 1)
-    {
-      PLAYER_ERROR("SetLaserSpeed(): no reply from laser");
-      return 1;
-    }
-    else if (packet[0] == NACK)
-    {
-      PLAYER_ERROR("SetLaserSpeed(): request denied by laser");
-      return 1;
-    }
-    else if (packet[0] != ACK)
-    {
-      PLAYER_ERROR("SetLaserSpeed(): unexpected packet type");
-      return 1;
-    }
-    break;
+    PLAYER_ERROR("SetLaserSpeed(): no reply from laser");
+    return 1;
   }
-  return (tries >= DEFAULT_LASER_RETRIES);
+  else if (packet[0] == NACK)
+  {
+    PLAYER_ERROR("SetLaserSpeed(): request denied by laser");
+    return 1;
+  }
+  else if (packet[0] != ACK)
+  {
+    PLAYER_ERROR("SetLaserSpeed(): unexpected packet type");
+    return 1;
+  }
+  return 0;
 }
 
 
