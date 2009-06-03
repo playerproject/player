@@ -186,7 +186,7 @@ MACRO (PLAYERDRIVER_REQUIRE_PKG _name _cumulativeVar _package _includeDirs _libD
             # Append to a list instead of setting an option so we can auto-generate driver_config.h
             APPEND_TO_CACHED_LIST (PLAYERDRIVER_HAVE_DEFINES ${PLAYERDRIVER_HAVE_DEFINES_DESC} "HAVE_PKG_${_packageNameUpper}")
             # Set the values
-            SET (${_includeDir} ${${_pkgVar}_INCLUDE_DIRS})
+            SET (${_includeDirs} ${${_pkgVar}_INCLUDE_DIRS})
             SET (${_libDirs} ${${_pkgVar}_LIBRARY_DIRS})
             SET (${_linkLibs} ${${_pkgVar}_LIBRARIES})
             LIST_TO_STRING (${_cFlags} "${${_pkgVar}_CFLAGS}")
