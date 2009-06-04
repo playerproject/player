@@ -60,7 +60,7 @@ ADD_SUBDIRECTORY (client_libs)
 ADD_SUBDIRECTORY (libplayercore)
 ADD_SUBDIRECTORY (libplayerxdr)
 ADD_SUBDIRECTORY (config)           # Example config files
-#ADD_SUBDIRECTORY (libplayerwkb)
+ADD_SUBDIRECTORY (libplayerwkb)
 ADD_SUBDIRECTORY (libplayerjpeg)
 ADD_SUBDIRECTORY (libplayertcp)
 ADD_SUBDIRECTORY (libplayersd)

@@ -9,6 +9,10 @@
 #include <geos_c.h>
 #endif
 
+#if (GEOS_VERSION_MAJOR < 3 || GEOS_VERSION_MINOR < 1)
+#undef HAVE_GEOS
+#endif
+
 #endif
 
 #ifdef __cplusplus

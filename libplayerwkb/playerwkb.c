@@ -1,13 +1,22 @@
-#include "playerwkb.h"
 #include <playerconfig.h> /* this also includes <stdint.h> if needed for types like uint8_t */
 #include <libplayercore/error.h>
 #include <stddef.h>
+
+#include "playerwkb.h"
 
 #ifdef HAVE_GEOS
 
 #ifndef GEOS_VERSION_MAJOR
 #include <geos_c.h>
 #endif
+
+#if (GEOS_VERSION_MAJOR < 3 || GEOS_VERSION_MINOR < 1)
+#undef HAVE_GEOS
+#endif
+
+#endif
+
+#ifdef HAVE_GEOS
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -209,7 +218,7 @@ const uint8_t * player_wkb_process_wkb(playerwkbprocessor_t wkbprocessor, const 
     ((uint8_t *)(dst))[2] = wkb[(4 - 1) - 2]; \
     ((uint8_t *)(dst))[3] = wkb[(4 - 1) - 3]; \
   } \
-  wkb += 4; \
+  wkb += 4; wkb_count -= 4; \
 } while (0)
 
 #define DBL_FROM_WKB(dst) do \
@@ -226,18 +235,16 @@ const uint8_t * player_wkb_process_wkb(playerwkbprocessor_t wkbprocessor, const 
     ((uint8_t *)(dst))[6] = wkb[(8 - 1) - 6]; \
     ((uint8_t *)(dst))[7] = wkb[(8 - 1) - 7]; \
   } \
-  wkb += 8; \
+  wkb += 8; wkb_count -= 4; \
 } while (0)
 
-  wkbprocessor = wkbprocessor;
-  wkb_count = wkb_count;
   if (!wkb)
   {
     PLAYER_ERROR("NULL wkb");
     return NULL;
   }
   if (player_wkb_endians_detect(&endians)) return NULL;
-  wkb_endians = (enum player_wkb_endians)(wkb[0]); wkb++;
+  wkb_endians = (enum player_wkb_endians)(wkb[0]); wkb++; wkb_count--;
   if ((wkb_endians != player_wkb_big) && (wkb_endians != player_wkb_little))
   {
     PLAYER_ERROR1("invalid wkb: unknown endians, %d", wkb_endians);
@@ -303,7 +310,7 @@ const uint8_t * player_wkb_process_wkb(playerwkbprocessor_t wkbprocessor, const 
     UINT_FROM_WKB(&numrings);
     for (i = 0; i < (signed)(numrings); i++)
     {
-      wkb = player_wkb_process_wkb(wkb, callback, ptr);
+      wkb = player_wkb_process_wkb(wkbprocessor, wkb, wkb_count, callback, ptr);
       if (!wkb) return NULL;
     }
     break;
