@@ -20,6 +20,10 @@ SET (PLAYER_VERSION 2.2.0 CACHE STRING "Player distribution version")
 SET (PLAYER_API_VERSION 2.2 CACHE STRING "Player API version")
 MESSAGE (STATUS "${PROJECT_NAME} version ${PLAYER_VERSION}")
 
+# Enable -Wall by default
+SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
+SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+
 # Set where to find our internal CMake scripts
 SET (PLAYER_CMAKE_DIR ${PROJECT_SOURCE_DIR}/cmake CACHE PATH "Location of CMake scripts")
 # Get version components
