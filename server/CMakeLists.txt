@@ -33,7 +33,7 @@ SET (playerSrcs server.cc)
 # Server executable
 ADD_EXECUTABLE (player ${playerSrcs} ${getoptSrc})
 TARGET_LINK_LIBRARIES (player playerdrivers playercore playererror playerutils
-                       playertcp playerudp playerxdr
+                       playertcp playerudp playerxdr playerwkb
                        ${PLAYERCORE_EXTRA_LINK_LIBRARIES})
 IF (INCLUDE_RTKGUI)
     TARGET_LINK_LIBRARIES (player rtk)

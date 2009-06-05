@@ -59,22 +59,12 @@
 #include "playerc.h"
 #include "error.h"
 #include <libplayerxdr/playerxdr.h>
+#include <libplayerwkb/playerwkb.h>
 
 #if defined (WIN32)
   #define snprintf _snprintf
   #define strdup _strdup
 #endif
-
-/** Dummy function passed as a function pointer GEOS when it is initialised. GEOS uses this for logging. */
-void geosprint(const char* format, ...)
-{
-	va_list ap;
-	va_start(ap,format);
-	fprintf(stderr,"GEOSError: ");
-	vfprintf(stderr,format, ap);
-	fflush(stderr);
-	va_end(ap);
-}
 
 // Create a new vectormap proxy
 playerc_vectormap_t *playerc_vectormap_create(playerc_client_t *client, int index)
@@ -85,13 +75,15 @@ playerc_vectormap_t *playerc_vectormap_create(playerc_client_t *client, int inde
 
   playerc_device_init(&device->info, client, PLAYER_VECTORMAP_CODE, index,
                        (playerc_putmsg_fn_t) NULL);
-
+  device->wkbprocessor = player_wkb_create_processor();
+  if ((void *)(device->wkbprocessor)) PLAYERC_WARN("Using GEOS"); else PLAYERC_WARN("Not using GEOS");
   return device;
 }
 
 // Destroy a vectormap proxy
 void playerc_vectormap_destroy(playerc_vectormap_t *device)
 {
+  player_wkb_destroy_processor(device->wkbprocessor);
   playerc_device_term(&device->info);
   playerc_vectormap_cleanup(device);
   free(device);
@@ -100,26 +92,12 @@ void playerc_vectormap_destroy(playerc_vectormap_t *device)
 // Subscribe to the vectormap device
 int playerc_vectormap_subscribe(playerc_vectormap_t *device, int access)
 {
-#ifdef HAVE_GEOS
-  initGEOS(geosprint,geosprint);
-#endif
-  device->geom = NULL;
   return playerc_device_subscribe(&device->info, access);
 }
 
 // Un-subscribe from the vectormap device
 int playerc_vectormap_unsubscribe(playerc_vectormap_t *device)
 {
-  if (device->geom)
-  {
-#ifdef HAVE_GEOS
-    GEOSGeom_destroy(device->geom);
-#endif
-    device->geom = NULL;
-  }
-#ifdef HAVE_GEOS
-  finishGEOS();
-#endif
   return playerc_device_unsubscribe(&device->info);
 }
 
@@ -206,22 +184,14 @@ int playerc_vectormap_write_layer(playerc_vectormap_t *device, const player_vect
 }
 
 
-GEOSGeom playerc_vectormap_get_feature_data(playerc_vectormap_t *device, unsigned layer_index, unsigned feature_index)
+uint8_t * playerc_vectormap_get_feature_data(playerc_vectormap_t *device, unsigned layer_index, unsigned feature_index)
 {
-#ifdef HAVE_GEOS
-  if (device->geom)
-  {
-    GEOSGeom_destroy(device->geom);
-    device->geom = NULL;
-  }
-  device->geom = GEOSGeomFromWKB_buf(
-    device->layers_data[layer_index]->features[feature_index].wkb,
-    device->layers_data[layer_index]->features[feature_index].wkb_count
-  );
-  return device->geom;
-#else
-  return NULL;
-#endif
+  return device->layers_data[layer_index]->features[feature_index].wkb;
+}
+
+size_t playerc_vectormap_get_feature_data_count(playerc_vectormap_t *device, unsigned layer_index, unsigned feature_index)
+{
+  return (size_t)(device->layers_data[layer_index]->features[feature_index].wkb_count);
 }
 
 void playerc_vectormap_cleanup(playerc_vectormap_t *device)

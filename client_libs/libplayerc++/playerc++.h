@@ -49,6 +49,7 @@
 #ifndef PLAYERCC_H
 #define PLAYERCC_H
 
+#include <cstddef>
 #include <cmath>
 #include <string>
 #include <list>
@@ -2492,7 +2493,8 @@ class PLAYERCC_EXPORT VectorMapProxy : public ClientProxy
     int GetLayerCount() const;
     std::vector<std::string> GetLayerNames() const;
     int GetFeatureCount(unsigned layer_index) const;
-    GEOSGeom GetFeatureData(unsigned layer_index, unsigned feature_index) const;
+    const uint8_t * GetFeatureData(unsigned layer_index, unsigned feature_index) const;
+    size_t GetFeatureDataCount(unsigned layer_index, unsigned feature_index) const;
 };
 
 /**

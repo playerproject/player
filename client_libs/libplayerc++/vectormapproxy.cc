@@ -139,12 +139,17 @@ int VectorMapProxy::GetFeatureCount(unsigned layer_index) const
   return mDevice->layers_data[layer_index]->features_count;
 }
 
-GEOSGeom VectorMapProxy::GetFeatureData(unsigned layer_index, unsigned feature_index) const
+const uint8_t * VectorMapProxy::GetFeatureData(unsigned layer_index, unsigned feature_index) const
 {
   scoped_lock_t lock(mPc->mMutex);
   return playerc_vectormap_get_feature_data(mDevice, layer_index, feature_index);
 }
 
+size_t VectorMapProxy::GetFeatureDataCount(unsigned layer_index, unsigned feature_index) const
+{
+  scoped_lock_t lock(mPc->mMutex);
+  return playerc_vectormap_get_feature_data_count(mDevice, layer_index, feature_index);
+}
 
 ostream&
     std::operator << (ostream &os, const VectorMapProxy &c)

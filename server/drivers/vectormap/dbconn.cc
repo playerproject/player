@@ -4,10 +4,10 @@
 #include <iostream>
 #include <cassert>
 #include <cctype>
+#include <new> // nothrow
+#include <cfloat> // DBL_MIN, DBL_MAX
+#include <libplayerwkb/playerwkb.h>
 #include "dbconn.h"
-#ifdef HAVE_GEOS
-#include <libplayercore/player_geos.h>
-#endif
 
 using namespace std;
 
@@ -69,7 +69,7 @@ VectorMapInfoHolder PostgresConn::GetVectorMapInfo(vector<string> layerNames)
   }
 
   uint32_t length = PQgetlength(res, 0, 0);
-  uint8_t * wkb = new uint8_t[length];
+  uint8_t * wkb = new(nothrow) uint8_t[length];
   assert(wkb);
   length = Text2Bin(PQgetvalue(res, 0, 0), wkb, length);
   BoundingBox extent = BinaryToBBox(wkb, length);
@@ -119,7 +119,7 @@ LayerInfoHolder PostgresConn::GetLayerInfo(const char* layer_name)
   info.name = layer_name;
 
   uint32_t length = PQgetlength(res, 0, 0);
-  uint8_t * wkb = new uint8_t[length];
+  uint8_t * wkb = new(nothrow) uint8_t[length];
   assert(wkb);
   length = Text2Bin(PQgetvalue(res, 0, 0), wkb, length);
   info.extent = BinaryToBBox(wkb, length);
@@ -154,10 +154,10 @@ LayerDataHolder PostgresConn::GetLayerData(const char* layer_name)
   data.name = layer_name;
   for (int i=0; i<num_rows; ++i)
   {
-    FeatureDataHolder * fd = new FeatureDataHolder(string(PQgetvalue(res, i, 0)));
+    FeatureDataHolder * fd = new(nothrow) FeatureDataHolder(string(PQgetvalue(res, i, 0)));
     assert(fd);
     uint32_t length = PQgetlength(res, i, 1);
-    uint8_t * wkb = new uint8_t[length];
+    uint8_t * wkb = new(nothrow) uint8_t[length];
     assert(wkb);
     length = Text2Bin(PQgetvalue(res, i, 1), wkb, length);
     fd->wkb.assign(wkb, wkb + length);
@@ -229,7 +229,7 @@ int PostgresConn::WriteLayerData(LayerDataHolder & data)
   for (int i = 0; i < (int)(data.features.size()); i++)
   {
     feature = data.features[i].Convert();
-    char * wkb_buff = new char[((feature->wkb_count) * 2) + 1];
+    char * wkb_buff = new(nothrow) char[((feature->wkb_count) * 2) + 1];
     assert(wkb_buff);
     char * ptr = wkb_buff;
     for (uint32_t j = 0; j < (feature->wkb_count); j++)
@@ -298,57 +298,30 @@ int PostgresConn::WriteLayerData(LayerDataHolder & data)
   return 0;
 }
 
+void PostgresConn::bbcb(void * bbox, double x0, double y0, double x1, double y1)
+{
+    assert(bbox);
+    if (x0 < BBOX(bbox)->x0) BBOX(bbox)->x0 = x0;
+    if (y0 < BBOX(bbox)->y0) BBOX(bbox)->y0 = y0;
+    if (x1 > BBOX(bbox)->x1) BBOX(bbox)->x1 = x1;
+    if (y1 > BBOX(bbox)->y1) BBOX(bbox)->y1 = y1;
+}
+
 BoundingBox PostgresConn::BinaryToBBox(const uint8_t* wkb, uint32_t length)
 {
   BoundingBox res;
   memset(&res, 0, sizeof(BoundingBox));
+  res.x0 = DBL_MAX;
+  res.y0 = DBL_MAX;
+  res.x1 = DBL_MIN;
+  res.y1 = DBL_MIN;
   if (length == 0)
     return res;
-#ifdef HAVE_GEOS
-  GEOSGeom polygon;
-  polygon = GEOSGeomFromWKB_buf(wkb, length);
-  if (polygon == NULL)
+  if (!player_wkb_process_wkb(this->wkbprocessor, wkb, static_cast<size_t>(length), reinterpret_cast<playerwkbcallback_t>(PostgresConn::bbcb), reinterpret_cast<void *>(&res)))
   {
-    printf("GEOSGeomFromWKB_buf returned NULL!\n");
-    return res;
+    PLAYER_ERROR("Error while processing wkb!");
   }
-  const_GEOSGeom linestring = GEOSGetExteriorRing(polygon);
-  if (linestring == NULL)
-  {
-    printf("GEOSGetExteriorRing returned NULL!\n");
-    return res;
-  }
-  const_GEOSCoordSeq coords = GEOSGeom_getCoordSeq(linestring);
-  if (coords == NULL)
-  {
-    printf("GEOSGeom_getCoordSeq returned NULL!\n");
-    return res;
-  }
-
-  double xmin = INT_MAX, ymin = INT_MAX;
-  double xmax = INT_MIN, ymax = INT_MIN;
-  double tempX, tempY = 0;
-
-  for (int ii=0; ii<GEOSGetNumCoordinates(linestring); ++ii)
-  {
-    GEOSCoordSeq_getX(coords, ii, &tempX);
-    GEOSCoordSeq_getY(coords, ii, &tempY);
-    if (tempX > xmax)
-      xmax = tempX;
-    if (tempX < xmin)
-      xmin = tempX;
-    if (tempY > ymax)
-      ymax = tempY;
-    if (tempY < ymin)
-      ymin = tempY;
-  }
-
-  res.x0 = xmin;
-  res.y0 = ymin;
-  res.x1 = xmax;
-  res.y1 = ymax;
-  GEOSGeom_destroy(polygon);
-#endif
+  if (this->debug) PLAYER_WARN4("bbox: %.4f, %.4f, %.4f, %.4f", res.x0, res.y0, res.x1, res.y1);
   return res;
 }
 
@@ -361,7 +334,8 @@ const player_vectormap_info_t* VectorMapInfoHolder::Convert()
   info.extent.y1 = extent.y1;
   info.layers_count = layers.size();
   if (info.layers) delete [](info.layers);
-  info.layers = new player_vectormap_layer_info_t[layers.size()];
+  assert(info.layers_count > 0);
+  info.layers = new(nothrow) player_vectormap_layer_info_t[info.layers_count];
   assert(info.layers);
   for (uint32_t ii=0; ii<layers.size(); ++ii)
   {
@@ -398,7 +372,7 @@ const player_vectormap_feature_data_t* FeatureDataHolder::Convert()
   assert(feature_data.name);
   feature_data.name_count = name.size() + 1;
   if (feature_data.wkb) delete [](feature_data.wkb);
-  feature_data.wkb = new uint8_t[wkb.size()];
+  feature_data.wkb = new(nothrow) uint8_t[wkb.size()];
   assert(feature_data.wkb);
   feature_data.wkb_count = wkb.size();
   if (feature_data.attrib) free(feature_data.attrib);
@@ -428,13 +402,13 @@ const player_vectormap_layer_data_t* LayerDataHolder::Convert()
   if (layer_data.name) free(layer_data.name);
   layer_data.name = strdup(name.c_str());
   assert(layer_data.name);
-  layer_data.name_count = name.size()+1;
+  layer_data.name_count = name.size() + 1;
   layer_data.features_count = features.size();
   if (layer_data.features) delete [](layer_data.features);
   layer_data.features = NULL;
   if (layer_data.features_count > 0)
   {
-    layer_data.features = new player_vectormap_feature_data_t[layer_data.features_count];
+    layer_data.features = new(nothrow) player_vectormap_feature_data_t[layer_data.features_count];
     assert(layer_data.features);
     for (uint32_t ii=0; ii<layer_data.features_count; ++ii)
     {

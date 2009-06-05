@@ -44,9 +44,6 @@
 - cells_per_unit (float)
   - Default: 0.0 (Should be set to something greater than zero!)
   - How many cells are occupied for one vectormap unit (for example 50.0 cells for one meter)
-- init_geos (integer)
-  - Default: 1
-  - If set to 1, GEOS will be initialized by this driver. If you use other driver that uses GEOS (e.g. postgis), you must set it to 0.
 - full_extent (integer)
   - Default: 1
   - If set to 1, extent will be computed as if point (0, 0) were in the middle. Warning! It can produce large grid map!
@@ -66,12 +63,8 @@ driver
   requires ["vectormap:0"]
   provides ["map:0"]
   cells_per_unit 50.0
-  init_geos 0
 )
 @endverbatim
-
-@par TODO
-Try to use BuildWKB() method as in sicknav200 driver instead of GEOS. Note that it should use Linestring instead of Multipoint.
 
 @author Paul Osmialowski
 
@@ -79,22 +72,18 @@ Try to use BuildWKB() method as in sicknav200 driver instead of GEOS. Note that 
 
 /** @} */
 
-#include <cassert>
-#include <cstddef>
-#include <cstring>
-#include <cstdio>
-#include <cstdarg>
-#include <ctime>
-#include <cmath>
-#include <vector>
-#include <string>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <time.h>
+#include <math.h>
 #include <pthread.h>
+#include <assert.h>
 #include <libplayercore/playercore.h>
-#ifdef HAVE_GEOS
-#include <libplayercore/player_geos.h>
-#endif
+#include <libplayerwkb/playerwkb.h>
 
-#define EPS 0.00001
+#define EPS 0.0000001
 #define MAXFABS(a, b) ((fabs(a) > fabs(b)) ? fabs(a) : fabs(b))
 
 using namespace std;
@@ -117,15 +106,21 @@ class Vec2Map : public ThreadedDriver
                                void * data);
 
   private:
+    struct seglist
+    {
+      player_segment_t seg;
+      struct Vec2Map::seglist * next; // segment is valid only if next is not NULL
+      struct Vec2Map::seglist * last; // for the first element only
+    };
+#define SEGLIST(ptr) (reinterpret_cast<struct Vec2Map::seglist *>(ptr))
+
     // Main function for device thread.
     virtual void Main();
 
     // some helper functions
-#ifdef HAVE_GEOS
-    void dumpFeature(const_GEOSGeom geom, vector<player_segment_t> & segments);
-#endif
-    void line(int a, int b, int c, int d, int8_t * cells, int maxx, int maxy);
-    int over(int x, int min, int max);
+    static void line(int a, int b, int c, int d, int8_t * cells, int maxx, int maxy);
+    static int over(int x, int min, int max);
+    static void add_segment(void * segptr, double x0, double y0, double x1, double y1);
 
     // The address of the vectormap device to which we will
     // subscribe
@@ -137,24 +132,11 @@ class Vec2Map : public ThreadedDriver
     Device * vectormap_dev;
 
     double cells_per_unit;
-    int init_geos;
     int full_extent;
     int draw_border;
     const char * skip_feature;
+    playerwkbprocessor_t wkbProcessor;
 };
-
-#ifdef HAVE_GEOS
-/** Dummy function passed as a function pointer GEOS when it is initialised. GEOS uses this for logging. */
-void vec2map_geosprint(const char* format, ...)
-{
-    va_list ap;
-    va_start(ap,format);
-    fprintf(stderr,"GEOSError: ");
-    vfprintf(stderr,format, ap);
-    fflush(stderr);
-    va_end(ap);
-};
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor.  Retrieve options from the configuration file and do any
@@ -164,26 +146,18 @@ void vec2map_geosprint(const char* format, ...)
 // to the vectormap interface.
 //
 Vec2Map::Vec2Map(ConfigFile * cf, int section)
-//  : Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_MAP_CODE)
     : ThreadedDriver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
 {
   memset(&(this->vectormap_addr), 0, sizeof(player_devaddr_t));
   memset(&(this->map_addr), 0, sizeof(player_devaddr_t));
   this->skip_feature = NULL;
+  this->wkbProcessor = player_wkb_create_processor(); // one per driver instance
   this->cells_per_unit = cf->ReadFloat(section, "cells_per_unit", 0.0);
   if ((this->cells_per_unit) <= 0.0)
   {
     PLAYER_ERROR("Invalid cells_per_unit value");
     this->SetError(-1);
     return;
-  }
-  this->init_geos = cf->ReadInt(section, "init_geos", 1);
-  if (this->init_geos)
-  {
-#ifdef HAVE_GEOS
-    PLAYER_WARN("Initializing GEOS");
-    initGEOS(vec2map_geosprint, vec2map_geosprint);
-#endif
   }
   this->full_extent = cf->ReadInt(section, "full_extent", 1);
   this->draw_border = cf->ReadInt(section, "draw_border", 1);
@@ -209,13 +183,7 @@ Vec2Map::Vec2Map(ConfigFile * cf, int section)
 
 Vec2Map::~Vec2Map()
 {
-  if (this->init_geos)
-  {
-#ifdef HAVE_GEOS
-    PLAYER_WARN("Finishing GEOS");
-    finishGEOS();
-#endif
-  }
+  player_wkb_destroy_processor(this->wkbProcessor);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -235,7 +203,6 @@ int Vec2Map::MainSetup()
     PLAYER_ERROR("unable to subscribe to vectormap device");
     return -1;
   }
-
   return 0;
 }
 
@@ -262,7 +229,7 @@ void Vec2Map::Main()
     pthread_testcancel();
 
     // Process incoming messages
-    ProcessMessages();
+    this->ProcessMessages();
 
     // sleep for a while
     tspec.tv_sec = 0;
@@ -271,83 +238,31 @@ void Vec2Map::Main()
   }
 }
 
-#ifdef HAVE_GEOS
-void Vec2Map::dumpFeature(const_GEOSGeom geom, vector<player_segment_t> & segments)
+void Vec2Map::add_segment(void * segptr, double x0, double y0, double x1, double y1)
 {
-    const_GEOSCoordSeq seq;
-    double x0, y0, x1, y1;
-    unsigned int numcoords;
-    player_segment_t segment;
-    int i;
+  struct Vec2Map::seglist * tmp;
 
-    switch (GEOSGeomTypeId(geom))
-    {
-    case GEOS_POINT:
-	seq = GEOSGeom_getCoordSeq(geom);
-	GEOSCoordSeq_getX(seq, 0, &x0);
-	GEOSCoordSeq_getY(seq, 0, &y0);
-	memset(&segment, 0, sizeof segment);
-	segment.x0 = x0;
-	segment.y0 = y0;
-	segment.x1 = x0;
-	segment.y1 = y0;
-	segments.push_back(segment);
-	break;
-    case GEOS_LINESTRING:
-    case GEOS_LINEARRING:
-	seq = GEOSGeom_getCoordSeq(geom);
-	if (GEOSCoordSeq_getSize(seq, &numcoords))
-	{
-	    if (numcoords > 0)
-	    {
-		GEOSCoordSeq_getX(seq, 0, &x1);
-		GEOSCoordSeq_getY(seq, 0, &y1);
-		if (numcoords < 2)
-		{
-		    memset(&segment, 0, sizeof segment);
-		    segment.x0 = x1;
-		    segment.y0 = y1;
-		    segment.x1 = x1;
-		    segment.y1 = y1;
-		    segments.push_back(segment);
-		} else for (i = 0; i < (signed)numcoords; i++)
-		{
-		    x0 = x1;
-		    y0 = y1;
-		    GEOSCoordSeq_getX(seq, i, &x1);
-		    GEOSCoordSeq_getY(seq, i, &y1);
-		    memset(&segment, 0, sizeof segment);
-		    segment.x0 = x0;
-		    segment.y0 = y0;
-		    segment.x1 = x1;
-		    segment.y1 = y1;
-		    segments.push_back(segment);
-		}
-	    }
-	}
-	break;
-    case GEOS_POLYGON:
-	this->dumpFeature(GEOSGetExteriorRing(geom), segments);
-	numcoords = GEOSGetNumInteriorRings(geom);
-	for (i = 0; i < (signed)numcoords; i++) this->dumpFeature(GEOSGetInteriorRingN(geom, i), segments);
-	break;
-    case GEOS_MULTIPOINT:
-    case GEOS_MULTILINESTRING:
-    case GEOS_MULTIPOLYGON:
-    case GEOS_GEOMETRYCOLLECTION:
-	numcoords = GEOSGetNumGeometries(geom);
-	for (i = 0; i < (signed)numcoords; i++) this->dumpFeature(GEOSGetGeometryN(geom, i), segments);
-	break;
-    default:
-	PLAYER_WARN("unknown feature type!");
-    }
+  assert(segptr);
+  tmp = SEGLIST(segptr)->last;
+  if (!tmp) tmp = SEGLIST(segptr);
+  memset(&(tmp->seg), 0, sizeof tmp->seg);
+  tmp->seg.x0 = x0;
+  tmp->seg.y0 = y0;
+  tmp->seg.x1 = x1;
+  tmp->seg.y1 = y1;
+  tmp->next = reinterpret_cast<struct Vec2Map::seglist *>(malloc(sizeof(struct Vec2Map::seglist)));
+  assert(tmp->next);
+  memset(tmp->next, 0, sizeof(struct Vec2Map::seglist));
+  memset(&(tmp->next->seg), 0, sizeof tmp->next->seg);
+  tmp->next->last = NULL;
+  tmp->next->next = NULL;
+  SEGLIST(segptr)->last = tmp->next;
 }
-#endif
 
 int Vec2Map::over(int x, int min, int max)
 {
-    if (x<min) return -1;
-    if (x>=max) return 1;
+    if (x < min) return -1;
+    if (x >= max) return 1;
     return 0;
 }
 
@@ -368,7 +283,7 @@ void Vec2Map::line(int a, int b, int c, int d, int8_t * cells, int width, int he
 	} else
 	{
 	    wspX = 1.0;
-	    if (!distY) wspY=0.0; else wspY=1.0 / (((double)distX) / ((double)distY));
+	    if (!distY) wspY = 0.0; else wspY = 1.0 / ((static_cast<double>(distX)) / (static_cast<double>(distY)));
 	}
     } else
     {
@@ -379,13 +294,13 @@ void Vec2Map::line(int a, int b, int c, int d, int8_t * cells, int width, int he
 	} else
 	{
 	    wspY = 1.0;
-	    if (!distX) wspX = 0.0; else wspX = 1.0 / (((double)distY) / ((double)distX));
+	    if (!distX) wspX = 0.0; else wspX = 1.0 / ((static_cast<double>(distY)) / (static_cast<double>(distX)));
 	}
     }
     if (c < a) wspX = -wspX;
     if (d < b) wspY = -wspY;
 
-    x = (double)a; y = (double)b;
+    x = static_cast<double>(a); y = static_cast<double>(b);
     if (x < 0) x = 0;
     if (y < 0) y = 0;
     if (x >= width) x = (width - 1);
@@ -393,12 +308,12 @@ void Vec2Map::line(int a, int b, int c, int d, int8_t * cells, int width, int he
     cells[(static_cast<int>(y) * width) + (static_cast<int>(x))] = 1;
     if ((fabs(wspX) < EPS) && (fabs(wspY) < EPS)) return;
 
-    while (!((fabs(x - (double)c) < EPS) && (fabs(y - (double)d) < EPS)))
+    while (!((fabs(x - static_cast<double>(c)) < EPS) && (fabs(y - static_cast<double>(d)) < EPS)))
     {
 	x += wspX;
 	y += wspY;
-	if (over(static_cast<int>(x), 0, width)) break;
-	if (over(static_cast<int>(y), 0, height)) break;
+	if (Vec2Map::over(static_cast<int>(x), 0, width)) break;
+	if (Vec2Map::over(static_cast<int>(y), 0, height)) break;
 	cells[(static_cast<int>(y) * width) + (static_cast<int>(x))] = 1;
     }
 }
@@ -411,17 +326,17 @@ int Vec2Map::ProcessMessage(QueuePointer & resp_queue,
   player_map_data_t map_data, map_data_request;
   player_map_data_vector_t map_data_vector;
   player_vectormap_layer_data_t layer, * layer_data;
-  const char * layer_name;
   player_vectormap_info_t * vectormap_info;
   Message * msg;
-  uint32_t width, height, data_count, layers_count, ii, jj;
+  Message * rep;
+  uint32_t width, height, data_count, ii, jj;
   int8_t * cells;
-  vector<player_segment_t> segments;
-  vector<string> layer_names;
-#ifdef HAVE_GEOS
-  GEOSGeom geom = NULL;
-#endif
+  struct Vec2Map::seglist segments, * tmp;
   double basex, basey;
+
+  memset(&(segments.seg), 0, sizeof segments.seg);
+  segments.last = NULL;
+  segments.next = NULL;
 
   // Process messages here.  Send a response if necessary, using Publish().
   // If you handle the message successfully, return 0.  Otherwise,
@@ -485,7 +400,7 @@ int Vec2Map::ProcessMessage(QueuePointer & resp_queue,
                   resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_MAP_REQ_GET_INFO,
-                  (void *)&map_info, sizeof map_info, NULL);
+                  reinterpret_cast<void *>(&map_info));
     return 0;
   }
 
@@ -493,7 +408,6 @@ int Vec2Map::ProcessMessage(QueuePointer & resp_queue,
                             PLAYER_MAP_REQ_GET_DATA,
                             this->map_addr))
   {
-#ifdef HAVE_GEOS
     memset(&map_data, 0, sizeof map_data);
     if (!data)
     {
@@ -537,46 +451,48 @@ int Vec2Map::ProcessMessage(QueuePointer & resp_queue,
       basey = vectormap_info->extent.y0;
     }
     data_count = width * height;
-    layers_count = vectormap_info->layers_count;
-    if (!((data_count > 0) && (layers_count > 0)))
+    if (!((data_count > 0) && ((vectormap_info->layers_count) > 0)))
     {
       PLAYER_WARN("Invalid map");
+      delete msg;
       return -1;
     }
-    for (ii = 0; ii < layers_count; ii++)
-    {
-      layer_names.push_back(string(vectormap_info->layers[ii].name));
-    }
-    delete msg;
-    msg = NULL;
-    for (ii = 0; ii < layers_count; ii++)
+    for (ii = 0; ii < (vectormap_info->layers_count); ii++)
     {
       memset(&layer, 0, sizeof layer);
-      layer_name = layer_names[ii].c_str();
-      layer.name_count = strlen(layer_name) + 1;
-      layer.name = new char[layer.name_count];
-      assert(layer.name);
-      strcpy(layer.name, layer_name);
-      msg = this->vectormap_dev->Request(this->InQueue,
+      layer.name_count = strlen(vectormap_info->layers[ii].name) + 1;
+      assert((layer.name_count) > 0);
+      layer.name = reinterpret_cast<char *>(malloc(layer.name_count));
+      if (!(layer.name))
+      {
+        PLAYER_ERROR("cannot allocate space for layer.name");
+	delete msg;
+	return -1;
+      }
+      strcpy(layer.name, vectormap_info->layers[ii].name);
+      rep = this->vectormap_dev->Request(this->InQueue,
                                          PLAYER_MSGTYPE_REQ,
                                          PLAYER_VECTORMAP_REQ_GET_LAYER_DATA,
-                                         (void *)(&layer), 0, NULL, true);
-      delete []layer.name;
-      if (!msg)
+                                         reinterpret_cast<void *>(&layer), 0, NULL, true);
+      free(layer.name);
+      layer.name = NULL;
+      if (!rep)
       {
         PLAYER_WARN("failed to acquire layer data");
         return -1;
       }
-      if ((msg->GetDataSize()) < (sizeof(player_vectormap_layer_data_t)))
+      if ((rep->GetDataSize()) < (sizeof(player_vectormap_layer_data_t)))
       {
-        PLAYER_WARN2("invalid acqired data size %d vs %d", msg->GetDataSize(), sizeof(player_vectormap_layer_data_t));
+        PLAYER_WARN2("invalid acqired data size %d vs %d", rep->GetDataSize(), sizeof(player_vectormap_layer_data_t));
+	delete rep;
         delete msg;
         return -1;
       }
-      layer_data = reinterpret_cast<player_vectormap_layer_data_t *>(msg->GetPayload());
+      layer_data = reinterpret_cast<player_vectormap_layer_data_t *>(rep->GetPayload());
       if (!layer_data)
       {
         PLAYER_WARN("no data acquired");
+	delete rep;
         delete msg;
         return -1;
       }
@@ -585,29 +501,45 @@ int Vec2Map::ProcessMessage(QueuePointer & resp_queue,
         if (this->skip_feature)
           if ((strlen(this->skip_feature)) && (layer_data->features[jj].name_count > 0))
             if (!strcmp(this->skip_feature, layer_data->features[jj].name)) continue;
-        geom = GEOSGeomFromWKB_buf(layer_data->features[jj].wkb, layer_data->features[jj].wkb_count);
-        this->dumpFeature(geom, segments);
-        GEOSGeom_destroy(geom);
-        geom = NULL;
+	if (!player_wkb_process_wkb(this->wkbProcessor, layer_data->features[jj].wkb, static_cast<size_t>(layer_data->features[jj].wkb_count), reinterpret_cast<playerwkbcallback_t>(Vec2Map::add_segment), reinterpret_cast<void *>(&segments)))
+	{
+	  PLAYER_ERROR("Error while processing wkb!");
+	}
       }
-      delete msg;
-      msg = NULL;
+      delete rep;
+      rep = NULL;
     }
+    vectormap_info = NULL;
+    delete msg;
+    msg = NULL;
     map_data.data = NULL;
-    cells = new int8_t[data_count];
-    assert(cells);
+    cells = reinterpret_cast<int8_t *>(malloc(data_count * sizeof(int8_t)));
+    if (!cells)
+    {
+      PLAYER_ERROR("cannot allocate space for cells");
+      return -1;
+    }
     memset(cells, -1, data_count);
     if (this->draw_border)
     {
-      line(0, 0, width - 1, 0, cells, width, height);
-      line(width - 1, 0, width - 1, height - 1, cells, width, height);
-      line(width - 1, height - 1, 0, height - 1, cells, width, height);
-      line(0, height - 1, 0, 0, cells, width, height);
+      Vec2Map::line(0, 0, width - 1, 0, cells, width, height);
+      Vec2Map::line(width - 1, 0, width - 1, height - 1, cells, width, height);
+      Vec2Map::line(width - 1, height - 1, 0, height - 1, cells, width, height);
+      Vec2Map::line(0, height - 1, 0, 0, cells, width, height);
     }
-    for (ii = 0; ii < segments.size(); ii++)
+    for (tmp = &segments; tmp->next; tmp = tmp->next)
     {
-      line(static_cast<int>((segments[ii].x0 - basex) * this->cells_per_unit), static_cast<int>((segments[ii].y0 - basey) * this->cells_per_unit), static_cast<int>((segments[ii].x1 - basex) * this->cells_per_unit), static_cast<int>((segments[ii].y1 - basey) * this->cells_per_unit) , cells, width, height);
+      Vec2Map::line(static_cast<int>((tmp->seg.x0 - basex) * this->cells_per_unit), static_cast<int>((tmp->seg.y0 - basey) * this->cells_per_unit), static_cast<int>((tmp->seg.x1 - basex) * this->cells_per_unit), static_cast<int>((tmp->seg.y1 - basey) * this->cells_per_unit) , cells, width, height);
     }
+    if (!(segments.next)) assert(!(segments.last));
+    if (!(segments.last)) assert(!(segments.next));
+    while (segments.next)
+    {
+      tmp = segments.next->next;
+      free(segments.next);
+      segments.next = tmp;
+    }
+    segments.last = NULL;
     if (map_data_request.col >= width) map_data_request.col = width - 1;
     if (map_data_request.row >= height) map_data_request.row = height - 1;
     if (map_data_request.col + map_data_request.width >= width) map_data_request.width = width - map_data_request.col;
@@ -615,7 +547,14 @@ int Vec2Map::ProcessMessage(QueuePointer & resp_queue,
     if ((map_data_request.width > 0) && (map_data_request.height > 0))
     {
       map_data.data_count = map_data_request.width * map_data_request.height;
-      map_data.data = new int8_t[map_data.data_count];
+      assert(map_data.data_count > 0);
+      map_data.data = reinterpret_cast<int8_t *>(malloc(map_data.data_count * sizeof(int8_t)));
+      if (!(map_data.data))
+      {
+        PLAYER_ERROR("cannot allocate space for map data");
+        if (cells) free(cells);
+        return -1;
+      }
       for (ii = 0; ii < (map_data_request.height); ii++) memcpy(map_data.data + (ii * (map_data_request.width)), cells + (ii * width) + map_data_request.col, map_data_request.width);
     }
 
@@ -623,21 +562,18 @@ int Vec2Map::ProcessMessage(QueuePointer & resp_queue,
                   resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_MAP_REQ_GET_DATA,
-                  (void *)&map_data);
-    if (cells) delete []cells;
-    if (map_data.data) delete [](map_data.data);
+                  reinterpret_cast<void *>(&map_data));
+    if (cells) free(cells);
+    cells = NULL;
+    if (map_data.data) free(map_data.data);
+    map_data.data = NULL;
     return 0;
-#else
-    PLAYER_WARN("GEOS not installed");
-    return -1;
-#endif
   }
 
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
                             PLAYER_MAP_REQ_GET_VECTOR,
                             this->map_addr))
   {
-#ifdef HAVE_GEOS
     memset(&map_data_vector, 0, sizeof map_data_vector);
     msg = this->vectormap_dev->Request(this->InQueue,
                                        PLAYER_MSGTYPE_REQ,
@@ -661,45 +597,47 @@ int Vec2Map::ProcessMessage(QueuePointer & resp_queue,
       delete msg;
       return -1;
     }
-    layers_count = vectormap_info->layers_count;
-    for (ii = 0; ii < layers_count; ii++)
-    {
-      layer_names.push_back(string(vectormap_info->layers[ii].name));
-    }
     map_data_vector.minx = vectormap_info->extent.x0;
     map_data_vector.miny = vectormap_info->extent.y0;
     map_data_vector.maxx = vectormap_info->extent.x1;
     map_data_vector.maxy = vectormap_info->extent.y1;
-    delete msg;
-    msg = NULL;
-    for (ii = 0; ii < layers_count; ii++)
+    for (ii = 0; ii < (vectormap_info->layers_count); ii++)
     {
       memset(&layer, 0, sizeof layer);
-      layer_name = layer_names[ii].c_str();
-      layer.name_count = strlen(layer_name) + 1;
-      layer.name = new char[layer.name_count];
-      assert(layer.name);
-      strcpy(layer.name, layer_name);
-      msg = this->vectormap_dev->Request(this->InQueue,
+      layer.name_count = strlen(vectormap_info->layers[ii].name) + 1;
+      assert((layer.name_count) > 0);
+      layer.name = reinterpret_cast<char *>(malloc(layer.name_count));
+      if (!(layer.name))
+      {
+        PLAYER_ERROR("cannot allocate space for layer.name");
+	delete msg;
+	return -1;
+      }
+      strcpy(layer.name, vectormap_info->layers[ii].name);
+      rep = this->vectormap_dev->Request(this->InQueue,
                                          PLAYER_MSGTYPE_REQ,
                                          PLAYER_VECTORMAP_REQ_GET_LAYER_DATA,
-                                         (void *)(&layer), 0, NULL, true);
-      delete []layer.name;
-      if (!msg)
+                                         reinterpret_cast<void *>(&layer), 0, NULL, true);
+      free(layer.name);
+      layer.name = NULL;
+      if (!rep)
       {
         PLAYER_WARN("failed to acquire layer data");
+	delete msg;
         return -1;
       }
-      if ((msg->GetDataSize()) < (sizeof(player_vectormap_layer_data_t)))
+      if ((rep->GetDataSize()) < (sizeof(player_vectormap_layer_data_t)))
       {
-        PLAYER_WARN2("invalid acqired data size %d vs %d", msg->GetDataSize(), sizeof(player_vectormap_layer_data_t));
+        PLAYER_WARN2("invalid acqired data size %d vs %d", rep->GetDataSize(), sizeof(player_vectormap_layer_data_t));
+	delete rep;
         delete msg;
         return -1;
       }
-      layer_data = reinterpret_cast<player_vectormap_layer_data_t *>(msg->GetPayload());
+      layer_data = reinterpret_cast<player_vectormap_layer_data_t *>(rep->GetPayload());
       if (!layer_data)
       {
         PLAYER_WARN("no data acquired");
+	delete rep;
         delete msg;
         return -1;
       }
@@ -708,37 +646,51 @@ int Vec2Map::ProcessMessage(QueuePointer & resp_queue,
         if (this->skip_feature)
           if ((strlen(this->skip_feature)) && (layer_data->features[jj].name_count > 0))
             if (!strcmp(this->skip_feature, layer_data->features[jj].name)) continue;
-        geom = GEOSGeomFromWKB_buf(layer_data->features[jj].wkb, layer_data->features[jj].wkb_count);
-        this->dumpFeature(geom, segments);
-        GEOSGeom_destroy(geom);
-        geom = NULL;
+	if (!player_wkb_process_wkb(this->wkbProcessor, layer_data->features[jj].wkb, static_cast<size_t>(layer_data->features[jj].wkb_count), reinterpret_cast<playerwkbcallback_t>(Vec2Map::add_segment), reinterpret_cast<void *>(&segments)))
+	{
+	  PLAYER_ERROR("Error while processing wkb!");
+	}
       }
-      delete msg;
-      msg = NULL;
+      delete rep;
+      rep = NULL;
     }
+    vectormap_info = NULL;
+    delete msg;
+    msg = NULL;
     map_data_vector.segments = NULL;
-    map_data_vector.segments_count = segments.size();
+    map_data_vector.segments_count = 0;
+    for (tmp = &segments; tmp->next; tmp = tmp->next) map_data_vector.segments_count++;
     if ((map_data_vector.segments_count) > 0)
     {
-      map_data_vector.segments = new player_segment_t[map_data_vector.segments_count];
-      assert(map_data_vector.segments);
-      for (ii = 0; ii < map_data_vector.segments_count; ii++)
+      map_data_vector.segments = reinterpret_cast<player_segment_t *>(malloc(map_data_vector.segments_count * sizeof(player_segment_t)));
+      if (!(map_data_vector.segments))
       {
-        map_data_vector.segments[ii] = segments[ii];
+        PLAYER_ERROR("cannot allocate space for map_data_vector.segments");
+	return -1;
       }
+      for (ii = 0, tmp = &segments; (ii < map_data_vector.segments_count) && (tmp->next); ii++, tmp = tmp->next)
+      {
+        map_data_vector.segments[ii] = tmp->seg;
+      }
+      assert((ii == (map_data_vector.segments_count)) && (!(tmp->next)));
     }
-
+    if (!(segments.next)) assert(!(segments.last));
+    if (!(segments.last)) assert(!(segments.next));
+    while (segments.next)
+    {
+      tmp = segments.next->next;
+      free(segments.next);
+      segments.next = tmp;
+    }
+    segments.last = NULL;
     this->Publish(this->map_addr,
                   resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_MAP_REQ_GET_VECTOR,
-                  (void *)&map_data_vector);
-    if (map_data_vector.segments) delete [](map_data_vector.segments);
+                  reinterpret_cast<void *>(&map_data_vector));
+    if (map_data_vector.segments) free(map_data_vector.segments);
+    map_data_vector.segments = NULL;
     return 0;
-#else
-    PLAYER_WARN("GEOS not installed");
-    return -1;
-#endif
   }
   return -1;
 }
