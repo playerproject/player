@@ -4,6 +4,7 @@
 #include <libpq-fe.h>
 #include <libplayercore/playercore.h>
 #include <libplayercore/error.h>
+#include <libplayerwkb/playerwkb.h>
 #include <vector>
 #include <string>
 #include <cstring>
@@ -16,7 +17,9 @@ using namespace std;
 typedef struct
 {
   double x0, y0, x1, y1;
-}BoundingBox;
+} BoundingBox;
+
+#define BBOX(ptr) (reinterpret_cast<BoundingBox *>(ptr))
 
 class FeatureDataHolder
 {
@@ -140,8 +143,8 @@ class VectorMapInfoHolder
 class PostgresConn
 {
   public:
-    PostgresConn(){ conn = NULL; };
-    virtual ~PostgresConn(){ if (Connected()) Disconnect(); };
+    PostgresConn(int debug = 0){ this->wkbprocessor = player_wkb_create_processor(); this->conn = NULL; this->debug = debug; };
+    virtual ~PostgresConn(){ if (Connected()) Disconnect(); player_wkb_destroy_processor(this->wkbprocessor); };
     bool Connect(const char* dbname, const char* host, const char* user, const char* password, const char* port);
     bool Disconnect();
     bool Connected() { return (conn != NULL) && (PQstatus(conn) != CONNECTION_BAD); };
@@ -154,8 +157,10 @@ class PostgresConn
   private:
     BoundingBox BinaryToBBox(const uint8_t *binary, uint32_t length);
     uint32_t Text2Bin(const char * text, unsigned char * bin, uint32_t maxlen);
+    playerwkbprocessor_t wkbprocessor;
     PGconn *conn;
-
+    int debug;
+    static void bbcb(void * bbox, double x0, double y0, double x1, double y1);
 };
 
 #endif /* __DBCONN_H_ */

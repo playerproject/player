@@ -120,25 +120,8 @@ For more information see http://postgis.refractions.net/
 #include <libplayercore/playercore.h>
 #include <libplayercore/error.h>
 #include "dbconn.h"
-#ifdef HAVE_GEOS
-#ifndef GEOS_VERSION_MAJOR
-#include <geos_c.h>
-#endif
-#endif
 
 using namespace std;
-
-/** Dummy function passed as a function pointer GEOS when it is initialised. GEOS uses this for logging. */
-inline void geosprint(const char* format, ...)
-{
-	va_list ap;
-	va_start(ap,format);
-	fprintf(stderr,"GEOSError: ");
-	vfprintf(stderr,format, ap);
-	fflush(stderr);
-	va_end(ap);
-
-};
 
 ////////////////////////////////////////////////////////////////////////////////
 class PostGIS : public Driver
@@ -150,7 +133,8 @@ class PostGIS : public Driver
             const char* user,
             const char* password,
             const char* port,
-            vector<string> & layerNames);
+            vector<string> & layerNames,
+            int debug);
     ~PostGIS();
     int Setup();
     int Shutdown();
@@ -175,6 +159,7 @@ class PostGIS : public Driver
     vector<string> layerNames;
 
     PostgresConn *conn;
+    int debug;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -185,6 +170,7 @@ Driver* PostGIS_Init(ConfigFile* cf, int section)
   const char* user = cf->ReadString(section,"user", "postgres");
   const char* password = cf->ReadString(section,"password", "");
   const char* port = cf->ReadString(section,"port", "5432");
+  int debug = cf->ReadInt(section, "debug", 0);
 
   vector<string> layerNames;
 
@@ -200,7 +186,7 @@ Driver* PostGIS_Init(ConfigFile* cf, int section)
     const char* layer_name = cf->ReadTupleString(section, "layers", i, "");
     layerNames.push_back(string(layer_name));
   }
-  return((Driver*)(new PostGIS(cf, section, dbname, host, user, password, port, layerNames)));
+  return((Driver*)(new PostGIS(cf, section, dbname, host, user, password, port, layerNames, debug)));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -217,7 +203,8 @@ PostGIS::PostGIS(ConfigFile* cf, int section,
                  const char* user,
                  const char* password,
                  const char* port,
-                 vector<string> & layerNames)
+                 vector<string> & layerNames,
+                 int debug)
   : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_VECTORMAP_CODE)
 {
   this->dbname = dbname;
@@ -227,21 +214,11 @@ PostGIS::PostGIS(ConfigFile* cf, int section,
   this->port = port;
   this->layerNames = layerNames;
   this->conn = NULL;
-#ifdef HAVE_GEOS
-  PLAYER_MSG0(2, "Initialising GEOS");
-  initGEOS(geosprint, geosprint);
-  PLAYER_MSG0(2, "GEOS Initialised");
-#endif
+  this->debug = debug;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-PostGIS::~PostGIS()
-{
-#ifdef HAVE_GEOS
-  PLAYER_MSG0(2, "Shutting down GEOS");
-  finishGEOS();
-#endif
-}
+PostGIS::~PostGIS() { }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Load resources
@@ -249,10 +226,10 @@ int PostGIS::Setup()
 {
   PLAYER_MSG0(2, "PostGIS vectormap initialising");
 
-  conn = new PostgresConn();
-  conn->Connect(dbname, host, user, password, port);
+  this->conn = new PostgresConn(this->debug);
+  this->conn->Connect(this->dbname, this->host, this->user, this->password, this->port);
 
-  if (!conn->Connected())
+  if (!(this->conn->Connected()))
   {
     PLAYER_ERROR("Could not connect to Postgres database!");
     return(1);
@@ -267,15 +244,15 @@ int PostGIS::Setup()
 int PostGIS::Shutdown()
 {
   PLAYER_MSG0(2, "PostGIS vectormap shutting down");
-  if (conn != NULL && conn->Connected())
+  if (this->conn != NULL && this->conn->Connected())
   {
     PLAYER_MSG0(2, "Disconnecting database");
-    conn->Disconnect();
+    this->conn->Disconnect();
   }
-  if (conn != NULL)
+  if (this->conn != NULL)
   {
-    delete conn;
-    conn = NULL;
+    delete this->conn;
+    this->conn = NULL;
   }
 
   PLAYER_MSG0(2, "PostGIS vectormap stopped");
@@ -293,14 +270,14 @@ int PostGIS::ProcessMessage(QueuePointer &resp_queue,
                                   PLAYER_VECTORMAP_REQ_GET_MAP_INFO,
                                   this->device_addr))
   {
-    VectorMapInfoHolder info = RequestVectorMapInfo();
-    const player_vectormap_info_t* response = info.Convert();
+    VectorMapInfoHolder info = this->RequestVectorMapInfo();
+    player_vectormap_info_t * response = const_cast<player_vectormap_info_t *>(info.Convert());
 
     this->Publish(this->device_addr,
                   resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_VECTORMAP_REQ_GET_MAP_INFO,
-                  (void*)response);
+                  reinterpret_cast<void *>(response));
     return(0);
   }
   // Request for layer data /////////////////////////////////////////////////////////
@@ -308,14 +285,14 @@ int PostGIS::ProcessMessage(QueuePointer &resp_queue,
                                       PLAYER_VECTORMAP_REQ_GET_LAYER_DATA,
                                       this->device_addr))
   {
-	  player_vectormap_layer_data_t* request = reinterpret_cast<player_vectormap_layer_data_t*>(data);
-    LayerDataHolder ldata = RequestLayerData(request->name);
-    const player_vectormap_layer_data_t* response = ldata.Convert();
+    player_vectormap_layer_data_t* request = reinterpret_cast<player_vectormap_layer_data_t *>(data);
+    LayerDataHolder ldata = this->RequestLayerData(request->name);
+    player_vectormap_layer_data_t * response = const_cast<player_vectormap_layer_data_t *>(ldata.Convert());
     this->Publish(this->device_addr,
                   resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_VECTORMAP_REQ_GET_LAYER_DATA,
-                  (void*)response);
+                  reinterpret_cast<void *>(response));
 
     return(0);
   }
@@ -325,13 +302,13 @@ int PostGIS::ProcessMessage(QueuePointer &resp_queue,
                                       this->device_addr))
   {
     player_vectormap_layer_data_t* request = reinterpret_cast<player_vectormap_layer_data_t*>(data);
-    RequestLayerWrite(request);
+    this->RequestLayerWrite(request);
 
     this->Publish(this->device_addr,
                   resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_VECTORMAP_REQ_WRITE_LAYER,
-                  (void*)request);
+                  reinterpret_cast<void *>(request));
     return(0);
   }
   // Don't know how to handle this message /////////////////////////////////////////
@@ -340,49 +317,49 @@ int PostGIS::ProcessMessage(QueuePointer &resp_queue,
 
 VectorMapInfoHolder PostGIS::RequestVectorMapInfo()
 {
-  if (conn == NULL || conn->Connected() == false)
+  if (this->conn == NULL || this->conn->Connected() == false)
   {
     PLAYER_ERROR("PostGis::RequestVectorMapInfo() failed! No db connection.");
   }
 
-  VectorMapInfoHolder info = conn->GetVectorMapInfo(layerNames);
+  VectorMapInfoHolder info = this->conn->GetVectorMapInfo(this->layerNames);
 
   return info;
 }
 
 LayerInfoHolder PostGIS::RequestLayerInfo(const char* layer_name)
 {
-  if (conn == NULL || conn->Connected() == false)
+  if (this->conn == NULL || this->conn->Connected() == false)
   {
     PLAYER_ERROR("PostGis::RequestLayerInfo() failed! No db connection.");
   }
 
-  LayerInfoHolder info = conn->GetLayerInfo(layer_name);
+  LayerInfoHolder info = this->conn->GetLayerInfo(layer_name);
 
   return info;
 }
 
 LayerDataHolder PostGIS::RequestLayerData(const char* layer_name)
 {
-  if (conn == NULL || conn->Connected() == false)
+  if (this->conn == NULL || this->conn->Connected() == false)
   {
     PLAYER_ERROR("PostGis::RequestLayerData() failed! No db connection.");
   }
 
-  LayerDataHolder data = conn->GetLayerData(layer_name);
+  LayerDataHolder data = this->conn->GetLayerData(layer_name);
 
   return data;
 }
 
 void PostGIS::RequestLayerWrite(player_vectormap_layer_data_t* data)
 {
-  if (conn == NULL || conn->Connected() == false)
+  if (this->conn == NULL || this->conn->Connected() == false)
   {
     PLAYER_ERROR("PostGis::WriteLayerData() failed! No db connection.");
   }
 
   LayerDataHolder layer(data);
-  if (conn->WriteLayerData(layer))
+  if (this->conn->WriteLayerData(layer))
   {
     PLAYER_ERROR("PostGis::WriteLayerData() failed!");
   }

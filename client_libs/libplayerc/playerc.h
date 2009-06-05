@@ -54,17 +54,10 @@ Geoffrey Biggs, Richard Vaughan.
 #if !defined (WIN32)
   #include <netinet/in.h> /* need this for struct sockaddr_in */
 #endif
+#include <stddef.h> /* size_t */
 #include <stdio.h>
 
 #include <playerconfig.h>
-
-#ifdef HAVE_GEOS
-#ifndef GEOS_VERSION_MAJOR
-#include <geos_c.h>
-#endif
-#else
-typedef void * GEOSGeom;
-#endif
 
 /* Get the message structures from Player*/
 #include <libplayercore/playercommon.h>
@@ -73,6 +66,7 @@ typedef void * GEOSGeom;
 #include <libplayercore/interface_util.h>
 #include <libplayerxdr/playerxdr.h>
 #include <libplayerxdr/functiontable.h>
+#include <libplayerwkb/playerwkb.h>
 #if defined (WIN32)
   #include <winsock2.h>
 #endif
@@ -2404,8 +2398,8 @@ typedef struct
   player_vectormap_layer_data_t** layers_data;
   /** Layer info. */
   player_vectormap_layer_info_t** layers_info;
-  /** geos geometry returned by get_feature_data */
-  GEOSGeom geom;
+  /** WKB processor instance if you want to deal with WKB data */
+  playerwkbprocessor_t wkbprocessor;
 
 } playerc_vectormap_t;
 
@@ -2433,9 +2427,10 @@ PLAYERC_EXPORT int playerc_vectormap_write_layer(playerc_vectormap_t *device, co
 /** @brief Clean up the dynamically allocated memory for the vectormap. */
 PLAYERC_EXPORT void playerc_vectormap_cleanup(playerc_vectormap_t *device);
 
-/** @brief Get an individual feature as a geos geometry. Must only be used after a successful call to playerc_vectormap_get_layer_data.
- *  The geos geometry is owned by the proxy, duplicate it if it is needed after the next call to get_feature_data. Non-reentrant. */
-PLAYERC_EXPORT GEOSGeom playerc_vectormap_get_feature_data(playerc_vectormap_t *device, unsigned layer_index, unsigned feature_index);
+/** @brief Get an individual feature as a WKB geometry. Must only be used after a successful call to playerc_vectormap_get_layer_data.
+ *  The WKB geometry is owned by the proxy, duplicate it if it is needed after the next call to get_feature_data. */
+PLAYERC_EXPORT uint8_t * playerc_vectormap_get_feature_data(playerc_vectormap_t *device, unsigned layer_index, unsigned feature_index);
+PLAYERC_EXPORT size_t playerc_vectormap_get_feature_data_count(playerc_vectormap_t *device, unsigned layer_index, unsigned feature_index);
 
 /** @} */
 

@@ -9,7 +9,6 @@ int main()
 {
   playerc_client_t* client = NULL;
   playerc_vectormap_t* vmap = NULL;
-  GEOSGeom g;
 
   printf("Creating client\n");
   client = playerc_client_create(NULL, "localhost", 6665);
@@ -53,20 +52,12 @@ int main()
   }
 
   PrintMapInfo(vmap);
-  PrintLayerInfo(vmap);
-  PrintLayerData(vmap);
-
-  printf("Getting feature data\n");
-  g = playerc_vectormap_get_feature_data(vmap, 0, 0);
-  if (g == NULL)
+  if (vmap->layers_count > 0)
   {
-    printf("Error getting feature data\n");
+    PrintLayerInfo(vmap);
+    PrintLayerData(vmap);
+    if (vmap->layers_data[0]->features_count) PrintFeatureData(vmap);
   }
-
-  PrintMapInfo(vmap);
-  PrintLayerInfo(vmap);
-  PrintLayerData(vmap);
-  PrintFeatureData(vmap);
 
   printf("\n");
   printf("Unsubscribing\n");

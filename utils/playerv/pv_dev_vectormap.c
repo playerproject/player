@@ -25,8 +25,10 @@
  ***************************************************************************/
 
 #include <assert.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <libplayerwkb/playerwkb.h>
 #include "playerv.h"
 
 // Update the map configuration
@@ -34,10 +36,6 @@ void vectormap_update_config(vectormap_t *map);
 
 // Draw the map
 void vectormap_draw(vectormap_t *map);
-
-// Draw a single map feature
-void vectormap_draw_feature(vectormap_t *map, GEOSGeom geom);
-
 
 // Create a map device
 vectormap_t *vectormap_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
@@ -162,9 +160,10 @@ void vectormap_update(vectormap_t *map)
 void vectormap_draw(vectormap_t *map)
 {
   unsigned ii, jj;
-  GEOSGeom feature;
   uint32_t colour = 0xFF0000;
   double xCenter, yCenter;
+  const uint8_t * feature;
+  size_t feature_count;
 
   rtk_fig_show(map->fig, 1);
   rtk_fig_clear(map->fig);
@@ -180,8 +179,8 @@ void vectormap_draw(vectormap_t *map)
     for (jj = 0; jj < map->proxy->layers_data[ii]->features_count; ++jj)
     {
       feature = playerc_vectormap_get_feature_data( map->proxy, ii, jj );
-      if (feature)
-        vectormap_draw_feature(map, feature);
+      feature_count = playerc_vectormap_get_feature_data_count( map->proxy, ii, jj );
+      if ((feature) && (feature_count > 0)) player_wkb_process_wkb(map->proxy->wkbprocessor, feature, feature_count, (playerwkbcallback_t)(rtk_fig_line), map->fig);
     }
   }
 
@@ -201,73 +200,4 @@ void vectormap_draw(vectormap_t *map)
                    );
 
   return;
-}
-
-
-void vectormap_draw_feature(vectormap_t *map, GEOSGeom geom)
-{
-#ifdef HAVE_GEOS
-  GEOSCoordSeq seq;
-  unsigned numcoords;
-  unsigned ii;
-  double x,y,x2,y2;
-
-  switch (GEOSGeomTypeId(geom))
-  {
-    case GEOS_POINT:
-      seq = GEOSGeom_getCoordSeq(geom);
-      GEOSCoordSeq_getX(seq, 00, &x);
-      GEOSCoordSeq_getY(seq, 00, &y);
-      rtk_fig_line( map->fig, x-0.1, y ,x+0.1, y);
-      rtk_fig_line( map->fig, x, y-0.1 ,x, y+0.1);
-      break;
-    case GEOS_LINESTRING:
-    case GEOS_LINEARRING:
-      seq = GEOSGeom_getCoordSeq(geom);
-      if(GEOSCoordSeq_getSize(seq, &numcoords))
-      {
-        GEOSCoordSeq_getX(seq, 0, &x2);
-        GEOSCoordSeq_getY(seq, 0, &y2);
-        if (numcoords < 2)
-        {
-          rtk_fig_point( map->fig, x2, y2 );
-        }
-        else
-        {
-          for (ii = 1; ii < numcoords; ++ii)
-          {
-            x = x2;
-            y = y2;
-            GEOSCoordSeq_getX(seq, ii, &x2);
-            GEOSCoordSeq_getY(seq, ii, &y2);
-            rtk_fig_line( map->fig, x, y ,x2, y2);
-          }
-        }
-      }
-      break;
-
-    case GEOS_POLYGON:
-      vectormap_draw_feature(map,GEOSGetExteriorRing(geom));
-      for (ii = 0; ii < GEOSGetNumInteriorRings(geom); ++ii)
-      {
-        vectormap_draw_feature(map,GEOSGetInteriorRingN(geom,ii));
-      }
-      break;
-
-    case GEOS_MULTIPOINT:
-    case GEOS_MULTILINESTRING:
-    case GEOS_MULTIPOLYGON:
-    case GEOS_GEOMETRYCOLLECTION:
-      for (ii = 0; ii < GEOSGetNumGeometries(geom); ++ii)
-      {
-        vectormap_draw_feature(map,GEOSGetGeometryN(geom,ii));
-      }
-      break;
-
-    default:
-      PRINT_ERR1("unknown feature type: %d", GEOSGeomTypeId(geom));
-  }
-#else
-  printf("lib GEOS was not available at build time so features will not be rendered\n");
-#endif
 }

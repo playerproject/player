@@ -1,6 +1,6 @@
+#include <stddef.h> /* NULL, size_t typedef and some versions of GEOS CAPI need this */
 #include <playerconfig.h> /* this also includes <stdint.h> if needed for types like uint8_t */
 #include <libplayercore/error.h>
-#include <stddef.h>
 
 #include "playerwkb.h"
 
@@ -21,8 +21,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-int geosinit_done = 0;
-
 /** Dummy function passed as a function pointer GEOS when it is initialised. GEOS uses this for logging. */
 void player_wkb_geosprint(const char * format, ...)
 {
@@ -37,6 +35,7 @@ void player_wkb_geosprint(const char * format, ...)
 #else
 
 #include <string.h>
+#include <assert.h>
 
 #define WKB_POINT 1
 #define WKB_LINESTRING 2
@@ -99,7 +98,7 @@ int player_wkb_endians_detect(struct PlayerWKBEndians * endians)
 playerwkbprocessor_t player_wkb_create_processor()
 {
 #ifdef HAVE_GEOS
-  return initGEOS_r(player_wkb_geosprint, player_wkb_geosprint);
+  return (playerwkbprocessor_t)(initGEOS_r(player_wkb_geosprint, player_wkb_geosprint));
 #else
   return NULL;
 #endif
@@ -108,13 +107,15 @@ playerwkbprocessor_t player_wkb_create_processor()
 void player_wkb_destroy_processor(playerwkbprocessor_t wkbprocessor)
 {
 #ifdef HAVE_GEOS
-  finishGEOS_r(wkbprocessor);
+  finishGEOS_r((GEOSContextHandle_t)wkbprocessor);
+#else
+  wkbprocessor = wkbprocessor;
 #endif
 }
 
 #ifdef HAVE_GEOS
 
-void player_wkb_process_geom(playerwkbprocessor_t wkbprocessor, const GEOSGeometry * geom, void (* callback)(void *, double, double, double, double), void * ptr)
+void player_wkb_process_geom(playerwkbprocessor_t wkbprocessor, const GEOSGeometry * geom, playerwkbcallback_t callback, void * ptr)
 {
   double x0, y0, x1, y1;
   const GEOSCoordSequence * seq;
@@ -178,7 +179,7 @@ void player_wkb_process_geom(playerwkbprocessor_t wkbprocessor, const GEOSGeomet
 
 #endif
 
-const uint8_t * player_wkb_process_wkb(playerwkbprocessor_t wkbprocessor, const uint8_t * wkb, size_t wkb_count, void (* callback)(void *, double, double, double, double), void * ptr)
+const uint8_t * player_wkb_process_wkb(playerwkbprocessor_t wkbprocessor, const uint8_t * wkb, size_t wkb_count, playerwkbcallback_t callback, void * ptr)
 {
 #ifdef HAVE_GEOS
 
@@ -210,6 +211,7 @@ const uint8_t * player_wkb_process_wkb(playerwkbprocessor_t wkbprocessor, const 
 
 #define UINT_FROM_WKB(dst) do \
 { \
+  assert(wkb_count >= 4); \
   if (wkb_endians == (endians.uint32_endians)) memcpy((dst), wkb, 4); \
   else \
   { \
@@ -223,6 +225,7 @@ const uint8_t * player_wkb_process_wkb(playerwkbprocessor_t wkbprocessor, const 
 
 #define DBL_FROM_WKB(dst) do \
 { \
+  assert(wkb_count >= 8); \
   if (wkb_endians == (endians.dbl_endians)) memcpy((dst), wkb, 8); \
   else \
   { \
@@ -235,7 +238,7 @@ const uint8_t * player_wkb_process_wkb(playerwkbprocessor_t wkbprocessor, const 
     ((uint8_t *)(dst))[6] = wkb[(8 - 1) - 6]; \
     ((uint8_t *)(dst))[7] = wkb[(8 - 1) - 7]; \
   } \
-  wkb += 8; wkb_count -= 4; \
+  wkb += 8; wkb_count -= 8; \
 } while (0)
 
   if (!wkb)
@@ -244,6 +247,7 @@ const uint8_t * player_wkb_process_wkb(playerwkbprocessor_t wkbprocessor, const 
     return NULL;
   }
   if (player_wkb_endians_detect(&endians)) return NULL;
+  assert(wkb_count > 1);
   wkb_endians = (enum player_wkb_endians)(wkb[0]); wkb++; wkb_count--;
   if ((wkb_endians != player_wkb_big) && (wkb_endians != player_wkb_little))
   {
