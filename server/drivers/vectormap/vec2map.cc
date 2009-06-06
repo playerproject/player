@@ -301,10 +301,10 @@ void Vec2Map::line(int a, int b, int c, int d, int8_t * cells, int width, int he
     if (d < b) wspY = -wspY;
 
     x = static_cast<double>(a); y = static_cast<double>(b);
-    if (x < 0) x = 0;
-    if (y < 0) y = 0;
-    if (x >= width) x = (width - 1);
-    if (y >= height) y = (height - 1);
+    if (static_cast<int>(x) < 0) x = 0.0;
+    if (static_cast<int>(y) < 0) y = 0.0;
+    if (static_cast<int>(x) >= width) x = static_cast<double>(width - 1);
+    if (static_cast<int>(y) >= height) y = static_cast<double>(height - 1);
     cells[(static_cast<int>(y) * width) + (static_cast<int>(x))] = 1;
     if ((fabs(wspX) < EPS) && (fabs(wspY) < EPS)) return;
 
