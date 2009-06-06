@@ -894,7 +894,6 @@ RFLEX::Main()
 
   while(1)
   {
-    int ret;
     // we want to turn on the sonars if someone just subscribed, and turn
     // them off if the last subscriber just unsubscribed.
     if(!last_sonar_subscrcount && this->sonar_subscriptions)

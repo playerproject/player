@@ -497,7 +497,7 @@ int AioToSonar::ProcessMessage(QueuePointer &resp_queue,
     for (list<SensorConfiguration>::iterator it=sensorList.begin();
 	 it!=sensorList.end();
 	 ++it, ++rangesIt){
-      if (it->port < received_data->voltages_count){
+      if (it->port < static_cast<int> (received_data->voltages_count)){
 	*rangesIt = received_data->voltages[it->port] * voltagetometers;
 
 	Publish(device_addr,

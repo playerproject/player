@@ -31,131 +31,131 @@
 /** @defgroup driver_camera1394 camera1394
  * @brief Firewire camera capture
 
-The camera1394 driver captures images from IEEE1394 (Firewire, iLink)
-cameras.
+ The camera1394 driver captures images from IEEE1394 (Firewire, iLink)
+ cameras.
 
-@par Compile-time dependencies
+ @par Compile-time dependencies
 
-- libraw1394
-- libdc1394_control
+ - libraw1394
+ - libdc1394_control
 
-@par Provides
+ @par Provides
 
-- @ref interface_camera
+ - @ref interface_camera
 
-@par Requires
+ @par Requires
 
-- none
+ - none
 
-@par Configuration requests
+ @par Configuration requests
 
-- none
+ - none
 
-@par Configuration file options
+ @par Configuration file options
 
-- port (integer)
-  - Default: 0
-  - The 1394 port the camera is attached to.
+ - port (integer)
+ - Default: 0
+ - The 1394 port the camera is attached to.
 
-- node (integer)
-  - Default: 0
-  - The node within the port
+ - node (integer)
+ - Default: 0
+ - The node within the port
 
-- framerate (float)
-  - Default: 15
-  - Requested frame rate (frames/second)
+ - framerate (float)
+ - Default: 15
+ - Requested frame rate (frames/second)
 
-- mode (string)
-  - Default: "640x480_yuv422"
-  - Capture mode (size and color layour).  Valid modes are:
-    - "320x240_yuv422"
-    - "640x480_mono"
-    - "640x480_yuv422"
-    - "640x480_rgb"
-    - "800x600_mono"
-    - "800x600_yuv422" - will be rescaled to 600x450
-    - "1024x768_mono"
-    - "1024x768_yuv422" - will be rescaled to 512x384
-    - "1280x960_mono"
-    - "1280x960_yuv422" - will be rescaled to 640x480
-    - "FORMAT7_MODE0" - only available with libdc1394 >= 2.0
-  - Currently, all mono modes will produce 8-bit monochrome images unless
-  a color decoding option is provided (see bayer).
-  - All yuv422 modes are converted to RGB24
+ - mode (string)
+ - Default: "640x480_yuv422"
+ - Capture mode (size and color layour).  Valid modes are:
+ - "320x240_yuv422"
+ - "640x480_mono"
+ - "640x480_yuv422"
+ - "640x480_rgb"
+ - "800x600_mono"
+ - "800x600_yuv422" - will be rescaled to 600x450
+ - "1024x768_mono"
+ - "1024x768_yuv422" - will be rescaled to 512x384
+ - "1280x960_mono"
+ - "1280x960_yuv422" - will be rescaled to 640x480
+ - "FORMAT7_MODE0" - only available with libdc1394 >= 2.0
+ - Currently, all mono modes will produce 8-bit monochrome images unless
+ a color decoding option is provided (see bayer).
+ - All yuv422 modes are converted to RGB24
 
-- force_raw (integer)
-  - Default: 0
-  - Force the driver to use (slow) memory capture instead of DMA transfer
-  (for buggy 1394 drivers).
+ - force_raw (integer)
+ - Default: 0
+ - Force the driver to use (slow) memory capture instead of DMA transfer
+ (for buggy 1394 drivers).
 
-- save (integer)
-  - Default: 0
-  - Debugging option: set this to write each frame as an image file on disk.
+ - save (integer)
+ - Default: 0
+ - Debugging option: set this to write each frame as an image file on disk.
 
-- bayer (string)
-  - Default: None.
-  - Bayer color decoding options for cameras such as the Point Grey Dragonfly and Bummblebee.
-  Option activates color decoding and specifies the Bayer color pattern. Valid modes are:
-    - "BGGR"
-    - "GRBG"
-    - "RGGB"
-    - "GBRG"
+ - bayer (string)
+ - Default: None.
+ - Bayer color decoding options for cameras such as the Point Grey Dragonfly and Bummblebee.
+ Option activates color decoding and specifies the Bayer color pattern. Valid modes are:
+ - "BGGR"
+ - "GRBG"
+ - "RGGB"
+ - "GBRG"
 
-- method (string)
-  - Default: None (or "DownSample" if bayer option is specified)
-  - Determines the algorithm used for Bayer coloro decoding. Valid modes are:
-    - "DownSample"
-    - "Nearest"
-    - "Edge"
+ - method (string)
+ - Default: None (or "DownSample" if bayer option is specified)
+ - Determines the algorithm used for Bayer coloro decoding. Valid modes are:
+ - "DownSample"
+ - "Nearest"
+ - "Edge"
 
-- brightness (string or unsigned int)
-  - Default: None
-  - Sets the camera brightness setting. Valid modes are:
-    - "auto"
-    - any suitable unsigned integer
+ - brightness (string or unsigned int)
+ - Default: None
+ - Sets the camera brightness setting. Valid modes are:
+ - "auto"
+ - any suitable unsigned integer
 
-- exposure (string or unsigned int)
-  - Default: None
-  - Sets the camera exposure setting. Valid modes are:
-    - "auto"
-    - any suitable unsigned integer
+ - exposure (string or unsigned int)
+ - Default: None
+ - Sets the camera exposure setting. Valid modes are:
+ - "auto"
+ - any suitable unsigned integer
 
-- shutter (string or unsigned int)
-  - Default: None
-  - Sets the camera shutter setting. Valid modes are:
-    - "auto"
-    - any suitable unsigned integer
+ - shutter (string or unsigned int)
+ - Default: None
+ - Sets the camera shutter setting. Valid modes are:
+ - "auto"
+ - any suitable unsigned integer
 
-- gain (string or unsigned int)
-  - Default: None
-  - Sets the camera gain setting. Valid modes are:
-    - "auto"
-    - any suitable unsigned integer
+ - gain (string or unsigned int)
+ - Default: None
+ - Sets the camera gain setting. Valid modes are:
+ - "auto"
+ - any suitable unsigned integer
 
-- whitebalance (string)
-  - Default: None
-  - Sets the manual camera white balance setting. Only valid option:
-    - a string containing two suitable blue and red value unsigned integers
+ - whitebalance (string)
+ - Default: None
+ - Sets the manual camera white balance setting. Only valid option:
+ - a string containing two suitable blue and red value unsigned integers
 
-- dma_buffers
-  - Default: 4
-  - the number of DMA buffers to use
+ - dma_buffers
+ - Default: 4
+ - the number of DMA buffers to use
 
-- iso_speed (unsigned int)
-  - Default: 400
-  - Sets the data rate of the 1394 bus. Valid rates are 100, 200, 400, 800, 1600, 3200.
-@par Example
+ - iso_speed (unsigned int)
+ - Default: 400
+ - Sets the data rate of the 1394 bus. Valid rates are 100, 200, 400, 800, 1600, 3200.
+ @par Example
 
-@verbatim
-driver
-(
-  name "camera1394"
-  provides ["camera:0"]
-)
-@endverbatim
+ @verbatim
+ driver
+ (
+ name "camera1394"
+ provides ["camera:0"]
+ )
+ @endverbatim
 
-@author Nate Koenig, Andrew Howard; major code rewrite by Paul Osmialowski, newchief@king.net.pl
-*/
+ @author Nate Koenig, Andrew Howard; major code rewrite by Paul Osmialowski, newchief@king.net.pl
+ */
 /** @} */
 
 #include <errno.h>
@@ -169,7 +169,7 @@ driver
 #include <camera1394.h>
 
 #ifdef HAVE_LIBRAW1394
-    #include <libraw1394/raw1394.h>
+#include <libraw1394/raw1394.h>
 #endif
 
 #if DC1394_DMA_SETUP_CAPTURE_ARGS == 20
@@ -185,7 +185,6 @@ driver
 #include "conversions.h"
 
 #define NUM_DMA_BUFFERS 4
-
 
 // lots of defines are renames in v2 API, mask this so we dont have to
 // modify all our code
@@ -283,1123 +282,1305 @@ driver
 
 #endif
 
+const timespec NSLEEP_TIME = { 0, 10000 }; // (0s, 10ms) => max 100Hz
+
 // Driver for detecting laser retro-reflectors.
-class Camera1394 : public ThreadedDriver
-{
-  // Constructor
-  public: Camera1394( ConfigFile* cf, int section);
+class Camera1394: public ThreadedDriver {
+	// Constructor
+public:
+	Camera1394(ConfigFile* cf, int section);
 
-  // Setup/shutdown routines.
-  private: void SafeCleanup();
+public:
+	virtual int SetZoom(unsigned int brightness);
+	virtual int GetZoom(unsigned int* zoom);
+	virtual int SetFocus(unsigned int focus);
+	virtual int GetFocus(unsigned int* focus);
+	virtual int SetIris(unsigned int iris);
+	virtual int GetIris(unsigned int* iris);
+	virtual int SetBrightness(unsigned int brightness);
+	virtual int SetExposure(unsigned int brightness);
+	virtual int SetShutter(unsigned int brightness);
+	virtual int SetGain(unsigned int gain);
 
-  // Main function for device thread.
-  private: virtual void Main();
+	// Main function for device thread.
+private:
+	virtual void Main();
 
-  private: virtual void MainQuit();
-  public: virtual int MainSetup();
+private:
+	virtual void MainQuit();
+	virtual int MainSetup();
+	void SafeCleanup();
 
-  // This method will be invoked on each incoming message
-  public: virtual int ProcessMessage(QueuePointer & resp_queue,
-                                     player_msghdr * hdr,
-                                     void * data);
+	// This method will be invoked on each incoming message
+public:
+	virtual int ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr,
+			void * data);
 
-  // Save a frame to memory
-  private: int GrabFrame();
+private:
+	// Save a frame to memory
+	int GrabFrame();
 
-  // Save a frame to disk
-  private: int SaveFrame( const char *filename );
+	// Save a frame to disk
+	int SaveFrame(const char *filename);
 
-  // Update the device data (the data going back to the client).
-  private: void RefreshData();
+	// Update the device data (the data going back to the client).
+	void RefreshData();
 
-  // Video device
-  private: unsigned int port;
-  private: unsigned int node;
+	// Video device
+	unsigned int port;
+	unsigned int node;
 
 #ifdef HAVE_LIBRAW1394
-  private: raw1394handle_t handle;
+private: raw1394handle_t handle;
 #endif
 
 #if LIBDC1394_VERSION == 0200
-  private: dc1394camera_t * camera;
-  // Camera features
-  private: dc1394featureset_t features;
-  private: dc1394format7modeset_t modeset;
+private: dc1394camera_t * camera;
+	// Camera features
+private: dc1394featureset_t features;
+private: dc1394format7modeset_t modeset;
 #else
-  private: dc1394_cameracapture camera;
-  // Camera features
-  private: dc1394_feature_set features;
+private:
+	dc1394_cameracapture camera;
+	// Camera features
+private:
+	dc1394_feature_set features;
 #endif
 
-
-  // Capture method: RAW or VIDEO (DMA)
-  private: enum {methodRaw, methodVideo, methodNone};
-  private: int method;
-  private: bool forceRaw;
+	// Capture method: RAW or VIDEO (DMA)
+private:
+	enum {
+		methodRaw, methodVideo, methodNone
+	};
+private:
+	int method;
+private:
+	bool forceRaw;
 
 #if LIBDC1394_VERSION == 0200
-  private: dc1394framerate_t frameRate;
-  private: unsigned int format;
-  private: dc1394video_mode_t mode;
-  private: dc1394speed_t iso_speed;
+private: dc1394framerate_t frameRate;
+private: unsigned int format;
+private: dc1394video_mode_t mode;
+private: dc1394speed_t iso_speed;
 #else
-  private: unsigned int frameRate;
-  private: unsigned int format;
-  private: unsigned int mode;
-  private: unsigned int iso_speed;
+private:
+	unsigned int frameRate;
+private:
+	unsigned int format;
+private:
+	unsigned int mode;
+private:
+	unsigned int iso_speed;
 #endif
 
-  // number of DMA buffers to use
-  private: unsigned int num_dma_buffers;
+	// number of DMA buffers to use
+private:
+	unsigned int num_dma_buffers;
 
-  // Write frames to disk?
-  private: int save;
+	// Write frames to disk?
+private:
+	int save;
 
-  // Capture timestamp
-  private: double frameTime;
+	// Capture timestamp
+private:
+	double frameTime;
 
-  // Data to send to server
-  private: player_camera_data_t * data;
+	// Data to send to server
+private:
+	player_camera_data_t * data;
 
-  // Bayer Colour Conversion
-  private: bool DoBayerConversion;
-  private: bayer_pattern_t BayerPattern;
-  private: int BayerMethod;
+	// Bayer Colour Conversion
+private:
+	bool DoBayerConversion;
+private:
+	bayer_pattern_t BayerPattern;
+private:
+	int BayerMethod;
 
-  // Camera settings
-  private: bool setBrightness, setExposure, setWhiteBalance, setShutter, setGain;
-  private: bool autoBrightness, autoExposure, autoShutter, autoGain;
-  private: unsigned int brightness, exposure, redBalance, blueBalance, shutter, gain;
+	// Camera settings
+private:
 
+	IntProperty MinZoom, MaxZoom, Zoom;
+	IntProperty MinFocus, MaxFocus, Focus;
+	IntProperty MinIris, MaxIris, Iris;
+	IntProperty Brightness, Exposure, RedBalance, BlueBalance, Shutter, Gain;
+	/*  private: bool setFocus, setIris, setBrightness, setExposure, setWhiteBalance, setShutter, setGain;
+	 private: bool autoFocus, autoIris, autoBrightness, autoExposure, autoShutter, autoGain;
+	 private: unsigned int focus, iris, brightness, exposure, redBalance, blueBalance, shutter, gain;
+	 private: unsigned int min_zoom, max_zoom, min_focus, max_focus, min_iris, max_iris;*/
+
+private:
+	int frameno;
 };
 
-
 // Initialization function
-Driver* Camera1394_Init( ConfigFile* cf, int section)
-{
-  return ((Driver*) (new Camera1394( cf, section)));
+Driver* Camera1394_Init(ConfigFile* cf, int section) {
+	return ((Driver*) (new Camera1394(cf, section)));
 }
-
 
 // a driver registration function
-void camera1394_Register(DriverTable* table)
-{
-  table->AddDriver("camera1394", Camera1394_Init);
+void camera1394_Register(DriverTable* table) {
+	table->AddDriver("camera1394", Camera1394_Init);
 }
 
+const int PROPERTY_NOT_SET = -2;
+const int PROPERTY_AUTO = -1;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-Camera1394::Camera1394(ConfigFile* cf, int section)
-  : ThreadedDriver(cf,
-           section,
-           true,
-           PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
-           PLAYER_CAMERA_CODE)
-{
-  float fps;
+Camera1394::Camera1394(ConfigFile* cf, int section) :
+	ThreadedDriver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
+			PLAYER_CAMERA_CODE),
+			MinZoom("min_zoom", PROPERTY_NOT_SET, true, this, cf, section),
+			MaxZoom("max_zoom", PROPERTY_NOT_SET, true, this, cf, section),
+			Zoom("zoom", PROPERTY_NOT_SET, false, this, cf, section),
+			MinFocus("min_focus", PROPERTY_NOT_SET, true, this, cf, section),
+			MaxFocus("max_focus", PROPERTY_NOT_SET, true, this, cf, section),
+			Focus("focus", PROPERTY_NOT_SET, false, this, cf, section),
+			MinIris("min_iris", PROPERTY_NOT_SET, true, this, cf, section),
+			MaxIris("max_iris", PROPERTY_NOT_SET, true, this, cf, section),
+			Iris("iris", PROPERTY_NOT_SET, false, this, cf, section),
+			Brightness("brightness", PROPERTY_NOT_SET, false, this, cf, section),
+			Exposure("exposure", PROPERTY_NOT_SET, false, this,
+			cf, section), RedBalance("red_balance", PROPERTY_NOT_SET, false,
+			this, cf, section), BlueBalance("blue_balance", PROPERTY_NOT_SET,
+			false, this, cf, section), Shutter("shutter", PROPERTY_NOT_SET,
+			false, this, cf, section), Gain("gain", PROPERTY_NOT_SET, false,
+			this, cf, section) {
+	float fps;
 
-  this->data = NULL;
+	this->data = NULL;
 
 #ifdef HAVE_LIBRAW1394
-  this->handle = NULL;
+	this->handle = NULL;
 #endif
-  this->method = methodNone;
+	this->method = methodNone;
 
-  // The port the camera is attached to
-  this->port = cf->ReadInt(section, "port", 0);
+	// The port the camera is attached to
+	this->port = cf->ReadInt(section, "port", 0);
 
-  // The node inside the port
-  this->node = cf->ReadInt(section, "node", 0);
+	// The node inside the port
+	this->node = cf->ReadInt(section, "node", 0);
 
-  // Video frame rate
-  fps = cf->ReadFloat(section, "framerate", 15);
-  if (fps < 3.75)
-    this->frameRate = FRAMERATE_1_875;
-  else if (fps < 7.5)
-    this->frameRate = FRAMERATE_3_75;
-  else if (fps < 15)
-    this->frameRate = FRAMERATE_7_5;
-  else if (fps < 30)
-    this->frameRate = FRAMERATE_15;
-  else if (fps < 60)
-    this->frameRate = FRAMERATE_30;
-  else
-    this->frameRate = FRAMERATE_60;
+	// Video frame rate
+	fps = cf->ReadFloat(section, "framerate", 15);
+	if (fps < 3.75)
+		this->frameRate = FRAMERATE_1_875;
+	else if (fps < 7.5)
+		this->frameRate = FRAMERATE_3_75;
+	else if (fps < 15)
+		this->frameRate = FRAMERATE_7_5;
+	else if (fps < 30)
+		this->frameRate = FRAMERATE_15;
+	else if (fps < 60)
+		this->frameRate = FRAMERATE_30;
+	else
+		this->frameRate = FRAMERATE_60;
 
-  // Get uncompressed video
-  this->format = FORMAT_VGA_NONCOMPRESSED;
+	// Get uncompressed video
+	this->format = FORMAT_VGA_NONCOMPRESSED;
 
-  // Image size. This determines the capture resolution. There are a limited
-  // number of options available. At 640x480, a camera can capture at
-  // _RGB or _MONO or _MONO16.
-  const char* str;
-  str =  cf->ReadString(section, "mode", "640x480_yuv422");
-  /*
-  if (0==strcmp(str,"160x120_yuv444"))
-  {
-    this->mode = MODE_160x120_YUV444;
-  }
-  */
-  if (0==strcmp(str,"320x240_yuv422"))
-  {
-    this->mode = MODE_320x240_YUV422;
-  }
-  /*
-  else if (0==strcmp(str,"640x480_mono16"))
-  {
-    this->mode = MODE_640x480_MONO16;
-    assert(false);
-  }
-  else if (0==strcmp(str,"640x480_yuv411"))
-  {
-    this->mode = MODE_640x480_YUV411;
-  }
-  */
-  else if (0==strcmp(str,"640x480_mono"))
-  {
-    this->mode = MODE_640x480_MONO;
-  }
-  else if (0==strcmp(str,"640x480_yuv422"))
-  {
-    this->mode = MODE_640x480_YUV422;
-  }
-  else if (0==strcmp(str,"640x480_rgb"))
-  {
-    this->mode = MODE_640x480_RGB;
-  }
-  else if (0==strcmp(str,"800x600_mono"))
-  {
-    this->mode = MODE_800x600_MONO;
-    this->format = FORMAT_SVGA_NONCOMPRESSED_1;
-  }
-  else if (0==strcmp(str,"800x600_yuv422"))
-  {
-    this->mode = MODE_800x600_YUV422;
-    this->format = FORMAT_SVGA_NONCOMPRESSED_1;
-  }
-  else if (0==strcmp(str,"1024x768_mono"))
-  {
-    this->mode = MODE_1024x768_MONO;
-    this->format = FORMAT_SVGA_NONCOMPRESSED_1;
-  }
-  else if (0==strcmp(str,"1024x768_yuv422"))
-  {
-    this->mode = MODE_1024x768_YUV422;
-    this->format = FORMAT_SVGA_NONCOMPRESSED_1;
-  }
-  else if (0==strcmp(str,"1280x960_mono"))
-  {
-    this->mode = MODE_1280x960_MONO;
-    this->format = FORMAT_SVGA_NONCOMPRESSED_2;
-  }
-  else if (0==strcmp(str,"1280x960_yuv422"))
-  {
-    this->mode = MODE_1280x960_YUV422;
-    this->format = FORMAT_SVGA_NONCOMPRESSED_2;
-  }
+	// Image size. This determines the capture resolution. There are a limited
+	// number of options available. At 640x480, a camera can capture at
+	// _RGB or _MONO or _MONO16.
+	const char* str;
+	str = cf->ReadString(section, "mode", "640x480_yuv422");
+	/*
+	 if (0==strcmp(str,"160x120_yuv444"))
+	 {
+	 this->mode = MODE_160x120_YUV444;
+	 }
+	 */
+	if (0 == strcmp(str, "320x240_yuv422")) {
+		this->mode = MODE_320x240_YUV422;
+	}
+	/*
+	 else if (0==strcmp(str,"640x480_mono16"))
+	 {
+	 this->mode = MODE_640x480_MONO16;
+	 assert(false);
+	 }
+	 else if (0==strcmp(str,"640x480_yuv411"))
+	 {
+	 this->mode = MODE_640x480_YUV411;
+	 }
+	 */
+	else if (0 == strcmp(str, "640x480_mono")) {
+		this->mode = MODE_640x480_MONO;
+	} else if (0 == strcmp(str, "640x480_yuv422")) {
+		this->mode = MODE_640x480_YUV422;
+	} else if (0 == strcmp(str, "640x480_rgb")) {
+		this->mode = MODE_640x480_RGB;
+	} else if (0 == strcmp(str, "800x600_mono")) {
+		this->mode = MODE_800x600_MONO;
+		this->format = FORMAT_SVGA_NONCOMPRESSED_1;
+	} else if (0 == strcmp(str, "800x600_yuv422")) {
+		this->mode = MODE_800x600_YUV422;
+		this->format = FORMAT_SVGA_NONCOMPRESSED_1;
+	} else if (0 == strcmp(str, "1024x768_mono")) {
+		this->mode = MODE_1024x768_MONO;
+		this->format = FORMAT_SVGA_NONCOMPRESSED_1;
+	} else if (0 == strcmp(str, "1024x768_yuv422")) {
+		this->mode = MODE_1024x768_YUV422;
+		this->format = FORMAT_SVGA_NONCOMPRESSED_1;
+	} else if (0 == strcmp(str, "1280x960_mono")) {
+		this->mode = MODE_1280x960_MONO;
+		this->format = FORMAT_SVGA_NONCOMPRESSED_2;
+	} else if (0 == strcmp(str, "1280x960_yuv422")) {
+		this->mode = MODE_1280x960_YUV422;
+		this->format = FORMAT_SVGA_NONCOMPRESSED_2;
+	}
 #if LIBDC1394_VERSION == 0200
-  else if (0==strcmp(str,"FORMAT7_MODE0"))
-  {
-    this->mode = MODE_FORMAT7_0;
-    this->format = FORMAT_7;
-  }
+	else if (0==strcmp(str,"FORMAT7_MODE0"))
+	{
+		this->mode = MODE_FORMAT7_0;
+		this->format = FORMAT_7;
+	}
 #endif
-  else
-  {
-    PLAYER_ERROR1("unknown video mode [%s]", str);
-    this->SetError(-1);
-    return;
-  }
+	else {
+		PLAYER_ERROR1("unknown video mode [%s]", str);
+		this->SetError(-1);
+		return;
+	}
 
-  // Many cameras such as the Pt Grey Dragonfly and Bumblebee devices
-  // don't do onchip colour conversion. Various Bayer colour encoding
-  // patterns and decoding methods exist. They are now presented to the
-  // user as config file options.
-  // check Bayer colour decoding option
-  str =  cf->ReadString(section, "bayer", "NONE");
-  this->DoBayerConversion = false;
-  if (strcmp(str,"NONE"))
-       {
-	    if (!strcmp(str,"BGGR"))
-		 {
-		      this->DoBayerConversion = true;
-		      this->BayerPattern = BAYER_PATTERN_BGGR;
-		 }
-	    else if (!strcmp(str,"GRBG"))
-		 {
-		      this->DoBayerConversion = true;
-		      this->BayerPattern = BAYER_PATTERN_GRBG;
-		 }
-	    else if (!strcmp(str,"RGGB"))
-		 {
-		      this->DoBayerConversion = true;
-		      this->BayerPattern = BAYER_PATTERN_RGGB;
-		 }
-	    else if (!strcmp(str,"GBRG"))
-		 {
-		      this->DoBayerConversion = true;
-		      this->BayerPattern = BAYER_PATTERN_GBRG;
-		 }
-	    else
-		 {
-		      PLAYER_ERROR1("unknown bayer pattern [%s]", str);
-		      this->SetError(-1);
-		      return;
-		 }
-       }
-  // Set default Bayer decoding method
-  if (this->DoBayerConversion)
-       this->BayerMethod = BAYER_DECODING_DOWNSAMPLE;
-  else
-       this->BayerMethod = NO_BAYER_DECODING;
-  // Check for user selected method
-  str =  cf->ReadString(section, "method", "NONE");
-  if (strcmp(str,"NONE"))
-       {
-	    if (!this->DoBayerConversion)
-		 {
-		      PLAYER_ERROR1("bayer method [%s] specified without enabling bayer conversion", str);
-		      this->SetError(-1);
-		      return;
-		 }
-	    if (!strcmp(str,"DownSample"))
-		 {
-		      this->BayerMethod = BAYER_DECODING_DOWNSAMPLE;
-		 }
-	    else if (!strcmp(str,"Nearest"))
-		 {
-		      this->BayerMethod = BAYER_DECODING_NEAREST;
-		 }
-	    else if (!strcmp(str,"Edge"))
-		 {
-		      this->BayerMethod = BAYER_DECODING_EDGE_SENSE;
-		 }
-	    else
-		 {
-		      PLAYER_ERROR1("unknown bayer method [%s]", str);
-		      this->SetError(-1);
-		      return;
-		 }
-       }
+	// Many cameras such as the Pt Grey Dragonfly and Bumblebee devices
+	// don't do onchip colour conversion. Various Bayer colour encoding
+	// patterns and decoding methods exist. They are now presented to the
+	// user as config file options.
+	// check Bayer colour decoding option
+	str = cf->ReadString(section, "bayer", "NONE");
+	this->DoBayerConversion = false;
+	if (strcmp(str, "NONE")) {
+		if (!strcmp(str, "BGGR")) {
+			this->DoBayerConversion = true;
+			this->BayerPattern = BAYER_PATTERN_BGGR;
+		} else if (!strcmp(str, "GRBG")) {
+			this->DoBayerConversion = true;
+			this->BayerPattern = BAYER_PATTERN_GRBG;
+		} else if (!strcmp(str, "RGGB")) {
+			this->DoBayerConversion = true;
+			this->BayerPattern = BAYER_PATTERN_RGGB;
+		} else if (!strcmp(str, "GBRG")) {
+			this->DoBayerConversion = true;
+			this->BayerPattern = BAYER_PATTERN_GBRG;
+		} else {
+			PLAYER_ERROR1("unknown bayer pattern [%s]", str);
+			this->SetError(-1);
+			return;
+		}
+	}
+	// Set default Bayer decoding method
+	if (this->DoBayerConversion)
+		this->BayerMethod = BAYER_DECODING_DOWNSAMPLE;
+	else
+		this->BayerMethod = NO_BAYER_DECODING;
+	// Check for user selected method
+	str = cf->ReadString(section, "method", "NONE");
+	if (strcmp(str, "NONE")) {
+		if (!this->DoBayerConversion) {
+			PLAYER_ERROR1(
+					"bayer method [%s] specified without enabling bayer conversion",
+					str);
+			this->SetError(-1);
+			return;
+		}
+		if (!strcmp(str, "DownSample")) {
+			this->BayerMethod = BAYER_DECODING_DOWNSAMPLE;
+		} else if (!strcmp(str, "Nearest")) {
+			this->BayerMethod = BAYER_DECODING_NEAREST;
+		} else if (!strcmp(str, "Edge")) {
+			this->BayerMethod = BAYER_DECODING_EDGE_SENSE;
+		} else {
+			PLAYER_ERROR1("unknown bayer method [%s]", str);
+			this->SetError(-1);
+			return;
+		}
+	}
 
-  // Allow the user to set useful camera setting options
-  // brightness, exposure, redBalance, blueBalance, shutter and gain
-  // Parse camera settings - default is to leave them alone.
-  str =  cf->ReadString(section, "brightness", "NONE");
-  if (strcmp(str,"NONE"))
-  {
-       if (!strcmp(str,"auto"))
-	    {
-		 this->setBrightness=true;
-		 this->autoBrightness=true;
-	    }
-       else
-	    {
-		 this->setBrightness=true;
-		 this->autoBrightness=false;
-		 this->brightness = atoi(str);
-	    }
-  }
-  str =  cf->ReadString(section, "exposure", "NONE");
-  if (strcmp(str,"NONE"))
-  {
-       if (!strcmp(str,"auto"))
-	    {
-		 this->setExposure=true;
-		 this->autoExposure=true;
-	    }
-       else
-	    {
-		 this->setExposure=true;
-		 this->autoExposure=false;
-		 this->exposure = atoi(str);
-	    }
-  }
-  str =  cf->ReadString(section, "shutter", "NONE");
-  if (strcmp(str,"NONE"))
-  {
-       if (!strcmp(str,"auto"))
-	    {
-		 this->setShutter=true;
-		 this->autoShutter=true;
-	    }
-       else
-	    {
-		 this->setShutter=true;
-		 this->autoShutter=false;
-		 this->shutter = atoi(str);
-	    }
-  }
-  str =  cf->ReadString(section, "gain", "NONE");
-  if (strcmp(str,"NONE"))
-  {
-       if (!strcmp(str,"auto"))
-	    {
-		 this->setGain=true;
-		 this->autoGain=true;
-	    }
-       else
-	    {
-		 this->setGain=true;
-		 this->autoGain=false;
-		 this->gain = atoi(str);
-	    }
-  }
-  str =  cf->ReadString(section, "whitebalance", "NONE");
-  if (strcmp(str,"NONE"))
-  {
-       if(sscanf(str,"%u %u",&this->blueBalance,&this->redBalance)==2)
-	    this->setWhiteBalance=true;
-       else
-	    PLAYER_ERROR1("didn't understand white balance values [%s]", str);
-  }
+	// Force into raw mode
+	this->forceRaw = cf->ReadInt(section, "force_raw", 0);
 
-  // Force into raw mode
-  this->forceRaw = cf->ReadInt(section, "force_raw", 0);
+	// Save frames?
+	this->save = cf->ReadInt(section, "save", 0);
 
-  // Save frames?
-  this->save = cf->ReadInt(section, "save", 0);
+	// Number of DMA buffers?
+	this->num_dma_buffers
+			= cf->ReadInt(section, "dma_buffers", NUM_DMA_BUFFERS);
 
-  // Number of DMA buffers?
-  this->num_dma_buffers = cf->ReadInt(section, "dma_buffers", NUM_DMA_BUFFERS);
-
-  // ISO Speed?
-  switch(cf->ReadInt(section, "iso_speed", 400)) {
-    case 100:
-      this->iso_speed = DC1394_ISO_SPEED_100;
-      break;
-    case 200:
-      this->iso_speed = DC1394_ISO_SPEED_200;
-      break;
-    case 400:
-      this->iso_speed = DC1394_ISO_SPEED_400;
-      break;
+	// ISO Speed?
+	switch (cf->ReadInt(section, "iso_speed", 400)) {
+	case 100:
+		this->iso_speed = DC1394_ISO_SPEED_100;
+		break;
+	case 200:
+		this->iso_speed = DC1394_ISO_SPEED_200;
+		break;
+	case 400:
+		this->iso_speed = DC1394_ISO_SPEED_400;
+		break;
 #ifdef DC1394_ISO_SPEED_800
-    case 800:
-      this->iso_speed = DC1394_ISO_SPEED_800;
-      break;
+		case 800:
+		this->iso_speed = DC1394_ISO_SPEED_800;
+		break;
 #endif
 #ifdef DC1394_ISO_SPEED_1600
-    case 1600:
-      this->iso_speed = DC1394_ISO_SPEED_1600;
-      break;
+		case 1600:
+		this->iso_speed = DC1394_ISO_SPEED_1600;
+		break;
 #endif
 #ifdef DC1394_ISO_SPEED_3200
-    case 3200:
-      this->iso_speed = DC1394_ISO_SPEED_3200;
-      break;
+		case 3200:
+		this->iso_speed = DC1394_ISO_SPEED_3200;
+		break;
 #endif
-    default:
-      PLAYER_ERROR("Unsupported iso_speed");
-      this->SetError(-1);
-      return;
-  }
+	default:
+		PLAYER_ERROR("Unsupported iso_speed");
+		this->SetError(-1);
+		return;
+	}
 
-  return;
+	return;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Safe Cleanup
-void Camera1394::SafeCleanup()
-{
+void Camera1394::SafeCleanup() {
 
 #if LIBDC1394_VERSION == 0200
-  if (this->camera)
-  {
-    //dc1394_cleanup_iso_channels_and_bandwidth(camera);
-    /* The above function has been removed from libdc1394 without a clear
-       replacement...
-      http://sourceforge.net/mailarchive/message.php?msg_id=1196638611.10412.31.camel%40pisces.mit.edu
-    */
-    switch (this->method)
-    {
-    case methodRaw:
-      //dc1394_release_camera(this->camera);
-      break;
-    case methodVideo:
-      //dc1394_dma_unlisten(this->camera);
-      //dc1394_dma_release_camera(this->camera);
-      break;
-    }
-    dc1394_camera_free(this->camera);
-  }
-  this->camera = NULL;
+	if (this->camera)
+	{
+		//dc1394_cleanup_iso_channels_and_bandwidth(camera);
+		/* The above function has been removed from libdc1394 without a clear
+		 replacement...
+		 http://sourceforge.net/mailarchive/message.php?msg_id=1196638611.10412.31.camel%40pisces.mit.edu
+		 */
+		switch (this->method)
+		{
+			case methodRaw:
+			//dc1394_release_camera(this->camera);
+			break;
+			case methodVideo:
+			//dc1394_dma_unlisten(this->camera);
+			//dc1394_dma_release_camera(this->camera);
+			break;
+		}
+		dc1394_camera_free(this->camera);
+	}
+	this->camera = NULL;
 #else
-  if (this->handle)
-  {
-    switch (this->method)
-    {
-    case methodRaw:
-      dc1394_release_camera(this->handle, &this->camera);
-      break;
-    case methodVideo:
-      dc1394_dma_unlisten(this->handle, &this->camera);
-      dc1394_dma_release_camera(this->handle, &this->camera);
-      break;
-    }
-    dc1394_destroy_handle(this->handle);
-  }
-  this->handle = NULL;
+	if (this->handle) {
+		switch (this->method) {
+		case methodRaw:
+			dc1394_release_camera(this->handle, &this->camera);
+			break;
+		case methodVideo:
+			dc1394_dma_unlisten(this->handle, &this->camera);
+			dc1394_dma_release_camera(this->handle, &this->camera);
+			break;
+		}
+		dc1394_destroy_handle(this->handle);
+	}
+	this->handle = NULL;
 #endif
-  if (this->data)
-  {
-    if (this->data->image) delete[](this->data->image);
-    this->data->image = NULL;
-    delete (this->data);
-  }
-  this->data = NULL;
+	if (this->data) {
+		//     if (this->data->image) delete[](this->data->image);
+		if (this->data->image)
+			free(this->data->image);
+		this->data->image = NULL;
+		//     delete (this->data);
+		free(this->data);
+	}
+	this->data = NULL;
+}
+
+int Camera1394::SetZoom(unsigned int zoom) {
+#if LIBDC1394_VERSION == 0200
+	if (DC1394_SUCCESS != dc1394_feature_set_value(this->camera, FEATURE_ZOOM, zoom))
+#else
+	if (DC1394_SUCCESS
+			!= dc1394_set_zoom(this->handle, this->camera.node, zoom))
+#endif
+	{
+		PLAYER_ERROR("Unable to set Zoom value");
+		return -1;
+	}
+	return 0;
+}
+
+int Camera1394::GetZoom(unsigned int* zoom) {
+#if LIBDC1394_VERSION == 0200
+	if (DC1394_SUCCESS != dc1394_feature_get_value(this->camera, FEATURE_ZOOM, zoom))
+#else
+	if (DC1394_SUCCESS
+			!= dc1394_get_zoom(this->handle, this->camera.node, zoom))
+#endif
+	{
+		PLAYER_ERROR("Unable to get Zoom value");
+		return -1;
+	}
+	return 0;
+}
+
+int Camera1394::SetFocus(unsigned int focus) {
+	bool autoFocus = focus < 0;
+#if LIBDC1394_VERSION == 0200
+	if (DC1394_SUCCESS != dc1394_feature_set_mode(this->camera, FEATURE_FOCUS,autoFocus ? DC1394_FEATURE_MODE_AUTO : DC1394_FEATURE_MODE_MANUAL))
+#else
+	if (DC1394_SUCCESS != dc1394_auto_on_off(this->handle, this->camera.node,
+			FEATURE_FOCUS, autoFocus))
+#endif
+	{
+		PLAYER_ERROR("Unable to set Focus mode");
+		this->SafeCleanup();
+		return -1;
+	}
+	if (!autoFocus) {
+#if LIBDC1394_VERSION == 0200
+		if (DC1394_SUCCESS != dc1394_feature_set_value(this->camera, FEATURE_FOCUS, focus))
+#else
+		if (DC1394_SUCCESS != dc1394_set_focus(this->handle, this->camera.node,
+				focus))
+#endif
+		{
+			PLAYER_ERROR("Unable to set Focus value");
+			return -1;
+		}
+	}
+	return 0;
+}
+
+int Camera1394::GetFocus(unsigned int* focus) {
+#if LIBDC1394_VERSION == 0200
+	if (DC1394_SUCCESS != dc1394_feature_get_value(this->camera, FEATURE_FOCUS, focus))
+#else
+	if (DC1394_SUCCESS != dc1394_get_focus(this->handle, this->camera.node,
+			focus))
+#endif
+	{
+		PLAYER_ERROR("Unable to get Focus value");
+		return -1;
+	}
+	return 0;
+}
+
+int Camera1394::SetIris(unsigned int iris) {
+	bool autoIris = iris < 0;
+#if LIBDC1394_VERSION == 0200
+	if (DC1394_SUCCESS != dc1394_feature_set_mode(this->camera, FEATURE_IRIS,autoIris ? DC1394_FEATURE_MODE_AUTO : DC1394_FEATURE_MODE_MANUAL))
+#else
+	if (DC1394_SUCCESS != dc1394_auto_on_off(this->handle, this->camera.node,
+			FEATURE_IRIS, autoIris))
+#endif
+	{
+		PLAYER_ERROR("Unable to set Iris mode");
+		this->SafeCleanup();
+		return -1;
+	}
+
+	if (!autoIris) {
+#if LIBDC1394_VERSION == 0200
+		if (DC1394_SUCCESS != dc1394_feature_set_value(this->camera, FEATURE_IRIS, iris))
+#else
+		if (DC1394_SUCCESS != dc1394_set_iris(this->handle, this->camera.node,
+				iris))
+#endif
+		{
+			PLAYER_ERROR("Unable to set Iris value");
+			return -1;
+		}
+	}
+	return 0;
+}
+
+int Camera1394::GetIris(unsigned int* iris) {
+#if LIBDC1394_VERSION == 0200
+	if (DC1394_SUCCESS != dc1394_feature_get_value(this->camera, FEATURE_IRIS, iris))
+#else
+	if (DC1394_SUCCESS
+			!= dc1394_get_iris(this->handle, this->camera.node, iris))
+#endif
+	{
+		PLAYER_ERROR("Unable to set Iris value");
+		return -1;
+	}
+	return 0;
+}
+
+int Camera1394::SetBrightness(unsigned int brightness) {
+	bool autoBrightness = brightness < 0;
+
+#if LIBDC1394_VERSION == 0200
+	if (DC1394_SUCCESS != dc1394_feature_set_mode(this->camera, FEATURE_BRIGHTNESS,autoBrightness ? DC1394_FEATURE_MODE_AUTO : DC1394_FEATURE_MODE_MANUAL))
+#else
+	if (DC1394_SUCCESS != dc1394_auto_on_off(this->handle, this->camera.node,
+			FEATURE_BRIGHTNESS, autoBrightness))
+#endif
+	{
+		PLAYER_ERROR("Unable to set Brightness mode");
+		this->SafeCleanup();
+		return -1;
+	}
+
+	if (!autoBrightness) {
+#if LIBDC1394_VERSION == 0200
+		if (DC1394_SUCCESS != dc1394_feature_set_value(this->camera, FEATURE_BRIGHTNESS, brightness))
+#else
+		if (DC1394_SUCCESS != dc1394_set_brightness(this->handle,
+				this->camera.node, brightness))
+#endif
+		{
+			PLAYER_ERROR("Unable to set Brightness value");
+			return -1;
+		}
+	}
+	return 0;
+}
+
+int Camera1394::SetExposure(unsigned int exposure) {
+	bool autoExposure = exposure < 0;
+
+#if LIBDC1394_VERSION == 0200
+	if (DC1394_SUCCESS != dc1394_feature_set_mode(this->camera, FEATURE_EXPOSURE,autoExposure ? DC1394_FEATURE_MODE_AUTO : DC1394_FEATURE_MODE_MANUAL))
+#else
+	if (DC1394_SUCCESS != dc1394_auto_on_off(this->handle, this->camera.node,
+			FEATURE_EXPOSURE, autoExposure))
+#endif
+	{
+		PLAYER_ERROR("Unable to set Exposure mode");
+		this->SafeCleanup();
+		return -1;
+	}
+
+	if (!autoExposure) {
+#if LIBDC1394_VERSION == 0200
+		if (DC1394_SUCCESS != dc1394_feature_set_value(this->camera, FEATURE_EXPOSURE, exposure))
+#else
+		if (DC1394_SUCCESS != dc1394_set_exposure(this->handle,
+				this->camera.node, exposure))
+#endif
+		{
+			PLAYER_ERROR("Unable to set Exposure value");
+			return -1;
+		}
+	}
+	return 0;
+}
+
+int Camera1394::SetShutter(unsigned int shutter) {
+	bool autoShutter = shutter < 0;
+
+#if LIBDC1394_VERSION == 0200
+	if (DC1394_SUCCESS != dc1394_feature_set_mode(this->camera, FEATURE_SHUTTER,autoShutter ? DC1394_FEATURE_MODE_AUTO : DC1394_FEATURE_MODE_MANUAL))
+#else
+	if (DC1394_SUCCESS != dc1394_auto_on_off(this->handle, this->camera.node,
+			FEATURE_SHUTTER, autoShutter))
+#endif
+	{
+		PLAYER_ERROR("Unable to set Shutter mode");
+		this->SafeCleanup();
+		return -1;
+	}
+	if (!autoShutter) {
+#if LIBDC1394_VERSION == 0200
+		if (DC1394_SUCCESS != dc1394_feature_set_value(this->camera, FEATURE_SHUTTER, shutter))
+#else
+		if (DC1394_SUCCESS != dc1394_set_shutter(this->handle,
+				this->camera.node, shutter))
+#endif
+		{
+			PLAYER_ERROR("Unable to set Shutter value");
+			return -1;
+		}
+	}
+	return 0;
+}
+
+int Camera1394::SetGain(unsigned int gain) {
+	bool autoGain = gain < 0;
+
+#if LIBDC1394_VERSION == 0200
+	if (DC1394_SUCCESS != dc1394_feature_set_mode(this->camera, FEATURE_GAIN,autoGain ? DC1394_FEATURE_MODE_AUTO : DC1394_FEATURE_MODE_MANUAL))
+#else
+	if (DC1394_SUCCESS != dc1394_auto_on_off(this->handle, this->camera.node,
+			FEATURE_GAIN, autoGain))
+#endif
+	{
+		PLAYER_ERROR("Unable to set Gain mode");
+		this->SafeCleanup();
+		return -1;
+	}
+	if (!autoGain) {
+#if LIBDC1394_VERSION == 0200
+		if (DC1394_SUCCESS != dc1394_feature_set_value(this->camera, FEATURE_GAIN,gain))
+#else
+		if (DC1394_SUCCESS != dc1394_set_gain(this->handle, this->camera.node,
+				this->gain))
+#endif
+		{
+			PLAYER_ERROR("Unable to Gain value");
+			this->SafeCleanup();
+			return -1;
+		}
+	}
+	return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device (called by server thread).
-int Camera1394::MainSetup()
-{
-
+int Camera1394::MainSetup() {
 
 #if LIBDC1394_VERSION == 0200
-  dc1394speed_t speed;
+	dc1394speed_t speed;
 #else
-  unsigned int channel, speed;
+	unsigned int channel, speed;
 #endif
 
-  // Create a handle for the given port (port will be zero on most
-  // machines)
+	// Create a handle for the given port (port will be zero on most
+	// machines)
 #if LIBDC1394_VERSION == 0200
-  // First we try to find a camera
-  int err;
-  dc1394_t *d;
-  dc1394camera_list_t *list;
+	// First we try to find a camera
+	int err;
+	dc1394_t *d;
+	dc1394camera_list_t *list;
 
-  d = dc1394_new ();
-  err = dc1394_camera_enumerate (d, &list);
-  if (err != DC1394_SUCCESS)
-  {
-    PLAYER_ERROR1("Could not get Camera List: %d\n", err);
-    return -1;
-  }
+	d = dc1394_new ();
+	err = dc1394_camera_enumerate (d, &list);
+	if (err != DC1394_SUCCESS)
+	{
+		PLAYER_ERROR1("Could not get Camera List: %d\n", err);
+		return -1;
+	}
 
-  if (list->num == 0)
-  {
-    PLAYER_ERROR("No cameras found");
-    return -1;
-  }
+	if (list->num == 0)
+	{
+		PLAYER_ERROR("No cameras found");
+		return -1;
+	}
 
-  for (int i=0; i < list->num; i++)
-  {
-    uint32_t camNode, camGeneration;
+	for (unsigned i=0; i < list->num; i++)
+	{
+		uint32_t camNode, camGeneration;
 
-    // Create a camera
-    this->camera = dc1394_camera_new (d, list->ids[this->node].guid);
+		// Create a camera
+		this->camera = dc1394_camera_new (d, list->ids[this->node].guid);
 
-    // Get the node of the camera
-    dc1394_camera_get_node(this->camera, &camNode, &camGeneration);
+		// Get the node of the camera
+		dc1394_camera_get_node(this->camera, &camNode, &camGeneration);
 
-    // Make sure we have the correct camera
-    if (camNode == this->node)
-      break;
-    else
-      dc1394_camera_free(this->camera);
-  }
+		// Make sure we have the correct camera
+		if (camNode == this->node)
+		break;
+		else
+		dc1394_camera_free(this->camera);
+	}
 
-  if (!camera)
-  {
-    PLAYER_ERROR1("Failed to initialize camera with guid %llx",
-                  list->ids[0].guid);
-    this->SafeCleanup();
-    return -1;
-  }
+	if (!camera)
+	{
+		PLAYER_ERROR1("Failed to initialize camera with guid %llx",
+				list->ids[0].guid);
+		this->SafeCleanup();
+		return -1;
+	}
 
-  dc1394_camera_free_list (list);
+	dc1394_camera_free_list (list);
 
-  //dc1394_cleanup_iso_channels_and_bandwidth(camera);
-  /* Above has been removed from API. */
+	//dc1394_cleanup_iso_channels_and_bandwidth(camera);
+	/* Above has been removed from API. */
 
 #else
-  this->handle = dc1394_create_handle(this->port);
-  if (this->handle == NULL)
-  {
-    PLAYER_ERROR("Unable to acquire a dc1394 handle");
-    this->SafeCleanup();
-    return -1;
-  }
+	this->handle = dc1394_create_handle(this->port);
+	if (this->handle == NULL) {
+		PLAYER_ERROR("Unable to acquire a dc1394 handle");
+		this->SafeCleanup();
+		return -1;
+	}
 
-  this->camera.node = this->node;
-  this->camera.port = this->port;
+	this->camera.node = this->node;
+	this->camera.port = this->port;
 #endif
 
-  // apply user config file provided camera settings
-  if (this->setBrightness)
-  {
-#if LIBDC1394_VERSION == 0200
-    if (DC1394_SUCCESS != dc1394_feature_set_mode(this->camera, FEATURE_BRIGHTNESS,this->autoBrightness ? DC1394_FEATURE_MODE_AUTO : DC1394_FEATURE_MODE_MANUAL))
-#else
-    if (DC1394_SUCCESS != dc1394_auto_on_off(this->handle, this->camera.node,FEATURE_BRIGHTNESS,this->autoBrightness))
-#endif
-    {
-      PLAYER_ERROR("Unable to set Brightness mode");
-      this->SafeCleanup();
-      return -1;
-    }
-    if (!this->autoBrightness)
-    {
-#if LIBDC1394_VERSION == 0200
-      if (DC1394_SUCCESS != dc1394_feature_set_value(this->camera, FEATURE_BRIGHTNESS,this->brightness))
-#else
-      if (DC1394_SUCCESS != dc1394_set_brightness(this->handle, this->camera.node,this->brightness))
-#endif
-      {
-        PLAYER_ERROR("Unable to set Brightness value");
-        this->SafeCleanup();
-        return -1;
-      }
-    }
-  }
-  if (this->setExposure)
-  {
-#if LIBDC1394_VERSION == 0200
-    if (DC1394_SUCCESS != dc1394_feature_set_mode(this->camera, FEATURE_EXPOSURE,this->autoExposure ? DC1394_FEATURE_MODE_AUTO : DC1394_FEATURE_MODE_MANUAL))
-#else
-    if (DC1394_SUCCESS != dc1394_auto_on_off(this->handle, this->camera.node,FEATURE_EXPOSURE,this->autoExposure))
-#endif
-    {
-      PLAYER_ERROR("Unable to set Exposure mode");
-		  this->SafeCleanup();
-		  return -1;
-    }
-    if (!this->autoExposure)
-    {
-#if LIBDC1394_VERSION == 0200
-      if (DC1394_SUCCESS != dc1394_feature_set_value(this->camera, FEATURE_EXPOSURE,this->exposure))
-#else
-      if (DC1394_SUCCESS != dc1394_set_exposure(this->handle, this->camera.node,this->exposure))
-#endif
-      {
-		    PLAYER_ERROR("Unable to set Exposure value");
-		    this->SafeCleanup();
-		    return -1;
-		  }
-    }
-  }
-  if (this->setShutter)
-  {
-#if LIBDC1394_VERSION == 0200
-    if (DC1394_SUCCESS != dc1394_feature_set_mode(this->camera, FEATURE_SHUTTER,this->autoShutter ? DC1394_FEATURE_MODE_AUTO : DC1394_FEATURE_MODE_MANUAL))
-#else
-    if (DC1394_SUCCESS != dc1394_auto_on_off(this->handle, this->camera.node,FEATURE_SHUTTER,this->autoShutter))
-#endif
-    {
-		  PLAYER_ERROR("Unable to set Shutter mode");
-		  this->SafeCleanup();
-		  return -1;
+	// apply user config file provided camera settings
+	if (Focus != PROPERTY_NOT_SET) {
+		if (SetFocus(Focus)) {
+			this->SafeCleanup();
+			return -1;
 		}
-	  if (!this->autoShutter)
-    {
-#if LIBDC1394_VERSION == 0200
-      if (DC1394_SUCCESS != dc1394_feature_set_value(this->camera, FEATURE_SHUTTER,this->shutter))
-#else
-      if (DC1394_SUCCESS != dc1394_set_shutter(this->handle, this->camera.node,this->shutter))
-#endif
-      {
-		    PLAYER_ERROR("Unable to set Shutter value");
-		    this->SafeCleanup();
-		    return -1;
-		  }
-    }
-  }
-  if (this->setGain)
-  {
-#if LIBDC1394_VERSION == 0200
-    if (DC1394_SUCCESS != dc1394_feature_set_mode(this->camera, FEATURE_GAIN,this->autoGain ? DC1394_FEATURE_MODE_AUTO : DC1394_FEATURE_MODE_MANUAL))
-#else
-    if (DC1394_SUCCESS != dc1394_auto_on_off(this->handle, this->camera.node,FEATURE_GAIN,this->autoGain))
-#endif
-    {
-		  PLAYER_ERROR("Unable to set Gain mode");
-		  this->SafeCleanup();
-		  return -1;
+	}
+	if (Iris != PROPERTY_NOT_SET) {
+		if (SetIris(Iris)) {
+			// error
+			this->SafeCleanup();
+			return -1;
 		}
-	  if (!this->autoShutter)
-    {
+	}
+	if (Brightness != PROPERTY_NOT_SET) {
+		if (SetBrightness(Brightness)) {
+			this->SafeCleanup();
+			return -1;
+		}
+	}
+	if (Exposure != PROPERTY_NOT_SET) {
+		if (SetExposure(Exposure)) {
+			this->SafeCleanup();
+			return -1;
+		}
+	}
+	if (Shutter != PROPERTY_NOT_SET) {
+		if (SetShutter(Shutter)) {
+			this->SafeCleanup();
+			return -1;
+		}
+	}
+	if (Gain != PROPERTY_NOT_SET) {
+		if (SetGain(Gain)) {
+			this->SafeCleanup();
+			return -1;
+		}
+	}
+
+	if (BlueBalance != PROPERTY_NOT_SET && RedBalance != PROPERTY_NOT_SET) {
 #if LIBDC1394_VERSION == 0200
-      if (DC1394_SUCCESS != dc1394_feature_set_value(this->camera, FEATURE_GAIN,this->gain))
+		if (DC1394_SUCCESS != dc1394_feature_whitebalance_set_value(this->camera,this->BlueBalance,this->RedBalance))
 #else
-		  if (DC1394_SUCCESS != dc1394_set_gain(this->handle, this->camera.node,this->gain))
-#endif
-      {
-		    PLAYER_ERROR("Unable to Gain value");
-		    this->SafeCleanup();
-		    return -1;
-		  }
-    }
-  }
-  if (this->setWhiteBalance)
-  {
-#if LIBDC1394_VERSION == 0200
-    if (DC1394_SUCCESS != dc1394_feature_whitebalance_set_value(this->camera,this->blueBalance,this->redBalance))
-#else
-    if (DC1394_SUCCESS != dc1394_set_white_balance(this->handle, this->camera.node,this->blueBalance,this->redBalance))
+		if (DC1394_SUCCESS != dc1394_set_white_balance(this->handle,
+				this->camera.node, this->BlueBalance, this->RedBalance))
 #endif
 		{
-		  PLAYER_ERROR("Unable to set White Balance");
-		  this->SafeCleanup();
-		  return -1;
+			PLAYER_ERROR("Unable to set White Balance");
+			this->SafeCleanup();
+			return -1;
 		}
-  }
+	}
 
-  // Collects the available features for the camera described by node and
-  // stores them in features.
+	// Collects the available features for the camera described by node and
+	// stores them in features.
 #if LIBDC1394_VERSION == 0200
-  if (DC1394_SUCCESS != dc1394_feature_get_all(camera, &this->features))
+	if (DC1394_SUCCESS != dc1394_feature_get_all(camera, &this->features))
 #else
-  if (DC1394_SUCCESS != dc1394_get_camera_feature_set(this->handle,
-                                                      this->camera.node,
-                                                      &this->features))
+	if (DC1394_SUCCESS != dc1394_get_camera_feature_set(this->handle,
+			this->camera.node, &this->features))
 #endif
-  {
-    PLAYER_ERROR("Unable to get feature set");
-    this->SafeCleanup();
-    return -1;
-  }
+	{
+		PLAYER_ERROR("Unable to get feature set");
+		this->SafeCleanup();
+		return -1;
+	}
 
-  // TODO: need to indicate what formats the camera supports somewhere
-  // Remove; leave?
-
+	uint32_t min_zoom, max_zoom;
 #if LIBDC1394_VERSION == 0200
-  // if format 7 requested check that it is supported
-  if (FORMAT_7==this->format && DC1394_SUCCESS!=dc1394_format7_get_modeset(camera, &modeset))
-  {
-    bool HasMode7 = false;
-    for (unsigned int i=0;i<DC1394_VIDEO_MODE_FORMAT7_NUM;i++)
-    {
-      if (modeset.mode[i].present!=0)
-      {
-        HasMode7 = true;
-        break;
-      }
-    }
-    if (!HasMode7)
-    {
-      PLAYER_ERROR("Could not set Format 7");
-      this->SafeCleanup();
-      return -1;
-    }
-  }
-#endif
-
-  // Get the ISO channel and speed of the video
-#if LIBDC1394_VERSION == 0200
-  if (DC1394_SUCCESS != dc1394_video_get_iso_speed(this->camera, &speed))
+	if (DC1394_SUCCESS != dc1394_feature_get_boundaries(camera, FEATURE_ZOOM, &min_zoom, &max_zoom))
 #else
-  if (DC1394_SUCCESS != dc1394_get_iso_channel_and_speed(this->handle, this->camera.node,
-                                                         &channel, &speed))
+	if ((DC1394_SUCCESS != dc1394_get_min_value(this->handle,
+			this->camera.node, FEATURE_ZOOM, &min_zoom))
+			|| (DC1394_SUCCESS != dc1394_get_max_value(this->handle,
+					this->camera.node, FEATURE_ZOOM, &max_zoom)))
 #endif
-  {
-    PLAYER_ERROR("Unable to get iso data; is the camera plugged in?");
-    this->SafeCleanup();
-    return -1;
-  }
+	{
+		PLAYER_ERROR("Unable to get zoom boundaries");
+		this->SafeCleanup();
+		return -1;
+	}
+	MinZoom = min_zoom;
+	MaxZoom = max_zoom;
 
+	uint32_t min_focus,max_focus;
+#if LIBDC1394_VERSION == 0200
+	if (DC1394_SUCCESS != dc1394_feature_get_boundaries(camera, FEATURE_FOCUS, &min_focus, &max_focus))
+#else
+	if ((DC1394_SUCCESS != dc1394_get_min_value(this->handle,
+			this->camera.node, FEATURE_FOCUS, &min_focus))
+			|| (DC1394_SUCCESS != dc1394_get_max_value(this->handle,
+					this->camera.node, FEATURE_FOCUS, &max_focus)))
+#endif
+	{
+		PLAYER_ERROR("Unable to get focus boundaries");
+		this->SafeCleanup();
+		return -1;
+	}
+	MinFocus = min_focus;
+	MaxFocus = max_focus;
+
+	uint32_t min_iris, max_iris;
+#if LIBDC1394_VERSION == 0200
+	if (DC1394_SUCCESS != dc1394_feature_get_boundaries(camera, FEATURE_IRIS, &min_iris, &max_iris))
+#else
+	if ((DC1394_SUCCESS != dc1394_get_min_value(this->handle,
+			this->camera.node, FEATURE_IRIS, &min_iris))
+			|| (DC1394_SUCCESS != dc1394_get_max_value(this->handle,
+					this->camera.node, FEATURE_IRIS, &max_iris)))
+#endif
+	{
+		PLAYER_ERROR("Unable to get iris boundaries");
+		this->SafeCleanup();
+		return -1;
+	}
+	MinIris = min_iris;
+	MaxIris = max_iris;
+
+	// TODO: need to indicate what formats the camera supports somewhere
+	// Remove; leave?
+
+#if LIBDC1394_VERSION == 0200
+	// if format 7 requested check that it is supported
+	if (FORMAT_7==this->format && DC1394_SUCCESS!=dc1394_format7_get_modeset(camera, &modeset))
+	{
+		bool HasMode7 = false;
+		for (unsigned int i=0;i<DC1394_VIDEO_MODE_FORMAT7_NUM;i++)
+		{
+			if (modeset.mode[i].present!=0)
+			{
+				HasMode7 = true;
+				break;
+			}
+		}
+		if (!HasMode7)
+		{
+			PLAYER_ERROR("Could not set Format 7");
+			this->SafeCleanup();
+			return -1;
+		}
+	}
+#endif
+
+	// Get the ISO channel and speed of the video
+#if LIBDC1394_VERSION == 0200
+	if (DC1394_SUCCESS != dc1394_video_get_iso_speed(this->camera, &speed))
+#else
+	if (DC1394_SUCCESS != dc1394_get_iso_channel_and_speed(this->handle,
+			this->camera.node, &channel, &speed))
+#endif
+	{
+		PLAYER_ERROR("Unable to get iso data; is the camera plugged in?");
+		this->SafeCleanup();
+		return -1;
+	}
 
 #if DC1394_DMA_SETUP_CAPTURE_ARGS == 11
-  // Set camera to use DMA, improves performance.
-  if (!this->forceRaw &&
-      dc1394_dma_setup_capture(this->handle, this->camera.node, channel,
-                               this->format, this->mode, this->iso_speed,
-                               this->frameRate, this->num_dma_buffers, 1, NULL,
-                               &this->camera) == DC1394_SUCCESS)
+	// Set camera to use DMA, improves performance.
+	if (!this->forceRaw &&
+			dc1394_dma_setup_capture(this->handle, this->camera.node, channel,
+					this->format, this->mode, this->iso_speed,
+					this->frameRate, this->num_dma_buffers, 1, NULL,
+					&this->camera) == DC1394_SUCCESS)
 #elif DC1394_DMA_SETUP_CAPTURE_ARGS == 12
-  // Set camera to use DMA, improves performance.
-  if (!this->forceRaw &&
-      dc1394_dma_setup_capture(this->handle, this->camera.node, channel,
-                               this->format, this->mode, this->iso_speed,
-                               this->frameRate, this->num_dma_buffers, 1, 0, NULL,
-                               &this->camera) == DC1394_SUCCESS)
+	// Set camera to use DMA, improves performance.
+	if (!this->forceRaw &&
+			dc1394_dma_setup_capture(this->handle, this->camera.node, channel,
+					this->format, this->mode, this->iso_speed,
+					this->frameRate, this->num_dma_buffers, 1, 0, NULL,
+					&this->camera) == DC1394_SUCCESS)
 #elif LIBDC1394_VERSION == 0200
-  // Set camera to use DMA, improves performance.
-  bool DMA_Success = true;
-  if (!this->forceRaw)
-  {
-  	// first set parameters that are common between format 7 and other modes
-  	if (DC1394_SUCCESS != dc1394_video_set_framerate(camera,frameRate))
+	// Set camera to use DMA, improves performance.
+	bool DMA_Success = true;
+	if (!this->forceRaw)
 	{
-		PLAYER_WARN("1394 failed to set frameRate");
-  		DMA_Success = false;
-	}
-  	if (DC1394_SUCCESS != dc1394_video_set_iso_speed(camera,this->iso_speed))
-	{
-		PLAYER_WARN("1394 failed to set iso speed");
+		// first set parameters that are common between format 7 and other modes
+		if (DC1394_SUCCESS != dc1394_video_set_framerate(camera,frameRate))
+		{
+			PLAYER_WARN("1394 failed to set frameRate");
+			DMA_Success = false;
+		}
+		if (DC1394_SUCCESS != dc1394_video_set_iso_speed(camera,this->iso_speed))
+		{
+			PLAYER_WARN("1394 failed to set iso speed");
+			DMA_Success = false;
+		}
+		if (DC1394_SUCCESS != dc1394_video_set_mode(camera,mode))
+		{
+			PLAYER_WARN("1394 failed to set mode");
+			DMA_Success = false;
+		}
+
+		// now start capture
+		if (DC1394_SUCCESS != dc1394_capture_setup(camera, this->num_dma_buffers, DC1394_CAPTURE_FLAGS_DEFAULT))
 		DMA_Success = false;
 	}
-	if (DC1394_SUCCESS != dc1394_video_set_mode(camera,mode))
+	if (DMA_Success)
+#else
+	if (0)
+#endif
 	{
-		PLAYER_WARN("1394 failed to set mode");
-		DMA_Success = false;
+		this->method = methodVideo;
+	} else {
+		PLAYER_WARN("DMA capture failed; falling back on RAW method");
+
+		// Set camera to use RAW method (fallback)
+#if LIBDC1394_VERSION == 0200
+		if (0)
+#else
+		if (dc1394_setup_capture(this->handle, this->camera.node, channel,
+				this->format, this->mode, SPEED_400, this->frameRate,
+				&this->camera) == DC1394_SUCCESS)
+#endif
+		{
+			this->method = methodRaw;
+		} else {
+			PLAYER_ERROR("unable to open camera in VIDE0 or RAW modes");
+			this->SafeCleanup();
+			return -1;
+		}
 	}
 
-  	// now start capture
-	if (DC1394_SUCCESS != dc1394_capture_setup(camera, this->num_dma_buffers, DC1394_CAPTURE_FLAGS_DEFAULT))
-  		DMA_Success = false;
-  }
-  if (DMA_Success)
-#else
-  if (0)
-#endif
-  {
-    this->method = methodVideo;
-  }
-  else
-  {
-    PLAYER_WARN("DMA capture failed; falling back on RAW method");
-
-    // Set camera to use RAW method (fallback)
+	// Start transmitting camera data
 #if LIBDC1394_VERSION == 0200
-    if (0)
+	if (DC1394_SUCCESS != dc1394_video_set_transmission(this->camera, DC1394_ON))
 #else
-    if (dc1394_setup_capture(this->handle, this->camera.node, channel,
-                             this->format, this->mode, SPEED_400, this->frameRate,
-                             &this->camera) == DC1394_SUCCESS)
+	if (DC1394_SUCCESS != dc1394_start_iso_transmission(this->handle,
+			this->camera.node))
 #endif
-    {
-      this->method = methodRaw;
-    }
-    else
-    {
-      PLAYER_ERROR("unable to open camera in VIDE0 or RAW modes");
-      this->SafeCleanup();
-      return -1;
-    }
-  }
-
-  // Start transmitting camera data
-#if LIBDC1394_VERSION == 0200
-  if (DC1394_SUCCESS != dc1394_video_set_transmission(this->camera, DC1394_ON))
-#else
-  if (DC1394_SUCCESS != dc1394_start_iso_transmission(this->handle, this->camera.node))
-#endif
-  {
-    PLAYER_ERROR("unable to start camera");
-    this->SafeCleanup();
-    return -1;
-  }
-  return 0;
+	{
+		PLAYER_ERROR("unable to start camera");
+		this->SafeCleanup();
+		return -1;
+	}
+	return 0;
 }
 
-void Camera1394::MainQuit()
-{
+void Camera1394::MainQuit() {
 
-  // Stop transmitting camera data
+	// Stop transmitting camera data
 #if LIBDC1394_VERSION == 0200
-  if (DC1394_SUCCESS != dc1394_video_set_transmission(this->camera, DC1394_OFF)
-      || DC1394_SUCCESS != dc1394_capture_stop(this->camera))
+	if (DC1394_SUCCESS != dc1394_video_set_transmission(this->camera, DC1394_OFF)
+			|| DC1394_SUCCESS != dc1394_capture_stop(this->camera))
 #else
-  if (dc1394_stop_iso_transmission(this->handle, this->camera.node) != DC1394_SUCCESS)
+	if (dc1394_stop_iso_transmission(this->handle, this->camera.node)
+			!= DC1394_SUCCESS)
 #endif
-    PLAYER_WARN("unable to stop camera");
+		PLAYER_WARN("unable to stop camera");
 
-  // Free resources
-  this->SafeCleanup();
+	// Free resources
+	this->SafeCleanup();
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
-void Camera1394::Main()
-{
-  char filename[255];
-  int frameno;
+void Camera1394::Main() {
+	//   char filename[255];
+	//   int frameno;
 
-  frameno = 0;
-  //struct timeval now,old;
-  while (true)
-  {
+	frameno = 0;
+	//struct timeval now,old;
+	while (true) {
 
-    // Go to sleep for a while (this is a polling loop).
-    // We shouldn't need to sleep if GrabFrame is blocking.
-    //nanosleep(&NSLEEP_TIME, NULL);
+		// Go to sleep for a while (this is a polling loop).
+		// We shouldn't need to sleep if GrabFrame is blocking.
+		nanosleep(&NSLEEP_TIME, NULL);
 
-    // Test if we are supposed to cancel this thread.
-    pthread_testcancel();
+		// Test if we are supposed to cancel this thread.
+		pthread_testcancel();
 
-    // Process any pending requests.
-    ProcessMessages();
+		// Process any pending requests.
+		ProcessMessages();
 
-    // Grab the next frame (blocking)
-    this->GrabFrame();
+		// grab and save frame within RefreshData()
+		//     // Grab the next frame (blocking)
+		//     this->GrabFrame();
 
-    // this should go or be replaced
-    // Save frames; must be done after writedata (which will byteswap)
-    if (this->save)
-    {
-      //printf("click %d\n", frameno);
-      snprintf(filename, sizeof(filename), "click-%04d.ppm", frameno++);
-      this->SaveFrame(filename);
-    }
+		//     // this should go or be replaced
+		//     // Save frames; must be done after writedata (which will byteswap)
+		//     if (this->save)
+		//     {
+		//       //printf("click %d\n", frameno);
+		//       snprintf(filename, sizeof(filename), "click-%04d.ppm", frameno++);
+		//       this->SaveFrame(filename);
+		//     }
 
-    // Write data to server
-    this->RefreshData();
+		// Write data to server
+		this->RefreshData();
 
-    /*
-      gettimeofday(&now,NULL);
-      printf("dt = %lf\n",now.tv_sec-old.tv_sec+(now.tv_usec-old.tv_usec)*1.0e-6);
-      old=now;
-    */
- }
-  printf("Camera1394::main() exited\n");
+		/*
+		 gettimeofday(&now,NULL);
+		 printf("dt = %lf\n",now.tv_sec-old.tv_sec+(now.tv_usec-old.tv_usec)*1.0e-6);
+		 old=now;
+		 */
+	}
+	printf("Camera1394::main() exited\n");
 
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int Camera1394::ProcessMessage(QueuePointer & resp_queue,
-                              player_msghdr * hdr,
-                              void * data)
-{
-  assert(hdr);
+int Camera1394::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr,
+		void * data) {
+	assert(hdr);
 
-  /* We currently don't support any messages, but if we do...
-  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
-                           PLAYER_FIDUCIAL_REQ_GET_GEOM, this->device_addr))
-  {
-    assert(hdr->size == sizeof(player_position2d_data_t));
-    ProcessOdom(hdr, *reinterpret_cast<player_position2d_data_t *> (data));
-    return(0);
+	// handle changes in the properties that we can
+	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
+			PLAYER_SET_INTPROP_REQ, device_addr)) {
 
-  }
-  */
-
-  return -1;
+		player_intprop_req_t &req = *reinterpret_cast<player_intprop_req_t*> (data);
+		if (strcmp(Zoom.GetKey(),req.key)==0)
+		{
+			if (SetZoom(req.value))
+			{
+				Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, hdr->subtype);
+				return 0;
+			}
+			return -1;
+		}
+		else if (strcmp(Focus.GetKey(),req.key)==0)
+		{
+			if (SetFocus(req.value))
+			{
+				Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, hdr->subtype);
+				return 0;
+			}
+			return -1;
+		}
+		else if (strcmp(Iris.GetKey(),req.key)==0)
+		{
+			if (SetIris(req.value))
+			{
+				Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, hdr->subtype);
+				return 0;
+			}
+			return -1;
+		}
+	}
+	return -1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Store an image frame into the 'frame' buffer
-int Camera1394::GrabFrame()
-{
+int Camera1394::GrabFrame() {
 #if LIBDC1394_VERSION == 0200
-  dc1394video_frame_t * frame = NULL;
+	dc1394video_frame_t * frame = NULL;
 #endif
-  switch (this->method)
-  {
-  case methodRaw:
+	switch (this->method) {
+	case methodRaw:
 #if LIBDC1394_VERSION == 0200
-    if (1)
+		if (1)
 #else
-    if (dc1394_single_capture(this->handle, &this->camera) != DC1394_SUCCESS)
+		if (dc1394_single_capture(this->handle, &this->camera)
+				!= DC1394_SUCCESS)
 #endif
-    {
-      PLAYER_ERROR("Unable to capture frame");
-      return -1;
-    }
-    break;
-  case methodVideo:
+		{
+			PLAYER_ERROR("Unable to capture frame");
+			return -1;
+		}
+		break;
+	case methodVideo:
 #if LIBDC1394_VERSION == 0200
-    dc1394_capture_dequeue (camera, DC1394_CAPTURE_POLICY_WAIT, &frame);
-    if (!frame)
+		dc1394_capture_dequeue (camera, DC1394_CAPTURE_POLICY_WAIT, &frame);
+		if (!frame)
 #else
-    if (dc1394_dma_single_capture(&this->camera) != DC1394_SUCCESS)
+		if (dc1394_dma_single_capture(&this->camera) != DC1394_SUCCESS)
 #endif
-    {
-      PLAYER_ERROR("Unable to capture frame");
-      return -1;
-    }
-    break;
-  default:
-    PLAYER_ERROR("Unknown grab method");
-    return -1;
-  }
+		{
+			PLAYER_ERROR("Unable to capture frame");
+			return -1;
+		}
+		break;
+	default:
+		PLAYER_ERROR("Unknown grab method");
+		return -1;
+	}
 
-  unsigned int frame_width;
-  unsigned int frame_height;
-  uint8_t * capture_buffer;
+	unsigned int frame_width;
+	unsigned int frame_height;
+	uint8_t * capture_buffer;
 #if LIBDC1394_VERSION == 0200
-  frameTime = frame->timestamp*1.e-6;
-  frame_width = frame->size[0];
-  frame_height = frame->size[1];
-  capture_buffer = reinterpret_cast<uint8_t *>(frame->image);
+	frameTime = frame->timestamp*1.e-6;
+	frame_width = frame->size[0];
+	frame_height = frame->size[1];
+	capture_buffer = reinterpret_cast<uint8_t *>(frame->image);
 #else
-  frame_width = this->camera.frame_width;
-  frame_height = this->camera.frame_height;
-  capture_buffer = reinterpret_cast<uint8_t *>(this->camera.capture_buffer);
+	frame_width = this->camera.frame_width;
+	frame_height = this->camera.frame_height;
+	capture_buffer = reinterpret_cast<uint8_t *> (this->camera.capture_buffer);
 #endif
-  assert(capture_buffer);
-  assert(!(this->data));
-  this->data = reinterpret_cast<player_camera_data_t *>(malloc(sizeof(player_camera_data_t)));
-  assert(this->data);
-  // memset(this->data, 0, sizeof(player_camera_data_t)); I assume everything is set properly later!
-  switch (this->mode)
-  {
-  case MODE_320x240_YUV422:
-  case MODE_640x480_YUV422:
-  case MODE_800x600_YUV422:
-  case MODE_1024x768_YUV422:
-  case MODE_1280x960_YUV422:
-    this->data->bpp = 24;
-    this->data->format = PLAYER_CAMERA_FORMAT_RGB888;
-    this->data->image_count = frame_width * frame_height * 3;
-    this->data->image = reinterpret_cast<uint8_t *>(malloc(this->data->image_count));
-    assert(this->data->image);
-    this->data->width = frame_width;
-    this->data->height = frame_height;
-    uyvy2rgb(reinterpret_cast<unsigned char *>(capture_buffer), reinterpret_cast<unsigned char *>(this->data->image), frame_width * frame_height);
-    break;
-  case MODE_640x480_RGB:
-    this->data->bpp = 24;
-    this->data->format = PLAYER_CAMERA_FORMAT_RGB888;
-    this->data->image_count = frame_width * frame_height * 3;
-    this->data->image = reinterpret_cast<uint8_t *>(malloc(this->data->image_count));
-    assert(this->data->image);
-    this->data->width = frame_width;
-    this->data->height = frame_height;
-    memcpy(this->data->image, capture_buffer, this->data->image_count);
-    break;
-  case MODE_640x480_MONO:
-  case MODE_800x600_MONO:
-  case MODE_1024x768_MONO:
-  case MODE_1280x960_MONO:
-  case MODE_FORMAT7_0:
-    if (!DoBayerConversion)
-    {
-      this->data->bpp = 8;
-      this->data->format = PLAYER_CAMERA_FORMAT_MONO8;
-      this->data->image_count = frame_width * frame_height;
-      this->data->image = reinterpret_cast<uint8_t *>(malloc(this->data->image_count));
-      assert(this->data->image);
-      this->data->width = frame_width;
-      this->data->height = frame_height;
-      memcpy(this->data->image, capture_buffer, this->data->image_count);
-    }
-    else
-    {
-      this->data->bpp = 24;
-      this->data->format = PLAYER_CAMERA_FORMAT_RGB888;
-      switch (this->BayerMethod)
-      {
+	assert(capture_buffer);
+	//   assert(!(this->data));
+	//   this->data = reinterpret_cast<player_camera_data_t *>(malloc(sizeof(player_camera_data_t)));
+	assert(this->data);
+	// memset(this->data, 0, sizeof(player_camera_data_t)); I assume everything is set properly later!
+	switch (this->mode) {
+	case MODE_320x240_YUV422:
+	case MODE_640x480_YUV422:
+	case MODE_800x600_YUV422:
+	case MODE_1024x768_YUV422:
+	case MODE_1280x960_YUV422:
+		this->data->bpp = 24;
+		this->data->format = PLAYER_CAMERA_FORMAT_RGB888;
+		this->data->image_count = frame_width * frame_height * 3;
+		this->data->image = reinterpret_cast<uint8_t *> (malloc(
+				this->data->image_count));
+		assert(this->data->image);
+		this->data->width = frame_width;
+		this->data->height = frame_height;
+		uyvy2rgb(reinterpret_cast<unsigned char *> (capture_buffer),
+				reinterpret_cast<unsigned char *> (this->data->image),
+				frame_width * frame_height);
+		break;
+	case MODE_640x480_RGB:
+		this->data->bpp = 24;
+		this->data->format = PLAYER_CAMERA_FORMAT_RGB888;
+		this->data->image_count = frame_width * frame_height * 3;
+		this->data->image = reinterpret_cast<uint8_t *> (malloc(
+				this->data->image_count));
+		assert(this->data->image);
+		this->data->width = frame_width;
+		this->data->height = frame_height;
+		memcpy(this->data->image, capture_buffer, this->data->image_count);
+		break;
+	case MODE_640x480_MONO:
+	case MODE_800x600_MONO:
+	case MODE_1024x768_MONO:
+	case MODE_1280x960_MONO:
+	case MODE_FORMAT7_0:
+		if (!DoBayerConversion) {
+			this->data->bpp = 8;
+			this->data->format = PLAYER_CAMERA_FORMAT_MONO8;
+			this->data->image_count = frame_width * frame_height;
+			this->data->image = reinterpret_cast<uint8_t *> (malloc(
+					this->data->image_count));
+			assert(this->data->image);
+			this->data->width = frame_width;
+			this->data->height = frame_height;
+			memcpy(this->data->image, capture_buffer, this->data->image_count);
+		} else {
+			this->data->bpp = 24;
+			this->data->format = PLAYER_CAMERA_FORMAT_RGB888;
+			switch (this->BayerMethod) {
 
-      case BAYER_DECODING_DOWNSAMPLE:
-        // quarter of the image but 3 bytes per pixel
-	this->data->image_count = (frame_width / 2) * (frame_height / 2) * 3;
-        this->data->image = reinterpret_cast<uint8_t *>(malloc(this->data->image_count));
-	assert(this->data->image);
-	BayerDownsample(reinterpret_cast<unsigned char *>(capture_buffer),
-	                reinterpret_cast<unsigned char *>(this->data->image),
-			frame_width / 2, frame_height / 2,
-			this->BayerPattern);
-	break;
-      case BAYER_DECODING_NEAREST:
-        this->data->image_count = frame_width * frame_height * 3;
-        this->data->image = reinterpret_cast<uint8_t *>(malloc(this->data->image_count));
-	assert(this->data->image);
-        BayerNearestNeighbor(reinterpret_cast<unsigned char *>(capture_buffer),
-			     reinterpret_cast<unsigned char *>(this->data->image),
-			     frame_width, frame_height,
-			     this->BayerPattern);
-	break;
-      case BAYER_DECODING_EDGE_SENSE:
-        this->data->image_count = frame_width * frame_height * 3;
-        this->data->image = reinterpret_cast<uint8_t *>(malloc(this->data->image_count));
-        assert(this->data->image);
-	BayerEdgeSense(reinterpret_cast<unsigned char *>(capture_buffer),
-	               reinterpret_cast<unsigned char *>(this->data->image),
-		       frame_width, frame_height,
-		       this->BayerPattern);
-	break;
-      default:
-        PLAYER_ERROR("camera1394: Unknown Bayer Method");
-	return -1;
-      }
-      if (this->BayerMethod != BAYER_DECODING_DOWNSAMPLE)
-      {
-        this->data->width = frame_width;
-        this->data->height = frame_height;
-      }
-      else
-      {    //image is half the size of grabbed frame
-        this->data->width = frame_width / 2;
-        this->data->height = frame_height / 2;
-      }
-    }
-    break;
-  default:
-    PLAYER_ERROR("camera1394: Unknown mode");
-    return -1;
-  }
+			case BAYER_DECODING_DOWNSAMPLE:
+				// quarter of the image but 3 bytes per pixel
+				this->data->image_count = (frame_width / 2)
+						* (frame_height / 2) * 3;
+				this->data->image = reinterpret_cast<uint8_t *> (malloc(
+						this->data->image_count));
+				assert(this->data->image);
+				BayerDownsample(
+						reinterpret_cast<unsigned char *> (capture_buffer),
+						reinterpret_cast<unsigned char *> (this->data->image),
+						frame_width / 2, frame_height / 2, this->BayerPattern);
+				break;
+			case BAYER_DECODING_NEAREST:
+				this->data->image_count = frame_width * frame_height * 3;
+				this->data->image = reinterpret_cast<uint8_t *> (malloc(
+						this->data->image_count));
+				assert(this->data->image);
+				BayerNearestNeighbor(
+						reinterpret_cast<unsigned char *> (capture_buffer),
+						reinterpret_cast<unsigned char *> (this->data->image),
+						frame_width, frame_height, this->BayerPattern);
+				break;
+			case BAYER_DECODING_EDGE_SENSE:
+				this->data->image_count = frame_width * frame_height * 3;
+				this->data->image = reinterpret_cast<uint8_t *> (malloc(
+						this->data->image_count));
+				assert(this->data->image);
+				BayerEdgeSense(
+						reinterpret_cast<unsigned char *> (capture_buffer),
+						reinterpret_cast<unsigned char *> (this->data->image),
+						frame_width, frame_height, this->BayerPattern);
+				break;
+			default:
+				PLAYER_ERROR("camera1394: Unknown Bayer Method");
+				return -1;
+			}
+			if (this->BayerMethod != BAYER_DECODING_DOWNSAMPLE) {
+				this->data->width = frame_width;
+				this->data->height = frame_height;
+			} else { //image is half the size of grabbed frame
+				this->data->width = frame_width / 2;
+				this->data->height = frame_height / 2;
+			}
+		}
+		break;
+	default:
+		PLAYER_ERROR("camera1394: Unknown mode");
+		return -1;
+	}
 #if LIBDC1394_VERSION == 0200
-  if (this->method == methodVideo) dc1394_capture_enqueue(camera, frame);
+	if (this->method == methodVideo) dc1394_capture_enqueue(camera, frame);
 #else
-  if (this->method == methodVideo) dc1394_dma_done_with_buffer(&this->camera);
+	if (this->method == methodVideo)
+		dc1394_dma_done_with_buffer(&this->camera);
 #endif
-  this->data->compression = PLAYER_CAMERA_COMPRESS_RAW;
-  return 0;
+	this->data->compression = PLAYER_CAMERA_COMPRESS_RAW;
+	return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Update the device data (the data going back to the client).
-void Camera1394::RefreshData()
-{
-  assert(this->data);
-  if (!(this->data->image_count))
-  {
-    PLAYER_ERROR("No image data to publish");
-    return;
-  }
-  assert(this->data->image);
-  Publish(this->device_addr,
-          PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
-          reinterpret_cast<void *>(this->data),
-#if LIBDC1394_VERSION == 0200
-          0, &this->frameTime, false);
-#else
-          0, NULL, false);
-#endif
-  // I assume that Publish() freed this data!
-  this->data = NULL;
-  return;
-}
+void Camera1394::RefreshData() {
+	//   assert(!(this->data));
+	if (!(this->data))
+		this->data = reinterpret_cast<player_camera_data_t *> (malloc(
+				sizeof(player_camera_data_t)));
+	assert(this->data);
 
+	if (!GrabFrame()) {
+		// this should go or be replaced
+		// Save frames; must be done after writedata (which will byteswap)
+		if (this->save) {
+			char filename[255];
+			snprintf(filename, sizeof(filename), "click-%04d.ppm",
+					this->frameno++);
+			this->SaveFrame(filename);
+		}
+
+		assert(this->data);
+		if (!(this->data->image_count)) {
+			PLAYER_ERROR("No image data to publish");
+			return;
+		}
+		assert(this->data->image);
+
+		Publish(this->device_addr, PLAYER_MSGTYPE_DATA,
+				PLAYER_CAMERA_DATA_STATE,
+				reinterpret_cast<void *> (this->data),
+#if LIBDC1394_VERSION == 0200
+				0, &this->frameTime, false);
+#else
+				0, NULL, false);
+#endif
+		// I assume that Publish() freed this data!
+		this->data = NULL;
+	}
+	return;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Save a frame to disk
-int Camera1394::SaveFrame(const char *filename)
-{
-  FILE * fp;
+int Camera1394::SaveFrame(const char *filename) {
+	FILE * fp;
 
-  assert(this->data);
-  if (!(this->data->image_count))
-  {
-    PLAYER_ERROR("No image data to write");
-    return -1;
-  }
-  assert(this->data->image);
+	assert(this->data);
+	if (!(this->data->image_count)) {
+		PLAYER_ERROR("No image data to write");
+		return -1;
+	}
+	assert(this->data->image);
 
-  fp = fopen(filename, "wb");
-  if (!fp)
-  {
-    PLAYER_ERROR("Couldn't create image file");
-    return -1;
-  }
+	fp = fopen(filename, "wb");
+	if (!fp) {
+		PLAYER_ERROR("Couldn't create image file");
+		return -1;
+	}
 
-  int ret = 0;
-  switch (this->data->format)
-  {
-    case PLAYER_CAMERA_FORMAT_MONO8:
-      fprintf(fp,"P5\n%u %u\n255\n", this->data->width, this->data->height);
-      ret = fwrite((unsigned char*)this->data->image, 1, this->data->image_count, fp);
-      break;
-    case PLAYER_CAMERA_FORMAT_RGB888:
-      fprintf(fp,"P6\n%u %u\n255\n", this->data->width, this->data->height);
-      ret = fwrite((unsigned char*)this->data->image, 1, this->data->image_count, fp);
-      break;
-    default:
-      break;
-  }
-  fclose(fp);
+	int ret = 0;
+	switch (this->data->format) {
+	case PLAYER_CAMERA_FORMAT_MONO8:
+		fprintf(fp, "P5\n%u %u\n255\n", this->data->width, this->data->height);
+		ret = fwrite((unsigned char*) this->data->image, 1,
+				this->data->image_count, fp);
+		break;
+	case PLAYER_CAMERA_FORMAT_RGB888:
+		fprintf(fp, "P6\n%u %u\n255\n", this->data->width, this->data->height);
+		ret = fwrite((unsigned char*) this->data->image, 1,
+				this->data->image_count, fp);
+		break;
+	default:
+		break;
+	}
+	fclose(fp);
 
-  if (ret < 0)
-  {
-	  PLAYER_ERROR("Failed to save frame");
-  }
+	if (ret < 0) {
+		PLAYER_ERROR("Failed to save frame");
+	}
 
-  return 0;
+	return 0;
 }
 

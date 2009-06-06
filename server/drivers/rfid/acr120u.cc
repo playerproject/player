@@ -122,7 +122,7 @@ class Acr120u : public ThreadedDriver {
 		usb_dev_handle *HANDLE;
 		struct usb_device *dev,*dev_temp;
 
-	        typedef enum Acr120uCmds { RESET=0, TURN_ON_RADIO, LIST_TAGS };
+		enum Acr120uCmds { RESET=0, TURN_ON_RADIO, LIST_TAGS };
 		static const int Acr120uCmdLength=14;
 		static const char Acr120uCmdStrings[][Acr120uCmdLength ];
 		static const int Acr120uResponseLength=3*8;
@@ -256,6 +256,7 @@ int Acr120u::MainSetup() {
     PLAYER_MSG0(1,"ACR120U driver ready");
     // Start the device thread; spawns a new thread and executes
     // Phidgetrfid::Main(), which contains the main loop for the driver.
+    return 0;
 }
 
 
