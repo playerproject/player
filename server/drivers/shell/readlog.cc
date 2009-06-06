@@ -66,13 +66,13 @@ The readlog driver can provide the following device interfaces.
 - @ref interface_opaque
 - @ref interface_ptz
 - @ref interface_actarray
+- @ref interface_fiducial
 
 The following interfaces are supported in principle but are currently
 disabled because they need to be updated:
 
 - @ref interface_blobfinder
 - @ref interface_camera
-- @ref interface_fiducial
 - @ref interface_gps
 - @ref interface_joystick
 - @ref interface_position3d
@@ -195,6 +195,11 @@ class ReadLog: public ThreadedDriver
                                      player_msghdr_t * hdr,
                                      void * data);
 
+  // Process fiducial interface configuration requests
+  private: int ProcessFiducialConfig(QueuePointer & resp_queue,
+                                  player_msghdr_t * hdr,
+                                  void * data);
+
   // Process laser interface configuration requests
   private: int ProcessLaserConfig(QueuePointer & resp_queue,
                                   player_msghdr_t * hdr,
@@ -225,6 +230,12 @@ class ReadLog: public ThreadedDriver
                          int linenum, int token_count, char **tokens,
                          double time);
 
+  // Parse fiducial data
+  private: int ParseFiducial(player_devaddr_t id,
+                             unsigned short type, unsigned short subtype,
+                             int linenum, int token_count, char **tokens,
+                             double time);
+
 #if 0
   // Parse blobfinder data
   private: int ParseBlobfinder(player_devaddr_t id,
@@ -236,12 +247,6 @@ class ReadLog: public ThreadedDriver
   private: int ParseCamera(player_devaddr_t id,
                            unsigned short type, unsigned short subtype,
                            int linenum,
-                          int token_count, char **tokens, double time);
-
-  // Parse fiducial data
-  private: int ParseFiducial(player_devaddr_t id,
-                             unsigned short type, unsigned short subtype,
-                             int linenum,
                           int token_count, char **tokens, double time);
 
   // Parse gps data
@@ -938,6 +943,46 @@ ReadLog::ProcessPositionConfig(QueuePointer & resp_queue,
 }
 
 int
+ReadLog::ProcessFiducialConfig(QueuePointer & resp_queue,
+                            player_msghdr_t * hdr,
+                            void * data)
+{
+  switch(hdr->subtype)
+  {
+    case PLAYER_FIDUCIAL_REQ_GET_GEOM:
+      {
+        // Find the right place from which to retrieve it
+        int j;
+        for(j=0;j<this->provide_count;j++)
+        {
+          if(Device::MatchDeviceAddress(this->provide_ids[j], hdr->addr))
+            break;
+        }
+        if(j>=this->provide_count)
+        {
+          puts("no matching device");
+          return(-1);
+        }
+
+        if(!this->provide_metadata[j])
+        {
+          puts("no metadata");
+          return(-1);
+        }
+
+        this->Publish(this->provide_ids[j], resp_queue,
+                      PLAYER_MSGTYPE_RESP_ACK, hdr->subtype,
+                      this->provide_metadata[j],
+                      sizeof(player_fiducial_geom_t),
+                      NULL);
+        return(0);
+      }
+    default:
+      return(-1);
+  }
+}
+
+int
 ReadLog::ProcessLaserConfig(QueuePointer & resp_queue,
                             player_msghdr_t * hdr,
                             void * data)
@@ -1091,6 +1136,11 @@ ReadLog::ProcessMessage(QueuePointer & resp_queue,
     return(this->ProcessLogConfig(resp_queue, hdr, data));
   }
   else if((hdr->type == PLAYER_MSGTYPE_REQ) &&
+          (hdr->addr.interf == PLAYER_FIDUCIAL_CODE))
+  {
+    return(this->ProcessFiducialConfig(resp_queue, hdr, data));
+  }
+  else if((hdr->type == PLAYER_MSGTYPE_REQ) &&
           (hdr->addr.interf == PLAYER_LASER_CODE))
   {
     return(this->ProcessLaserConfig(resp_queue, hdr, data));
@@ -1197,9 +1247,6 @@ int ReadLog::ParseData(player_devaddr_t id,
   else if (id.interf == PLAYER_CAMERA_CODE)
     return this->ParseCamera(id, type, subtype, linenum,
                              token_count, tokens, time);
-  else if (id.interf == PLAYER_FIDUCIAL_CODE)
-    return this->ParseFiducial(id, type, subtype, linenum,
-                               token_count, tokens, time);
   else if (id.interf == PLAYER_GPS_CODE)
     return this->ParseGps(id, type, subtype, linenum,
                           token_count, tokens, time);
@@ -1210,6 +1257,9 @@ int ReadLog::ParseData(player_devaddr_t id,
   if (id.interf == PLAYER_LASER_CODE)
     return this->ParseLaser(id, type, subtype, linenum,
                             token_count, tokens, time);
+  else if (id.interf == PLAYER_FIDUCIAL_CODE)
+    return this->ParseFiducial(id, type, subtype, linenum,
+                               token_count, tokens, time);
   else if (id.interf == PLAYER_LOCALIZE_CODE)
     return this->ParseLocalize(id, type, subtype, linenum,
                                token_count, tokens, time);
@@ -1350,48 +1400,114 @@ int ReadLog::ParseCamera(player_devaddr_t id, int linenum,
 
   return 0;
 }
-
+#endif
 
 ////////////////////////////////////////////////////////////////////////////
 // Parse fiducial data
-int ReadLog::ParseFiducial(player_devaddr_t id, int linenum,
-                               int token_count, char **tokens, struct timeval time)
+int ReadLog::ParseFiducial(player_devaddr_t id,
+                           unsigned short type, unsigned short subtype,
+                           int linenum, int token_count, char **tokens,
+                           double time)
 {
-  player_fiducial_data_t data;
-  int fiducial_count;
-
   if (token_count < 7)
   {
     PLAYER_ERROR2("incomplete line at %s:%d", this->filename, linenum);
     return -1;
   }
 
-  fiducial_count = atoi( tokens[6] );
-  data.count = NUINT16( fiducial_count );
+  switch(type) {
+      case PLAYER_MSGTYPE_DATA:
+            switch (subtype) {
+                case PLAYER_FIDUCIAL_DATA_SCAN:
+                    player_fiducial_data_t data;
+                    int fiducial_count;
 
-  for( int i = 0; i < fiducial_count; i++ )
-  {
-    data.fiducials[i].id = NINT16( atof(tokens[13*i + 7]) );
-    data.fiducials[i].pos[0] = NINT32(M_MM(atof(tokens[13*i+ 8])));
-    data.fiducials[i].pos[1] = NINT32(M_MM(atof(tokens[13*i+ 9])));
-    data.fiducials[i].pos[2] = NINT32(M_MM(atof(tokens[13*i+10])));
-    data.fiducials[i].rot[0] = NINT32(M_MM(atof(tokens[13*i+11])));
-    data.fiducials[i].rot[1] = NINT32(M_MM(atof(tokens[13*i+12])));
-    data.fiducials[i].rot[2] = NINT32(M_MM(atof(tokens[13*i+13])));
-    data.fiducials[i].upos[0] = NINT32(M_MM(atof(tokens[13*i+14])));
-    data.fiducials[i].upos[1] = NINT32(M_MM(atof(tokens[13*i+15])));
-    data.fiducials[i].upos[2] = NINT32(M_MM(atof(tokens[13*i+16])));
-    data.fiducials[i].urot[0] = NINT32(M_MM(atof(tokens[13*i+17])));
-    data.fiducials[i].urot[1] = NINT32(M_MM(atof(tokens[13*i+18])));
-    data.fiducials[i].urot[2] = NINT32(M_MM(atof(tokens[13*i+19])));
+                    fiducial_count = atoi(tokens[7]);
+
+                    data.fiducials_count = fiducial_count;
+                    //data.fiducials = (player_fiducial_item_t *) malloc(data.fiducials_count * sizeof(data.fiducials[0]));
+                    data.fiducials = new player_fiducial_item_t[data.fiducials_count];
+
+                    for (int i = 0; i < fiducial_count; i++) {
+                        data.fiducials[i].id = atof(tokens[13 * i + 8]);
+                        data.fiducials[i].pose.px = atof(tokens[13 * i + 9]);
+                        data.fiducials[i].pose.py = atof(tokens[13 * i + 10]);
+                        data.fiducials[i].pose.pz = atof(tokens[13 * i + 11]);
+                        data.fiducials[i].pose.proll = atof(tokens[13 * i + 12]);
+                        data.fiducials[i].pose.ppitch = atof(tokens[13 * i + 13]);
+                        data.fiducials[i].pose.pyaw = atof(tokens[13 * i + 14]);
+                        data.fiducials[i].upose.px = atof(tokens[13 * i + 15]);
+                        data.fiducials[i].upose.py = atof(tokens[13 * i + 16]);
+                        data.fiducials[i].upose.pz = atof(tokens[13 * i + 17]);
+                        data.fiducials[i].upose.proll = atof(tokens[13 * i + 18]);
+                        data.fiducials[i].upose.ppitch = atof(tokens[13 * i + 19]);
+                        data.fiducials[i].upose.pyaw = atof(tokens[13 * i + 20]);
+                    }
+                    this->Publish(id, type, subtype,
+                            (void*) & data, sizeof (data), &time);
+
+                    delete [] data.fiducials;
+                    return (0);
+                default:
+                    PLAYER_ERROR1("unimplemented fiducial data subtype %d\n", subtype);
+                    return(-1);
+            }
+      case PLAYER_MSGTYPE_RESP_ACK:
+            switch (subtype) {
+                case PLAYER_FIDUCIAL_REQ_GET_GEOM:
+
+                    if (token_count < 17) {
+                        PLAYER_ERROR2("incomplete line at %s:%d",
+                                this->filename, linenum);
+                        return -1;
+                    }
+                    player_fiducial_geom_t* geom;
+                    
+                    geom = (player_fiducial_geom_t*) calloc(1, sizeof (player_fiducial_geom_t));
+                    assert(geom);
+
+                    geom->pose.px = atof(tokens[7]);
+                    geom->pose.py = atof(tokens[8]);
+                    geom->pose.pz = atof(tokens[9]);
+                    geom->pose.proll = atof(tokens[10]);
+                    geom->pose.ppitch = atof(tokens[11]);
+                    geom->pose.pyaw = atof(tokens[12]);
+                    geom->size.sl = atof(tokens[13]);
+                    geom->size.sw = atof(tokens[14]);
+                    geom->size.sh = atof(tokens[15]);
+                    geom->fiducial_size.sl = atof(tokens[16]);
+                    geom->fiducial_size.sw = atof(tokens[17]);
+
+                    // Find the right place to put it
+                    int j;
+                    for (j = 0; j<this->provide_count; j++) {
+                        if (Device::MatchDeviceAddress(this->provide_ids[j], id))
+                            break;
+                    }
+                    assert(j<this->provide_count);
+
+                    if (this->provide_metadata[j])
+                        free(this->provide_metadata[j]);
+
+                    this->provide_metadata[j] = (void*) geom;
+
+                    // nothing to publish
+                    return (0);
+                    
+                default:
+                    PLAYER_ERROR1("unimplemented fiducial data subtype %d\n", subtype);
+                    return(-1);
+            }
+        default:
+            PLAYER_ERROR1("unimplemented fiducial data type %d\n", type);
+            return (-1);
+
   }
-
-  this->PutMsg(id,NULL,PLAYER_MSGTYPE_DATA,0, &data, sizeof(data), &time);
 
   return 0;
 }
 
-
+#if 0
 ////////////////////////////////////////////////////////////////////////////
 // Parse GPS data
 int ReadLog::ParseGps(player_devaddr_t id, int linenum,
