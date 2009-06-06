@@ -355,6 +355,7 @@ P2OS::P2OS(ConfigFile* cf, int section)
   memset(&this->audio_id, 0, sizeof(player_devaddr_t));
   memset(&this->actarray_id, 0, sizeof(player_devaddr_t));
   memset(&this->limb_id, 0, sizeof(player_devaddr_t));
+  memset(&this->ptz_id, 0, sizeof(player_devaddr_t));
 
   this->position_subscriptions = this->sonar_subscriptions = this->actarray_subscriptions = 0;
   this->pulse = -1;
@@ -494,6 +495,19 @@ P2OS::P2OS(ConfigFile* cf, int section)
       this->SetError(-1);
       return;
     }
+  }
+
+  // Do We create the PTZ Interface
+  if(cf->ReadDeviceAddr(&(this->ptz_id), section, "provides",
+                      PLAYER_PTZ_CODE, -1, NULL) == 0)
+  {
+    if(this->AddInterface(this->ptz_id) != 0)
+    {
+      this->SetError(-1);
+      return;
+    }
+    this->minfov = (int)rint(RTOD(cf->ReadTupleAngle(section, "fov", 0, DTOR(3))));
+    this->maxfov = (int)rint(RTOD(cf->ReadTupleAngle(section, "fov", 1, DTOR(30))));
   }
 
   // Do we create a limb interface?
@@ -1278,6 +1292,11 @@ int P2OS::MainSetup()
     }
   }
 
+  // Set up the PTZ Camera
+  if(this->ptz_id.interf){
+    SetupPtz();
+  }
+
 
   // TODO: figure out what the right behavior here is
 #if 0
@@ -1291,6 +1310,11 @@ int P2OS::MainSetup()
   return(0);
 }
 
+
+
+
+
+
 void P2OS::MainQuit()
 {
   unsigned char command[20],buffer[20];
@@ -1300,6 +1324,16 @@ void P2OS::MainQuit()
 
   if(this->psos_fd == -1)
     return;
+
+  // Shut Down the PTZ camera
+  if(this->ptz_id.interf){
+      usleep(PTZ_SLEEP_TIME_USEC);
+      SendAbsPanTilt(0,0);
+      usleep(PTZ_SLEEP_TIME_USEC);
+      SendAbsZoom(0);
+      setPower(0);
+      puts("PTZ camera has been shutdown");
+  }
 
   command[0] = STOP;
   packet.Build(command, 1);
@@ -1473,6 +1507,12 @@ P2OS::StandardSIPPutData(double timestampStandardSIP)
                 (void*)&(this->p2os_data.compass),
                 sizeof(player_position2d_data_t),
                 &timestampStandardSIP);
+
+  // put PTZ data
+  this->Publish(this->ptz_id,
+                PLAYER_MSGTYPE_DATA,
+                PLAYER_PTZ_DATA_STATE,
+                (void*)&(this->ptz_data));
 }
 
 void
@@ -1599,6 +1639,44 @@ P2OS::Main()
       }
     }
 
+    if(this->ptz_id.interf)
+    {
+        int pan,tilt;
+        int zoom;
+        //fprintf(stderr, "PTZ MAIN LOOP\n");
+        //fprintf(stderr, "Getting Pan/Tilt Data\n");
+        if(GetAbsPanTilt(&pan,&tilt) < 0)
+        {
+            fputs("canonvcc4:Main():GetAbsPanTilt() errored. bailing.\n",
+                    stderr);
+            pthread_exit(NULL);
+        }
+
+        usleep(30000);
+        //fprintf(stderr, "Getting Zoom Data\n");
+        zoom = 0;
+        if(GetAbsZoom(&zoom) < 0)
+        {
+            fputs("canonvcc4:Main():GetAbsZoom() errored. bailing.\n", stderr);
+            pthread_exit(NULL);
+        }
+        // Do the necessary coordinate conversions.  Camera's natural pan
+        // coordinates increase clockwise; we want them the other way, so
+        // we negate pan here.  Zoom values are converted from arbitrary
+        // units to a field of view (in degrees).
+        pan = -pan;
+
+        //printf("before zoom = %i\n", zoom);
+        //zoom = this->maxfov + (zoom * (this->maxfov - this->minfov)) / maxzoom;
+        //printf("after zoom = %i\n", zoom);
+
+        ptz_data.pan = DTOR((unsigned short)pan);
+        ptz_data.tilt = DTOR((unsigned short)tilt);
+
+        //double m = (double)(this->minfov - this->maxfov) / (double)this->maxzoom;
+        ptz_data.zoom = DTOR(this->maxfov+(zoom * (double)(this->minfov - this->maxfov) / (double)this->maxzoom));
+    }
+
     // handle pending messages
     if(!this->InQueue->Empty())
     {
@@ -1664,6 +1742,29 @@ P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
             packet.packet[3] == SERAUX)
     {
        // This is an AUX serial packet
+        if(ptz_id.interf)
+        {
+            /* It is an extended SIP (ptz) packet, so process it */
+            /* Be sure to pass data size too (packet[2])! */
+            //fprintf(stderr,"Got a PTZ packet\n");
+            int len;
+            //printf("Got ptz packet\n");
+
+            len = packet.packet[2] - 3;
+            //packet.PrintHex();
+            //fprintf(stderr, "Got PTZ Packet of length %i\n",len);
+
+            if ( cb.gotPacket() ){
+                fprintf(stderr, "ptz_error: got a message, but we already have the complete packet.\n");
+            }
+            else {
+                for ( int i = 4; i < 4+len ; i++ )
+                {
+                    cb.putOnBuf(packet.packet[i]);
+                }
+            }
+
+        }
     }
     else if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB &&
             packet.packet[3] == SERAUX2)
@@ -2598,11 +2699,41 @@ P2OS::HandleConfig(QueuePointer & resp_queue,
     this->Publish(this->armgripper_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_GRIPPER_REQ_GET_GEOM, &geom, sizeof (geom), NULL);
     return 0;
   }
+  // PTZ Stuff now.
+  else if (Message::MatchMessage(hdr,
+              PLAYER_MSGTYPE_REQ,
+              PLAYER_PTZ_REQ_GENERIC, device_addr))
+  {
+      assert(hdr->size == sizeof(player_ptz_req_generic_t));
+
+      player_ptz_req_generic_t *cfg = (player_ptz_req_generic_t *)data;
+
+      // check whether command or inquiry...
+      if (cfg->config[0] == 0x01)
+      {
+          if (SendCommand((uint8_t *)cfg->config, cfg->config_count) < 0)
+              Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, hdr->subtype);
+          else
+              Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype);
+          return 0;
+      }
+      else
+      {
+          // this is an inquiry, so we have to send data back
+          cfg->config_count = SendRequest((uint8_t*)cfg->config,
+                                          cfg->config_count,
+                                          (uint8_t*)cfg->config);
+          Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype);
+      }
+      return 0;
+  }
   else
   {
     PLAYER_WARN("unknown config request to p2os driver");
     return(-1);
   }
+
+  return 0;
 }
 
 void P2OS::SendPulse (void)
@@ -3049,6 +3180,7 @@ int P2OS::HandleLimbCommand (player_msghdr *hdr, void *data)
   return -1;
 }
 
+
 ///////////////////////////////////////////////////////////////////////////////
 //  Lift commands
 
@@ -3101,6 +3233,7 @@ int P2OS::HandleLiftCommand (player_msghdr *hdr, void *data)
       // becomes travel time / 0.02.
       // It is important to remember that the LIFTcarry is (if my reading of the manul is correct)
       // an offset command, not absolute position command. So we have to track the last commanded
+
       // position of the lift and work from that to get the correct travel time (and direction).
 
       double offset = cmd.position - lastLiftPosCmd.position;
@@ -3371,3 +3504,957 @@ P2OS::HandleCommand(player_msghdr * hdr, void* data)
   }
   return retVal;
 }
+
+
+// I'm going to put my PTZ stuff down here for now.
+/************************************************************************/
+
+int
+P2OS::SetupPtz()
+{
+    int err;
+    int error_code;
+    int pan, tilt;
+    fprintf(stderr, "Setting up the Canon PTZ Camera.\n");
+
+    //err = setPower(0);
+
+    do {
+    //fprintf(stderr, "\nPowering off/on the camera!!!!!!!!!!!!!!\n");
+    fprintf(stderr, "\nPowering On the Camera.\n");
+    err = setPower(1);
+    while (error_code == CAM_ERROR_BUSY)
+    {
+        fprintf(stdout, "power on busy: %x\n", error_code);
+        err = setPower(1);
+    }
+    if ((err != 0) &&
+            (error_code != CAM_ERROR_NONE) && (error_code != CAM_ERROR_MODE))
+    {
+        printf("Could not set power on: %x\n", error_code);
+        setPower(0);
+        //close(ptz_fd);
+        return -1;
+    }
+
+    /* Set Host Mode Control */
+    fprintf(stderr, "\nSeting Host Control mode.\n");
+    err = setControlMode();
+    while (error_code == CAM_ERROR_BUSY)
+    {
+        printf("control mode busy: %x\n", error_code);
+        err = setControlMode();
+    }
+    if (err)
+    {
+        printf("Could not set control mode\n");
+        setPower(0);
+        //close(ptz_fd);
+        return -1;
+    }
+
+
+    /* Send Init Command */
+    fprintf(stderr, "\nSendInit()\n");
+    err = sendInit();
+    while (error_code == CAM_ERROR_BUSY)
+    {
+        fprintf(stdout, "sendInit busy: %x\n", error_code);
+        err = sendInit();
+    }
+    if ((err != 0) && (error_code != CAM_ERROR_NONE) && (error_code != CAM_ERROR_MODE))
+    {
+        printf("Could not sendInit off: %x\n", error_code);
+        setPower(0);
+        return -1;
+    }
+    }while (error_code == CAM_ERROR_MODE);
+
+    /* Turn on Notify Command */
+    /*
+    fprintf(stderr, "Setting Notify Command on\n");
+    err = setNotifyCommand();
+    while (error_code == CAM_ERROR_BUSY)
+    {
+        printf("notify command busy: %x\n", error_code);
+        err = setNotifyCommand();
+    }
+    if (err)
+    {
+        printf("Could not set notify command\n");
+        setPower(0);
+        //close(ptz_fd);
+        return -1;
+    }
+    */
+
+    /* Now Turn Power on. */
+    /*
+    fprintf(stderr, "Powering On the Camera.\n");
+    err = setPower(1);
+    while (error_code == CAM_ERROR_BUSY)
+    {
+        fprintf(stdout, "power on busy: %x\n", error_code);
+        err = setPower(1);
+    }
+    if ((err != 0) &&
+            (error_code != CAM_ERROR_NONE) && (error_code != CAM_ERROR_MODE))
+    {
+        printf("Could not set power on: %x\n", error_code);
+        setPower(0);
+        return -1;
+    }
+    */
+    fprintf(stderr, "\nSetting the default tilt range.\n");
+    err = setDefaultTiltRange();
+    while (error_code == CAM_ERROR_BUSY)
+    {
+        printf("control mode busy: %x\n", error_code);
+        err = setDefaultTiltRange();
+    }
+    if (err)
+    {
+        printf("Could not set default tilt range\n");
+        setPower(0);
+        //close(ptz_fd);
+        return -1;
+    }
+
+    /* try to get current state, just to make sure we actually have a camera */
+    fprintf(stderr, "\nGetting the Abs Pan Tilt\n");
+    err = GetAbsPanTilt(&pan,&tilt);
+    if (err)
+    {
+        printf("Couldn't connect to PTZ device most likely because the camera\n"
+                "is not connected or is connected not to AUX1: %x\n",
+                error_code);
+        setPower(0);
+        //close(ptz_fd);
+        //ptz_fd = -1;
+        return(-1);
+    }
+    fprintf(stderr, "getAbsPantilt: %d %d\n", pan, tilt);
+
+    // Get the Zoom Range. 0 to what
+    fprintf(stderr, "Getting Max Zoom Range.\n");
+    err = GetMaxZoom(&maxzoom);
+    if (err)
+    {
+        fprintf(stderr, "Couldn't get max zoom range.\n");
+        setPower(0);
+        //close(ptz_fd);
+        //ptz_fd = -1;
+        return(-1);
+    }
+    fprintf(stderr, "maxzoom value = %i \n", maxzoom);
+    fprintf(stderr, "Done Initializing the PTZ Camera.\n");
+    return 0;
+}
+
+
+int
+P2OS::SendCommand(unsigned char *str, int len)
+{
+  int err = 0;
+  P2OSPacket ptz_packet;
+  P2OSPacket request_pkt;
+  unsigned char request[4];
+
+  // Zero out the Receive Buffer
+  request[0] = GETAUX;
+  request[1] = ARGINT;
+  request[2] = 0;
+  request[3] = 0;
+  request_pkt.Build(request,4);
+  SendReceive(&request_pkt,false);
+
+  if(len > MAX_PTZ_COMMAND_LENGTH)
+  {
+    fprintf(stderr,
+	    "CANNONvcc4::SendCommand(): message is too large (%d bytes)\n",
+	    len);
+    return(-1);
+  }
+
+  //err = write(ptz_fd, str, len);
+  // Since I'm hardcoding this to AUX1, basically we gotta stick the AUX1DATA
+  // header on this and then give it to the p2os send command.
+  unsigned char mybuf[MAX_PTZ_COMMAND_LENGTH];
+  mybuf[0] = TTY2;
+  mybuf[1] = ARGSTR;
+  mybuf[2] = len;
+  // Copy the command
+  memcpy(&mybuf[3], str, len);
+  //for (int i = 0; i < len+3; i ++)
+  //  fprintf(stderr, "0x%x ", mybuf[i]);
+  //fprintf(stderr,"\n");
+  ptz_packet.Build(mybuf, len+3);
+
+  /*
+  printf("ptz_command packet = ");
+  ptz_packet.PrintHex();
+  */
+
+  // Send the packet
+  this->SendReceive(&ptz_packet, false);
+
+  if (err != 0)
+  {
+    perror("canonvcc4::Send():write():");
+    return(-1);
+  }
+  return(0);
+}
+/************************************************************************/
+//int
+//canonvcc4::SendRequest(unsigned char* str, int len)
+
+int P2OS::SendRequest(unsigned char* str, int len, unsigned char* reply, uint8_t camera)
+{
+    return this->SendCommand(str,len);
+}
+
+/************************************************************************/
+void
+P2OS::PrintPacket(char* str, unsigned char* cmd, int len)
+{
+  for(int i=0;i<len;i++)
+    printf(" %.2x", cmd[i]);
+  puts("");
+}
+/************************************************************************/
+
+int
+P2OS::SendAbsPanTilt(int pan, int tilt)
+{
+  unsigned char command[MAX_PTZ_COMMAND_LENGTH];
+  int convpan, convtilt;
+  unsigned char buf[5];
+  int ppan, ttilt;
+
+  ppan = pan; ttilt = tilt;
+  if (abs(pan) > PTZ_PAN_MAX)
+    {
+      if(pan < -PTZ_PAN_MAX)
+	ppan = (int)-PTZ_PAN_MAX;
+      else
+	if(pan > PTZ_PAN_MAX)
+	  ppan = (int)PTZ_PAN_MAX;
+      //puts("Camera pan angle thresholded");
+    }
+  if (tilt > PTZ_TILT_MAX)
+    ttilt = (int)PTZ_TILT_MAX;
+  else
+    if(tilt < PTZ_TILT_MIN)
+      ttilt = (int)PTZ_TILT_MIN;
+  //puts("Camera pan angle thresholded");
+
+  //puts("Camera tilt angle thresholded");
+
+  convpan = (int)floor(ppan/.1125) + 0x8000;
+  convtilt = (int)floor(ttilt/.1125) + 0x8000;
+//   fprintf(stdout, "ppan: %d ttilt: %d conpan: %d contilt: %d\n",
+// 	  ppan,ttilt,convpan,convtilt);
+  command[0] = 0xFF;
+  command[1] = 0x30;
+  command[2] = 0x30;
+  command[3] = 0x00;
+  command[4] = 0x62;
+  // pan position
+
+  sprintf((char *)buf, "%X", convpan);
+
+  command[5] = buf[0];
+  command[6] = buf[1];
+  command[7] = buf[2];
+  command[8] = buf[3];
+  // tilt position
+  sprintf((char *)buf, "%X", convtilt);
+  command[9]  = buf[0];
+  command[10] = buf[1];
+  command[11] = buf[2];
+  command[12] = buf[3];
+  command[13] = (unsigned char) 0xEF;
+  SendCommand(command, 14);
+  //  PrintPacket( "sendabspantilt: ", command, 14);
+  return(ReceiveCommandAnswer(6));
+}
+/************************************************************************/
+int
+P2OS::setDefaultTiltRange()
+{
+  unsigned char command[MAX_PTZ_COMMAND_LENGTH];
+  unsigned char buf[8];
+  int maxtilt, mintilt;
+
+  command[0] = 0xFF;
+  command[1] = 0x30;
+  command[2] = 0x30;
+  command[3] = 0x00;
+  command[4] = 0x64;
+  command[5] = 0x31;
+
+  mintilt = (int)(floor(PTZ_TILT_MIN/.1125) + 0x8000);
+  sprintf((char *)buf, "%X", mintilt);
+
+  command[6] = buf[0];
+  command[7] = buf[1];
+  command[8] = buf[2];
+  command[9] = buf[3];
+  // tilt position
+  maxtilt = (int)(floor(PTZ_TILT_MAX/.1125) + 0x8000);
+  sprintf((char *)buf, "%X", maxtilt);
+
+  command[10] = buf[0];
+  command[11] = buf[1];
+  command[12] = buf[2];
+  command[13] = buf[3];
+  command[14] = (unsigned char) 0xEF;
+
+  SendCommand(command, 15);
+  //  PrintPacket( "setDefaultRange: ", command, 15);
+  return(ReceiveCommandAnswer(6));
+
+}
+
+/************************************************************************/
+int
+P2OS::GetAbsPanTilt(int* pan, int* tilt)
+{
+  unsigned char command[MAX_PTZ_COMMAND_LENGTH];
+  unsigned char reply[MAX_PTZ_REQUEST_LENGTH];
+  int reply_len;
+  unsigned char buf[4];
+  char byte;
+  unsigned int u_val;
+  int val;
+  int i;
+
+  command[0] = 0xFF;
+  command[1] = 0x30;
+  command[2] = 0x30;
+  command[3] = 0x00;
+  command[4] = 0x63;
+  command[5] = 0xEF;
+
+  if (SendRequest(command, 6, reply))
+    return(-1);
+  //  PrintPacket("getabspantilt: ", command, 6);
+  //reply_len = ReceiveRequestAnswer(reply,6,14);
+  reply_len = ReceiveRequestAnswer(reply,14,0);
+
+  if ( reply_len != 14 ) {
+    fprintf(stderr, "Reply Len = %i\n", reply_len);
+    return -1;
+  }
+
+  // remove the ascii encoding, and put into 4-byte array
+  for (i = 0; i < 4; i++)
+  {
+      byte = reply[i+5];
+      if (byte < 0x40)
+          byte = byte - 0x30;
+      else
+          byte = byte - 'A' + 10;
+      buf[i] = byte;
+  }
+
+  // convert the 4-bytes into a number
+  u_val = buf[0] * 0x1000 + buf[1] * 0x100 + buf[2] * 0x10 + buf[3];
+
+  // convert the number to a value that's meaningful, based on camera specs
+  val = (int)(((int)u_val - (int)0x8000) * 0.1125);
+
+  // now set myPan to the response received for where the camera thinks it is
+  *pan = val;
+
+  // repeat the steps for the tilt value
+  for (i = 0; i < 4; i++)
+    {
+      byte = reply[i+9];
+      if (byte < 0x40)
+	byte = byte - 0x30;
+      else
+	byte = byte - 'A' + 10;
+      buf[i] = byte;
+    }
+  u_val = buf[0] * 0x1000 + buf[1] * 0x100 + buf[2] * 0x10 + buf[3];
+  val =(int)(((int)u_val  - (int)0x8000) * 0.1125);
+  *tilt = val;
+
+  return(0);
+}
+
+/************************************************************************/
+int
+P2OS::GetAbsZoom(int* zoom)
+{
+  unsigned char command[MAX_PTZ_COMMAND_LENGTH];
+  unsigned char reply[MAX_PTZ_REQUEST_LENGTH];
+  int reply_len;
+  char byte;
+  unsigned char buf[4];
+  unsigned int u_zoom;
+  int i;
+
+  command[0] = 0xFF;
+  command[1] = 0x30;
+  command[2] = 0x30;
+  command[3] = 0x00;
+  command[4] = 0xB4;
+  command[5] = 0x30;
+  command[6] = 0xEF;
+
+  if (SendRequest(command, 7, reply))
+    return(-1);
+  //  PrintPacket( "getabszoom: ", command, 6);
+
+  reply_len = ReceiveRequestAnswer(reply,10,0);
+
+   if (reply_len == 6)
+     return -1;
+
+  // remove the ascii encoding, and put into 2 bytes
+  for (i = 0; i < 4; i++)
+  {
+    byte = reply[i + 5];
+    if (byte < 0x40)
+      byte = byte - 0x30;
+    else
+      byte = byte - 'A' + 10;
+    buf[i] = byte;
+  }
+
+  // convert the 2 bytes into a number
+  u_zoom = 0;
+  for (i = 0; i < 4; i++)
+    u_zoom += buf[i] * (unsigned int) pow(16.0, (double)(3 - i));
+  *zoom = u_zoom;
+  return(0);
+}
+
+/************************************************************************/
+int
+P2OS::SendAbsZoom(int zoom)
+{
+  unsigned char command[MAX_PTZ_COMMAND_LENGTH];
+  unsigned char buf[5];
+  int i;
+
+  if(zoom < 0)
+    zoom = 0;
+  //puts("Camera zoom thresholded");
+
+  else
+    if(zoom > maxzoom){
+      zoom = maxzoom;
+      //printf("putting zoom at MAX_ZOOM\n");
+    }
+
+  command[0] = 0xFF;
+  command[1] = 0x30;
+  command[2] = 0x30;
+  command[3] = 0x00;
+  command[4] = 0xB3;
+
+  sprintf((char *)buf, "%4X", zoom);
+
+  for (i=0;i<3;i++)
+    if (buf[i] == ' ')
+      buf[i] = '0';
+
+  // zoom position
+  command[5] = buf[0];
+  command[6] = buf[1];
+  command[7] = buf[2];
+  command[8] = buf[3];
+  command[9] = 0xEF;
+
+  if (SendCommand(command, 10))
+    return -1;
+  //PrintPacket( "setabszoom: ", command, 10);
+  return (ReceiveCommandAnswer(6));
+}
+
+void P2OS::get_ptz_packet(int s1, int s2)
+{
+    //printf("get_ptz_packet()\n");
+    static const int TIMEOUT = 100;
+    int packetCount = 0;
+    unsigned char request[4];
+    P2OSPacket request_pkt;
+    bool secondSent = false;
+
+    request[0] = GETAUX;
+    request[1] = ARGINT;
+    request[2] = s1;
+    request[3] = 0;
+
+    // Reset our receiving buffer.
+    cb.reset();
+
+    //sleep(1);
+    //Request the request-size back
+    request_pkt.Build(request,4);
+    SendReceive(&request_pkt,false);
+
+    while ( !cb.gotPacket() )
+    {
+        if ( packetCount++ > TIMEOUT ) {
+            // Give Up We're not getting it.
+            fprintf(stderr, "Waiting for packet timed out.\n");
+            return;
+        }
+        if ( cb.size() == s1 && !secondSent)
+        {
+            if ( s2 > s1 )
+            {
+                // We got the first packet size, but we don't have a full packet.
+                int newsize = s2 - s1;
+                fprintf(stderr, "Requesting Second Packet of size %i\n", newsize);
+                request[2] = newsize;
+                request_pkt.Build(request,4);
+                secondSent = true;
+                //cb.printBuf();
+                SendReceive(&request_pkt,false);
+            }
+            else
+            {
+                // We got the first packet but don't have a full packet, this is an error.
+                fprintf(stderr, "Error: Got reply from AUX1 But don't have a full packet.\n");
+                break;
+            }
+        }
+
+        // Keep reading data until we get a response from the camera.
+        //fprintf(stderr, "foo\n");
+        SendReceive(NULL,false);
+    }
+    //fprintf(stderr, "Got ptz_packet: ");
+    //cb.printBuf();
+}
+
+/************************************************************************/
+int
+P2OS::ReceiveCommandAnswer(int asize)
+{
+    int num;
+    unsigned char reply[MAX_PTZ_REQUEST_LENGTH];
+    int len = 0;
+    unsigned char byte;
+    int t;
+    int error_code;
+    // puts("Receivecommandanswer begin\n");
+    memset(reply, 0, COMMAND_RESPONSE_BYTES);
+
+    get_ptz_packet(asize);
+    //fprintf(stderr, "Recieved Packet: ");
+    //cb.printBuf();
+
+    for (num = 0; num <= COMMAND_RESPONSE_BYTES + 1; num++)
+    {
+        // if we don't get any bytes, or if we've just exceeded the limit
+        // then return null
+        //err = read_ptz(&byte, 1);
+        t = cb.getFromBuf();
+        if ( t < 0 ) { // Buf Error!
+            printf("circbuf error!\n");
+        }
+        else {
+            byte = (unsigned char)t;
+        }
+        if (byte == (unsigned char)0xFE)
+        {
+            reply[0] = byte;
+            len ++;
+            break;
+        }
+    }
+    if (len == 0)
+        return -1;
+
+    // we got the header character so keep reading bytes for MAX_RESPONSE_BYTES more
+    for(num = 1; num <= MAX_PTZ_REQUEST_LENGTH; num++)
+    {
+        t = cb.getFromBuf();
+        if (t < 0)
+        {
+            // there are no more bytes, so check the last byte for the footer
+            if (reply[len - 1] !=  (unsigned char)0xEF)
+            {
+                fputs("canonvcc4::receiveCommandAnswer: Discarding bad packet.",
+                        stderr);
+                return -1;
+            }
+            else
+                break;
+        }
+        else
+        {
+            // add the byte to the array
+            reply[len] = (unsigned char)t;
+            len ++;
+        }
+    }
+
+    // Check the response
+    if (len != 6)
+    {
+        fputs("canonvcc4::receiveCommandAnswer:Incorrect number of bytes in response packet.",
+                stderr);
+        return -1;
+    }
+
+    // check the header and footer
+    if (reply[0] != (unsigned char)0xFE || reply[5] != (unsigned char)0xEF)
+    {
+        fputs("canonvcc4::receiveCommandAnswer: Bad header or footer character in response packet.", stderr);
+        return -1;
+    }
+    // so far so good.  Set myError to the error byte
+    error_code = reply[3];
+    //PrintPacket("receivecommandasnwer: ", reply, 6);
+    if (error_code == CAM_ERROR_NONE)
+        return 0;
+    else {
+        switch(error_code){
+        case CAM_ERROR_BUSY:
+            fputs("Error: CAM_ERROR_BUSY\n", stderr);
+            break;
+        case CAM_ERROR_PARAM:
+            fputs("Error: CAM_ERROR_PARAM\n", stderr);
+            break;
+        case CAM_ERROR_MODE:
+            fputs("Error: CAM_ERROR_MODE\n", stderr);
+            break;
+        default:
+            fputs("Error: Unknown error response from camera.\n",stderr);
+            break;
+        }
+    }
+
+    return -1;
+}
+
+/************************************************************************/
+/* These commands often have variable packet lengths, if there is an error,
+ * there is a smaller packet size. If we request the larger packet size first,
+ * then we will never get a response back. Because of this, we have to first
+ * request the smaller size, check if its a full packet, if it's not, request
+ * the rest of the packet. Also according to the source code for ARIA, we can
+ * not do more than 2 requests for a single packet, therefor, we can't just
+ * request 1 byte over and over again.
+ *
+ * So here, s1 is the size of the smaller packet.
+ * And s2 is the size of the larger packet.
+ */
+int
+P2OS::ReceiveRequestAnswer(unsigned char *data, int s1, int s2)
+{
+    int num;
+    unsigned char reply[MAX_PTZ_REQUEST_LENGTH];
+    int len = 0;
+    unsigned char byte;
+    int t;
+    int error_code;
+
+    memset(reply, 0, MAX_PTZ_REQUEST_LENGTH);
+    get_ptz_packet(s1, s2);
+    //cb.printBuf();
+
+    for (num = 0; num <= COMMAND_RESPONSE_BYTES + 1; num++)
+    {
+        // if we don't get any bytes, or if we've just exceeded the limit
+        // then return null
+        t = cb.getFromBuf();
+        if ( t < 0 ) { // Buf Error!
+            printf("circbuf error!\n");
+        }
+        else {
+            byte = (unsigned char)t;
+        }
+        if (byte == (unsigned char)0xFE)
+        {
+            reply[0] = byte;
+            len ++;
+            break;
+        }
+    }
+    if (len == 0)
+        return -1;
+    // we got the header character so keep reading bytes for MAX_RESPONSE_BYTES more
+    for(num = 1; num <= MAX_PTZ_REQUEST_LENGTH; num++)
+    {
+        t = cb.getFromBuf();
+        if (t < 0)
+        {
+            // there are no more bytes, so check the last byte for the footer
+            if (reply[len - 1] !=  (unsigned char)0xEF)
+            {
+                fputs("canonvcc4::receiveRequest: Discarding bad packet.",
+                        stderr);
+                return -1;
+            }
+            else
+                break;
+        }
+        else
+        {
+            // add the byte to the array
+            reply[len] = (unsigned char)t;
+            len ++;
+        }
+    }
+    // Check the response length: pt: 14; zoom: 10
+    if (len != 6 && len != 8 && len != 10 && len != 14)
+    {
+        fputs("Arvcc4::packetHandler: Incorrect number of bytes in response packet.", stderr);
+        return -1;
+    }
+
+    if (reply[0] !=  (unsigned char)0xFE ||
+            reply[len - 1] != (unsigned char)0xEF)
+    {
+        fputs("canonvcc4::receiveRequestArvcc4: Bad header or footer character in response packet.", stderr);
+        return -1;
+    }
+
+    // so far so good.  Set myError to the error byte
+    error_code = reply[3];
+    //  PrintPacket("receiverequestasnwer: ", reply, len);
+    if (error_code == CAM_ERROR_NONE)
+    {
+        memcpy(data, reply, len);
+        return len;
+    }
+    return -1;
+}
+
+/************************************************************************/
+int
+P2OS::setControlMode()
+{
+  unsigned char command[MAX_PTZ_COMMAND_LENGTH];
+
+  command[0] = 0xFF;
+  command[1] = 0x30;
+  command[2] = 0x30;
+  command[3] = 0x00;
+  command[4] = 0x90;
+  command[5] = 0x30;
+  command[6] = 0xEF;
+
+  if (SendCommand(command, 7))
+    return -1;
+  //  usleep(5000000);
+  return (ReceiveCommandAnswer(6));
+}
+/************************************************************************/
+int
+P2OS::setNotifyCommand()
+{
+  unsigned char command[MAX_PTZ_COMMAND_LENGTH];
+
+  command[0] = 0xFF;
+  command[1] = 0x30;
+  command[2] = 0x30;
+  command[3] = 0x00;
+  command[4] = 0x94;
+  command[5] = 0x31;
+  command[6] = 0xEF;
+
+  if (SendCommand(command, 7))
+    return -1;
+  //  usleep(5000000);
+  return (ReceiveCommandAnswer(6));
+}
+/************************************************************************/
+int
+P2OS::setPower(int on)
+{
+  unsigned char command[MAX_PTZ_COMMAND_LENGTH];
+
+  command[0] = 0xFF;
+  command[1] = 0x30;
+  command[2] = 0x30;
+  command[3] = 0x00;
+  command[4] = 0xA0;
+  if (on)
+    command[5] = 0x31;
+  else
+    command[5] = 0x30;
+  command[6] = 0xEF;
+
+  if (SendCommand(command, 7))
+    return -1;
+  //  usleep(5000000);
+  return (ReceiveCommandAnswer(6));
+}
+/************************************************************************/
+int
+P2OS::setOnScreenOff()
+{
+  unsigned char command[MAX_PTZ_COMMAND_LENGTH];
+
+  command[0] = 0xFF;
+  command[1] = 0x30;
+  command[2] = 0x30;
+  command[3] = 0x00;
+  command[4] = 0x91;
+  command[5] = 0x30;
+  command[6] = 0x30;
+  command[7] = 0xEF;
+
+  if (SendCommand(command, 8))
+    return -1;
+  //  usleep(5000000);
+  return (ReceiveCommandAnswer(6));
+}
+
+int P2OS::sendInit()
+{
+    unsigned char command[MAX_PTZ_COMMAND_LENGTH];
+
+    command[0] = 0xFF;
+    command[1] = 0x30;
+    command[2] = 0x30;
+    command[3] = 0x00;
+    command[4] = 0x58;
+    command[5] = 0x30;
+    command[6] = 0xEF;
+
+    if (SendCommand(command, 7))
+        return -1;
+    //  usleep(5000000);
+    return (ReceiveCommandAnswer(6));
+}
+
+int P2OS::GetMaxZoom(int * maxzoom){
+    unsigned char command[MAX_PTZ_COMMAND_LENGTH];
+    unsigned char reply[MAX_PTZ_REQUEST_LENGTH];
+    int reply_len;
+    char byte;
+    unsigned char buf[4];
+    unsigned int u_zoom;
+    int i;
+
+    command[0] = 0xFF;
+    command[1] = 0x30;
+    command[2] = 0x30;
+    command[3] = 0x00;
+    command[4] = 0xB4;
+    command[5] = 0x33;
+    command[6] = 0xEF;
+
+    if (SendCommand(command, 7))
+        return -1;
+    //  usleep(5000000);
+
+    reply_len = ReceiveRequestAnswer(reply,10,0);
+
+    if ( reply_len == 6 ){
+        return -1;
+    }
+
+    // remove the ascii encoding, and put into 2 bytes
+    for (i = 0; i < 4; i++)
+    {
+        byte = reply[i + 5];
+        if (byte < 0x40)
+            byte = byte - 0x30;
+        else
+            byte = byte - 'A' + 10;
+        buf[i] = byte;
+    }
+
+    // convert the 2 bytes into a number
+    u_zoom = 0;
+    for (i = 0; i < 4; i++)
+        u_zoom += buf[i] * (unsigned int) pow(16.0, (double)(3 - i));
+    *maxzoom = u_zoom;
+
+    return 0;
+}
+
+/* Circular Buffer To deal with getting data back from AUX */
+circbuf::circbuf(int size)
+{
+    this->buf = new unsigned char[size];
+    this->mysize  = size;
+    this->start = this->end = 0;
+}
+
+void circbuf::printBuf(){
+    int i = start;
+    printf("circbuf: ");
+    while ( i != end ){
+        printf("0x%x ", buf[i]);
+        i = (i+1)%mysize;
+    }
+    printf("\n");
+}
+
+
+void circbuf::putOnBuf(unsigned char c)
+{
+    buf[end] = c;
+    end = (end+1)%mysize;
+    if ( end == start )
+    {
+        // We're overwriting old data.
+        start = (start + 1)%mysize;
+    }
+
+    // Check to see if we have the whole packet now. (ends with 0xEF)
+    if ( c == 0xEF )
+    {
+        gotPack = true;
+    }
+}
+
+bool circbuf::haveData()
+{
+    return !(this->start == this->end);
+}
+
+int circbuf::getFromBuf()
+{
+    if ( start != end ){
+        unsigned char ret = buf[start];
+        start = (start+1)%mysize;
+        return (int)ret;
+    }
+    else
+    {
+        return -1;
+    }
+}
+
+int circbuf::size()
+{
+    if ( end > start )
+    {
+        return end-start;
+    }
+    else if ( start > end )
+    {
+        return mysize - start - end - 1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+bool circbuf::gotPacket()
+{
+    return gotPack;
+}
+
+void circbuf::reset()
+{
+    memset(buf, 0, mysize);
+    gotPack = false;
+    start = end = 0;
+}
+

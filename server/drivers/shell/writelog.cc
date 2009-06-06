@@ -2275,7 +2275,7 @@ int WriteLog::WriteFiducial(player_msghdr_t* hdr, void *data)
                     fiducial_data = (player_fiducial_data_t*) data;
                     // format: <count> [<id> <x> <y> <z> <roll> <pitch> <yaw> <ux> <uy> <uz> <uroll> <upitch> <uyaw>] ...
                     fprintf(this->file, "%d", fiducial_data->fiducials_count);
-                    for (int i = 0; i < fiducial_data->fiducials_count; i++) {
+                    for (unsigned i = 0; i < fiducial_data->fiducials_count; i++) {
                         fprintf(this->file, " %d"
                                 " %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f"
                                 " %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f",

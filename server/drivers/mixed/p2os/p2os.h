@@ -41,6 +41,7 @@
 #include "packet.h"
 #include "robot_params.h"
 
+
 // Default max speeds
 #define MOTOR_DEF_MAX_SPEED 0.5
 #define MOTOR_DEF_MAX_TURNSPEED DTOR(100)
@@ -143,6 +144,28 @@
 #define DEFAULT_P2OS_TCP_REMOTE_HOST "localhost"
 #define DEFAULT_P2OS_TCP_REMOTE_PORT 8101
 
+/* Canon PTZ (VC-C4) Stuff */
+#define CAM_ERROR_NONE 0x30
+#define CAM_ERROR_BUSY 0x31
+#define CAM_ERROR_PARAM 0x35
+#define CAM_ERROR_MODE 0x39
+
+#define PTZ_SLEEP_TIME_USEC 100000
+
+#define MAX_PTZ_COMMAND_LENGTH 19
+#define MAX_PTZ_REQUEST_LENGTH 17
+#define COMMAND_RESPONSE_BYTES 6
+
+#define PTZ_PAN_MAX 98.0   // 875 units 0x36B
+#define PTZ_TILT_MAX 88.0  // 790 units 0x316
+#define PTZ_TILT_MIN -30.0 // -267 units 0x10B
+#define MAX_ZOOM 1960 //1900
+#define ZOOM_CONV_FACTOR 17
+
+#define PT_BUFFER_INC       512
+#define PT_READ_TIMEOUT   10000
+#define PT_READ_TRIALS        2
+
 typedef struct player_p2os_data
 {
   //Standard SIP
@@ -174,6 +197,28 @@ typedef struct player_p2os_data
 
 class SIP;
 
+// Circular Buffer Used by PTZ camera
+class circbuf{
+    public:
+        circbuf(int size=512);
+
+        void putOnBuf(unsigned char c);
+        int  getFromBuf();
+        bool haveData();
+        int  size();
+        void printBuf();
+
+        bool gotPacket();
+        void reset();
+
+    private:
+        unsigned char* buf;
+        int  start;
+        int  end;
+        int  mysize;
+        bool gotPack;
+};
+
 // Forward declaration of the KineCalc_Base class declared in kinecalc_base.h
 //class KineCalc;
 
@@ -196,6 +241,7 @@ class P2OS : public ThreadedDriver
     player_devaddr_t audio_id;
     player_devaddr_t actarray_id;
     player_devaddr_t limb_id;
+    player_devaddr_t ptz_id;
     player_devaddr_t armgripper_id;
 
     // Book keeping to only send new commands
@@ -219,6 +265,7 @@ class P2OS : public ThreadedDriver
     int position_subscriptions;
     int sonar_subscriptions;
     int actarray_subscriptions;
+    int ptz_subscriptions;
 
     SIP* sippacket;
 
@@ -241,6 +288,10 @@ class P2OS : public ThreadedDriver
     int HandleLiftCommand (player_msghdr *hdr, void *data);
     int HandleArmGripperCommand (player_msghdr *hdr, void *data);
     void HandleAudioCommand(player_audio_sample_item_t audio_cmd);
+
+    /////// PTZ Stuff
+    void get_ptz_packet(int s1, int s2=0);
+    int SetupPtz();
 
     /////////////////
     // Gripper stuff
@@ -313,6 +364,31 @@ class P2OS : public ThreadedDriver
     int radio_modemp; // are we using a radio modem?
     int joystickp; // are we using a joystick?
     int bumpstall; // should we change the bumper-stall behavior?
+
+    // PTZ Camera Stuff
+    player_ptz_data_t  ptz_data;
+    int maxfov, minfov;
+    int maxzoom;
+    int pandemand, tiltdemand, zoomdemand;
+    int SendCommand(unsigned char *str, int len);
+    int SendRequest(unsigned char* str, int len, unsigned char* reply, uint8_t camera = 1);
+    void PrintPacket(char* str, unsigned char* cmd, int len);
+    int SendAbsPanTilt(int pan, int tilt);
+    int setDefaultTiltRange();
+    int GetAbsPanTilt(int* pan, int* tilt);
+    int GetAbsZoom(int* zoom);
+    int SendAbsZoom(int zoom);
+    int read_ptz(unsigned char *reply, int size);
+    int ReceiveCommandAnswer(int asize);
+    int ReceiveRequestAnswer(unsigned char *data, int s1, int s2);
+    int setControlMode();
+    int setNotifyCommand();
+    int setPower(int on);
+    int setOnScreenOff();
+    int CheckHostControlMode();
+    int sendInit();
+    int GetMaxZoom(int * maxzoom);
+    circbuf cb;
 
     float pulse; // Pulse time
     double lastPulseTime; // Last time of sending a pulse or command to the robot
