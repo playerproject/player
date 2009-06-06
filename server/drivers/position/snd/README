@@ -1,0 +1,8 @@
+== INTRODUCTION ==
+Implementation of Joey Durham's "Smooth ND" algorithm for 
+ obstacle avoidance.
+ The algorithm is described in:
+ - http://ieeexplore.ieee.org/xpls/abs_all.jsp?arnumber=4651071
+ - http://motion.mee.ucsb.edu/pdf/2008a-db.pdf
+
+
