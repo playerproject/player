@@ -80,12 +80,12 @@ The writelog driver can will log data from the following interfaces:
 - @ref interface_pointcloud3d
 - @ref interface_actarray
 - @ref interface_camera
+- @ref interface_fiducial
 
 The following interfaces are supported in principle but are currently
 disabled because they need to be updated:
 
 - @ref interface_blobfinder
-- @ref interface_fiducial
 - @ref interface_gps
 - @ref interface_joystick
 - @ref interface_position3d
@@ -274,12 +274,12 @@ class WriteLog: public ThreadedDriver
 
   // Write camera data to file
   private: int WriteCamera(WriteLogDevice *device, player_msghdr_t* hdr, void *data);
+
+  // Write fiducial data to file
+  private: int WriteFiducial(player_msghdr_t* hdr, void *data);
 #if 0
   // Write blobfinder data to file
   private: void WriteBlobfinder(player_blobfinder_data_t *data);
-
-  // Write fiducial data to file
-  private: void WriteFiducial(player_fiducial_data_t *data);
 
   // Write GPS data to file
   private: void WriteGps(player_gps_data_t *data);
@@ -876,12 +876,12 @@ void WriteLog::Write(WriteLogDevice *device,
     case PLAYER_CAMERA_CODE:
       retval = this->WriteCamera(device, hdr, data);
       break;
+    case PLAYER_FIDUCIAL_CODE:
+      this->WriteFiducial(hdr, data);
+      break;
 #if 0
     case PLAYER_BLOBFINDER_CODE:
       this->WriteBlobfinder((player_blobfinder_data_t*) data);
-      break;
-    case PLAYER_FIDUCIAL_CODE:
-      this->WriteFiducial((player_fiducial_data_t*) data);
       break;
     case PLAYER_GPS_CODE:
       this->WriteGps((player_gps_data_t*) data);
@@ -2226,14 +2226,14 @@ int WriteLog::WriteCamera(WriteLogDevice *device, player_msghdr_t* hdr, void *da
     return -1;
 }
 
-#if 0
-
 /** @ingroup tutorial_datalog
- * @defgroup player_driver_writelog_fiducial Fiducial format
+ * @defgroup player_driver_writelog_fiducial fiducial format
 
 @brief fiducial log format
 
-The format for each @ref interface_fiducial message is:
+The following messages from @ref interface_fiducial interface are logged:
+
+PLAYER_MSGTYPE_DATA:PLAYER_FIDUCIAL_DATA_SCAN (1:1) has the folowing format:
   - count (int): number of fiducials to follow
   - list of fiducials; for each fiducial:
     - id (int): fiducial ID
@@ -2250,34 +2250,83 @@ The format for each @ref interface_fiducial message is:
     - upitch (float): uncertainty in relative pitch orientation, in radians
     - uyaw (float): uncertainty in relative yaw orientation, in radians
 
+PLAYER_MSGTYPE_RESP_ACK:PLAYER_FIDUCIAL_REQ_GET_GEOM (4:1) has the following format:
+    - x (float): relative X position, in meters
+    - y (float): relative Y position, in meters
+    - z (float): relative Z position, in meters
+    - roll (float): relative roll orientation, in radians
+    - pitch (float): relative pitch orientation, in radians
+    - yaw (float): relative yaw orientation, in radians
+    - length (float): fiducial finder length, in meters
+    - width (float): fiducial finder width, in meters
+    - height (float): fiducial finder height, in meters
+    - fiducial_length (float): fiducial marker length, in meters
+    - fiducial_width (float): fiducial marker width, in meters
 */
-void WriteLog::WriteFiducial(player_fiducial_data_t *data)
+int WriteLog::WriteFiducial(player_msghdr_t* hdr, void *data)
 {
-  // format: <count> [<id> <x> <y> <z> <roll> <pitch> <yaw> <ux> <uy> <uz> etc] ...
-  fprintf(this->file, "%d", HUINT16(data->count));
-  for(int i=0;i<HUINT16(data->count);i++)
-  {
-    fprintf(this->file, " %d"
-            " %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f"
-            " %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f",
-            HINT16(data->fiducials[i].id),
-            MM_M(HINT32(data->fiducials[i].pos[0])),
-            MM_M(HINT32(data->fiducials[i].pos[1])),
-            MM_M(HINT32(data->fiducials[i].pos[2])),
-            MM_M(HINT32(data->fiducials[i].rot[0])),
-            MM_M(HINT32(data->fiducials[i].rot[1])),
-            MM_M(HINT32(data->fiducials[i].rot[2])),
-            MM_M(HINT32(data->fiducials[i].upos[0])),
-            MM_M(HINT32(data->fiducials[i].upos[1])),
-            MM_M(HINT32(data->fiducials[i].upos[2])),
-            MM_M(HINT32(data->fiducials[i].urot[0])),
-            MM_M(HINT32(data->fiducials[i].urot[1])),
-            MM_M(HINT32(data->fiducials[i].urot[2])));
-  }
+  player_fiducial_data_t *fiducial_data;
+  player_fiducial_geom_t *fiducial_geom;
 
-  return;
+  switch (hdr->type) {
+        case PLAYER_MSGTYPE_DATA:
+            switch (hdr->subtype) {
+                case PLAYER_FIDUCIAL_DATA_SCAN:
+                    fiducial_data = (player_fiducial_data_t*) data;
+                    // format: <count> [<id> <x> <y> <z> <roll> <pitch> <yaw> <ux> <uy> <uz> <uroll> <upitch> <uyaw>] ...
+                    fprintf(this->file, "%d", fiducial_data->fiducials_count);
+                    for (int i = 0; i < fiducial_data->fiducials_count; i++) {
+                        fprintf(this->file, " %d"
+                                " %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f"
+                                " %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f",
+                                fiducial_data->fiducials[i].id,
+                                fiducial_data->fiducials[i].pose.px,
+                                fiducial_data->fiducials[i].pose.py,
+                                fiducial_data->fiducials[i].pose.pz,
+                                fiducial_data->fiducials[i].pose.proll,
+                                fiducial_data->fiducials[i].pose.ppitch,
+                                fiducial_data->fiducials[i].pose.pyaw,
+                                fiducial_data->fiducials[i].upose.px,
+                                fiducial_data->fiducials[i].upose.py,
+                                fiducial_data->fiducials[i].upose.pz,
+                                fiducial_data->fiducials[i].upose.proll,
+                                fiducial_data->fiducials[i].upose.ppitch,
+                                fiducial_data->fiducials[i].upose.pyaw);
+                    }
+                    return(0);
+                default:
+                    return(-1);
+            }
+      case PLAYER_MSGTYPE_RESP_ACK:
+          switch(hdr->subtype) {
+              case PLAYER_FIDUCIAL_REQ_GET_GEOM:
+                  fiducial_geom = (player_fiducial_geom_t*) data;
+                  //format: <x> <y> <z> <roll> <pitch> <yaw> <length> ...
+                  // <width> <height> <fiducial_length> <fiducial_width>
+                  fprintf(this->file, "%+7.3f %+7.3f %+7.3f %+7.3f %+7.3f"
+                          "%+7.3f %+7.3f %+7.3f %+7.3f %+7.3f %+7.3f",
+                          fiducial_geom->pose.px,
+                          fiducial_geom->pose.py,
+                          fiducial_geom->pose.pz,
+                          fiducial_geom->pose.proll,
+                          fiducial_geom->pose.ppitch,
+                          fiducial_geom->pose.pyaw,
+                          fiducial_geom->size.sl,
+                          fiducial_geom->size.sw,
+                          fiducial_geom->size.sh,
+                          fiducial_geom->fiducial_size.sl,
+                          fiducial_geom->fiducial_size.sw);
+
+                  return(0);
+              default:
+                  return(-1);
+          }
+      default:
+          return(-1);
+    }
 }
 
+#if 0
 
 /** @ingroup tutorial_datalog
  * @defgroup player_driver_writelog_gps GPS format
