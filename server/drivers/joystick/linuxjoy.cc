@@ -650,7 +650,7 @@ void LinuxJoystick::ReadJoy()
 // Send new data out
 void LinuxJoystick::RefreshData()
 {
-  int i;
+  unsigned i;
   if(this->joystick_addr.interf)
   {
     memset(&(this->joy_data),0,sizeof(player_joystick_data_t));

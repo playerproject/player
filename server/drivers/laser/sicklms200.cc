@@ -1180,7 +1180,6 @@ int SickLMS200::SetLaserMode()
 //
 int SickLMS200::SetLaserSpeed(int speed)
 {
-  int tries;
   ssize_t len;
   uint8_t packet[20];
 
