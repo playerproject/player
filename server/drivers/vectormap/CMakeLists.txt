@@ -10,12 +10,6 @@ PLAYERDRIVER_ADD_DRIVER (postgis build_postgis
     "${postgis_linkLibs}" LINKFLAGS "${postgis_linkFlags}"
     CFLAGS "${postgis_cFlags}" SOURCES postgis.cc dbconn.cc)
 
-IF (HAVE_STL)
-    PLAYERDRIVER_OPTION (vec2map build_vec2map ON)
-ELSE (HAVE_STL)
-    PLAYERDRIVER_OPTION (vec2map build_vec2map OFF "STL not found")
-ENDIF (HAVE_STL)
-
+PLAYERDRIVER_OPTION (vec2map build_vec2map ON)
 SET(vec2map_linkFlags)
-
 PLAYERDRIVER_ADD_DRIVER (vec2map build_vec2map LINKFLAGS "${vec2map_linkFlags}" SOURCES vec2map.cc)
