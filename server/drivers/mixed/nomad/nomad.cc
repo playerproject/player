@@ -164,6 +164,9 @@ public:
   float VelSteer; //steering rate (base motor alignment rate)
   float VelTurret; //turret steering rate
 
+  //Holders for the coordinate origin
+  double XOrigin,YOrigin,YawOrigin,TurretOrigin;
+
   // Holder for position (odometry) data sent from below
   player_position2d_data_t posdata;
 
@@ -253,6 +256,12 @@ NomadDriver::NomadDriver (ConfigFile * cf, int section):
   memset (&this->ir_addr, 0, sizeof(player_devaddr_t));
   memset (&this->turret_addr,0,sizeof(player_devaddr_t));
   memset (&this->compass_addr,0,sizeof(player_devaddr_t));
+
+  //setup the origin as <0,0,0,0>
+  XOrigin = 0;
+  YOrigin = 0;
+  YawOrigin = 0;
+  TurretOrigin = 0;
 
   // Do we create a position2d interface?
   if (cf->ReadDeviceAddr(&(this->position_addr),section,"provides",PLAYER_POSITION2D_CODE,-1, NULL) == 0)
@@ -428,24 +437,16 @@ ProcessMessage (QueuePointer &resp_queue,player_msghdr * hdr,void *data)
       player_position2d_data position_data;
       position_data = *(player_position2d_data *)data;
 
-      position_data.pos.px = m2tenths_inch(position_data.pos.px); //[tenths of inches]
-      position_data.pos.py = m2tenths_inch(position_data.pos.py); //[tenths of inches];
-      position_data.pos.pa = rad2tenths_deg(position_data.pos.pa); //[tenths of degrees]
+      XOrigin = tenths_inch2m(State[STATE_CONF_X]) - position_data.pos.px;
+      YOrigin = tenths_inch2m(State[STATE_CONF_Y]) - position_data.pos.py;
+      YawOrigin = tenths_deg2rad(State[STATE_CONF_STEER]) - position_data.pos.pa;
 
-      //Set the desired odometry values...
-      dp(static_cast<int>(position_data.pos.px),static_cast<int>(position_data.pos.py));
-      if(LOCKED) {
-        da(static_cast<int>(position_data.pos.pa),static_cast<int>(position_data.pos.pa));
-      }
-      else {
-        da(static_cast<int>(position_data.pos.pa),State[STATE_CONF_TURRET]);
-      }
-		this->Publish(this->position_addr, resp_queue,
+      this->Publish(this->position_addr, resp_queue,
 		    PLAYER_MSGTYPE_RESP_ACK,
 		    PLAYER_POSITION2D_REQ_SET_ODOM);
 
-        return (0);
-	}
+      return (0);
+     }
   else if (Message::MatchMessage (hdr,
 				  PLAYER_MSGTYPE_REQ,
 				  PLAYER_POSITION2D_REQ_GET_GEOM,
@@ -486,15 +487,16 @@ ProcessMessage (QueuePointer &resp_queue,player_msghdr * hdr,void *data)
     player_bumper_geom_t geom;
 
     geom.bumper_def_count = 20;
+    float bumper_ang =tenths_deg2rad(-State[STATE_CONF_STEER]);
 
     for (int i = 0; i < 20; ++i) {
       //bumper pose
-      geom.bumper_def[i].pose.px = (nomadRadius)*cos((2*PI/20)*i);
-      geom.bumper_def[i].pose.py = (nomadRadius)*sin((2*PI/20)*i);
+      geom.bumper_def[i].pose.px = (nomadRadius)*cos((2*PI/20)*i + bumper_ang);
+      geom.bumper_def[i].pose.py = (nomadRadius)*sin((2*PI/20)*i + bumper_ang);
       geom.bumper_def[i].pose.pz = 0;
       geom.bumper_def[i].pose.proll = 0;
       geom.bumper_def[i].pose.ppitch = 0;
-      geom.bumper_def[i].pose.pyaw = (2*PI/20)*i;
+      geom.bumper_def[i].pose.pyaw = (2*PI/20)*i + bumper_ang;
       //bumper length
       geom.bumper_def[i].length = ((nomadRadius)*2*PI)/10 ;
       //bumper radius of curvature ??? - not sure about it
@@ -519,12 +521,8 @@ ProcessMessage (QueuePointer &resp_queue,player_msghdr * hdr,void *data)
       player_sonar_geom_t geom;
       geom.poses_count = sonar_count;
 
-      float sonar_ang = 0;
+      float sonar_ang =tenths_deg2rad(State[STATE_CONF_TURRET] - State[STATE_CONF_STEER]);
 
-      //if the turret movement isn't locked add a delta to the sonars position
-      if (!LOCKED) {
-        sonar_ang = m2tenths_inch(State[STATE_CONF_TURRET]);
-      };
       //set up sonars geometry
       for(unsigned int intCount = 0;intCount < geom.poses_count;++intCount)
       {
@@ -555,12 +553,7 @@ ProcessMessage (QueuePointer &resp_queue,player_msghdr * hdr,void *data)
       player_ir_pose_t geom;
       geom.poses_count = ir_count;
 
-      float ir_ang = 0;
-
-      //if the turret movement isn't locked add a delta to the ir's position
-      if (!LOCKED) {
-        ir_ang = m2tenths_inch(State[STATE_CONF_TURRET]);
-      };
+      float ir_ang = tenths_deg2rad(State[STATE_CONF_TURRET] - State[STATE_CONF_STEER]);
 
       //set up ir geometry
       for(unsigned int intCount = 0;intCount < geom.poses_count;++intCount)
@@ -612,16 +605,14 @@ ProcessMessage (QueuePointer &resp_queue,player_msghdr * hdr,void *data)
     // Get the desired odometry value
       player_position1d_set_odom_req_t position_data;
       position_data = *(player_position1d_set_odom_req_t *)data;
-      position_data.pos = rad2tenths_deg(position_data.pos); //[tenths of degrees]
+      
+      TurretOrigin = tenths_deg2rad(State[STATE_CONF_TURRET]) - position_data.pos;
 
-      //Set the desired odometry values...
-      da(State[STATE_CONF_STEER],static_cast<int>(position_data.pos));
-
-		this->Publish(this->turret_addr, resp_queue,
+      this->Publish(this->turret_addr, resp_queue,
 		    PLAYER_MSGTYPE_RESP_ACK,
 		    PLAYER_POSITION1D_REQ_SET_ODOM);
 
-        return (0);
+      return (0);
     }
   else if (Message::MatchMessage (hdr,
 				  PLAYER_MSGTYPE_REQ,
@@ -717,9 +708,11 @@ void NomadDriver::Main() {
     gs();
 
     //update position and velocities
-    pos_data.pos.px = tenths_inch2m(State[STATE_CONF_X]);
-    pos_data.pos.py = tenths_inch2m(State[STATE_CONF_Y]);
-    pos_data.pos.pa = tenths_deg2rad(State[STATE_CONF_STEER]);
+    double Xaux = tenths_inch2m(State[STATE_CONF_X]) - XOrigin;
+    double Yaux = tenths_inch2m(State[STATE_CONF_Y]) - YOrigin;
+    pos_data.pos.px = Xaux*cos(YawOrigin) + Yaux*sin(YawOrigin);
+    pos_data.pos.py = -Xaux*sin(YawOrigin) + Yaux*cos(YawOrigin);
+    pos_data.pos.pa = tenths_deg2rad(State[STATE_CONF_STEER]) - YawOrigin;
     pos_data.vel.px = tenths_inch2m(State[STATE_VEL_TRANS]);
     pos_data.vel.py = 0;
     pos_data.vel.pa = tenths_deg2rad(State[STATE_VEL_STEER]);
@@ -730,7 +723,7 @@ void NomadDriver::Main() {
 
 
     //update turret data
-    turret_data.pos = tenths_deg2rad(State[STATE_CONF_TURRET]);
+    turret_data.pos = tenths_deg2rad(State[STATE_CONF_TURRET]) - TurretOrigin;
     turret_data.vel = tenths_deg2rad(State[STATE_VEL_TURRET]);
     this->Publish(this->turret_addr,PLAYER_MSGTYPE_DATA,PLAYER_POSITION1D_DATA_STATE,(void*)&turret_data,sizeof(turret_data),NULL);
 
