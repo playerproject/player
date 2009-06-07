@@ -119,17 +119,17 @@ void playerc_stereo_putmsg (playerc_stereo_t *device,
     if (device->left_channel.image)
       memcpy (device->left_channel.image, s_data->left_channel.image, device->left_channel.image_count);
     else if (device->left_channel.image_count != 0)
-      PLAYERC_ERR1 ("failed to allocate memory for left image, needed %d bytes\n", sizeof (device->left_channel.image[0]) * device->left_channel.image_count);
+      PLAYERC_ERR1 ("failed to allocate memory for left image, needed %zd bytes\n", sizeof (device->left_channel.image[0]) * device->left_channel.image_count);
 
     if (device->right_channel.image)
       memcpy (device->right_channel.image, s_data->right_channel.image, device->right_channel.image_count);
     else if (device->right_channel.image_count != 0)
-      PLAYERC_ERR1 ("failed to allocate memory for right image, needed %d bytes\n", sizeof (device->right_channel.image[0]) * device->right_channel.image_count);
+      PLAYERC_ERR1 ("failed to allocate memory for right image, needed %zd bytes\n", sizeof (device->right_channel.image[0]) * device->right_channel.image_count);
 
     if (device->disparity.image)
       memcpy (device->disparity.image, s_data->disparity.image, device->disparity.image_count);
     else if (device->disparity.image_count != 0)
-      PLAYERC_ERR1 ("failed to allocate memory for disparity image, needed %d bytes\n", sizeof (device->disparity.image[0]) * device->disparity.image_count);
+      PLAYERC_ERR1 ("failed to allocate memory for disparity image, needed %zd bytes\n", sizeof (device->disparity.image[0]) * device->disparity.image_count);
 
 /*    device->pointcloud.points_count = s_data->pointcloud.points_count;
     device->pointcloud.points = realloc (device->pointcloud.points, device->pointcloud.points_count * sizeof (device->pointcloud.points[0]));

@@ -1,4 +1,4 @@
-/* 
+/*
  *  PlayerViewer
  *  Copyright (C) Andrew Howard 2002
  *
@@ -47,11 +47,10 @@ void sonar_update_geom(sonar_t *sonar);
 sonar_t *sonar_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
                       int index, const char *drivername, int subscribe)
 {
-  int i;
   char label[64];
   char section[64];
   sonar_t *sonar;
-  
+
   sonar = malloc(sizeof(sonar_t));
   sonar->proxy = playerc_sonar_create(client, index);
   sonar->drivername = strdup(drivername);
@@ -81,7 +80,7 @@ void sonar_allocate_figures(sonar_t * sonar, int fig_count)
   if (fig_count <= sonar->fig_count)
     return;
   sonar->scan_fig = realloc(sonar->scan_fig,fig_count*sizeof(sonar->scan_fig[0]));
-  
+
   // Construct figures
   for (i = sonar->fig_count; i < fig_count; i++)
 	  sonar->scan_fig[i] = rtk_fig_create(sonar->mainwnd->canvas, sonar->mainwnd->robot_fig, 1);
@@ -93,7 +92,7 @@ void sonar_allocate_figures(sonar_t * sonar, int fig_count)
 void sonar_destroy(sonar_t *sonar)
 {
   int i;
-  
+
   if (sonar->proxy->info.subscribed)
     playerc_sonar_unsubscribe(sonar->proxy);
   playerc_sonar_destroy(sonar->proxy);
@@ -112,8 +111,6 @@ void sonar_destroy(sonar_t *sonar)
 // Update a sonar device
 void sonar_update(sonar_t *sonar)
 {
-  int i;
-  
   // Update the device subscription
   if (rtk_menuitem_ischecked(sonar->subscribe_item))
   {
@@ -124,7 +121,7 @@ void sonar_update(sonar_t *sonar)
 
       // Get the sonar geometry
       if (playerc_sonar_get_geom(sonar->proxy) != 0)
-        PRINT_ERR1("get_geom failed : %s", playerc_error_str());    
+        PRINT_ERR1("get_geom failed : %s", playerc_error_str());
 
       sonar_update_geom(sonar);
     }
@@ -144,7 +141,7 @@ void sonar_update(sonar_t *sonar)
     	sonar->proxy->info.freshgeom = 0;
 	sonar_update_geom(sonar);
     }
-  
+
     // Draw in the sonar scan if it has been changed.
     if (sonar->proxy->info.datatime != sonar->datatime)
       sonar_draw(sonar);
@@ -180,7 +177,7 @@ void sonar_draw(sonar_t *sonar)
 
   for (i = 0; i < sonar->proxy->scan_count; i++)
   {
-    rtk_fig_show(sonar->scan_fig[i], 1);      
+    rtk_fig_show(sonar->scan_fig[i], 1);
     rtk_fig_clear(sonar->scan_fig[i]);
 
     // Draw in the sonar itself
@@ -191,7 +188,7 @@ void sonar_draw(sonar_t *sonar)
     rtk_fig_color_rgb32(sonar->scan_fig[i], COLOR_SONAR_SCAN);
     dr = sonar->proxy->scan[i];
     da = 20 * M_PI / 180 / 2;
-  
+
     //rtk_fig_line(sonar->scan_fig[i], 0, 0, dr, 0);
     //rtk_fig_line(sonar->scan_fig[i], dr, -dr * da/2, dr, +dr * da/2);
     points[0][0] = 0;

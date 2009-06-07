@@ -1,4 +1,4 @@
-/* 
+/*
  *  PlayerViewer
  *  Copyright (C) Andrew Howard 2002
  *
@@ -45,7 +45,7 @@ laser_t *laser_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
   char label[64];
   char section[64];
   laser_t *laser;
-  
+
   laser = malloc(sizeof(laser_t));
 
   laser->proxy = playerc_laser_create(client, index);
@@ -75,7 +75,7 @@ laser_t *laser_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
 
   // Construct figures
   laser->scan_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 0);
-  
+
   return laser;
 }
 
@@ -102,7 +102,7 @@ void laser_destroy(laser_t *laser)
   rtk_menu_destroy(laser->menu);
 
   free(laser->drivername);
-  
+
   free(laser);
 }
 
@@ -141,7 +141,7 @@ void laser_update(laser_t *laser)
   // Update the configuration stuff
   if (laser->proxy->info.subscribed)
     laser_update_config(laser);
-  
+
   if (laser->proxy->info.subscribed)
   {
     // Draw in the laser scan if it has been changed.
@@ -165,7 +165,7 @@ void laser_update_config(laser_t *laser)
   int update;
   double min, max, range_res, res, scanning_frequency;
   unsigned char  intensity;
-  
+
   min = laser->proxy->scan_start;
   max = laser->proxy->scan_start + laser->proxy->scan_count*laser->proxy->scan_res;
   range_res = laser->proxy->range_res;
@@ -224,25 +224,23 @@ void laser_update_config(laser_t *laser)
 
 
   return;
-}  
+}
 
 
 // Draw the laser scan
 void laser_draw(laser_t *laser)
 {
   int i;
-  int style;
   double ax, ay, bx, by;
   double r, b, res;
-  int point_count;
   double (*points)[2];
-  rtk_fig_show(laser->scan_fig, 1);      
+  rtk_fig_show(laser->scan_fig, 1);
   rtk_fig_clear(laser->scan_fig);
 
   if (!rtk_menuitem_ischecked(laser->style_item))
   {
     rtk_fig_color_rgb32(laser->scan_fig, COLOR_LASER_OCC);
-      
+
     // Draw in the range scan
     for (i = 0; i < laser->proxy->scan_count; i++)
     {
@@ -261,11 +259,11 @@ void laser_draw(laser_t *laser)
   else
   {
     res = laser->proxy->scan_res / 2;
-          
+
     // Draw in the range scan (empty space)
     points = calloc(laser->proxy->scan_count,sizeof(double)*2);
     for (i = 0; i < laser->proxy->scan_count; i++)
-    {      
+    {
       r = laser->proxy->scan[i][0];
       b = laser->proxy->scan[i][1];
       points[i][0] = r * cos(b - res);
@@ -275,7 +273,7 @@ void laser_draw(laser_t *laser)
     rtk_fig_polygon(laser->scan_fig, 0, 0, 0, laser->proxy->scan_count, points, 1);
     free(points);
     points = NULL;
-              
+
     // Draw in the range scan (occupied space)
     rtk_fig_color_rgb32(laser->scan_fig, COLOR_LASER_OCC);
     for (i = 0; i < laser->proxy->scan_count; i++)
@@ -288,7 +286,7 @@ void laser_draw(laser_t *laser)
       by = r * sin(b + res);
       rtk_fig_line(laser->scan_fig, ax, ay, bx, by);
     }
-  } 
+  }
 
   // Draw in the intensity scan
   for (i = 0; i < laser->proxy->scan_count; i++)

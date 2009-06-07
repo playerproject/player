@@ -196,8 +196,6 @@ void actarray_draw(actarray_t *actarray)
 {
   double value;
   double min, max;
-  double ax, ay, bx, by;
-  double fx, fd;
   int ii;
   rtk_fig_t *fig;
 

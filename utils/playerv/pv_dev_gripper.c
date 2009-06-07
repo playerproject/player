@@ -48,7 +48,6 @@ void gripper_nodraw(gripper_t *gripper);
 gripper_t *gripper_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
                       int index, const char *drivername, int subscribe)
 {
-  int i;
   char label[64];
   char section[64];
   gripper_t *gripper;
@@ -82,8 +81,6 @@ gripper_t *gripper_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *clie
 // Destroy a gripper device
 void gripper_destroy(gripper_t *gripper)
 {
-  int i;
-
   if( gripper->grip_fig )
     {
       rtk_fig_clear(gripper->grip_fig);
@@ -109,7 +106,6 @@ void gripper_update(gripper_t *gripper)
   double paddle_center, paddle_length, paddle_width, paddle_pos;
   double ibbx, obbx, bby;
   double led_dx;
-  int i;
 
   // Update the device subscription
   if (rtk_menuitem_ischecked(gripper->subscribe_item))
