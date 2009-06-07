@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 
   if(rate == 0.0)
   {
-    printf("Setting delivery mode to PLAYER_DATAMODE_PUSH\n", host, port);
+    printf("Setting delivery mode to PLAYER_DATAMODE_PUSH\n");
     // Change the server's data delivery mode.
     if (playerc_client_set_replace_rule(client, -1, -1, -1, -1, 0) != 0)
     {

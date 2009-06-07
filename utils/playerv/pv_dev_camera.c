@@ -148,9 +148,7 @@ void camera_update(camera_t *camera)
 // Draw the camera scan
 void camera_draw(camera_t *camera)
 {
-  int i;
   char text[64];
-  double ox, oy, dx, dy;
   int sizex, sizey;
   double scalex, scaley;
 

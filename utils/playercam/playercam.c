@@ -120,7 +120,7 @@ int player_quit();
 int
 get_options(int argc, char **argv)
 {
-  int ch=0, errflg=0;
+  int ch=0;
   const char* optflags = "i:h:p:r:b:t:";
 
   while((ch=getopt(argc, argv, optflags))!=-1)
@@ -248,8 +248,6 @@ click(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
   GdkEventButton *bevent = (GdkEventButton *)event;
   int x,y,o;
-  int width, height, rowstride, n_channels;
-  guchar *pixels, *p;
 
   switch ((gint)event->type)
   {
@@ -448,6 +446,8 @@ player_init(int argc, char *argv[])
 
   playerc_client_datamode(g_client,PLAYER_DATAMODE_PULL);
   playerc_client_set_replace_rule(g_client,-1,-1,PLAYER_MSGTYPE_DATA,-1,1);
+
+  return 0;
 }
 
 int
@@ -521,6 +521,7 @@ player_update()
     g_print("ERROR reading player g_client\n");
     //exit(-1);
   }
+  return 0;
 }
 
 int
@@ -538,4 +539,5 @@ player_quit()
   }
   playerc_client_disconnect(g_client);
   playerc_client_destroy(g_client);
+  return 0;
 }

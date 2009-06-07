@@ -1,4 +1,4 @@
-/* 
+/*
  *  PlayerViewer
  *  Copyright (C) Andrew Howard 2002
  *
@@ -44,7 +44,7 @@ map_t *map_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
   char label[64];
   char section[64];
   map_t *map;
-  
+
   map = malloc(sizeof(map_t));
   map->proxy = playerc_map_create(client, index);
   map->drivername = strdup(drivername);
@@ -59,10 +59,10 @@ map_t *map_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
   map->continuous_item = rtk_menuitem_create(map->menu, "continuous update", 1);
   // Set the initial menu state
   rtk_menuitem_check(map->subscribe_item, subscribe);
-  
+
   // Construct figures
   map->fig = rtk_fig_create(mainwnd->canvas, NULL, 1);
-  
+
   return map;
 }
 
@@ -77,7 +77,7 @@ void map_destroy(map_t *map)
   rtk_fig_destroy(map->fig);
   free(map->drivername);
   free(map);
-  
+
   return;
 }
 
@@ -93,7 +93,7 @@ void map_update(map_t *map)
       if (playerc_map_subscribe(map->proxy, PLAYER_OPEN_MODE) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_error_str());
       // download a map
-      if (playerc_map_get_map( map->proxy ) >= 0)	
+      if (playerc_map_get_map( map->proxy ) >= 0)
         map_draw( map );
     }
   }
@@ -139,17 +139,16 @@ void map_update(map_t *map)
 void map_draw(map_t *map)
 {
   int x,y;
-  char ntext[64], text[1024];
   double scale = map->proxy->resolution;
 
-  rtk_fig_show(map->fig, 1);      
+  rtk_fig_show(map->fig, 1);
   rtk_fig_clear(map->fig);
-  
+
   puts( "map draw" );
 
-  rtk_fig_color_rgb32(map->fig, 0xFF0000 ); 
-  rtk_fig_rectangle(map->fig, 
-		    0,0,0,		   
+  rtk_fig_color_rgb32(map->fig, 0xFF0000 );
+  rtk_fig_rectangle(map->fig,
+		    0,0,0,
 		    map->proxy->width * scale,
 		    map->proxy->height * scale,
 		    0 );
@@ -166,7 +165,7 @@ void map_draw(map_t *map)
 	  case -1:
 	    // empty: draw nothing
 	    break;
-	    
+
 	  case 0:
 	    // unknown: draw grey square
 	    rtk_fig_color_rgb32(map->fig, 0x808080 );
@@ -177,14 +176,14 @@ void map_draw(map_t *map)
 			      scale, scale, 1);
 	    break;
 
-	  case +1:  
+	  case +1:
 	    // occupied: draw black square
-	    rtk_fig_color_rgb32(map->fig, 0x0 ); 
-	    rtk_fig_rectangle(map->fig, 
-			      (x - map->proxy->width/2.0) * scale + scale/2.0, 
-			      (y - map->proxy->height/2.0) * scale + scale/2.0, 
-			      0, 
-			      scale, scale, 1);	    
+	    rtk_fig_color_rgb32(map->fig, 0x0 );
+	    rtk_fig_rectangle(map->fig,
+			      (x - map->proxy->width/2.0) * scale + scale/2.0,
+			      (y - map->proxy->height/2.0) * scale + scale/2.0,
+			      0,
+			      scale, scale, 1);
 	    break;
 
 	  default:

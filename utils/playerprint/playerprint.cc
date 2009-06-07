@@ -121,7 +121,7 @@ print_usage()
 int
 get_options(int argc, char **argv)
 {
-  int ch=0, errflg=0;
+  int ch=0;
   const char* optflags = "i:h:p:r:t:";
 
   while((ch=getopt(argc, argv, optflags))!=-1)
@@ -170,9 +170,9 @@ main(int argc, char **argv)
     exit(-1);
   }
 
-  try 
+  try
   {
-  
+
   ClientProxy* cp;
 
   // connect to Player
@@ -193,7 +193,7 @@ main(int argc, char **argv)
 //      break;
     case PLAYER_ACTARRAY_CODE:
       cp = (ClientProxy*)new ActArrayProxy(&client,g_index);
-      try 
+      try
       {
         reinterpret_cast<ActArrayProxy*> (cp)->RequestGeometry();
       }

@@ -121,7 +121,7 @@ void dio_update(dio_t *dio)
 void dio_draw(dio_t *dio)
 {
   int i;
-  char ntext[64], str[1024];
+  char str[1024];
 
   uint32_t digin = dio->proxy->digin;
   uint32_t count = dio->proxy->count;

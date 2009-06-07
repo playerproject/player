@@ -1,4 +1,4 @@
-/* 
+/*
  *  PlayerViewer
  *  Copyright (C) Andrew Howard 2002
  *
@@ -45,11 +45,10 @@ void bumper_nodraw(bumper_t *bumper);
 bumper_t *bumper_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
                       int index, const char *drivername, int subscribe)
 {
-  int i;
   char label[64];
   char section[64];
   bumper_t *bumper;
-  
+
   bumper = malloc(sizeof(bumper_t));
   bumper->proxy = playerc_bumper_create(client, index);
   bumper->drivername = strdup(drivername);
@@ -78,7 +77,7 @@ void bumper_allocate_figures(bumper_t * bumper, int fig_count)
   if (fig_count <= bumper->fig_count)
     return;
   bumper->scan_fig = realloc(bumper->scan_fig,fig_count*sizeof(bumper->scan_fig[0]));
-  
+
   // Construct figures
   for (i = bumper->fig_count; i < fig_count; i++)
     bumper->scan_fig[i] = rtk_fig_create(bumper->mainwnd->canvas, bumper->mainwnd->robot_fig, 1);
@@ -90,7 +89,7 @@ void bumper_allocate_figures(bumper_t * bumper, int fig_count)
 void bumper_destroy(bumper_t *bumper)
 {
   int i;
-  
+
   if (bumper->proxy->info.subscribed)
     playerc_bumper_unsubscribe(bumper->proxy);
   playerc_bumper_destroy(bumper->proxy);
@@ -111,7 +110,7 @@ void bumper_destroy(bumper_t *bumper)
 void bumper_update(bumper_t *bumper)
 {
   int i;
-  
+
   // Update the device subscription
   if (rtk_menuitem_ischecked(bumper->subscribe_item))
   {
@@ -122,7 +121,7 @@ void bumper_update(bumper_t *bumper)
 
       // Get the bumper geometry
       if (playerc_bumper_get_geom(bumper->proxy) != 0)
-        PRINT_ERR1("get_geom failed : %s", playerc_error_str());    
+        PRINT_ERR1("get_geom failed : %s", playerc_error_str());
 
       bumper_allocate_figures(bumper, bumper->proxy->pose_count);
       for (i = 0; i < bumper->proxy->pose_count; i++){
@@ -131,7 +130,7 @@ void bumper_update(bumper_t *bumper)
                        bumper->proxy->poses[i].pose.px, // convert mm to m
                        bumper->proxy->poses[i].pose.py,
                        bumper->proxy->poses[i].pose.pyaw); // convert deg to rad
-					   
+
       }
     }
   }
@@ -166,7 +165,7 @@ void bumper_draw(bumper_t *bumper)
 
   for (i = 0; i< bumper->proxy->bumper_count; i++)
   {
-    rtk_fig_show(bumper->scan_fig[i], 1);      
+    rtk_fig_show(bumper->scan_fig[i], 1);
     rtk_fig_clear(bumper->scan_fig[i]);
 
     // Draw in the bumper, diff colour if its active
@@ -191,7 +190,7 @@ void bumper_draw(bumper_t *bumper)
     else
     {
       half_angle = (bumper->proxy->poses[i].length)/radius/2.0 - 0.04;
-      rtk_fig_ellipse_arc(bumper->scan_fig[i],-radius,0,0,radius*2,radius*2,-half_angle,half_angle);	
+      rtk_fig_ellipse_arc(bumper->scan_fig[i],-radius,0,0,radius*2,radius*2,-half_angle,half_angle);
     }
   }
 }
