@@ -1,0 +1,7 @@
+PLAYERDRIVER_OPTION (camfilter build_camfilter ON)
+IF (HAVE_JPEG)
+    PLAYERDRIVER_REQUIRE_HEADER (camfilter build_camfilter jpeglib.h stdio.h)
+    PLAYERDRIVER_ADD_DRIVER (camfilter build_camfilter LINKFLAGS "-ljpeg" SOURCES camfilter.cc)
+ELSE (HAVE_JPEG)
+    PLAYERDRIVER_ADD_DRIVER (camfilter build_camfilter SOURCES camfilter.cc)
+ENDIF (HAVE_JPEG)
