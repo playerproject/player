@@ -1,0 +1,90 @@
+/** \page pageCamera Camera configuration
+ * .
+ *
+ * There are two possible camera models in e-pucks: PO3030K and PO6030K. The
+ * resolution of both is 640x480, but in e-pucks which have the PO3030K, this
+ * is rotated 90 degrees. Because this, in practice, in e-pucks with PO3030K
+ * camera the resolution is 480x640. The grabbed image will be rotated, and
+ * no difference can be noticed between the PO3030K and PO6030K, but in
+ * configuration, see \ref sensor_wh.
+ *
+ * The version of camera in e-puck will be printed by Player in start of
+ * driver.
+ *
+ * The e-puck camera can be configured through the player .cfg file. A complete
+ * example which work with both Player 2.0 and 2.1, with all possible camera
+ * options is below:
+ *
+ * \code
+ * driver
+ * (
+ *   name "epuck"
+ *   plugin "libepuck"
+ *   provides ["camera:0"]
+ *   port "/dev/rfcomm1"
+ *
+ *   sensor_x1 240
+ *   sensor_y1 160
+ *   sensor_width 160
+ *   sensor_height 160
+ *   zoom_fact_width 4
+ *   zoom_fact_height 4
+ *   color_mode "GREY_SCALE_MODE"
+ * )
+ * \endcode
+ *
+ * \attention
+ * The e-puck have a camera that capture images in a resolution of 640x480
+ * (or 480x640) pixels. However, the memory on dsPIC in e-puck is not enough
+ * to handle all this amount. In fact, only 6500 bytes in e-puck is reserved
+ * to camera image. Therefore the equation:
+ * \f[ \frac{ \mathrm{sensor\_width} }{ \mathrm{zoom\_fact\_width} } \cdot
+ * \frac{ \mathrm{sensor\_height} }{ \mathrm{zoom\_fact\_height} } \f]
+ * must be lesser or equal than 6500 in GREY color mode, or, lesser or equal
+ * than 3250 in RGB or YUV color mode.
+ *
+ * \section options The camera options
+ *
+ * All options may be omitted, in this case the default image would have
+ * 40x40 pixels and grey color mode.
+ *
+ * \subsection zoom_factor Zoom factor
+ * The options zoom_fact_width and zoom_fact_height point to how many pixels
+ * will be subsampling in width and height respectively. Is strongly
+ * recommended that they be either 2 or 4, because in this case part of the
+ * subsampling is done by the camera (see e-puck standard library
+ * documentation). Furthermore, I experienced problems with other values.
+ *
+ * The default value for both zoom_fact_width and zoom_fact_height are 4.
+ *
+ * \subsection sensor_wh Sensor width and height
+ * The options sensor_width and sensor_height define what is the image width
+ * and height before the subsampling operation. The final image width will be:
+ * \f[ \frac{ \mathrm{sensor\_width} }{ \mathrm{zoom\_fact\_width} } \f]
+ * And the final height will be:
+ * \f[ \frac{ \mathrm{sensor\_height} }{ \mathrm{zoom\_fact\_height} } \f]
+ *
+ * In the e-pucks which has the PO6030K camera, the camera resolution is
+ * 640(width)x480(height). The ones with the PO3030K camera, the camera
+ * resolution is 480(width)x640(height). Be careful for select valid values.
+ *
+ * The default values for both sensor_width and sensor_height are 160.
+ *
+ * \subsection sensor_xy Sensor x1 and y1
+ * The options sensor_x1 and sensor_y1 configure the pixel where the
+ * sensor_width and sensor_height will begin the count. For a image
+ * centralized in camera field of vision, the sensor_x1 must be:
+ * \f[ \frac{640 - \mathrm{sensor\_width} }{2} \f]
+ * and the sensor_y1 must be:
+ * \f[ \frac{480 - \mathrm{sensor\_height} }{2} \f]
+ *
+ * The default values to sensor_x1 and sensor_y1 are respectively 240 and 160.
+ *
+ * \subsection color_mode Color mode
+ * The option color_mode may be:
+ *   - "GREY_SCALE_MODE"
+ *   - "RGB_565_MODE"
+ *   - "YUV_MODE"
+ *
+ * The default option is "GREY_SCALE_MODE".
+ */
