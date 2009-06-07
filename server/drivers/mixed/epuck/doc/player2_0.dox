@@ -1,0 +1,60 @@
+/** \page player2_0 Player 2.0 driver specification
+ *
+ * \par Name:
+ *
+ * - epuck
+ *
+ * \par Provides:
+ *
+ * - position2d
+ * - ir
+ * - camera
+ * - opaque (for LEDs)
+ *
+ * \par Requires:
+ *
+ * - none
+ *
+ * \par Implemented requests:
+ * \par
+ *  \b interface_position2d
+ * - PLAYER_POSITION2D_CMD_VEL
+ * - PLAYER_POSITION2D_CMD_CAR
+ * - PLAYER_POSITION2D_REQ_GET_GEOM
+ * - PLAYER_POSITION2D_REQ_SET_ODOM
+ * - PLAYER_POSITION2D_REQ_RESET_ODOM
+ * - PLAYER_POSITION2D_DATA_STATE
+ *  \par
+ *  \b interface_ir :
+ * - PLAYER_IR_POSE
+ * - PLAYER_IR_DATA_RANGES
+ *  \par
+ *  \b interface_camera :
+ * - PLAYER_CAMERA_DATA_STATE
+ *  \par
+ *  <b>opaque (for LEDs)</b>
+ * - PLAYER_OPAQUE_CMD
+ *
+ * \par Configuration file example:
+ *
+ * \code
+ * driver
+ * (
+ *   name "epuck"
+ *   plugin "libepuck"
+ *
+ *   provides ["position2d:0"
+ *             "ir:0"
+ *             "camera:0"
+ *             "ring_leds:::opaque:0"
+ *             "front_led:::opaque:1"
+ *             "body_led:::opaque:2"]
+ *
+ *  port "/dev/rfcomm1"
+ * )
+ * \endcode
+ *
+ * Each of the ring, front, and body LEDs can be used independently, and
+ * the keys "ring_leds", "front_led" and "body_led" must be placed in LEDs
+ * opaque interface. Without them the interface won't be subscribed.
+ */

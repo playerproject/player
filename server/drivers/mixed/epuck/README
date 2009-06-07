@@ -1,0 +1,20 @@
+E-puck Player Driver
+--------------------
+
+http://code.google.com/p/epuck-player-driver/
+
+E-puck Player Driver is a driver for Player, which provide a way
+for to control a e-puck robot by Player. This driver is only
+for control the real robot, the driver for simulation on Stage
+is not provided.
+Currently this driver work in player version 2.0.X and 2.1.X.
+
+This driver is composite by a PC side program and an e-puck side program.
+The PC side program is under folder src, is written in C++ and use the Player
+libraries. The e-puck side program is under folder epuckSide, is written in C
+and use the e-puck project library.
+
+In the e-puck side program, if the e-puck was turned on or reseted with the
+switch in position zero, it will enter in upload program mode, where it does
+nothing else turn on the led zero and wait. Any other position will enter in
+Player Driver mode.

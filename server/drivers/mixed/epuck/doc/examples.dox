@@ -1,0 +1,47 @@
+//-------------------------------- PLAYER 2.0.* EXAMPLES
+
+/** \example player_2_0/position2d.c
+ * This is an example of how make a program for e-puck position2d interface.
+ * The e-puck goes 10cm forward, printing the current pose.
+ */
+
+/** \example player_2_0/ir.c
+ * This is an example of how make a program for read the e-puck ir sensors.
+ * The sensor will be reads until a object distance 2cm or lesser.
+ */
+
+/** \example player_2_0/camera.c
+ * This is an example of how capture images from e-epuck.
+ * A image will be read from e-epuck camera and save in local folder.
+ * \n For a description of camera options on player .cfg file, see
+ * \ref pageCamera.
+ */
+
+/** \example player_2_0/opaqueLED.c
+ * This is an exemple of how to manage the e-puck LEDs.
+ * The ring LEDs 2 and 6, and the front and body LEDs will turn on.
+ */
+
+//-------------------------------- PLAYER 2.1.* EXAMPLES
+
+/** \example player_2_1/position2d.c
+ * This is an example of how make a program for e-puck position2d interface.
+ * The e-puck goes 10cm forward, printing the current pose.
+ */
+
+/** \example player_2_1/ir.c
+ * This is an example of how make a program for read the e-puck ir sensors.
+ * The sensor will be reads until a object distance 2cm or lesser.
+ */
+
+/** \example player_2_1/camera.c
+ * This is an example of how capture images from e-epuck.
+ * A image will be read from e-epuck camera and save in local folder.
+ * \n For a description of camera options on player .cfg file, see
+ * \ref pageCamera.
+ */
+
+/** \example player_2_1/blinkenlight.c
+ * This is an exemple of how to manage the e-puck LEDs.
+ * The ring LEDs 2 and 6, and the front and body LEDs will turn on.
+ */

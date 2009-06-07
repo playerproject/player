@@ -1,0 +1,68 @@
+/** \page player2_1 Player 2.1 driver specification
+ *
+ * \par Name:
+ *
+ * - epuck
+ *
+ * \par Provides:
+ *
+ * - position2d
+ * - ir
+ * - camera
+ * - blinkenlight
+ *
+ * \par Requires:
+ *
+ * - none
+ *
+ * \par Implemented requests:
+ * \par
+ *  \b interface_position2d
+ * - PLAYER_POSITION2D_CMD_VEL
+ * - PLAYER_POSITION2D_CMD_CAR
+ * - PLAYER_POSITION2D_REQ_GET_GEOM
+ * - PLAYER_POSITION2D_REQ_SET_ODOM
+ * - PLAYER_POSITION2D_REQ_RESET_ODOM
+ * - PLAYER_POSITION2D_DATA_STATE
+ *  \par
+ *  \b interface_ir :
+ * - PLAYER_IR_REQ_POSE
+ * - PLAYER_IR_DATA_RANGES
+ *  \par
+ *  \b interface_camera :
+ * - PLAYER_CAMERA_DATA_STATE
+ *  \par
+ *  \b blinkenlight
+ * - PLAYER_BLINKENLIGHT_CMD_POWER
+ *
+ * \par Configuration file example:
+ *
+ * \code
+ * driver
+ * (
+ *   name "epuck"
+ *   plugin "libepuck"
+ *
+ *   provides ["position2d:0"
+ *             "ir:0"
+ *             "camera:0"
+ *             "ring_led0:::blinkenlight:0"
+ *             "ring_led1:::blinkenlight:1"
+ *             "ring_led2:::blinkenlight:2"
+ *             "ring_led3:::blinkenlight:3"
+ *             "ring_led4:::blinkenlight:4"
+ *             "ring_led5:::blinkenlight:5"
+ *             "ring_led6:::blinkenlight:6"
+ *             "ring_led7:::blinkenlight:7"
+ *             "front_led:::blinkenlight:8"
+ *             "body_led:::blinkenlight:9"]
+ *
+ *   port "/dev/rfcomm1"
+ * )
+ * \endcode
+ *
+ * Each of the eigth ring LEDs, the front LED, and the body LED can be used
+ * independently, and the keys "ring_ledX" (where X is the number of ring LED),
+ * "front_led" and "body_led" must be placed in blinkenlight device addresses.
+ * Without them that LED won't be subscribed.
+ */
