@@ -148,7 +148,8 @@ driver
 #include <assert.h>
 #include <pthread.h>
 #include <libplayercore/playercore.h>
-#if HAVE_JPEGLIB_H
+#include <config.h>
+#if HAVE_JPEG
 #include <libplayerjpeg/playerjpeg.h>
 #else
 #warning JPEG decompression disabled!
@@ -396,7 +397,7 @@ int CamFilter::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, vo
           return -1;
 	}
         break;
-#if HAVE_JPEGLIB_H
+#if HAVE_JPEG
       case PLAYER_CAMERA_COMPRESS_JPEG:
         if (this->bufsize != new_size)
 	{
@@ -509,16 +510,3 @@ int CamFilter::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, vo
   }
   return -1;
 }
-
-#ifdef JUST_A_PLUGIN
-
-extern "C"
-{
-  int player_driver_init(DriverTable * table)
-  {
-    CamFilter_Register(table);
-    return 0;
-  }
-}
-
-#endif
