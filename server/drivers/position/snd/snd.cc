@@ -135,35 +135,15 @@ driver
 */
 /** @} */
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#include <unistd.h>
+#if !defined (WIN32)
+	#include <unistd.h>
+	#include <netinet/in.h>
+#endif
 #include <string.h>
 #include <stdio.h>
 #include <pthread.h>
 #include <semaphore.h>
 #include <vector>
-#include <netinet/in.h>
 #include <libplayercore/playercore.h>
 
 #include "snd.h"
