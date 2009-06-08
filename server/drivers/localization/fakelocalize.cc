@@ -64,6 +64,12 @@ cost of actually running a localization algorithm.
   - Default: NULL
   - Name of simulation model for which we're faking localization.
 
+@par Properties
+
+- sleep_nsec (integer)
+  - Default: 100000000
+  - timespec value for nanosleep()
+
 @par Example
 
 @verbatim
@@ -100,8 +106,6 @@ driver
 
 #include <libplayercore/playercore.h>
 
-#define SLEEPTIME_NS 100000000
-
 #if !defined (min)
   #define min(x,y) ((x) < (y) ? (x) : (y))
 #endif
@@ -109,6 +113,8 @@ driver
 #if defined (WIN32)
   #define strdup _strdup
 #endif
+
+const int SLEEPTIME_NS = 100000000;
 
 // Driver for computing the free c-space from a laser scan.
 class FakeLocalize : public ThreadedDriver
@@ -132,6 +138,7 @@ class FakeLocalize : public ThreadedDriver
   private: player_devaddr_t localize_addr;
   private: player_devaddr_t position2d_addr;
   private: char* model;
+  private: IntProperty sleep_nsec;
 };
 
 // Initialization function
@@ -150,8 +157,17 @@ void fakelocalize_Register(DriverTable* table)
 // Constructor
 FakeLocalize::FakeLocalize( ConfigFile* cf, int section)
   : ThreadedDriver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN),
-  model (NULL)
+  model (NULL),
+  sleep_nsec("sleep_nsec", SLEEPTIME_NS, false)
 {
+  RegisterProperty("sleep_nsec", &sleep_nsec, cf, section);
+  if (this->sleep_nsec.GetValue () < 0)
+  {
+    PLAYER_ERROR("invalid sleep_nsec value");
+    this->SetError(-1);
+    return;
+  }
+
   // Must have an input sim
   if (cf->ReadDeviceAddr(&this->sim_id, section, "requires",
                        PLAYER_SIMULATION_CODE, -1, NULL) != 0)
@@ -203,7 +219,6 @@ FakeLocalize::FakeLocalize( ConfigFile* cf, int section)
     this->SetError(-1);
     return;
   }
-
   return;
 }
 
@@ -317,9 +332,12 @@ FakeLocalize::Main()
       pthread_exit(NULL);
     }
     this->ProcessMessages();
-    ts.tv_sec = 0;
-    ts.tv_nsec = SLEEPTIME_NS;
-    nanosleep(&ts, NULL);
+    if (this->sleep_nsec.GetValue () > 0)
+    {
+      ts.tv_sec = 0;
+      ts.tv_nsec = this->sleep_nsec;
+      nanosleep(&ts, NULL);
+    }
   }
 }
 
