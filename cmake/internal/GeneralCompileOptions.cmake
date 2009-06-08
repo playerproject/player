@@ -12,3 +12,17 @@ IF (WITH_GTK)
 ENDIF (WITH_GTK)
 
 OPTION (BUILD_SHARED_LIBS "Build the Player libraries as shared libraries." ON)
+
+IF (NOT PLAYER_OS_WIN)
+    OPTION (LARGE_FILE_SUPPORT "Compile with support for large files (>2GB)." OFF)
+    EXECUTE_PROCESS (COMMAND getconf LFS_CFLAGS OUTPUT_VARIABLE LFS_FLAGS
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+    IF (LARGE_FILE_SUPPORT)
+        MESSAGE (STATUS "Large file support is enabled, flags are ${LFS_FLAGS}")
+        ADD_DEFINITIONS (${LFS_FLAGS})
+    ELSE (LARGE_FILE_SUPPORT)
+        MESSAGE (STATUS "Large file support is disabled.")
+        REMOVE_DEFINITIONS (${LFS_FLAGS})
+    ENDIF (LARGE_FILE_SUPPORT)
+ENDIF (NOT PLAYER_OS_WIN)
+
