@@ -914,7 +914,7 @@ int Camera1394::SetGain(unsigned int gain) {
 		if (DC1394_SUCCESS != dc1394_feature_set_value(this->camera, FEATURE_GAIN,gain))
 #else
 		if (DC1394_SUCCESS != dc1394_set_gain(this->handle, this->camera.node,
-				this->gain))
+				gain))
 #endif
 		{
 			PLAYER_ERROR("Unable to Gain value");
@@ -1000,45 +1000,45 @@ int Camera1394::MainSetup() {
 #endif
 
 	// apply user config file provided camera settings
-	if (Focus != PROPERTY_NOT_SET) {
-		if (SetFocus(Focus)) {
+	if (this->Focus != PROPERTY_NOT_SET) {
+		if (this->SetFocus(this->Focus)) {
 			this->SafeCleanup();
 			return -1;
 		}
 	}
-	if (Iris != PROPERTY_NOT_SET) {
-		if (SetIris(Iris)) {
+	if (this->Iris != PROPERTY_NOT_SET) {
+		if (this->SetIris(this->Iris)) {
 			// error
 			this->SafeCleanup();
 			return -1;
 		}
 	}
-	if (Brightness != PROPERTY_NOT_SET) {
-		if (SetBrightness(Brightness)) {
+	if (this->Brightness != PROPERTY_NOT_SET) {
+		if (this->SetBrightness(this->Brightness)) {
 			this->SafeCleanup();
 			return -1;
 		}
 	}
-	if (Exposure != PROPERTY_NOT_SET) {
-		if (SetExposure(Exposure)) {
+	if (this->Exposure != PROPERTY_NOT_SET) {
+		if (this->SetExposure(this->Exposure)) {
 			this->SafeCleanup();
 			return -1;
 		}
 	}
-	if (Shutter != PROPERTY_NOT_SET) {
-		if (SetShutter(Shutter)) {
+	if (this->Shutter != PROPERTY_NOT_SET) {
+		if (this->SetShutter(this->Shutter)) {
 			this->SafeCleanup();
 			return -1;
 		}
 	}
-	if (Gain != PROPERTY_NOT_SET) {
-		if (SetGain(Gain)) {
+	if (this->Gain != PROPERTY_NOT_SET) {
+		if (this->SetGain(this->Gain)) {
 			this->SafeCleanup();
 			return -1;
 		}
 	}
 
-	if (BlueBalance != PROPERTY_NOT_SET && RedBalance != PROPERTY_NOT_SET) {
+	if ((this->BlueBalance != PROPERTY_NOT_SET) && (this->RedBalance != PROPERTY_NOT_SET)) {
 #if LIBDC1394_VERSION == 0200
 		if (DC1394_SUCCESS != dc1394_feature_whitebalance_set_value(this->camera,this->BlueBalance,this->RedBalance))
 #else
