@@ -86,8 +86,6 @@ driver
 #define EPS 0.0000001
 #define MAXFABS(a, b) ((fabs(a) > fabs(b)) ? fabs(a) : fabs(b))
 
-using namespace std;
-
 class Vec2Map : public ThreadedDriver
 {
   public:

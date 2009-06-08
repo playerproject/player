@@ -24,8 +24,17 @@
 #include <assert.h>
 #include <time.h>
 #include <math.h>
-#include <sys/times.h>
 #include <vector>
+#if defined (WIN32)
+	#if defined (min)
+		#undef min
+	#endif
+	#if defined (max)
+		#undef max
+	#endif
+#else
+	#include <sys/times.h>
+#endif
 
 
 #include "dllist.h"
@@ -33,7 +42,6 @@
 #include "gap_and_valley.h"
 #include "snd.h"
 
-using namespace std;
 //using namespace PlayerCc;
 
 // Use gDebug to set verbosity of output, -1 for silent, 0 for hardly any output, 5 for normal debug
@@ -116,7 +124,7 @@ bool isRisingGapSafe( Gap* pRisingGap, int iValleyDir, std::vector<double> fullL
 	//double fScanRes = lp.GetScanRes();
 	//double fMaxRange = lp.GetMaxRange();
 	
-	int iNumSectors = fullLP.size();
+	int iNumSectors = static_cast<int> (fullLP.size());
 	int iRisingGap = pRisingGap->m_iSector;
 	double gapDistance = pRisingGap->m_dist;
 	
@@ -155,7 +163,7 @@ bool isRisingGapSafe( Gap* pRisingGap, int iValleyDir, std::vector<double> fullL
 
 bool isFilterClear( int iCenterSector, double width, double forwardLength, bool bDoRearCheck, std::vector<double> fullLP, double angRes, bool bPrint )
 {
-	int iCount = fullLP.size();
+	int iCount = static_cast<int> (fullLP.size());
 	//double angRes = lp.GetScanRes();
 	for( int i = 0; i < iCount; i++ )
 	{
@@ -231,7 +239,7 @@ void* main_algorithm(void* proxy)
 		
 		if( iNumSectors <= 0 || iNumSectors > 100000 || iNumSectors < iNumLPs )
 		{
-			cerr<< "ERROR: Invalid number of sectors " << endl;
+			std::cerr<< "ERROR: Invalid number of sectors " << std::endl;
 			return NULL;
 		}
 		
@@ -684,9 +692,9 @@ void* main_algorithm(void* proxy)
 							
 							if( gDebug > 5 ) 
 							{
-								cout<< "  Pass " << iPass << ": considering valley ";
-								cout<< pBestValley->m_pRisingDisc->m_iSector << ", " << pBestValley->m_pOtherDisc->m_iSector;
-								cout<< endl;
+								std::cout<< "  Pass " << iPass << ": considering valley ";
+								std::cout<< pBestValley->m_pRisingDisc->m_iSector << ", " << pBestValley->m_pOtherDisc->m_iSector;
+								std::cout<< std::endl;
 							}
 						}
 					}
@@ -719,9 +727,9 @@ void* main_algorithm(void* proxy)
 							
 							if( gDebug > 5 ) 
 							{
-								cout<< "  Pass " << iPass << ": considering valley ";
-								cout<< pBestValley->m_pRisingDisc->m_iSector << ", " << pBestValley->m_pOtherDisc->m_iSector;
-								cout<< endl;
+								std::cout<< "  Pass " << iPass << ": considering valley ";
+								std::cout<< pBestValley->m_pRisingDisc->m_iSector << ", " << pBestValley->m_pOtherDisc->m_iSector;
+								std::cout<< std::endl;
 							}
 						}
 					}
@@ -743,7 +751,7 @@ void* main_algorithm(void* proxy)
 			{
 				if (gDebug > 0) std::cout<< "!!! Obstacle inside robot radius !!!";
 				if (gDebug > 0) std::cout<< "   Stopping.";
-				iSTheta = fullLP.size()/2;
+				iSTheta = static_cast<int> (fullLP.size()/2);
 			}
 			else if( pBestValley == NULL )
 			{
