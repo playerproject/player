@@ -2726,7 +2726,7 @@ PLAYERC_EXPORT int playerc_position2d_set_cmd_pose_with_vel(playerc_position2d_t
     speed (m/s); this field is used by omni-drive robots only.  pa :
     rotational heading (rad).  All speeds and angles are defined in the robot
     coordinate system. */
-int playerc_position2d_set_cmd_vel_head(playerc_position2d_t *device,
+PLAYERC_EXPORT int playerc_position2d_set_cmd_vel_head(playerc_position2d_t *device,
                                    double vx, double vy, double pa, int state);
 
 
