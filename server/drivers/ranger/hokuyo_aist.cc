@@ -70,10 +70,10 @@
    - Default: [0.0 0.0 0.0]
    - Size of the laser in metres.
  - min_angle (float, radians)
-   - Default: -2.08 rad (-119.0 degrees)
+   - Default: 0.0 rad (Use laser default)
    - Minimum scan angle to return. Will be adjusted if outside the laser's scannable range.
  - max_angle (float, radians)
-   - Default: 2.08 rad (119.0 degrees)
+   - Default: 0.0 rad (Use laser default)
    - Maximum scan angle to return. Will be adjusted if outside the laser's scannable range.
  - power (boolean)
    - Default: true
@@ -191,8 +191,8 @@ HokuyoDriver::HokuyoDriver (ConfigFile* cf, int section) :
 
 	// Get config
 	_getIntensities = cf->ReadBool (section, "get_intensities", false);
-	_minAngle = cf->ReadFloat (section, "min_angle", -2.08);
-	_maxAngle = cf->ReadFloat (section, "max_angle", 2.08);
+	_minAngle = cf->ReadFloat (section, "min_angle", 0.0);
+	_maxAngle = cf->ReadFloat (section, "max_angle", 0.0);
 	_portOpts = cf->ReadString (section, "portopts", "type=serial,device=/dev/ttyACM0,timeout=1");
 	_verbose = cf->ReadBool (section, "verbose", false);
 	_ignoreUnknowns = cf->ReadBool (section, "ignoreunknowns", false);
