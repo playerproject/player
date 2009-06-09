@@ -14,7 +14,7 @@ message { REQ, GEOM, 4, player_ptz_geom_t };
 message { REQ, STATUS, 5, player_ptz_req_status_t };
 
 /** Data subtype: state */
-message { DATA, STATE, 1, player_power_data_t };
+message { DATA, STATE, 1, player_ptz_data_t };
 /** Data subtype: geometry */
 message { DATA, GEOM, 2, player_ptz_geom_t };
 
