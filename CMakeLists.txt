@@ -28,12 +28,12 @@ INCLUDE (${PLAYER_CMAKE_DIR}/internal/DissectVersion.cmake)
 INCLUDE (${PLAYER_CMAKE_DIR}/internal/FindOS.cmake)
 
 # Enable -Wall by default
-IF (NOT PLAYER_OS_WIN)
+IF (NOT PLAYER_OS_WIN AND NOT PLAYER_OS_SOLARIS)
     # Using -Wall on Windows causes MSVC to produce thousands of warnings in its
     # own standard headers, dramatically slowing down the build.
     SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
     SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
-ENDIF (NOT PLAYER_OS_WIN)
+ENDIF (NOT PLAYER_OS_WIN AND NOT PLAYER_OS_SOLARIS)
 
 # Check the compiler version is OK
 # INCLUDE (${PLAYER_CMAKE_DIR}/internal/CheckCompiler.cmake)
