@@ -150,9 +150,7 @@ driver
 #include <libplayercore/playercore.h>
 #include <config.h>
 #if HAVE_JPEG
-#include <libplayerjpeg/playerjpeg.h>
-#else
-#warning JPEG decompression disabled!
+  #include <libplayerjpeg/playerjpeg.h>
 #endif
 
 class CamFilter : public ThreadedDriver
