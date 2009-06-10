@@ -15,6 +15,8 @@
 
 #include "epuckInterface.hpp"
 
+const float EpuckInterface::EPUCK_DIAMETER = 0.07;
+
 EpuckInterface::EpuckInterface(const SerialPort* const serialPort)
   :serialPort(serialPort)
 {}
