@@ -20,6 +20,17 @@
 #define PI       3.141592654
 #define DOIS_PI  6.283185308
 
+// Diameter of e-puck wheels [m]
+const float EpuckPosition2d::WHEEL_DIAMETER = 0.0412;
+// Distance between e-puck wheels [m]
+const float EpuckPosition2d::TRACK = 0.05255;
+// Wheel radius divided by TRACK [m]
+const float EpuckPosition2d::r_DIV_L = 0.392007612;
+// Half of wheel radius [m]
+const float EpuckPosition2d::r_DIV_2 = 0.0103;
+// Angular displacement of one motor step [rad]
+const float EpuckPosition2d::STEP_ANG_DISP = 6.283185308e-3;
+
 EpuckPosition2d::EpuckPosition2d(const SerialPort* const serialPort)
   :EpuckInterface(serialPort)
 {

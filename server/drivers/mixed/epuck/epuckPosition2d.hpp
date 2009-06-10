@@ -112,19 +112,19 @@ private:
   BodyGeometry geometry;
 
   // Diameter of e-puck wheels [m]
-  static const float WHEEL_DIAMETER = 0.0412;
+  static const float WHEEL_DIAMETER;
 
   // Distance between e-puck wheels [m]
-  static const float TRACK = 0.05255;
+  static const float TRACK;
 
   // Wheel radius divided by TRACK [m]
-  static const float r_DIV_L = 0.392007612;
+  static const float r_DIV_L;
 
   // Half of wheel radius [m]
-  static const float r_DIV_2 = 0.0103;
+  static const float r_DIV_2;
 
   // Angular displacement of one motor step [rad]
-  static const float STEP_ANG_DISP = 6.283185308e-3;
+  static const float STEP_ANG_DISP;
 };
 
 #endif

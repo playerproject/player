@@ -59,7 +59,7 @@ protected:
   const SerialPort* const serialPort;
 
   /// Diameter of e-puck body [m].
-  static const float EPUCK_DIAMETER = 0.07;
+  static const float EPUCK_DIAMETER;
 
   /// Request codes acceptable by e-puck.
   enum Request

@@ -30,10 +30,8 @@ extern int sign( double num );
 extern int getSectorsBetween( int iS1, int iS2, int iSMax );
 extern int getSectorsBetweenDirected( int iS1, int iS2, int iSMax, int iDirection );
  
-class Gap{
- 	protected :
-		;
-		
+class Gap
+{
 	public :
 		int m_iSector;
 		double m_dist;
