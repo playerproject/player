@@ -1,2 +1,6 @@
-PLAYERDRIVER_OPTION (snd build_snd ON)
+IF (HAVE_STL)
+    PLAYERDRIVER_OPTION (snd build_snd ON)
+ELSE (HAVE_STL)
+    PLAYERDRIVER_OPTION (snd build_snd OFF "STL not found")
+ENDIF (HAVE_STL)
 PLAYERDRIVER_ADD_DRIVER (snd build_snd SOURCES gap_and_valley.cc  gap_nd_nav.cc  snd.cc )
