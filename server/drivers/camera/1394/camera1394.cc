@@ -53,9 +53,18 @@
 
  @par Configuration file options
 
+ - guid (string [16 digits])
+ - Default: None
+ - The GUID of the 1394 camera to use (only for libdc1394 >= 2.0)
+ - Example: guid "0800460200060121"
+ - Currently, if using libdc1394 >= 2.0 
+   - You should use GUID if you are on port > 0
+   - To get GUID, run Player once with no GUID and look at the .player log file for the GUID of detected cameras.
+
  - port (integer)
  - Default: 0
  - The 1394 port the camera is attached to.
+ - v2 of the dc1394 API no longer supports ports other than 0.  If your camera is on a port > 0, and you are on Linux, you probably have /usr/include/dc1394/linux/control.h, which should allow you to use ports > 0 (if this file was detected during ./configure).  Otherwise, use the GUID of the camera.
 
  - node (integer)
  - Default: 0
@@ -134,7 +143,8 @@
 
  - whitebalance (string)
  - Default: None
- - Sets the manual camera white balance setting. Only valid option:
+ - Sets the manual camera white balance setting. Valid modes are:
+ - "auto" (only for dc1394 v2)
  - a string containing two suitable blue and red value unsigned integers
 
  - dma_buffers
@@ -180,6 +190,17 @@
 #endif
 #include <libplayercore/playercore.h>
 #include <libplayercore/error.h>
+
+#if DC1394_2_LINUX == 1
+
+extern "C" {
+#include <dc1394/linux/control.h>
+  void get_port(dc1394camera_t* camera, uint& cam_port){
+    dc1394_camera_get_linux_port(camera, &cam_port);  
+  }
+}
+#endif
+
 
 // for color and format conversion (located in cmvision)
 #include "conversions.h"
@@ -291,16 +312,17 @@ public:
 	Camera1394(ConfigFile* cf, int section);
 
 public:
-	virtual int SetZoom(unsigned int brightness);
+	virtual int SetZoom(unsigned int zoom);
 	virtual int GetZoom(unsigned int* zoom);
 	virtual int SetFocus(unsigned int focus);
 	virtual int GetFocus(unsigned int* focus);
 	virtual int SetIris(unsigned int iris);
 	virtual int GetIris(unsigned int* iris);
 	virtual int SetBrightness(unsigned int brightness);
-	virtual int SetExposure(unsigned int brightness);
-	virtual int SetShutter(unsigned int brightness);
+	virtual int SetExposure(unsigned int exposure);
+	virtual int SetShutter(unsigned int shutter);
 	virtual int SetGain(unsigned int gain);
+	virtual int SetWhiteBalance(const char* whitebalance);
 
 	// Main function for device thread.
 private:
@@ -329,6 +351,8 @@ private:
 	// Video device
 	unsigned int port;
 	unsigned int node;
+        char guid[1024];
+        bool use_guid;
 
 #ifdef HAVE_LIBRAW1394
 private: raw1394handle_t handle;
@@ -403,7 +427,8 @@ private:
 	IntProperty MinZoom, MaxZoom, Zoom;
 	IntProperty MinFocus, MaxFocus, Focus;
 	IntProperty MinIris, MaxIris, Iris;
-	IntProperty Brightness, Exposure, RedBalance, BlueBalance, Shutter, Gain;
+	IntProperty Brightness, Exposure, Shutter, Gain;
+        StringProperty WhiteBalance;
 	/*  private: bool setFocus, setIris, setBrightness, setExposure, setWhiteBalance, setShutter, setGain;
 	 private: bool autoFocus, autoIris, autoBrightness, autoExposure, autoShutter, autoGain;
 	 private: unsigned int focus, iris, brightness, exposure, redBalance, blueBalance, shutter, gain;
@@ -441,12 +466,11 @@ Camera1394::Camera1394(ConfigFile* cf, int section) :
 			MaxIris("max_iris", PROPERTY_NOT_SET, true, this, cf, section),
 			Iris("iris", PROPERTY_NOT_SET, false, this, cf, section),
 			Brightness("brightness", PROPERTY_NOT_SET, false, this, cf, section),
-			Exposure("exposure", PROPERTY_NOT_SET, false, this,
-			cf, section), RedBalance("red_balance", PROPERTY_NOT_SET, false,
-			this, cf, section), BlueBalance("blue_balance", PROPERTY_NOT_SET,
-			false, this, cf, section), Shutter("shutter", PROPERTY_NOT_SET,
-			false, this, cf, section), Gain("gain", PROPERTY_NOT_SET, false,
-			this, cf, section) {
+			Exposure("exposure", PROPERTY_NOT_SET, false, this, cf, section), 
+	                Shutter("shutter", PROPERTY_NOT_SET, false, this, cf, section), 
+                        Gain("gain", PROPERTY_NOT_SET, false, this, cf, section), 
+                        WhiteBalance("whitebalance", "None", false, this, cf, section)
+{
 	float fps;
 
 	this->data = NULL;
@@ -456,6 +480,16 @@ Camera1394::Camera1394(ConfigFile* cf, int section) :
 #endif
 	this->method = methodNone;
 
+	const char* str;
+	// The guid of the camera
+	str = cf->ReadString(section, "guid", "NONE");
+	this->use_guid=false;
+	if (strcmp(str,"NONE"))
+	  {
+	    use_guid=true;
+	    strcpy(this->guid,str); 
+	  }
+	
 	// The port the camera is attached to
 	this->port = cf->ReadInt(section, "port", 0);
 
@@ -483,7 +517,6 @@ Camera1394::Camera1394(ConfigFile* cf, int section) :
 	// Image size. This determines the capture resolution. There are a limited
 	// number of options available. At 640x480, a camera can capture at
 	// _RGB or _MONO or _MONO16.
-	const char* str;
 	str = cf->ReadString(section, "mode", "640x480_yuv422");
 	/*
 	 if (0==strcmp(str,"160x120_yuv444"))
@@ -660,8 +693,7 @@ void Camera1394::SafeCleanup() {
 			//dc1394_release_camera(this->camera);
 			break;
 			case methodVideo:
-			//dc1394_dma_unlisten(this->camera);
-			//dc1394_dma_release_camera(this->camera);
+			  dc1394_capture_stop(this->camera);
 			break;
 		}
 		dc1394_camera_free(this->camera);
@@ -925,6 +957,56 @@ int Camera1394::SetGain(unsigned int gain) {
 	return 0;
 }
 
+
+int Camera1394::SetWhiteBalance(const char* whitebalance) {
+  bool setWhiteBalance = false;
+  bool autoWhiteBalance = false;
+  unsigned int blueBalance, redBalance;
+  
+  if (!strcmp(whitebalance,"auto"))
+    {
+#if LIBDC1394_VERSION == 0200
+      setWhiteBalance=true;
+      autoWhiteBalance=true;
+#else
+      setWhiteBalance=false;
+#endif
+    }
+  else
+    {
+      autoWhiteBalance=false;
+      if(sscanf(whitebalance,"%u %u",&blueBalance,&redBalance)==2)
+	setWhiteBalance=true;
+      else
+	PLAYER_ERROR1("didn't understand white balance values [%s]", whitebalance);
+    }
+  
+  if (setWhiteBalance)
+    {
+#if LIBDC1394_VERSION == 0200
+      if (DC1394_SUCCESS != dc1394_feature_set_mode(this->camera, FEATURE_WHITE_BALANCE,autoWhiteBalance ? DC1394_FEATURE_MODE_AUTO : DC1394_FEATURE_MODE_MANUAL))
+	{
+	  PLAYER_ERROR("Unable to set White Balance mode");
+	  this->SafeCleanup();
+	  return -1;
+	}
+      if (!autoWhiteBalance)
+	if (DC1394_SUCCESS != dc1394_feature_whitebalance_set_value(this->camera,blueBalance,redBalance))
+#else
+	  if (DC1394_SUCCESS != dc1394_set_white_balance(this->handle, this->camera.node,blueBalance,redBalance))
+#endif
+	    {
+	      PLAYER_ERROR("Unable to set White Balance");
+	      this->SafeCleanup();
+	      return -1;
+	    }
+    }
+  
+  
+  return 0;
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device (called by server thread).
 int Camera1394::MainSetup() {
@@ -938,54 +1020,89 @@ int Camera1394::MainSetup() {
 	// Create a handle for the given port (port will be zero on most
 	// machines)
 #if LIBDC1394_VERSION == 0200
-	// First we try to find a camera
-	int err;
-	dc1394_t *d;
-	dc1394camera_list_t *list;
-
-	d = dc1394_new ();
-	err = dc1394_camera_enumerate (d, &list);
-	if (err != DC1394_SUCCESS)
+  // First we try to find a camera
+  int err;
+  dc1394_t *d;
+  dc1394camera_list_t *list;
+  
+  d = dc1394_new ();
+  err = dc1394_camera_enumerate (d, &list);
+  if (err != DC1394_SUCCESS)
+    {
+      PLAYER_ERROR1("Could not get Camera List: %d\n", err);
+      return -1;
+    }
+  
+  if (list->num == 0)
+    {
+      PLAYER_ERROR("No cameras found");
+      return -1;
+    }
+  
+  char* temp=(char*)malloc(1024*sizeof(char));
+  for (unsigned i=0; i < list->num; i++)
+    {
+      uint32_t camNode, camGeneration;
+      
+      // Create a camera
+      this->camera = dc1394_camera_new (d, list->ids[i].guid);
+      if (!camera)
+	PLAYER_ERROR1("Failed to initialize camera with guid %016llx",
+		      list->ids[i].guid);
+      else PLAYER_MSG1(2,"Found camera with GUID %016llx",
+		       list->ids[i].guid);
+      
+      if (this->use_guid) {
+	
+	quadlet_t value[3];
+	
+	value[0]= camera->guid & 0xffffffff;
+	value[1]= (camera->guid >>32) & 0x000000ff;
+	value[2]= (camera->guid >>40) & 0xfffff;
+	
+	sprintf(temp,"%06x%02x%08x", value[2], value[1], value[0]);
+	
+	PLAYER_MSG2(5,"Comparing %s to %s",this->guid,temp);
+	if (strcmp(temp,this->guid)==0)
+	  break;
+      }
+      else 
 	{
-		PLAYER_ERROR1("Could not get Camera List: %d\n", err);
-		return -1;
-	}
-
-	if (list->num == 0)
-	{
-		PLAYER_ERROR("No cameras found");
-		return -1;
-	}
-
-	for (unsigned i=0; i < list->num; i++)
-	{
-		uint32_t camNode, camGeneration;
-
-		// Create a camera
-		this->camera = dc1394_camera_new (d, list->ids[this->node].guid);
-
-		// Get the node of the camera
-		dc1394_camera_get_node(this->camera, &camNode, &camGeneration);
-
-		// Make sure we have the correct camera
-		if (camNode == this->node)
+	  // Get the node of the camera
+	  dc1394_camera_get_node(this->camera, &camNode, &camGeneration);
+	  
+	  // Make sure we have the correct camera
+	  if (camNode == this->node)
+#if DC1394_2_LINUX == 1 
+	    {
+	      unsigned int cam_port;
+	      get_port(this->camera, cam_port);
+	      if (cam_port == this->port)
 		break;
-		else
-		dc1394_camera_free(this->camera);
+	    }
+#else
+	  break;
+#endif
 	}
-
-	if (!camera)
-	{
-		PLAYER_ERROR1("Failed to initialize camera with guid %llx",
-				list->ids[0].guid);
-		this->SafeCleanup();
-		return -1;
-	}
-
-	dc1394_camera_free_list (list);
-
-	//dc1394_cleanup_iso_channels_and_bandwidth(camera);
-	/* Above has been removed from API. */
+      this->SafeCleanup();
+    }
+  free (temp);
+  dc1394_camera_free_list (list);
+  
+  if (!camera)
+    {
+      if (this->use_guid)
+	PLAYER_ERROR1("Could not find camera with guid %s",
+		      this->guid);
+      else 
+#if DC1394_2_LINUX == 1
+	PLAYER_ERROR2("Could not find camera with node %d, port %d",
+		      this->node, this->port);
+#else
+      PLAYER_ERROR("On this system, you cannot specify a node/port.  You should specify the GUID of the camera.");
+#endif
+      return -1;
+    }
 
 #else
 	this->handle = dc1394_create_handle(this->port);
@@ -1038,19 +1155,13 @@ int Camera1394::MainSetup() {
 		}
 	}
 
-	if ((this->BlueBalance != PROPERTY_NOT_SET) && (this->RedBalance != PROPERTY_NOT_SET)) {
-#if LIBDC1394_VERSION == 0200
-		if (DC1394_SUCCESS != dc1394_feature_whitebalance_set_value(this->camera,this->BlueBalance,this->RedBalance))
-#else
-		if (DC1394_SUCCESS != dc1394_set_white_balance(this->handle,
-				this->camera.node, this->BlueBalance, this->RedBalance))
-#endif
-		{
-			PLAYER_ERROR("Unable to set White Balance");
-			this->SafeCleanup();
-			return -1;
-		}
+	if (strcmp(this->WhiteBalance,"None")) {
+	  if (this->SetWhiteBalance(this->WhiteBalance)) {
+	    this->SafeCleanup();
+	    return -1;
+	  }
 	}
+	
 
 	// Collects the available features for the camera described by node and
 	// stores them in features.
