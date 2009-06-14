@@ -34,7 +34,7 @@ extern "C" {
 
 #ifdef HAVE_GEOS
 
-typedef GEOSContextHandle_t playerwkbprocessor_t;
+PLAYERWKB_EXPORT typedef GEOSContextHandle_t playerwkbprocessor_t;
 
 #else
 
@@ -54,6 +54,7 @@ PLAYERWKB_EXPORT typedef void (* playerwkbcallback_t)(void *, double, double, do
 PLAYERWKB_EXPORT playerwkbprocessor_t player_wkb_create_processor();
 PLAYERWKB_EXPORT void player_wkb_destroy_processor(playerwkbprocessor_t wkbprocessor);
 PLAYERWKB_EXPORT const uint8_t * player_wkb_process_wkb(playerwkbprocessor_t wkbprocessor, const uint8_t * wkb, size_t wkb_count, playerwkbcallback_t callback, void * ptr);
+PLAYERWKB_EXPORT size_t player_wkb_create_linestring(playerwkbprocessor_t wkbprocessor, double (* shape)[2], size_t shape_num_points, double offsetx, double offsety, uint8_t * dest_wkb, size_t max_size);
 
 #ifdef __cplusplus
 }

@@ -1,4 +1,5 @@
 #include <stddef.h> /* NULL, size_t typedef and some versions of GEOS CAPI need this */
+#include <string.h>
 #include <playerconfig.h> /* this also includes <stdint.h> if needed for types like uint8_t */
 #include <libplayercore/error.h>
 
@@ -19,6 +20,7 @@
 #ifdef HAVE_GEOS
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdarg.h>
 
 /** Dummy function passed as a function pointer GEOS when it is initialised. GEOS uses this for logging. */
@@ -34,7 +36,6 @@ void player_wkb_geosprint(const char * format, ...)
 
 #else
 
-#include <string.h>
 #include <assert.h>
 
 #define WKB_POINT 1
@@ -148,7 +149,6 @@ void player_wkb_process_geom(playerwkbprocessor_t wkbprocessor, const GEOSGeomet
         {
           callback(ptr, x1 - 0.1, y1, x1 + 0.1, y1);
           callback(ptr, x1, y1 - 0.1, x1, y1 + 0.1);
-
         } else for (i = 0; i < (signed)numcoords; i++)
         {
           x0 = x1;
@@ -325,6 +325,148 @@ const uint8_t * player_wkb_process_wkb(playerwkbprocessor_t wkbprocessor, const 
   return wkb;
 #undef UINT_FROM_WKB
 #undef DBL_FROM_WKB
+
+#endif
+}
+
+size_t player_wkb_create_linestring(playerwkbprocessor_t wkbprocessor, double (* shape)[2], size_t shape_num_points, double offsetx, double offsety, uint8_t * dest_wkb, size_t max_size)
+{
+#ifdef HAVE_GEOS
+
+  GEOSCoordSequence * seq;
+  GEOSGeometry * geom;
+  unsigned char * wkb;
+  size_t s;
+  int i;
+
+  if (!shape)
+  {
+    PLAYER_ERROR("NULL shape");
+    return 0;
+  }
+  if (!(shape_num_points > 1)) return 0;
+  if (dest_wkb)
+  {
+    if (!(max_size > 0)) return 0;
+  }
+  seq = GEOSCoordSeq_create_r((GEOSContextHandle_t)wkbprocessor, shape_num_points, 2);
+  if (!seq)
+  {
+    PLAYER_ERROR("cannot create geometry sequence");
+    return 0;
+  }
+  for (i = 0; i < ((int)(shape_num_points)); i++)
+  {
+    GEOSCoordSeq_setX_r((GEOSContextHandle_t)wkbprocessor, seq, i, shape[i][0] + offsetx);
+    GEOSCoordSeq_setY_r((GEOSContextHandle_t)wkbprocessor, seq, i, shape[i][1] + offsety);
+  }  
+  geom = GEOSGeom_createLineString_r((GEOSContextHandle_t)wkbprocessor, seq);
+  if (!geom)
+  {
+    GEOSCoordSeq_destroy_r((GEOSContextHandle_t)wkbprocessor, seq);
+    PLAYER_ERROR("cannot create linestring geometry");
+    return 0;
+  }
+  s = 0;
+  wkb = GEOSGeomToWKB_buf_r((GEOSContextHandle_t)wkbprocessor, geom, &s);
+  if (!wkb)
+  {
+    GEOSGeom_destroy_r((GEOSContextHandle_t)wkbprocessor, geom);
+    /* !!! do not call: GEOSCoordSeq_destroy_r((GEOSContextHandle_t)wkbprocessor, seq); */
+    PLAYER_ERROR("cannot create linestring wkb");
+    return 0;
+  }
+  if (dest_wkb)
+  {
+    if ((!(s > 0)) || (s > max_size))
+    {
+      free(wkb);
+      GEOSGeom_destroy_r((GEOSContextHandle_t)wkbprocessor, geom);
+      /* !!! do not call: GEOSCoordSeq_destroy_r((GEOSContextHandle_t)wkbprocessor, seq); */
+      PLAYER_ERROR("invalid linestring wkb size");
+      return 0;    
+    }
+    memcpy(dest_wkb, wkb, s);
+  }
+  free(wkb);
+  GEOSGeom_destroy_r((GEOSContextHandle_t)wkbprocessor, geom);
+  /* !!! do not call: GEOSCoordSeq_destroy_r((GEOSContextHandle_t)wkbprocessor, seq); */
+  return s;
+
+#else
+
+  struct PlayerWKBEndians endians;
+  size_t s = 0;
+  int i;
+  uint32_t ui;
+  double dbl;
+
+#define WKB_FROM_UINT(src) do \
+{ \
+  if (dest_wkb) \
+  { \
+    assert(max_size - s >= 4); \
+    if (player_wkb_big == (endians.uint32_endians)) memcpy(dest_wkb, (src), 4); \
+    else \
+    { \
+      dest_wkb[0] = ((uint8_t *)(src))[(4 - 1) - 0]; \
+      dest_wkb[1] = ((uint8_t *)(src))[(4 - 1) - 1]; \
+      dest_wkb[2] = ((uint8_t *)(src))[(4 - 1) - 2]; \
+      dest_wkb[3] = ((uint8_t *)(src))[(4 - 1) - 3]; \
+    } \
+  } \
+  s += 4; if (dest_wkb) dest_wkb += 4; \
+} while (0)
+
+#define WKB_FROM_DBL(src) do \
+{ \
+  if (dest_wkb) \
+  { \
+    assert(max_size - s >= 8); \
+    if (player_wkb_big == (endians.dbl_endians)) memcpy(dest_wkb, (src), 8); \
+    else \
+    { \
+      dest_wkb[0] = ((uint8_t *)(src))[(8 - 1) - 0]; \
+      dest_wkb[1] = ((uint8_t *)(src))[(8 - 1) - 1]; \
+      dest_wkb[2] = ((uint8_t *)(src))[(8 - 1) - 2]; \
+      dest_wkb[3] = ((uint8_t *)(src))[(8 - 1) - 3]; \
+      dest_wkb[4] = ((uint8_t *)(src))[(8 - 1) - 4]; \
+      dest_wkb[5] = ((uint8_t *)(src))[(8 - 1) - 5]; \
+      dest_wkb[6] = ((uint8_t *)(src))[(8 - 1) - 6]; \
+      dest_wkb[7] = ((uint8_t *)(src))[(8 - 1) - 7]; \
+    } \
+  } \
+  s += 8; if (dest_wkb) dest_wkb += 8; \
+} while (0)
+
+  wkbprocessor = wkbprocessor;
+  if (!shape)
+  {
+    PLAYER_ERROR("NULL shape");
+    return 0;
+  }
+  if (!(shape_num_points > 1)) return 0;
+  if (dest_wkb)
+  {
+    if (!(max_size > 0)) return 0;
+    if (player_wkb_endians_detect(&endians)) return 0;
+    *dest_wkb = ((uint8_t)(player_wkb_big));
+  }
+  s++; if (dest_wkb) dest_wkb++;
+  ui = WKB_LINESTRING;
+  WKB_FROM_UINT(&ui);
+  ui = ((uint32_t)(shape_num_points));
+  WKB_FROM_UINT(&ui);
+  for (i = 0; i < ((int)(shape_num_points)); i++)
+  {
+    dbl = shape[i][0] + offsetx;
+    WKB_FROM_DBL(&dbl);
+    dbl = shape[i][1] + offsety;
+    WKB_FROM_DBL(&dbl);
+  }
+  return s;
+#undef WKB_FROM_UINT
+#undef WKB_FROM_DBL
 
 #endif
 }
