@@ -385,7 +385,7 @@ int Festival::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, voi
 	{
 		player_speech_cmd_t * cmd = (player_speech_cmd_t *) data;
 		// make ABSOLUTELY sure we've got one NULL
-		cmd->string[cmd->string_count] = '\0';
+		cmd->string[cmd->string_count - 1] = '\0';
 
 		/* if there's space, put it in the queue */
 		queue.push_back(strdup(cmd->string));
