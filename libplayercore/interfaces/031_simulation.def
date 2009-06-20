@@ -7,8 +7,7 @@ provides direct access to a simulator.
 
 This interface doesn't do much yet. It is in place to later support things
 like pausing and restarting the simulation clock, saving and loading,
-etc. It is documented because it is used by the stg_simulation driver;
-required by all stageclient drivers (stg_*).
+etc.
 
 Note: the Stage and Gazebo developers should confer on the best design
 for this interface. Suggestions welcome on playerstage-developers.
@@ -27,7 +26,12 @@ message { REQ, SET_POSE3D, 4, player_simulation_pose3d_req_t };
 message { REQ, GET_PROPERTY, 5, player_simulation_property_req_t };
 /** Request/reply subtype: get property value */
 message { REQ, SET_PROPERTY, 6, player_simulation_property_req_t };
-
+/** Cmd subtype: pause (if running) /resume (if paused) command  */
+message { CMD, PAUSE, 1, NULL };
+/** Cmd subtype: reset simulation command  */
+message { CMD, RESET, 2, NULL };
+/** Cmd subtype: save simulation command  */
+message { CMD, SAVE,  3, NULL };
 
 
 /** @brief Data
@@ -85,8 +89,6 @@ typedef struct player_simulation_pose3d_req
 } player_simulation_pose3d_req_t;
 
 /** @brief Request/reply: get/set a property of a named simulation object
-
-@par To retrieve an property of an object in a simulator, send a @ref
 
 @par To retrieve an property of an object in a simulator, send a @ref
 PLAYER_SIMULATION_REQ_GET_PROPERTY request. The server will reply with
