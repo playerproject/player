@@ -236,3 +236,31 @@ int playerc_simulation_get_property(playerc_simulation_t *device,
   player_simulation_property_req_t_free(resp);
   return 0;
 }
+
+//Pause the simulation if running or resume it if paused
+int playerc_simulation_pause(playerc_simulation_t *device )
+{
+  return playerc_client_write(device->info.client, &device->info,
+                              PLAYER_SIMULATION_CMD_PAUSE,
+                              NULL, NULL);
+}
+     
+
+//Reset the current simulation
+int playerc_simulation_reset(playerc_simulation_t *device )
+{
+  return playerc_client_write(device->info.client, &device->info,
+                              PLAYER_SIMULATION_CMD_RESET,
+                              NULL, NULL);
+}
+     
+
+//Save the current state of the simulation
+int playerc_simulation_save(playerc_simulation_t *device )
+{
+  return playerc_client_write(device->info.client, &device->info,
+                              PLAYER_SIMULATION_CMD_SAVE,
+                              NULL, NULL);
+}
+     
+
