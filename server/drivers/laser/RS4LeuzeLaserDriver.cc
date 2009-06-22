@@ -405,7 +405,6 @@ void RS4LeuzeLaserDriver::Main()
 		//cout << endl << "Data RS4leuze passed ";
 
 		myLaser->closeSerial();
-		getchar();
 		//cout << endl <<  "end laser **************" <<endl;
 	}
 
