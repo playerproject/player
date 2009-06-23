@@ -74,7 +74,6 @@ Device::Device(player_devaddr_t addr, Driver *device) :
 
   if(this->driver)
   {
-    this->driver->entries++;
     this->driver->device_addr = addr;
     this->InQueue = this->driver->InQueue;
   }
@@ -94,12 +93,6 @@ Device::Device(player_devaddr_t addr, Driver *device) :
 
 Device::~Device()
 {
-  if(this->driver)
-  {
-    this->driver->entries--;
-    if(this->driver->entries == 0)
-      delete this->driver;
-  }
   free(this->queues);
   pthread_mutex_destroy(&accessMutex);
 }
