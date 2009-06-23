@@ -90,7 +90,9 @@ int FileWatcher::Wait(double Timeout)
 
 	if (ret < 0)
 	{
-		PLAYER_ERROR2("Select called failed in File Watcher: %d %s",errno,strerror(errno));
+		// dont print a warning if we are ctrl+c'd
+		if (errno != EINTR)
+			PLAYER_ERROR2("Select called failed in File Watcher: %d %s",errno,strerror(errno));
 		return ret;
 	}
 	else if (ret == 0)
