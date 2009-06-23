@@ -65,7 +65,7 @@
 
 #include "playertcp.h"
 #include "socket_util.h"
-#include "remote_driver.h"
+#include "tcpremote_driver.h"
 
 #if defined (WIN32)
   #define snprintf _snprintf
@@ -232,6 +232,7 @@ PlayerTCP::Listen(int port)
   return(this->Listen(&p,1));
 }
 
+
 QueuePointer
 PlayerTCP::AddClient(struct sockaddr_in* cliaddr,
                      unsigned int local_host,
@@ -240,6 +241,20 @@ PlayerTCP::AddClient(struct sockaddr_in* cliaddr,
                      bool send_banner,
                      int* kill_flag,
                      bool have_lock)
+{
+    QueuePointer queue(false,PLAYER_MSGQUEUE_DEFAULT_MAXLEN);
+    return AddClient(cliaddr,local_host,local_port,newsock,send_banner,kill_flag,have_lock,queue);
+}
+
+QueuePointer
+PlayerTCP::AddClient(struct sockaddr_in* cliaddr,
+                     unsigned int local_host,
+                     unsigned int local_port,
+                     int newsock,
+                     bool send_banner,
+                     int* kill_flag,
+                     bool have_lock,
+                     QueuePointer queue)
 {
   if(!have_lock)
   {
@@ -285,8 +300,7 @@ PlayerTCP::AddClient(struct sockaddr_in* cliaddr,
   fileWatcher->AddFileWatch(this->client_ufds[j].fd);
 
   // Create an outgoing queue for this client
-  this->clients[j].queue =
-          QueuePointer(false,PLAYER_MSGQUEUE_DEFAULT_MAXLEN);
+  this->clients[j].queue = queue;
 
   // Create a buffer to hold incoming messages
   this->clients[j].readbuffersize = PLAYERTCP_READBUFFER_SIZE;
@@ -596,6 +610,7 @@ PlayerTCP::DeleteClient(QueuePointer &q, bool have_lock)
     if(this->clients[i].queue == q)
     {
       this->clients[i].del = 1;
+      this->clients[i].kill_flag = NULL;
       break;
     }
   }
@@ -1402,6 +1417,7 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
     default:
       PLAYER_WARN1("player interface discarding message of unsupported type %s",
                    msgtype_to_str(hdr->type));
+      PLAYER_WARN4("Address: %d %d %d %d",hdr->addr.host,hdr->addr.robot,hdr->addr.interf,hdr->addr.index);
       resphdr.type = PLAYER_MSGTYPE_RESP_NACK;
       GlobalTime->GetTimeDouble(&resphdr.timestamp);
       resphdr.size = 0;

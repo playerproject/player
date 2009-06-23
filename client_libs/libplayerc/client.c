@@ -907,7 +907,9 @@ int playerc_client_request(playerc_client_t *client,
           rep_header.addr.index != req_header.addr.index ||
           rep_header.subtype != req_header.subtype)
       {
-        PLAYERC_ERR("got the wrong kind of reply (not good).");
+        PLAYERC_ERR6("got the wrong kind of reply (%d %d %d != %d %d %d).",rep_header.addr.interf,
+                rep_header.addr.index, rep_header.subtype, req_header.addr.interf, req_header.addr.index,
+                req_header.subtype);
         return -1;
       }
       if (rep_header.size > 0)

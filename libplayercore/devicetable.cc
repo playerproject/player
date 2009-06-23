@@ -137,6 +137,9 @@ DeviceTable::AddDevice(player_devaddr_t addr,
 Device*
 DeviceTable::GetDevice(player_devaddr_t addr, bool lookup_remote)
 {
+  if (addr.interf == 0)
+    return NULL;
+
   Device* thisentry;
   pthread_mutex_lock(&mutex);
   for(thisentry=head;thisentry;thisentry=thisentry->next)
