@@ -14,10 +14,11 @@ To run tests simply run the .cfg with player and then run this script.
 
 """
 
-import playerc, sys, time
+import playerc, sys, time, pprint
 
 harness_client = playerc.playerc_client(None,"localhost",6665)
 harness_client.connect()
+harness_client.set_replace_rule(-1, -1, playerc.PLAYER_MSGTYPE_DATA, -1, 0)
 
 def read_if_waiting(c):
     if c.peek(1):
@@ -30,6 +31,10 @@ harness_bb1.SetInt("Client1","BB1",11)
 harness_bb1.SetInt("Client2","BB1",12)
 harness_bb1.SetInt("Shared","BB1",13)
 
+harness_bb1.SubscribeToKey("Client1","BB1")
+harness_bb1.SubscribeToKey("Client2","BB1")
+harness_bb1.SubscribeToKey("Shared","BB1")
+
 print "Bootstrapping second BB"
 harness_bb2 = playerc.playerc_blackboard(harness_client,1)
 harness_bb2.subscribe(playerc.PLAYER_OPEN_MODE)
@@ -37,12 +42,19 @@ harness_bb2.SetInt("Client1","BB2",21)
 harness_bb2.SetInt("Client2","BB2",22)
 harness_bb2.SetInt("Shared","BB2",23)
 
+harness_bb2.SubscribeToKey("Client1","BB2")
+harness_bb2.SubscribeToKey("Client2","BB2")
+harness_bb2.SubscribeToKey("Shared","BB2")
+
+
 print "Setting up test clients"
 client1 = playerc.playerc_client(None,"localhost",6665)
 client1.connect()
+client1.set_replace_rule(-1, -1, playerc.PLAYER_MSGTYPE_DATA, -1, 0)
 
 client2 = playerc.playerc_client(None,"localhost",6665)
 client2.connect()
+client2.set_replace_rule(-1, -1, playerc.PLAYER_MSGTYPE_DATA, -1, 0)
 
 bb1_1 = playerc.playerc_blackboard(client1,10)
 bb1_1.subscribe(playerc.PLAYER_OPEN_MODE)
@@ -98,24 +110,25 @@ harness_bb2.SetInt("Shared","BB2",223)
 
 print "Read some messages"
 
-for x in range(1,20):
+for x in range(1,30):
     read_if_waiting(client1)
     read_if_waiting(client2)
+    read_if_waiting(harness_client)
 
 print "Check results"
 d1_1=bb1_1.GetDict()
 d2_1=bb2_1.GetDict()
 d1_2=bb1_2.GetDict()
+dh_1=harness_bb1.GetDict()
+dh_2=harness_bb2.GetDict()
 
 if len(d1_1["BB1"].keys()) != 2:
     raise Exception("Wrong number of entries")
 if d1_1["BB1"]["Client1"]["data"] != 111:
     raise Exception("Bad data")
 if d1_1["BB1"]["Shared"]["data"] != 113:
-    print d1_1
-    print d1_2
-    print d2_1
-    raise Exception("Bad data")
+    pprint.pprint({"dh_1":dh_1,"d1_1":d1_1, "d1_2":d1_2})
+    raise Exception("Bad data %d != %d" % (d1_1["BB1"]["Shared"]["data"], 113))
 
 if len(d2_1["BB2"].keys()) != 2:
     raise Exception("Wrong number of entries")
@@ -127,6 +140,8 @@ if d2_1["BB2"]["Shared"]["data"] != 223:
 if len(d1_2["BB1"].keys()) != 2:
     raise Exception("Wrong number of entries")
 if d1_2["BB1"]["Client2"]["data"] != 112:
+    pprint.pprint({"dh_1":dh_1,"d1_1":d1_1, "d1_2":d1_2})
+    pprint.pprint(harness_bb1.GetEntry("Client2","BB1"))
     raise Exception("Bad data %d != %d" % (d1_2["BB1"]["Client2"]["data"], 112))
 if d1_2["BB1"]["Shared"]["data"] != 113:
     raise Exception("Bad data")
