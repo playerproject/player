@@ -2063,7 +2063,7 @@ int ConfigFile::ReadDeviceAddr(player_devaddr_t *addr, int section,
   for (i = 0; i < count; i++)
   {
     assert(sizeof(str) > strlen(GetFieldValue(prop, i, false)));
-    strcpy(str, GetFieldValue(prop, i, false));
+    strncpy(str, GetFieldValue(prop, i, false),sizeof(str));
 
     memset(tokens, 0, sizeof(tokens));
     token_count = 5;

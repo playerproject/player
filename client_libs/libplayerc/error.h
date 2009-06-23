@@ -1,7 +1,7 @@
 /*
  *  Player - One Hell of a Robot Server
  *  Copyright (C) Andrew Howard 2002-2003
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 /*
  *  Player - One Hell of a Robot Server
  *  Copyright (C) Andrew Howard 2003
- *                      
+ *
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -65,12 +65,14 @@ char *playerc_error_set_str(void);
 #define PLAYERC_ERR3(msg, a, b, c)  		snprintf(playerc_error_set_str(), PLAYERC_ERROR_SIZE, msg, a, b, c), fprintf(stderr,"playerc error   : %s\n",playerc_error_str())
 #define PLAYERC_ERR4(msg, a, b, c, d)  		snprintf(playerc_error_set_str(), PLAYERC_ERROR_SIZE, msg, a, b, c, d), fprintf(stderr,"playerc error   : %s\n",playerc_error_str())
 #define PLAYERC_ERR5(msg, a, b, c, d, e)  	snprintf(playerc_error_set_str(), PLAYERC_ERROR_SIZE, msg, a, b, c, d, e), fprintf(stderr,"playerc error   : %s\n",playerc_error_str())
+#define PLAYERC_ERR6(msg, a, b, c, d, e, f)	snprintf(playerc_error_set_str(), PLAYERC_ERROR_SIZE, msg, a, b, c, d, e, f), fprintf(stderr,"playerc error   : %s\n",playerc_error_str())
 #define PLAYERC_WARN(msg)        			snprintf(playerc_error_set_str(), PLAYERC_ERROR_SIZE, "warning : " msg), fprintf(stderr,"playerc warning   : %s\n",playerc_error_str())
 #define PLAYERC_WARN1(msg, a)    			snprintf(playerc_error_set_str(), PLAYERC_ERROR_SIZE, "warning : " msg, a), fprintf(stderr,"playerc warning   : %s\n",playerc_error_str())
 #define PLAYERC_WARN2(msg, a, b) 			snprintf(playerc_error_set_str(), PLAYERC_ERROR_SIZE, "warning : " msg, a, b), fprintf(stderr,"playerc warning   : %s\n",playerc_error_str())
 #define PLAYERC_WARN3(msg, a, b, c) 		snprintf(playerc_error_set_str(), PLAYERC_ERROR_SIZE, "warning : " msg, a, b, c), fprintf(stderr,"playerc warning   : %s\n",playerc_error_str())
 #define PLAYERC_WARN4(msg, a, b, c, d) 		snprintf(playerc_error_set_str(), PLAYERC_ERROR_SIZE, "warning : " msg, a, b, c, d), fprintf(stderr,"playerc warning   : %s\n",playerc_error_str())
 #define PLAYERC_WARN5(msg, a, b, c, d, e) 	snprintf(playerc_error_set_str(), PLAYERC_ERROR_SIZE, "warning : " msg, a, b, c, d, e), fprintf(stderr,"playerc warning   : %s\n",playerc_error_str())
+#define PLAYERC_WARN6(msg, a, b, c, d, e, f) snprintf(playerc_error_set_str(), PLAYERC_ERROR_SIZE, "warning : " msg, a, b, c, d, e, f), fprintf(stderr,"playerc warning   : %s\n",playerc_error_str())
 
 
 // DEBUG macros

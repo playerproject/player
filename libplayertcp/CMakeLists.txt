@@ -27,7 +27,7 @@ ENDIF (PLAYER_OS_QNX)
 IF (INCLUDE_TCP)
     OPTION (ENABLE_TCP_NODELAY "Turn off Nagel's buffering algorithm (which may increase socket latency when used)" OFF)
 
-    SET (playertcpSrcs socket_util.c playertcp.cc remote_driver.cc)
+    SET (playertcpSrcs socket_util.c playertcp.cc tcpremote_driver.cc)
     IF (NOT HAVE_POLL)
         SET (playertcpSrcs ${playertcpSrcs} ${PROJECT_SOURCE_DIR}/replace/poll.c)
     ENDIF (NOT HAVE_POLL)

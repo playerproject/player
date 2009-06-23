@@ -54,7 +54,8 @@ SET (playercoreSrcs driver.cc
                     plugins.cc
                     globals.cc
                     property.cpp
-                    threaded_driver.cc)
+                    threaded_driver.cc
+                    remote_driver.cc)
 
 # TODO: playerxdr should NOT be linked here; it's a bogus dependency coming
 # from the fact that message cloning functions are auto-generated into

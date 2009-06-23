@@ -1,0 +1,136 @@
+"""
+Manual integration test for passthrough. Requires player server and blackboard driver, and python client.
+
+The test sets up two blackboards, and connects to them via a passthrough driver with multiple clients.
+
+First a direct connection is established and some bootstrap data is placed into both blackboards.
+
+Then three connections are established via the passthrough.
+The first two two the first blackboard and the third to the second bloackboard.
+
+This allows for testing of independant connections that should all recieve different data
+
+To run tests simply run the .cfg with player and then run this script.
+
+"""
+
+import playerc, sys, time
+
+harness_client = playerc.playerc_client(None,"localhost",6665)
+harness_client.connect()
+
+def read_if_waiting(c):
+    if c.peek(1):
+        c.read()
+
+print "Bootstrapping first BB"
+harness_bb1 = playerc.playerc_blackboard(harness_client,0)
+harness_bb1.subscribe(playerc.PLAYER_OPEN_MODE)
+harness_bb1.SetInt("Client1","BB1",11)
+harness_bb1.SetInt("Client2","BB1",12)
+harness_bb1.SetInt("Shared","BB1",13)
+
+print "Bootstrapping second BB"
+harness_bb2 = playerc.playerc_blackboard(harness_client,1)
+harness_bb2.subscribe(playerc.PLAYER_OPEN_MODE)
+harness_bb2.SetInt("Client1","BB2",21)
+harness_bb2.SetInt("Client2","BB2",22)
+harness_bb2.SetInt("Shared","BB2",23)
+
+print "Setting up test clients"
+client1 = playerc.playerc_client(None,"localhost",6665)
+client1.connect()
+
+client2 = playerc.playerc_client(None,"localhost",6665)
+client2.connect()
+
+bb1_1 = playerc.playerc_blackboard(client1,10)
+bb1_1.subscribe(playerc.PLAYER_OPEN_MODE)
+bb2_1 = playerc.playerc_blackboard(client1,11)
+bb2_1.subscribe(playerc.PLAYER_OPEN_MODE)
+
+bb1_2 = playerc.playerc_blackboard(client2,10)
+bb1_2.subscribe(playerc.PLAYER_OPEN_MODE)
+
+print "Subscribing to keys"
+bb1_1.SubscribeToKey("Client1","BB1")
+bb1_1.SubscribeToKey("Shared","BB1")
+
+bb2_1.SubscribeToKey("Client1","BB2")
+bb2_1.SubscribeToKey("Shared","BB2")
+
+bb1_2.SubscribeToKey("Client2","BB1")
+bb1_2.SubscribeToKey("Shared","BB1")
+
+print "comparing initial data"
+d1_1=bb1_1.GetDict()
+d2_1=bb2_1.GetDict()
+d1_2=bb1_2.GetDict()
+
+if len(d1_1["BB1"].keys()) != 2:
+    print len(d1_1.keys())
+    print d1_1
+    raise Exception("Wrong number of entries")
+if d1_1["BB1"]["Client1"]["data"] != 11:
+    raise Exception("Bad harness data")
+if d1_1["BB1"]["Shared"]["data"] != 13:
+    raise Exception("Bad harness data")
+
+if len(d2_1["BB2"].keys()) != 2:
+    raise Exception("Wrong number of entries")
+if d2_1["BB2"]["Client1"]["data"] != 21:
+    raise Exception("Bad harness data")
+if d2_1["BB2"]["Shared"]["data"] != 23:
+    raise Exception("Bad harness data")
+
+if len(d1_2["BB1"].keys()) != 2:
+    raise Exception("Wrong number of entries")
+if d1_2["BB1"]["Client2"]["data"] != 12:
+    raise Exception("Bad harness data")
+if d1_2["BB1"]["Shared"]["data"] != 13:
+    raise Exception("Bad harness data")
+
+print "Updating data"
+harness_bb1.SetInt("Client1","BB1",111)
+harness_bb1.SetInt("Client2","BB1",112)
+harness_bb1.SetInt("Shared","BB1",113)
+harness_bb2.SetInt("Shared","BB2",223)
+
+print "Read some messages"
+
+for x in range(1,20):
+    read_if_waiting(client1)
+    read_if_waiting(client2)
+
+print "Check results"
+d1_1=bb1_1.GetDict()
+d2_1=bb2_1.GetDict()
+d1_2=bb1_2.GetDict()
+
+if len(d1_1["BB1"].keys()) != 2:
+    raise Exception("Wrong number of entries")
+if d1_1["BB1"]["Client1"]["data"] != 111:
+    raise Exception("Bad data")
+if d1_1["BB1"]["Shared"]["data"] != 113:
+    print d1_1
+    print d1_2
+    print d2_1
+    raise Exception("Bad data")
+
+if len(d2_1["BB2"].keys()) != 2:
+    raise Exception("Wrong number of entries")
+if d2_1["BB2"]["Client1"]["data"] != 21:
+    raise Exception("Bad data")
+if d2_1["BB2"]["Shared"]["data"] != 223:
+    raise Exception("Bad data")
+
+if len(d1_2["BB1"].keys()) != 2:
+    raise Exception("Wrong number of entries")
+if d1_2["BB1"]["Client2"]["data"] != 112:
+    raise Exception("Bad data %d != %d" % (d1_2["BB1"]["Client2"]["data"], 112))
+if d1_2["BB1"]["Shared"]["data"] != 113:
+    raise Exception("Bad data")
+
+client1.disconnect()
+client2.disconnect()
+harness_client.disconnect()
