@@ -127,5 +127,7 @@ int playerc_aio_set_output(playerc_aio_t *device,
 float playerc_aio_get_data(playerc_aio_t *device, uint32_t index)
 {
 	assert(index < device->voltages_count);
+	if (index >= device->voltages_count)
+		return 0;
 	return device->voltages[index];
 }
