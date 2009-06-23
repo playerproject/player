@@ -86,7 +86,7 @@ public:
 
 class RemoteDriver: public Driver {
 public:
-	RemoteDriver(ConfigFile *cf=NULL,int section=-1) : Driver(cf,section), Connected(true){};
+	RemoteDriver(ConfigFile *cf=NULL,int section=-1) : Driver(cf,section,false), Connected(true){};
 	virtual ~RemoteDriver() {};
 
 	virtual int Subscribe(QueuePointer &queue, player_devaddr_t addr);
