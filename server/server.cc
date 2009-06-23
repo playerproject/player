@@ -141,14 +141,31 @@ main(int argc, char** argv)
   char* cfgfilename;
   char * logfileName = NULL;
 
+#ifdef WIN32
   if(signal(SIGINT, Quit) == SIG_ERR)
   {
     PLAYER_ERROR1("signal() failed: %s", strerror(errno));
     exit(-1);
   }
-
-#if !defined (WIN32)
-  if(signal(SIGPIPE, SIG_IGN) == SIG_ERR)
+#else
+  struct sigaction quit_action = {{0}};
+  quit_action.sa_handler = Quit;
+  sigemptyset (&quit_action.sa_mask);
+  quit_action.sa_flags = SA_RESETHAND;
+  struct sigaction ignore_action = {{0}};
+  ignore_action.sa_handler = SIG_IGN;
+  sigemptyset (&ignore_action.sa_mask);
+  if(sigaction(SIGINT, &quit_action, NULL) != 0)
+  {
+    PLAYER_ERROR1("signal() failed: %s", strerror(errno));
+    exit(-1);
+  }
+  if(sigaction(SIGTERM, &quit_action, NULL) != 0)
+  {
+    PLAYER_ERROR1("signal() failed: %s", strerror(errno));
+    exit(-1);
+  }
+  if(sigaction(SIGPIPE, &ignore_action, NULL) != 0)
   {
     PLAYER_ERROR1("signal() failed: %s", strerror(errno));
     exit(-1);
