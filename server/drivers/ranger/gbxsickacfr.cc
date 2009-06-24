@@ -78,10 +78,10 @@ laser scanner driver provided by Gearbox.
  - size (float 3-tuple: (m, m, m))
    - Default: [0.0 0.0 0.0]
    - Size of the laser in metres.
-- retry (integer)
+ - retry (integer)
    - Default: 0
    - If the initial connection to the laser fails, retry this many times before giving up.
-- delay (integer)
+ - delay (integer)
    - Default: 0
    - Delay (in seconds) before laser is initialized (set this to 32-35 if you have a newer
      generation Pioneer whose laser is switched on when the serial port is open).
