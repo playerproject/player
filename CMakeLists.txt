@@ -16,8 +16,8 @@ ENDIF (COMMAND CMAKE_POLICY)
 PROJECT (Player)
 STRING (TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
 # Set the package version
-SET (PLAYER_VERSION 2.2.0 CACHE STRING "Player distribution version")
-SET (PLAYER_API_VERSION 2.2 CACHE STRING "Player API version")
+SET (PLAYER_VERSION 3.0.0 CACHE STRING "Player distribution version")
+SET (PLAYER_API_VERSION 3.0 CACHE STRING "Player API version")
 MESSAGE (STATUS "${PROJECT_NAME} version ${PLAYER_VERSION}")
 
 # Set where to find our internal CMake scripts
