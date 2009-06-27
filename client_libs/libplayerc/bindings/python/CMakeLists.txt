@@ -7,7 +7,8 @@ IF (PYTHONINTERP_FOUND)
         IF (SWIG_FOUND)
             MESSAGE (STATUS "Python bindings for C client library will be built")
 
-            INCLUDE (${SWIG_USE_FILE})
+            #INCLUDE (${SWIG_USE_FILE})
+			INCLUDE (${PLAYER_CMAKE_DIR}/internal/UseSwig_Player.cmake)
 
             FIND_PACKAGE (PythonLibs)
             INCLUDE_DIRECTORIES (${PYTHON_INCLUDE_PATH})
@@ -33,9 +34,7 @@ IF (PYTHONINTERP_FOUND)
                 DEPENDS "${playerc_wrap_prefix}.h")
 
             # Copy playerc.i to the build directory
-            SET (playerc_i_in "${CMAKE_CURRENT_SOURCE_DIR}/playerc.i")
-            SET (playerc_i "${CMAKE_CURRENT_BINARY_DIR}/playerc.i")
-            CONFIGURE_FILE (${playerc_i_in} ${playerc_i} COPYONLY)
+            SET (playerc_i "${CMAKE_CURRENT_SOURCE_DIR}/playerc.i")
 
             SWIG_ADD_MODULE (playerc python ${playerc_i})
             SWIG_LINK_LIBRARIES (playerc ${PYTHON_LIBRARIES})
