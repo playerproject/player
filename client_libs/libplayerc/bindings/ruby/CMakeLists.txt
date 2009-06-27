@@ -14,7 +14,8 @@ endif (RUBY_LIBRARY AND RUBY_INCLUDE_PATH)
         IF (SWIG_FOUND)
             MESSAGE (STATUS "Ruby bindings for C client library will be built")
 
-            INCLUDE (${SWIG_USE_FILE})
+            #INCLUDE (${SWIG_USE_FILE})
+			INCLUDE (${PLAYER_CMAKE_DIR}/internal/UseSwig_Player.cmake)
 
             INCLUDE_DIRECTORIES (${RUBY_INCLUDE_PATH})
             INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR})
@@ -38,10 +39,7 @@ endif (RUBY_LIBRARY AND RUBY_INCLUDE_PATH)
                 DEPENDS "${playerc_wrap_prefix}.i"
                 DEPENDS "${playerc_wrap_prefix}.h")
 
-            # Copy playerc.i to the build directory
-            SET (playerc_i_in "${CMAKE_CURRENT_SOURCE_DIR}/playerc.i")
-            SET (playerc_i "${CMAKE_CURRENT_BINARY_DIR}/playerc.i")
-            CONFIGURE_FILE (${playerc_i_in} ${playerc_i} COPYONLY)
+            SET (playerc_i "${CMAKE_CURRENT_SOURCE_DIR}/playerc.i")
 
             #If playercr is called simply playerc, all sorts of errors happen
             #I guess is namespace conflict with Python bindings' playerc
