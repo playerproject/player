@@ -65,6 +65,8 @@ IF (BUILD_UTILS_PMAP)
             IF (GLUT_FOUND)
                 TARGET_LINK_LIBRARIES (lododriver ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})
             ENDIF (GLUT_FOUND)
+
+            PLAYER_INSTALL_HEADERS (pmap lodo.h omap.h pmap.h rmap.h slap.h)
         ELSE (GSL_PKG_FOUND)
             MESSAGE (STATUS "pmap utilities will not be built - GSL not found")
         ENDIF (GSL_PKG_FOUND)
