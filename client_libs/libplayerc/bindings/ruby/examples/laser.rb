@@ -6,7 +6,9 @@ require 'playerc'
 class PlayercExamples 
 
   def laser
-
+    if @connection.nil? 
+      raise 'our connection is not valid!'
+    end
     position = Playerc::Playerc_position2d.new(@connection, 0)
     if position.subscribe(Playerc::PLAYER_OPEN_MODE) != 0
       raise  Playerc::playerc_error_str()
@@ -26,7 +28,7 @@ class PlayercExamples
     end
 
     # Retrieve the laser geometry
-    if laser.get_geom != 0:
+    if laser.get_geom != 0
       raise Playerc::playerc_error_str
     end
     puts "Laser pose: (%.3f, %.3f, %.3f)" % laser.pose 
@@ -73,6 +75,7 @@ class PlayercExamples
     # Clean up
     laser.unsubscribe()
     position.unsubscribe()
+    
 
   end
 end

@@ -2,9 +2,7 @@
 
 require 'playerc'
 require 'laser'
-require 'wifi'
-
- 
+#require 'wifi'
 
 class PlayercExamples
   def initialize 
@@ -12,11 +10,15 @@ class PlayercExamples
     if @connection.connect != 0
       raise Playerc::playerc_error_str()
     end
+    puts 'connected to player'
   end
 
   def finish
     @connection.disconnect()
+    puts 'disconnected from player'
   end
+
+
 end
 
 
@@ -33,6 +35,7 @@ ARGV.each do|a|
       puts "requested test #{a} doesn't exist"
     end
   end
+  tests.reject! {|e| e == 'finish'} 
 end
 
 tests.each do |test|

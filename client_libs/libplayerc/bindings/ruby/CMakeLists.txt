@@ -22,7 +22,7 @@ endif (RUBY_LIBRARY AND RUBY_INCLUDE_PATH)
             INCLUDE_DIRECTORIES (${PROJECT_BINARY_DIR})
             INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/client_libs/libplayerc)
 
-            SET (CMAKE_SWIG_FLAGS "")
+            SET (CMAKE_SWIG_FLAGS "-w801")
 
             # Generate playerc_wrap.i and playerc_wrap.h from playerc.h
             SET (playerc_wrap_prefix "${CMAKE_CURRENT_BINARY_DIR}/playerc_wrap")
