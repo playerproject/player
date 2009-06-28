@@ -68,3 +68,5 @@ ENDIF (PLAYER_OS_QNX)
 PLAYER_MAKE_PKGCONFIG ("playerxdr" "Player XDR messaging library - part of the Player Project" "" "" "" "${xdrLibFlag}")
 
 PLAYER_INSTALL_HEADERS (playerxdr ${playerxdr_h} functiontable.h)
+
+INSTALL (FILES ${CMAKE_CURRENT_SOURCE_DIR}/playerxdrgen.py RENAME playerxdrgen DESTINATION bin)

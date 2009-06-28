@@ -54,7 +54,9 @@ endif (RUBY_LIBRARY AND RUBY_INCLUDE_PATH)
 
 
             #TODO: find ruby in windows, check install dir is correct  
-            SET (RUBY_BINDINGS_INSTALL_DIR ${RUBY_SITELIB_DIR} CACHE PATH "Ruby bindings installation directory under $RUBY_SITELIB_DIR")
+            STRING(REPLACE "/usr/" "" ruby_relative_sitelib_dir ${RUBY_SITELIB_DIR})
+            STRING(REPLACE "local/" "" ruby_relative_sitelib_dir ${ruby_relative_sitelib_dir})
+            SET (RUBY_BINDINGS_INSTALL_DIR ${ruby_relative_sitelib_dir} CACHE PATH "Ruby bindings installation directory under $RUBY_SITELIB_DIR")
             MARK_AS_ADVANCED (RUBY_BINDINGS_INSTALL_DIR)
 
             INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/playercr.so
