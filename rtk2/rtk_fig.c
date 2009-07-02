@@ -34,6 +34,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <float.h>
 #include "rtk.h"
 #include "rtkprivate.h"
 
@@ -508,10 +509,10 @@ void rtk_fig_calc(rtk_fig_t *fig)
   rtk_region_set_empty(fig->region);
 
   // Reset the figure bounding box.
-  fig->min_x = +DBL_MAX/2;
-  fig->min_y = +DBL_MAX/2;  
-  fig->max_x = -DBL_MAX/2;
-  fig->max_y = -DBL_MAX/2;
+  fig->min_x = +DBL_MAX / 2.0;
+  fig->min_y = +DBL_MAX / 2.0;
+  fig->max_x = -DBL_MAX / 2.0;
+  fig->max_y = -DBL_MAX / 2.0;
 
   // Recalculate strokes
   for (i = 0; i < fig->stroke_count; i++)
