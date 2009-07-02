@@ -20,14 +20,17 @@ class PlayercExamples
     puts "fiducial device with #{fiducial.fiducials_count} readings"
 
     if fiducial.fiducials_count == 0 
-      raise "fiducial not reading anything"
+      puts "no readings available in this interface"
+    else
+#TODO: more than one object found?
+#      for i in 0..fiducial.fiducials_count do
+         f = fiducial.fiducials
+         puts "object found" 
+         puts "object id: #{f.id}, x: #{f.pose.px}, y: #{f.pose.py}, angle: #{f.pose.pyaw}"
+#        f = fiducial.fiducials[i]
+#        puts "id, x, y, range, bearing, orientation: ", f.id, f.pos[0], f.pos[1], f.range, f.bearing * 180 / PI, f.orient
+#      end 
     end
- 
-    for i in 0..fiducial.fiducials_count do
-      f = fiducial.fiducials[i]
-      puts "id, x, y, range, bearing, orientation: ", f.id, f.pos[0], f.pos[1], f.range, f.bearing * 180 / PI, f.orient
-    end 
- 
     fiducial.unsubscribe()
 
   end

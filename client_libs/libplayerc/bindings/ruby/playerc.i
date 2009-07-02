@@ -40,6 +40,12 @@
   $result = UINT2NUM((long) (unsigned long long) $1);
 }
 
+//used by fiducial id (signed as -1 can be used)
+%typemap(out) int32_t
+{
+  $result = INT2NUM((long) (long long) $1);
+}
+
 
 
 

@@ -26,7 +26,15 @@ end
 examples = PlayercExamples.new
 tests = []
 
+if ARGV.count == 0
+  puts "     usage: ruby test.rb NAME_OF_TEST Arguments"
+  puts "        ex: ruby test.rb laser"
+  puts "            ruby test.rb all    for running all the tests"
+
+end
+
 ARGV.each do|a|
+#a = ARGV[0]
   if (a == "all")
     tests = examples.public_methods false
   else
