@@ -346,36 +346,48 @@ mbicp::mbicp( ConfigFile* cf, int section)
 	this->errt_out			= static_cast<float> (cf->ReadFloat(section, "errt_out", 0.0001));
 	this->IterSmoothConv		=  cf->ReadInt(section, "IterSmoothConv", 2);
 	this->laserPoseTsc.x 		= static_cast<float> (cf->ReadFloat(section, "laserPose_x", 0.16));
-  	this->laserPoseTsc.y 		= static_cast<float> (cf->ReadFloat(section, "laserPose_y", 0));
-  	this->laserPoseTsc.tita 	= static_cast<float> (cf->ReadFloat(section, "laserPose_th", 0));
+	this->laserPoseTsc.y 		= static_cast<float> (cf->ReadFloat(section, "laserPose_y", 0));
+	this->laserPoseTsc.tita 	= static_cast<float> (cf->ReadFloat(section, "laserPose_th", 0));
 
 
-   	if(cf->ReadDeviceAddr(&(posicion_addr), section, "provides",
-         	PLAYER_POSITION2D_CODE, -1, NULL) != 0){
-     		this->SetError(-1);
-     		return;
-   	}
+	if(cf->ReadDeviceAddr(&(posicion_addr), section, "provides",
+		PLAYER_POSITION2D_CODE, -1, NULL) != 0){
+		this->SetError(-1);
+		return;
+	}
 
-   	odom = NULL;
-   	if(cf->ReadDeviceAddr(&odom_addr, section, "requires",
-       		PLAYER_POSITION2D_CODE, -1, NULL) != 0){
-      		SetError(-1);
-      		return;
-   	}
+	odom = NULL;
+	if(cf->ReadDeviceAddr(&odom_addr, section, "requires",
+		PLAYER_POSITION2D_CODE, -1, NULL) != 0){
+		SetError(-1);
+		return;
+	}
 
-   	laser = NULL;
-   	if(cf->ReadDeviceAddr(&laser_addr, section, "requires",
-       		PLAYER_LASER_CODE, -1, NULL) != 0){
-       		SetError(-1);
-   	}
+	laser = NULL;
+		if(cf->ReadDeviceAddr(&laser_addr, section, "requires",
+		PLAYER_LASER_CODE, -1, NULL) != 0){
+		SetError(-1);
+	}
 
-   	return;
+	currentScan.ranges = NULL;
+	currentScan.intensity = NULL;
+	previousScan.ranges = NULL;
+	previousScan.intensity = NULL;
+
+	return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 mbicp::~mbicp(){
-   return;
+	if (currentScan.ranges != NULL)
+		delete[] currentScan.ranges;
+	if (currentScan.intensity != NULL)
+		delete[] currentScan.intensity;
+	if (previousScan.ranges != NULL)
+		delete[] previousScan.ranges;
+	if (previousScan.intensity != NULL)
+		delete[] previousScan.intensity;
 }
 
 
@@ -553,6 +565,9 @@ void mbicp::ProcessSubtypeLaser(player_msghdr_t* hdr,player_laser_data_scanpose_
 	currentScan.intensity_count	= data.scan.intensity_count;
 	currentScan.id					= data.scan.id;
 
+	currentScan.ranges = new float[data.scan.ranges_count];
+	currentScan.intensity = new uint8_t[data.scan.ranges_count];
+
 	for (unsigned int i=0; i < currentScan.ranges_count; i++){
 		currentScan.ranges[i] = data.scan.ranges[i];
 		currentScan.intensity[i] = data.scan.intensity[i];
@@ -647,8 +662,12 @@ void mbicp::compute()
 	}
 
 	scanmatchingPose	= Tsc2playerPose(scanmatchingPoseTsc);
+	delete[] previousScan.ranges;
+	delete[] previousScan.intensity;
 	previousScan		= currentScan;
 	previousPose		= currentPose;
+	currentScan.ranges = NULL;
+	currentScan.intensity = NULL;
 }
 
 
