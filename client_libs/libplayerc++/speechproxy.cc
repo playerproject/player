@@ -40,8 +40,10 @@
 /*
  * $Id$
  */
-#include <cstring>
 
+#include <cstddef>
+#include <cstdlib>
+#include <cassert>
 #include <cstring>
 #include "playerc++.h"
 
@@ -100,6 +102,8 @@ SpeechProxy::Say(std::string aStr)
 {
   scoped_lock_t lock(mPc->mMutex);
   char * str = strdup(aStr.c_str());
+  if (str == NULL)
+    throw PlayerError("SpeechProxy::Say()", "Failed to duplicate string");
   playerc_speech_say(mDevice, str);
   free(str);
 

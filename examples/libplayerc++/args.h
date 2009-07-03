@@ -1,3 +1,5 @@
+#include <cstdlib>
+#include <cstring>
 #include <libplayerc++/playerc++.h>
 #include <iostream>
 #include <unistd.h>

@@ -23,6 +23,7 @@
 #if !defined (WIN32)
   #include <unistd.h>
 #endif
+#include <cstdlib>
 #include <iostream>
 #include <string>
 #include <cstring>

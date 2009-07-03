@@ -41,7 +41,9 @@
  * $Id$
  */
 
-
+#include <cstddef>
+#include <cstdlib>
+#include <cassert>
 #include "playerc++.h"
 #include "string.h"
 

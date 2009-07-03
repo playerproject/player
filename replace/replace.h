@@ -106,6 +106,7 @@ int poll (struct pollfd *fds, unsigned long int nfds, int timeout);
 #endif // HAVE_COMPRESSBOUND
 
 #if !HAVE_CLOCK_GETTIME
+  #include <time.h>
   #define CLOCK_REALTIME 0
   int clock_gettime(int clk_id, struct timespec *tp);
 #endif // !HAVE_CLOCK_GETTIME
