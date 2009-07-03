@@ -79,6 +79,7 @@ Details of keyboard control are printed out on the console.
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h> /* for strcpy() */
@@ -593,7 +594,7 @@ int main(int argc, char** argv)
   for( int i=1; i<argc; i++ )
   {
     // if we find a colon in the arg, it's a player address
-    if( char* colon = index( argv[i], ':'  ) )
+    if( char* colon = strchr( argv[i], ':'  ) )
     {
       // replace the colon with a terminator
       *colon = 0;

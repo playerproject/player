@@ -28,6 +28,9 @@
 #include <assert.h>
 #include <math.h>
 #include <float.h>
+#if defined (WIN32)
+  #define finite _finite
+#endif
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -480,7 +483,11 @@ void pmap_resample(pmap_t *self, int scan_count)
   for (i = 0; i < self->samples_len; i++)
   {
     sample_probs[i] /= norm;
+#ifdef __QNXNTO__
+    assert(std::finite(sample_probs[i]));
+#else
     assert(finite(sample_probs[i]));
+#endif
   }
 
   dist = gsl_ran_discrete_preproc(self->samples_len, sample_probs);
