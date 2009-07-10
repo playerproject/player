@@ -18,3 +18,6 @@ PLAYERDRIVER_ADD_DRIVER (postgis build_postgis
 PLAYERDRIVER_OPTION (vec2map build_vec2map ON)
 SET(vec2map_linkFlags)
 PLAYERDRIVER_ADD_DRIVER (vec2map build_vec2map LINKFLAGS "${vec2map_linkFlags}" SOURCES vec2map.cc)
+
+PLAYERDRIVER_OPTION (robotracker build_robotracker ON)
+PLAYERDRIVER_ADD_DRIVER (robotracker build_robotracker SOURCES robotracker.cc)
