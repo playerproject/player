@@ -216,6 +216,8 @@ appropriate device proxy.  This function also returns a pointer to the
 proxy that was updated, so that user programs may, if desired, trigger
 appropriate events on the arrival of different kinds of data.
 
+In pull mode read will process a full set of messages from the server,
+in push mode read will process a single message.
 
 <li> Unsubscribe and destroy the device proxy.
 
@@ -739,6 +741,9 @@ currently queued data.
 PLAYERC_EXPORT int playerc_client_internal_peek(playerc_client_t *client, int timeout);
 
 /** @brief Read data from the server (blocking).
+
+In PUSH mode this will read and process a single message. In PULL mode this
+will process a full batch of messages up to the sync from the server.
 
 @param client Pointer to client object.
 
