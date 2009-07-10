@@ -57,6 +57,7 @@ extern "C"
   #include <linux/fs.h>
   #include <linux/kernel.h>
 #endif
+#include <sys/types.h>
 #include <linux/videodev.h>
 
 #include "v4lframe.h"

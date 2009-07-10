@@ -36,6 +36,7 @@ below for notes on specific camera/frame grabber combinations.
 
 @par Compile-time dependencies
 
+- &lt;sys/types.h&gt;
 - &lt;linux/videodev.h&gt;
 
 @par Provides
