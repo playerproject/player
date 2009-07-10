@@ -1,2 +1,2 @@
+ADD_SUBDIRECTORY (bitlogic)
 ADD_SUBDIRECTORY (serio)
-
