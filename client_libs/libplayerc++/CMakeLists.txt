@@ -203,7 +203,7 @@ IF (BUILD_PLAYERCC)
                         wsnproxy.cc)
 
     IF (NOT HAVE_NANOSLEEP)
-        SET (playerccSrcs ${playerccSrcs} ${PROJECT_SOURCE_DIR}/replace/nanosleep.c)
+        SET (playerreplaceLib playerreplace)
     ENDIF (NOT HAVE_NANOSLEEP)
 
     IF (HAVE_M)
@@ -218,7 +218,8 @@ IF (BUILD_PLAYERCC)
     INCLUDE_DIRECTORIES (${PLAYERCC_EXTRA_INCLUDE_DIRS})
     LINK_DIRECTORIES (${PLAYERCC_EXTRA_LINK_DIRS})
     PLAYER_ADD_LIBRARY (playerc++ ${playerccSrcs} ${playercppconfig_h})
-    TARGET_LINK_LIBRARIES (playerc++ playerwkb playerxdr playerutils playerc ${PLAYERCC_EXTRA_LINK_LIBRARIES})
+    TARGET_LINK_LIBRARIES (playerc++ playerwkb playerxdr playerutils playerc
+                           ${playerreplaceLib} ${PLAYERCC_EXTRA_LINK_LIBRARIES})
 
     SET (pkgconfigCFlags)
     SET (pkgconfigLinkDirs)
@@ -228,8 +229,8 @@ IF (BUILD_PLAYERCC)
     LIST_TO_STRING_WITH_PREFIX (pkgconfigLinkLibs "-l" ${PLAYERCC_EXTRA_LINK_LIBRARIES})
     PLAYER_MAKE_PKGCONFIG ("playerc++"
                            "C++ wrapper for libplayerc - part of the Player Project"
-                           "playerwkb playerxdr playerc" "" "${pkgconfigCFlags}"
-                           "${pkgconfigLinkDirs} ${pkgconfigLinkLibs}")
+                           "playerwkb playerxdr playerc ${playerreplaceLib}" ""
+                           "${pkgconfigCFlags}" "${pkgconfigLinkDirs} ${pkgconfigLinkLibs}")
     CONFIGURE_FILE (${PLAYER_CMAKE_DIR}/UsePlayerC++.cmake.in ${CMAKE_BINARY_DIR}/cmake/UsePlayerC++.cmake @ONLY)
 
     PLAYER_INSTALL_HEADERS (playerc++ ${playercppconfig_h}

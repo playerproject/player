@@ -40,7 +40,11 @@
 
 #include <string.h>
 #include <stdlib.h>
-#if !defined WIN32
+#if defined WIN32
+  #include <direct.h>
+  #include <vector>
+  #include <string>
+#else
   #include <unistd.h>
 #endif
 
@@ -58,7 +62,7 @@
 #include "plugins.h"
 
 // Try to load a given plugin, using a particular search algorithm.
-// Returns true on success and false on failure.
+// Returns a handle on success and NULL on failure.
 lt_dlhandle
 LoadPlugin(const char* pluginname, const char* cfgfile)
 {
@@ -139,11 +143,88 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
 	 }
   
   return handle;
+#elif defined (WIN32)
+  std::vector<std::string> paths;
 
+  if(pluginname[0] == '/' || pluginname[0] == '~')
+  {
+    lt_dlhandle handle = LoadLibrary( pluginname );
+    if (handle == NULL)
+    {
+      LPVOID buffer = NULL;
+      FormatMessage( FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
+                     GetLastError(), 0, reinterpret_cast<LPTSTR> (&buffer), 0, NULL );
+	  PLAYER_ERROR2( "Failed to load plugin with absolute path %s: %s\n", pluginname, reinterpret_cast<LPTSTR> (buffer) );
+      LocalFree( buffer );
+	  return NULL;
+	}
+	return handle;
+  }
+  else
+  {
+    // Add the various search paths to the list
+
+    // start with $PLAYERPATH, if set
+    char playerpath[PATH_MAX];
+    size_t size = PATH_MAX;
+    errno_t err;
+    if( (err = _dupenv_s(reinterpret_cast<char**> (&playerpath), &size, "PLAYERPATH")) != 0)
+      PLAYER_WARN1 ("Error getting PLAYERPATH environment variable: %d", errno);
+	else if( playerpath != NULL )
+      paths.push_back( playerpath );
+
+    // add the working directory		
+    char workingdir[PATH_MAX];
+    if( _getcwd( workingdir, PATH_MAX ))
+      paths.push_back( workingdir );
+
+/*    if(cfgfile)
+    {
+	//TODO
+			 // Note that dirname() modifies the contents on some
+			 // platforms, so we need to make a copy of the filename.
+			 char* tmp = strdup(cfgfile);
+			 assert(tmp);
+			 char* cfgdir = dirname(tmp);
+			 if( SetDllDirectory( cfgdir ) )
+				PLAYER_ERROR1( "failed to add config file directory %s to the plugin path", cfgdir );
+			 free(tmp);
+    }*/
+
+    // add $PLAYER_INSTALL_PREFIX/lib		
+    char installdir[ PATH_MAX ];
+    strncpy_s( installdir, PATH_MAX, PLAYER_INSTALL_PREFIX, PATH_MAX);
+    strncat_s( installdir, PATH_MAX, "/lib/", PATH_MAX);
+	paths.push_back( installdir );
+
+    for (std::vector<std::string>::const_iterator ii = paths.begin (); ii != paths.end (); ii++)
+    {
+      if( SetDllDirectory( ii->c_str() ) == 0)
+      {
+        LPVOID buffer = NULL;
+        FormatMessage( FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
+                       GetLastError(), 0, reinterpret_cast<LPTSTR> (&buffer), 0, NULL );
+		PLAYER_ERROR2( "Failed to add search path %s: %s\n", ii->c_str(), reinterpret_cast<LPTSTR> (buffer) );
+        LocalFree( buffer );
+	    continue;
+      }
+      lt_dlhandle handle = LoadLibrary( pluginname );
+      if (handle == NULL)
+      {
+        LPVOID buffer = NULL;
+        FormatMessage( FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
+                       GetLastError(), 0, reinterpret_cast<LPTSTR> (&buffer), 0, NULL );
+		PLAYER_ERROR2( "Failed to load plugin with using path %s: %s\n", ii->c_str(), reinterpret_cast<LPTSTR> (buffer) );
+        LocalFree( buffer );
+	    continue;
+      }
+      return handle;
+    }
+	return NULL;
+  }
 #else
   PLAYER_ERROR("Sorry, no support for shared libraries, so can't load plugins.");
   PLAYER_ERROR("You should install libltdl, which is part of GNU libtool, then re-compile player.");
-  PLAYER_ERROR("If you're on Windows, wait a little while as plugin loading is still under development.");
   return 0;
 #endif
 }
@@ -178,10 +259,40 @@ bool InitDriverPlugin(lt_dlhandle handle)
   }
   else
     return(false);
+#elif defined (WIN32)
+  DriverPluginInitFn initfunc;
+  // Invoke the initialization function
+  if(handle != NULL)
+  {
+    PLAYER_MSG0(1, "invoking player_driver_init()...");
+
+    initfunc = reinterpret_cast<DriverPluginInitFn>(GetProcAddress(handle,"player_driver_init"));
+    if( !initfunc )
+    {
+      LPVOID buffer = NULL;
+      FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
+                    GetLastError(), 0, reinterpret_cast<LPTSTR> (&buffer), 0, NULL);
+      PLAYER_ERROR1("failed to resolve player_driver_init: %s\n", reinterpret_cast<LPTSTR> (buffer));
+      LocalFree(buffer);
+      return(false);
+    }
+
+    int initfunc_result = 0;
+    if( (initfunc_result = (*initfunc)(driverTable)) != 0)
+    {
+      PLAYER_ERROR1("error returned by player_driver_init: %d", initfunc_result);
+      return(false);
+    }
+
+    PLAYER_MSG0(1, "success");
+
+    return(true);
+  }
+  else
+    return(false);
 #else
   PLAYER_ERROR("Sorry, no support for shared libraries, so can't load plugins.");
   PLAYER_ERROR("You should install libltdl, which is part of GNU libtool, then re-compile player.");
-  PLAYER_ERROR("If you're on Windows, wait a little while as plugin loading is still under development.");
   return(false);
 #endif
 }
@@ -217,10 +328,41 @@ playerxdr_function_t* InitInterfacePlugin(lt_dlhandle handle)
   }
   else
     return(NULL);
+#elif defined (WIN32)
+  InterfPluginInitFn initfunc;
+  playerxdr_function_t *flist;
+
+  // Invoke the initialization function
+  if(handle != NULL)
+  {
+    PLAYER_MSG0(1, "invoking player_plugininterf_gettable()...");
+
+    initfunc = reinterpret_cast<InterfPluginInitFn>(GetProcAddress(handle,"player_plugininterf_gettable"));
+    if( !initfunc )
+    {
+      LPVOID buffer = NULL;
+      FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
+                    GetLastError(), 0, reinterpret_cast<LPTSTR> (&buffer), 0, NULL);
+      PLAYER_ERROR1("failed to resolve player_plugininterf_gettable: %s\n", reinterpret_cast<LPTSTR> (buffer));
+      LocalFree(buffer);
+      return(false);
+    }
+
+    if( (flist = (*initfunc)()) == NULL)
+    {
+      PLAYER_ERROR("player_plugininterf_gettable returned NULL");
+      return(NULL);
+    }
+
+    PLAYER_MSG0(1, "success");
+
+    return(flist);
+  }
+  else
+    return(NULL);
 #else
   PLAYER_ERROR("Sorry, no support for shared libraries, so can't load plugins.");
   PLAYER_ERROR("You should install libltdl, which is part of GNU libtool, then re-compile player.");
-  PLAYER_ERROR("If you're on Windows, wait a little while as plugin loading is still under development.");
   return(NULL);
 #endif
 }

@@ -131,6 +131,7 @@ driver
 #include <config.h>
 
 #include <libplayercore/playercore.h>
+#include <libplayerxdr/functiontable.h>
 //#include <libplayerxdr/playerxdr.h>
 
 #include <assert.h>

@@ -40,6 +40,18 @@
 #ifndef REMOTE_DRIVER_H
 #define REMOTE_DRIVER_H
 
+#if defined (WIN32)
+  #if defined (PLAYER_STATIC)
+    #define PLAYERCORE_EXPORT
+  #elif defined (playercore_EXPORTS)
+    #define PLAYERCORE_EXPORT    __declspec (dllexport)
+  #else
+    #define PLAYERCORE_EXPORT    __declspec (dllimport)
+  #endif
+#else
+  #define PLAYERCORE_EXPORT
+#endif
+
 #include <libplayercore/playercore.h>
 #include <map>
 #include <list>
@@ -66,7 +78,7 @@ struct PlayerQueueCompare
 
 typedef list<QueuePointer> QueueList;
 
-class RemoteConnection
+class PLAYERCORE_EXPORT RemoteConnection
 {
 public:
 	RemoteConnection() : subscription_count(0) {};
@@ -84,7 +96,7 @@ public:
 	QueuePointer ConnectionQueue;
 };
 
-class RemoteDriver: public Driver {
+class PLAYERCORE_EXPORT RemoteDriver: public Driver {
 public:
 	RemoteDriver(ConfigFile *cf=NULL,int section=-1) : Driver(cf,section,false), Connected(true){};
 	virtual ~RemoteDriver() {};

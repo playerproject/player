@@ -1,6 +1,8 @@
 #include <libplayerc++/playerc++.h>
 #include <iostream>
-#include <unistd.h>
+#if !defined (WIN32)
+  #include <unistd.h>
+#endif
 #include <boost/signal.hpp>
 #include <boost/bind.hpp>
 

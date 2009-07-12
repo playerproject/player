@@ -7,6 +7,24 @@
 extern "C" {
 #endif
 
+// If you want your plugin interface to be usable on Windows, this block is
+// important. Make sure to replace EXAMPLE with the exact name of your
+// interface as specified in the interfName argument of
+// PLAYER_ADD_PLUGIN_INTERFACE() in your CMakeLists.txt file, but in captital
+// letters, all throughout this file. Also ensure that the "example" in
+// "example_EXPORTS" is replaced with the exact name of your interface.
+#if defined (WIN32)
+  #if defined (PLAYER_STATIC)
+    #define EXAMPLE_EXPORT
+  #elif defined (example_EXPORTS)
+    #define EXAMPLE_EXPORT    __declspec (dllexport)
+  #else
+    #define EXAMPLE_EXPORT    __declspec (dllimport)
+  #endif
+#else
+  #define EXAMPLE_EXPORT
+#endif
+
 typedef struct
 {
 	/* Device info; must be at the start of all device structures. */
@@ -18,17 +36,17 @@ typedef struct
 	int value;
 } eginterf_t;
 
-eginterf_t *eginterf_create (playerc_client_t *client, int index);
+EXAMPLE_EXPORT eginterf_t *eginterf_create (playerc_client_t *client, int index);
 
-void eginterf_destroy (eginterf_t *device);
+EXAMPLE_EXPORT void eginterf_destroy (eginterf_t *device);
 
-int eginterf_subscribe (eginterf_t *device, int access);
+EXAMPLE_EXPORT int eginterf_subscribe (eginterf_t *device, int access);
 
-int eginterf_unsubscribe (eginterf_t *device);
+EXAMPLE_EXPORT int eginterf_unsubscribe (eginterf_t *device);
 
-int eginterf_cmd (eginterf_t *device, char value);
+EXAMPLE_EXPORT int eginterf_cmd (eginterf_t *device, char value);
 
-int eginterf_req (eginterf_t *device, int blah);
+EXAMPLE_EXPORT int eginterf_req (eginterf_t *device, int blah);
 
 #ifdef __cplusplus
 }

@@ -35,9 +35,11 @@
 #include <config.h>
 */
 
-#include <unistd.h>
+#if !defined (WIN32)
+  #include <unistd.h>
+  #include <netinet/in.h>
+#endif
 #include <string.h>
-#include <netinet/in.h>
 
 #include <libplayercore/playercore.h>
 

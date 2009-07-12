@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "replace/replace.h"
+
 char *optarg = NULL;
 int optind = 1, opterr = 1, optopt = 0;
 

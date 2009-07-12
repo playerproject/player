@@ -36,6 +36,18 @@
 #ifndef _RPC_XDR_H
 #define _RPC_XDR_H 1
 
+#if defined (WIN32)
+  #if defined (PLAYER_STATIC)
+    #define PLAYERREPLACE_EXPORT
+  #elif defined (playerreplace_EXPORTS)
+    #define PLAYERREPLACE_EXPORT    __declspec (dllexport)
+  #else
+    #define PLAYERREPLACE_EXPORT    __declspec (dllimport)
+  #endif
+#else
+  #define PLAYERREPLACE_EXPORT
+#endif
+
 #include <sys/types.h>
 #include "rpc/types.h"
 
@@ -152,8 +164,8 @@ struct XDR
 typedef bool_t (*xdrproc_t) (XDR *, void *,...);
 
 /* XDR using memory buffers */
-extern void xdrmem_create (XDR *__xdrs, __const caddr_t __addr,
-					   u_int __size, enum xdr_op __xop);
+PLAYERREPLACE_EXPORT extern void xdrmem_create (XDR *__xdrs, __const caddr_t __addr,
+					                            u_int __size, enum xdr_op __xop);
 
 /*
  * Operations defined on a XDR handle
@@ -227,39 +239,39 @@ extern void xdrmem_create (XDR *__xdrs, __const caddr_t __addr,
  * know whether the call is a read or a write to the passed parameter
  * also, the XDR structure is always updated by some of these calls.
  */
-extern bool_t xdr_void (void);
-extern bool_t xdr_short (XDR *__xdrs, short *__sp);
-extern bool_t xdr_u_short (XDR *__xdrs, u_short *__usp);
-extern bool_t xdr_int (XDR *__xdrs, int *__ip);
-extern bool_t xdr_u_int (XDR *__xdrs, u_int *__up);
-extern bool_t xdr_long (XDR *__xdrs, long *__lp);
-extern bool_t xdr_u_long (XDR *__xdrs, u_long *__ulp);
-extern bool_t xdr_hyper (XDR *__xdrs, quad_t *__llp);
-extern bool_t xdr_u_hyper (XDR *__xdrs, u_quad_t *__ullp);
-extern bool_t xdr_longlong_t (XDR *__xdrs, quad_t *__llp);
-extern bool_t xdr_u_longlong_t (XDR *__xdrs, u_quad_t *__ullp);
-extern bool_t xdr_int8_t (XDR *__xdrs, int8_t *__ip);
-extern bool_t xdr_uint8_t (XDR *__xdrs, uint8_t *__up);
-extern bool_t xdr_int16_t (XDR *__xdrs, int16_t *__ip);
-extern bool_t xdr_uint16_t (XDR *__xdrs, uint16_t *__up);
-extern bool_t xdr_int32_t (XDR *__xdrs, int32_t *__ip);
-extern bool_t xdr_uint32_t (XDR *__xdrs, uint32_t *__up);
-extern bool_t xdr_int64_t (XDR *__xdrs, int64_t *__ip);
-extern bool_t xdr_uint64_t (XDR *__xdrs, uint64_t *__up);
-extern bool_t xdr_bool (XDR *__xdrs, bool_t *__bp);
-extern bool_t xdr_enum (XDR *__xdrs, enum_t *__ep);
-extern bool_t xdr_array (XDR * _xdrs, caddr_t *__addrp, u_int *__sizep,
+PLAYERREPLACE_EXPORT extern bool_t xdr_void (void);
+PLAYERREPLACE_EXPORT extern bool_t xdr_short (XDR *__xdrs, short *__sp);
+PLAYERREPLACE_EXPORT extern bool_t xdr_u_short (XDR *__xdrs, u_short *__usp);
+PLAYERREPLACE_EXPORT extern bool_t xdr_int (XDR *__xdrs, int *__ip);
+PLAYERREPLACE_EXPORT extern bool_t xdr_u_int (XDR *__xdrs, u_int *__up);
+PLAYERREPLACE_EXPORT extern bool_t xdr_long (XDR *__xdrs, long *__lp);
+PLAYERREPLACE_EXPORT extern bool_t xdr_u_long (XDR *__xdrs, u_long *__ulp);
+PLAYERREPLACE_EXPORT extern bool_t xdr_hyper (XDR *__xdrs, quad_t *__llp);
+PLAYERREPLACE_EXPORT extern bool_t xdr_u_hyper (XDR *__xdrs, u_quad_t *__ullp);
+PLAYERREPLACE_EXPORT extern bool_t xdr_longlong_t (XDR *__xdrs, quad_t *__llp);
+PLAYERREPLACE_EXPORT extern bool_t xdr_u_longlong_t (XDR *__xdrs, u_quad_t *__ullp);
+PLAYERREPLACE_EXPORT extern bool_t xdr_int8_t (XDR *__xdrs, int8_t *__ip);
+PLAYERREPLACE_EXPORT extern bool_t xdr_uint8_t (XDR *__xdrs, uint8_t *__up);
+PLAYERREPLACE_EXPORT extern bool_t xdr_int16_t (XDR *__xdrs, int16_t *__ip);
+PLAYERREPLACE_EXPORT extern bool_t xdr_uint16_t (XDR *__xdrs, uint16_t *__up);
+PLAYERREPLACE_EXPORT extern bool_t xdr_int32_t (XDR *__xdrs, int32_t *__ip);
+PLAYERREPLACE_EXPORT extern bool_t xdr_uint32_t (XDR *__xdrs, uint32_t *__up);
+PLAYERREPLACE_EXPORT extern bool_t xdr_int64_t (XDR *__xdrs, int64_t *__ip);
+PLAYERREPLACE_EXPORT extern bool_t xdr_uint64_t (XDR *__xdrs, uint64_t *__up);
+PLAYERREPLACE_EXPORT extern bool_t xdr_bool (XDR *__xdrs, bool_t *__bp);
+PLAYERREPLACE_EXPORT extern bool_t xdr_enum (XDR *__xdrs, enum_t *__ep);
+PLAYERREPLACE_EXPORT extern bool_t xdr_array (XDR * _xdrs, caddr_t *__addrp, u_int *__sizep,
 			 u_int __maxsize, u_int __elsize, xdrproc_t __elproc);
-extern bool_t xdr_bytes (XDR *__xdrs, char **__cpp, u_int *__sizep,
+PLAYERREPLACE_EXPORT extern bool_t xdr_bytes (XDR *__xdrs, char **__cpp, u_int *__sizep,
 			 u_int __maxsize);
-extern bool_t xdr_opaque (XDR *__xdrs, caddr_t __cp, u_int __cnt);
-extern bool_t xdr_char (XDR *__xdrs, char *__cp);
-extern bool_t xdr_u_char (XDR *__xdrs, u_char *__cp);
-extern bool_t xdr_vector (XDR *__xdrs, char *__basep, u_int __nelem,
+PLAYERREPLACE_EXPORT extern bool_t xdr_opaque (XDR *__xdrs, caddr_t __cp, u_int __cnt);
+PLAYERREPLACE_EXPORT extern bool_t xdr_char (XDR *__xdrs, char *__cp);
+PLAYERREPLACE_EXPORT extern bool_t xdr_u_char (XDR *__xdrs, u_char *__cp);
+PLAYERREPLACE_EXPORT extern bool_t xdr_vector (XDR *__xdrs, char *__basep, u_int __nelem,
 			  u_int __elemsize, xdrproc_t __xdr_elem);
-extern bool_t xdr_float (XDR *__xdrs, float *__fp);
-extern bool_t xdr_double (XDR *__xdrs, double *__dp);
-extern u_long xdr_sizeof (xdrproc_t, void *);
+PLAYERREPLACE_EXPORT extern bool_t xdr_float (XDR *__xdrs, float *__fp);
+PLAYERREPLACE_EXPORT extern bool_t xdr_double (XDR *__xdrs, double *__dp);
+PLAYERREPLACE_EXPORT extern u_long xdr_sizeof (xdrproc_t, void *);
 
 #endif /* rpc/xdr.h */
 

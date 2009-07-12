@@ -5,7 +5,9 @@
  */
 
 #include <libplayerc++/playerc++.h>
-#include <unistd.h>
+#if !defined (WIN32)
+  #include <unistd.h>
+#endif
 #include <stdlib.h>
 #include <iostream>
 

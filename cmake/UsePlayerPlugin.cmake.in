@@ -206,6 +206,8 @@ MACRO (PLAYER_ADD_PLUGIN_INTERFACE _interfName _interfDef)
     IF (PLUGIN_PLAYERC_LINK_LIBS)
         TARGET_LINK_LIBRARIES (${_interfName} ${PLUGIN_PLAYERC_LINK_LIBS})
     ENDIF (PLUGIN_PLAYERC_LINK_LIBS)
+    GET_SOURCE_FILE_PROPERTY (currentCFlags ${xdr_c} COMPILE_FLAGS)
+    SET_SOURCE_FILES_PROPERTIES (${xdr_c} PROPERTIES COMPILE_FLAGS "-Dplayerxdr_EXPORTS ${currentCFlags}")
 
     # Get the current cflags for each source file, and add the global ones
     # (this allows the user to specify individual cflags for each source file

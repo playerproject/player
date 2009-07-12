@@ -34,20 +34,13 @@ ADD_CUSTOM_TARGET (functiontable_gen ALL
     COMMENT "Generating functiontable_gen.h")
 
 IF (NOT HAVE_XDR)
-    SET (replaceSrcs    ${PROJECT_SOURCE_DIR}/replace/xdr.c
-                        ${PROJECT_SOURCE_DIR}/replace/xdr_array.c
-                        ${PROJECT_SOURCE_DIR}/replace/xdr_float.c
-                        ${PROJECT_SOURCE_DIR}/replace/xdr_intXX_t.c
-                        ${PROJECT_SOURCE_DIR}/replace/xdr_mem.c
-                        ${PROJECT_SOURCE_DIR}/replace/xdr_sizeof.c)
     INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/replace)
 ENDIF (NOT HAVE_XDR)
 
 SET (playerxdrSrcs  ${playerxdr_h}
                     ${playerxdr_c}
                     functiontable.c
-                    ${functiontable_gen_h}
-                    ${replaceSrcs})
+                    ${functiontable_gen_h})
 
 IF (PLAYER_OS_QNX)
     SET (xdrLibFlag -lrpc)
@@ -65,6 +58,9 @@ IF (PLAYER_OS_QNX)
     TARGET_LINK_LIBRARIES (playerxdr rpc)
     PLAYERCORE_ADD_INT_LINK_LIB (rpc)
 ENDIF (PLAYER_OS_QNX)
+IF (NOT HAVE_XDR)
+    TARGET_LINK_LIBRARIES (playerxdr playerreplace)
+ENDIF (NOT HAVE_XDR)
 PLAYER_MAKE_PKGCONFIG ("playerxdr" "Player XDR messaging library - part of the Player Project" "" "" "" "${xdrLibFlag}")
 
 PLAYER_INSTALL_HEADERS (playerxdr ${playerxdr_h} functiontable.h)

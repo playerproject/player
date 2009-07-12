@@ -49,7 +49,7 @@ main(int argc, char **argv)
 
       }
 
-    sleep(1);
+    usleep(1000000);
 
     player_color_t col;
     memset( &col, 0, sizeof(col));
@@ -79,7 +79,7 @@ main(int argc, char **argv)
 	usleep(300000);
   }
 
-  sleep(1);
+  usleep(1000000);
 
   gp.Clear();
 

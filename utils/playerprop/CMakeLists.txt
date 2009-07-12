@@ -6,13 +6,15 @@ IF (BUILD_UTILS_PLAYERPROP)
         ENDIF (NOT HAVE_XDR)
         IF (NOT HAVE_GETOPT)
             INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/replace)
-            SET (getoptSrc ${PROJECT_SOURCE_DIR}/replace/getopt.c)
+            SET (playerreplaceLib playerreplace)
         ENDIF (NOT HAVE_GETOPT)
         INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/client_libs ${PROJECT_BINARY_DIR}/client_libs)
 
         LINK_DIRECTORIES (${PLAYERCC_EXTRA_LINK_DIRS})
         PLAYER_ADD_EXECUTABLE (playerprop playerprop.cpp ${getoptSrc})
-        TARGET_LINK_LIBRARIES (playerprop playerc++ playerc playerxdr playererror ${PLAYERC_EXTRA_LINK_LIBRARIES} ${PLAYERCC_EXTRA_LINK_LIBRARIES})
+        TARGET_LINK_LIBRARIES (playerprop playerc++ playerc playerxdr playererror
+                               ${playerreplaceLib} ${PLAYERC_EXTRA_LINK_LIBRARIES}
+                               ${PLAYERCC_EXTRA_LINK_LIBRARIES})
     ELSE (BUILD_PLAYERCC)
         MESSAGE (STATUS "playerprop will not be built - playerc++ client library is disabled")
     ENDIF (BUILD_PLAYERCC)

@@ -42,8 +42,10 @@
 
 #include <errno.h>
 #include <sys/types.h>
-#include <unistd.h>
 #include <fcntl.h>
+#if !defined (WIN32)
+	#include <unistd.h>
+#endif
 
 #if ENABLE_TCP_NODELAY
 #include <netinet/tcp.h>
@@ -53,6 +55,7 @@
 #include <libplayercore/error.h>
 #include <libplayerxdr/playerxdr.h>
 #include "tcpremote_driver.h"
+#include "playertcp_errutils.h"
 
 QueuePointer TCPRemoteDriverConnection::Connect()
 {
@@ -60,6 +63,11 @@ QueuePointer TCPRemoteDriverConnection::Connect()
 	char banner[PLAYER_IDENT_STRLEN];
 	int numread, thisnumread;
 	double t1, t2;
+#if defined (WIN32)
+  unsigned long setting = 1;
+#else
+  int flags;                  /* temp for old socket access flags */
+#endif
 
 	// if kill_flag is set then we cant use the ptcp object
 	if (kill_flag)
@@ -76,11 +84,14 @@ QueuePointer TCPRemoteDriverConnection::Connect()
 	}
 
 	// Construct socket
-	this->sock = socket(PF_INET,SOCK_STREAM, 0);
-	if (this->sock < 0)
+#if defined (WIN32)
+	if((this->sock = socket(PF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET)
+#else
+	if((this->sock = socket(PF_INET, SOCK_STREAM, 0)) == -1)
+#endif
 	{
-		PLAYER_ERROR1("socket call failed with error [%s]", strerror(errno));
-		throw "Connection Failed";
+		STRERROR (PLAYER_ERROR1, "socket() failed; socket not created: %s");
+		throw "Connection failed";
 	}
 
 	server.sin_family = PF_INET;
@@ -92,7 +103,11 @@ QueuePointer TCPRemoteDriverConnection::Connect()
 	{
 		PLAYER_ERROR3("connect call on [%s:%u] failed with error [%s]",
 				this->ipaddr, port, strerror(errno));
+#if defined (WIN32)
+		closesocket(this->sock);
+#else
 		close(this->sock);
+#endif
 		sock=-1;
 		throw "Connection Failed";
 	}
@@ -100,13 +115,39 @@ QueuePointer TCPRemoteDriverConnection::Connect()
 	PLAYER_MSG2(2, "connected to: %s:%u\n", this->ipaddr, host);
 
 	// make the socket non-blocking
-	if (fcntl(this->sock, F_SETFL, O_NONBLOCK) == -1)
+#if defined (WIN32)
+	if (ioctlsocket(sock, FIONBIO, &setting) == SOCKET_ERROR)
 	{
-		PLAYER_ERROR1("fcntl() failed: %s", strerror(errno));
-		close(this->sock);
-		sock=-1;
-		throw "Connection Failed";
+		STRERROR(PLAYER_ERROR1, "ioctlsocket error: %s");
+		closesocket(sock);
+		sock=INVALID_SOCKET;
+		throw "Connection failed";
 	}
+#else
+	/*
+	* get the current access flags
+	*/
+	if((flags = fcntl(sock, F_GETFL)) == -1)
+	{
+		perror("create_and_bind_socket():fcntl() while getting socket "
+				"access flags; socket not created.");
+		close(sock);
+		sock=-1;
+		throw "Connection failed";
+	}
+	/*
+	* OR the current flags with O_NONBLOCK (so we won't block),
+	* and write them back
+	*/
+	if(fcntl(sock, F_SETFL, flags | O_NONBLOCK ) == -1)
+	{
+		perror("create_and_bind_socket():fcntl() failed while setting socket "
+				"access flags; socket not created.");
+		close(sock);
+		sock=-1;
+		throw "Connection failed";
+	}
+#endif // defined (WIN32)
 
 #if ENABLE_TCP_NODELAY
 	// Disable Nagel's algorithm for lower latency
@@ -126,13 +167,17 @@ QueuePointer TCPRemoteDriverConnection::Connect()
 	numread = 0;
 	while (numread < (int) sizeof(banner))
 	{
-		if ((thisnumread = read(this->sock, banner + numread, sizeof(banner)
-				- numread)) < 0)
+		if ((thisnumread = recv(this->sock, banner + numread, sizeof(banner)
+				- numread, 0)) < 0)
 		{
 			if (errno!= EAGAIN)
 			{
 				PLAYER_ERROR("error reading banner from remote device");
+#if defined (WIN32)
+				closesocket(this->sock);
+#else
 				close(this->sock);
+#endif
 				sock=-1;
 				throw "Connection Failed";
 			}
@@ -143,7 +188,11 @@ QueuePointer TCPRemoteDriverConnection::Connect()
 		if ((t2 - t1) > this->setup_timeout)
 		{
 			PLAYER_ERROR("timed out reading banner from remote server");
+#if defined (WIN32)
+			closesocket(this->sock);
+#else
 			close(this->sock);
+#endif
 			sock=-1;
 			throw "Connection Failed";
 		}
@@ -184,7 +233,7 @@ void TCPRemoteDriverConnection::Subscribe(player_devaddr_t addr)
 	// we need to do this after the subscription as we directly
 	// manipulate the socket in our subscribe and unsubscribe
 	this->ptcp->AddClient(NULL, host, port, this->sock,
-			false, &this->kill_flag, (this->ptcp->thread == pthread_self()),ConnectionQueue);
+			false, &this->kill_flag, pthread_equal(this->ptcp->thread, pthread_self()),ConnectionQueue);
 
 }
 
@@ -196,8 +245,8 @@ void TCPRemoteDriverConnection::Unsubscribe(player_devaddr_t addr)
 	{
 		// Set the delete flag, letting PlayerTCP close the connection and
 		// clean up.
-		this->ptcp->DeleteClient(ConnectionQueue, (this->ptcp->thread
-				== pthread_self()));
+		this->ptcp->DeleteClient(ConnectionQueue, pthread_equal(this->ptcp->thread,
+				pthread_self()));
 		kill_flag = 1;
 	}
 
@@ -219,7 +268,11 @@ int TCPRemoteDriverConnection::SubscribeRemote(player_devaddr_t addr,
 	int numbytes, thisnumbytes;
 
 	// if we have no socket then we dont need to unsub
+#if defined (WIN32)
+	if (sock == INVALID_SOCKET)
+#else
 	if (sock < 0)
+#endif
 		return 0;
 
 	memset(&hdr, 0, sizeof(hdr));
@@ -261,8 +314,8 @@ int TCPRemoteDriverConnection::SubscribeRemote(player_devaddr_t addr,
 
 	while (numbytes < encode_msglen)
 	{
-		if ((thisnumbytes = write(this->sock, buf + numbytes, encode_msglen
-				- numbytes)) < 0)
+		if ((thisnumbytes = send(this->sock, reinterpret_cast<const char*> (buf + numbytes), encode_msglen
+				- numbytes, 0)) < 0)
 		{
 			if (errno!= EAGAIN)
 			{
@@ -299,8 +352,8 @@ int TCPRemoteDriverConnection::SubscribeRemote(player_devaddr_t addr,
 	numbytes = 0;
 	while (numbytes < PLAYERXDR_MSGHDR_SIZE)
 	{
-		if ((thisnumbytes = read(this->sock, buf + numbytes,
-				PLAYERXDR_MSGHDR_SIZE - numbytes)) < 0)
+		if ((thisnumbytes = recv(this->sock, reinterpret_cast<char*> (buf + numbytes),
+				PLAYERXDR_MSGHDR_SIZE - numbytes, 0)) < 0)
 		{
 			if (errno!= EAGAIN)
 			{
@@ -340,8 +393,8 @@ int TCPRemoteDriverConnection::SubscribeRemote(player_devaddr_t addr,
 	numbytes = 0;
 	while (numbytes < (int) hdr.size)
 	{
-		if ((thisnumbytes = read(this->sock, buf + PLAYERXDR_MSGHDR_SIZE
-				+ numbytes, hdr.size - numbytes)) < 0)
+		if ((thisnumbytes = recv(this->sock, reinterpret_cast<char*> (buf + PLAYERXDR_MSGHDR_SIZE
+				+ numbytes), hdr.size - numbytes, 0)) < 0)
 		{
 			if (errno!= EAGAIN)
 			{

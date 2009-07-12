@@ -1,7 +1,4 @@
 - Java bindings for core, xdr, tcp, etc
-- Figure out why it always rebuilds driverregistry.c. Make it stop.
 - dist tarballs, packages, etc - add in the extra_dist files to the source one, make the debian one
-- Drivers being disabled by a check used to correctly force their option to off. Figure out why this broke. Fix it.
 - Figure out why C++ tests and C++ examples don't link properly when building as static libs, even though the server and utils do.
-- Add CMakeLists equivalent of the wavefront driver's Makefile.test (and get rid of Makefile.test)
 - PLAYER_PROCESS_ARGUMENTS should not need to have arguments enclosed in quotes. Fix this.

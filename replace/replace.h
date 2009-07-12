@@ -32,6 +32,18 @@
 extern "C" {
 #endif
 
+#if defined (WIN32)
+  #if defined (PLAYER_STATIC)
+    #define PLAYERREPLACE_EXPORT
+  #elif defined (playerreplace_EXPORTS)
+    #define PLAYERREPLACE_EXPORT    __declspec (dllexport)
+  #else
+    #define PLAYERREPLACE_EXPORT    __declspec (dllimport)
+  #endif
+#else
+  #define PLAYERREPLACE_EXPORT
+#endif
+
 #if !defined (PATH_MAX)
   // Windows limits the maximum path length to 260
   #define PATH_MAX 260
@@ -77,13 +89,13 @@ struct pollfd
    an event to occur; if TIMEOUT is -1, block until an event occurs.
    Returns the number of file descriptors with events, zero if timed out,
    or -1 for errors.  */
-int poll (struct pollfd *fds, unsigned long int nfds, int timeout);
+PLAYERREPLACE_EXPORT int poll (struct pollfd *fds, unsigned long int nfds, int timeout);
 #else
 #include <sys/poll.h>  /* for poll(2) */
 #endif // !HAVE_POLL
 
 #if !HAVE_DIRNAME
-  char * dirname (char *path);
+PLAYERREPLACE_EXPORT char * dirname (char *path);
 #else
   #include <libgen.h> // for dirname(3)
 #endif // !HAVE_DIRNAME
@@ -94,21 +106,21 @@ int poll (struct pollfd *fds, unsigned long int nfds, int timeout);
 #endif // !HAVE_CFMAKERAW && !WIN32
 
 #if !HAVE_ROUND
-  double round (double x);
+PLAYERREPLACE_EXPORT double round (double x);
 #endif // !HAVE_ROUND
 
 #if !HAVE_RINT
-  double rint (double x);
+PLAYERREPLACE_EXPORT double rint (double x);
 #endif
 
 #if !HAVE_COMPRESSBOUND
-  unsigned long compressBound (unsigned long sourceLen);
+PLAYERREPLACE_EXPORT unsigned long compressBound (unsigned long sourceLen);
 #endif // HAVE_COMPRESSBOUND
 
 #if !HAVE_CLOCK_GETTIME
   #include <time.h>
   #define CLOCK_REALTIME 0
-  int clock_gettime(int clk_id, struct timespec *tp);
+PLAYERREPLACE_EXPORT int clock_gettime(int clk_id, struct timespec *tp);
 #endif // !HAVE_CLOCK_GETTIME
 
 #if !HAVE_STRUCT_TIMESPEC
@@ -122,11 +134,11 @@ int poll (struct pollfd *fds, unsigned long int nfds, int timeout);
 #endif
 
 #if !HAVE_USLEEP
-  int usleep (int usec);
+PLAYERREPLACE_EXPORT int usleep (int usec);
 #endif
 
 #if !HAVE_NANOSLEEP
-  int nanosleep (const struct timespec *req, struct timespec *rem);
+PLAYERREPLACE_EXPORT int nanosleep (const struct timespec *req, struct timespec *rem);
 #endif
 
 #if !HAVE_GETTIMEOFDAY && WIN32
@@ -135,13 +147,13 @@ int poll (struct pollfd *fds, unsigned long int nfds, int timeout);
     int  tz_minuteswest; /* minutes W of Greenwich */
     int  tz_dsttime;     /* type of dst correction */
   };
-  int gettimeofday (struct timeval *tv, void *tzp);
+PLAYERREPLACE_EXPORT int gettimeofday (struct timeval *tv, void *tzp);
 #endif
 
 #if !HAVE_GETOPT
-  int getopt (int argc, char * const argv[], const char *optstring);
-  extern char *optarg;
-  extern int optind, opterr, optopt;
+PLAYERREPLACE_EXPORT int getopt (int argc, char * const argv[], const char *optstring);
+PLAYERREPLACE_EXPORT extern char *optarg;
+PLAYERREPLACE_EXPORT extern int optind, opterr, optopt;
 #endif
 
 #ifdef __cplusplus

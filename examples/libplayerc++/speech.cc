@@ -1,7 +1,9 @@
 #include <libplayerc++/playerc++.h>
 #include "args.h"
 #include <iostream>
-#include <unistd.h>
+#if !defined (WIN32)
+  #include <unistd.h>
+#endif
 int main(int argc, char** argv)
 {
   parse_args(argc, argv);

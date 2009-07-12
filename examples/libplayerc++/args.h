@@ -2,7 +2,12 @@
 #include <cstring>
 #include <libplayerc++/playerc++.h>
 #include <iostream>
-#include <unistd.h>
+#if !defined (WIN32)
+  #include <unistd.h>
+#endif
+#if !HAVE_GETOPT
+  #include <replace.h>
+#endif
 
 std::string  gHostname(PlayerCc::PLAYER_HOSTNAME);
 uint32_t        gPort(PlayerCc::PLAYER_PORTNUM);
