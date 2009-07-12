@@ -27,6 +27,8 @@
 
 #include <string.h>
 
+#include "replace/replace.h"
+
 char *
 dirname (char *path)
 {

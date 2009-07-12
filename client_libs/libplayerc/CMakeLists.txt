@@ -56,13 +56,13 @@ SET (playercSrcs    playerc.h
                     dev_wifi.c
                     dev_wsn.c)
 IF (NOT HAVE_GETTIMEOFDAY)
-    SET (playercSrcs ${playercSrcs} ${PROJECT_SOURCE_DIR}/replace/gettimeofday.c)
+    SET (playerreplaceLib playerreplace)
 ENDIF (NOT HAVE_GETTIMEOFDAY)
 IF (NOT HAVE_POLL)
-    SET (playercSrcs ${playercSrcs} ${PROJECT_SOURCE_DIR}/replace/poll.c)
+    SET (playerreplaceLib playerreplace)
 ENDIF (NOT HAVE_POLL)
 IF (NOT HAVE_NANOSLEEP)
-    SET (playercSrcs ${playercSrcs} ${PROJECT_SOURCE_DIR}/replace/nanosleep.c)
+    SET (playerreplaceLib playerreplace)
 ENDIF (NOT HAVE_NANOSLEEP)
 
 IF (HAVE_M)
@@ -86,7 +86,8 @@ ENDIF (PLAYER_OS_WIN)
 LINK_DIRECTORIES (${PLAYERC_EXTRA_LINK_DIRS})
 PLAYER_ADD_LIBRARY (playerc ${playercSrcs})
 ADD_DEPENDENCIES (playerc player_interfaces playerxdr_src)
-TARGET_LINK_LIBRARIES (playerc playerxdr playerutils playererror playerwkb ${PLAYERC_EXTRA_LINK_LIBRARIES})
+TARGET_LINK_LIBRARIES (playerc playerxdr playerutils playererror playerwkb
+                       ${playerreplaceLib} ${PLAYERC_EXTRA_LINK_LIBRARIES})
 IF (HAVE_JPEG)
     TARGET_LINK_LIBRARIES (playerc playerjpeg)
 ENDIF (HAVE_JPEG)
@@ -101,5 +102,5 @@ LIST_TO_STRING_WITH_PREFIX (pkgconfigLinkDirs "-L" ${PLAYERC_EXTRA_LINK_DIRS})
 LIST_TO_STRING_WITH_PREFIX (pkgconfigLinkLibs "-l" ${PLAYERC_EXTRA_LINK_LIBRARIES})
 PLAYER_MAKE_PKGCONFIG ("playerc"
                        "Andrew Howard's Player C client library - part of the Player Project"
-                       "playerxdr playererror playerwkb" "" "${pkgconfigCFlags}"
-                       "${pkgconfigLinkDirs} ${pkgconfigLinkLibs}")
+                       "playerxdr playererror playerwkb ${playerreplaceLib}" ""
+                       "${pkgconfigCFlags}" "${pkgconfigLinkDirs} ${pkgconfigLinkLibs}")

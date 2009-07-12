@@ -27,6 +27,8 @@
 
 #include <math.h>
 
+#include "replace/replace.h"
+
 double 
 round(double x)
 {

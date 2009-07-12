@@ -10,7 +10,9 @@
 
 #include <iostream>
 #include <stdlib.h> // for atof()
-#include <unistd.h>
+#if !defined (WIN32)
+  #include <unistd.h>
+#endif
 
 #include <math.h>
 #include <string>

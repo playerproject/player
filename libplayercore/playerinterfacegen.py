@@ -141,7 +141,19 @@ static playerxdr_function_t %(interface_name)s_ftable[] =
   {0,0,0,NULL,NULL,NULL}
 };
 
-playerxdr_function_t* player_plugininterf_gettable (void)
+#if defined (WIN32)
+  #if defined (PLAYER_STATIC)
+    #define PLUGINTF_EXPORT
+  #elif defined (%(interface_name)s_EXPORTS)
+    #define PLUGINTF_EXPORT    __declspec (dllexport)
+  #else
+    #define PLUGINTF_EXPORT    __declspec (dllimport)
+  #endif
+#else
+  #define PLUGINTF_EXPORT
+#endif
+
+PLUGINTF_EXPORT playerxdr_function_t* player_plugininterf_gettable (void)
 {
     return %(interface_name)s_ftable;
 }

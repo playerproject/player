@@ -65,6 +65,11 @@ INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR} ${PROJECT_BINAR
 INCLUDE_DIRECTORIES (${PLAYER_EXTRA_INCLUDE_DIRS})
 LINK_DIRECTORIES (${PLAYER_EXTRA_LIB_DIRS})
 
+IF (PLAYER_OS_WIN)
+    # This is pretty much a universal include on Windows
+    INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/replace)
+ENDIF (PLAYER_OS_WIN)
+
 ADD_SUBDIRECTORY (client_libs)
 ADD_SUBDIRECTORY (libplayercore)
 ADD_SUBDIRECTORY (libplayerxdr)
@@ -84,17 +89,9 @@ IF (PLAYER_OS_WIN)
 ENDIF (PLAYER_OS_WIN)
 MESSAGE (STATUS "")
 
-#SET (PLAYERCORE_INT_INCLUDE_DIRS "" CACHE INTERNAL "Extra include directories for playercore" FORCE)
-#SET (PLAYERCORE_INT_LINK_DIRS "" CACHE INTERNAL "Library directories to link playercore to" FORCE)
 SET (PLAYERCORE_INT_LINK_LIBRARIES "" CACHE INTERNAL "Libs to link playercore to" FORCE)
-#SET (PLAYERCORE_EXTRA_INCLUDE_DIRS "" CACHE INTERNAL "Extra include directories with playercore" FORCE)
-#SET (PLAYERCORE_EXTRA_LINK_DIRS "" CACHE INTERNAL "Library directories to link in with playercore" FORCE)
 SET (PLAYERCORE_EXTRA_LINK_LIBRARIES "" CACHE INTERNAL "Libs to link to with playercore" FORCE)
-#SET (PLAYERC_EXTRA_INCLUDE_DIRS "" CACHE INTERNAL "Extra include directories with playerc" FORCE)
-#SET (PLAYERC_EXTRA_LINK_DIRS "" CACHE INTERNAL "Library directories to link in with playerc" FORCE)
 SET (PLAYERC_EXTRA_LINK_LIBRARIES "" CACHE INTERNAL "Libs to link to with playerc" FORCE)
-#SET (PLAYERCC_EXTRA_INCLUDE_DIRS "" CACHE INTERNAL "Extra include directories with playercc" FORCE)
-#SET (PLAYERCC_EXTRA_LINK_DIRS "" CACHE INTERNAL "Library directories to link in with playercc" FORCE)
 SET (PLAYERCC_EXTRA_LINK_LIBRARIES "" CACHE INTERNAL "Libs to link to with playercc" FORCE)
 
 # Create packages

@@ -5,7 +5,3 @@ This list is incomplete.
 - Change nanosleep and usleep in replace to use the high performance timer (and clean up some ifdefs that don't use them yet)
 - Python bindings
 - Finding GTK
-- Use DLL loading for plugins on Win32 instead of ltdl (I have plenty of experience here, it shouldn't take long to do)
-- Installing and setting paths
-- Make examples work
-- Clean up all the places that add srcdir/replace as an include directory

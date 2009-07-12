@@ -9,9 +9,11 @@ PLAYERDRIVER_ADD_DRIVER (wavefront build_wavefront
     SOURCES plan.c plan_plan.c plan_waypoint.c wavefront.cc heap.c plan_control.c)
 
 # Also build and install standalone non-Player lib
-IF (PLAYER_OS_WIN)
-    SET (gettimeSrcs ${PROJECT_SOURCE_DIR}/replace/gettimeofday.c)
+IF (NOT HAVE_GETTIMEOFDAY)
     INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/replace)
-ENDIF (PLAYER_OS_WIN)
-PLAYER_ADD_LIBRARY (wavefront_standalone plan.c plan_plan.c plan_waypoint.c heap.c plan_control.c ${gettimeSrcs})
+ENDIF (NOT HAVE_GETTIMEOFDAY)
+PLAYER_ADD_LIBRARY (wavefront_standalone plan.c plan_plan.c plan_waypoint.c heap.c plan_control.c)
+IF (NOT HAVE_GETTIMEOFDAY)
+    TARGET_LINK_LIBRARIES (wavefront_standalone playerreplace)
+ENDIF (NOT HAVE_GETTIMEOFDAY)
 PLAYER_INSTALL_HEADERS (standalone_drivers plan.h heap.h)

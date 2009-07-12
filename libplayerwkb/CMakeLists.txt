@@ -1,7 +1,7 @@
 # Possibly use our own copy of XDR
-IF (NOT HAVE_XDR)
-    INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/replace)
-ENDIF (NOT HAVE_XDR)
+#IF (NOT HAVE_XDR)
+#INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/replace)
+#ENDIF (NOT HAVE_XDR)
 
 SET (playerwkbSrcs playerwkb.c)
 PLAYER_ADD_LIBRARY (playerwkb ${playerwkbSrcs})

@@ -30,15 +30,17 @@ IF (BUILD_PLAYERCC)
                         test_ranger.cc)
 
         IF (NOT HAVE_USLEEP)
-            SET (testsSrcs ${testsSrcs} ${PROJECT_SOURCE_DIR}/replace/usleep.c)
+            SET (playerreplaceLib playerreplace)
         ENDIF (NOT HAVE_USLEEP)
         IF (NOT HAVE_ROUND)
-            SET (testsSrcs ${testsSrcs} ${PROJECT_SOURCE_DIR}/replace/round.c)
+            SET (playerreplaceLib playerreplace)
         ENDIF (NOT HAVE_ROUND)
 
         LINK_DIRECTORIES (${PLAYERCC_EXTRA_LINK_DIRS})
         ADD_EXECUTABLE (playerc++_test ${testsSrcs})
-        TARGET_LINK_LIBRARIES (playerc++_test playerc playerc++ playerxdr playererror playerwkb ${PLAYERCC_EXTRA_LINK_LIBRARIES})
+        TARGET_LINK_LIBRARIES (playerc++_test playerc playerc++ playerxdr
+                               playererror playerwkb ${playerreplaceLib}
+                               ${PLAYERCC_EXTRA_LINK_LIBRARIES})
     ENDIF (BUILD_CC_TESTS)
   ENDIF (BUILD_PLAYERCC_BOOST)
 ENDIF (BUILD_PLAYERCC)

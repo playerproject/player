@@ -3,7 +3,9 @@
  * driver example for details of how it works.
  */
 
-#include <unistd.h>
+#if !defined (WIN32)
+	#include <unistd.h>
+#endif
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
@@ -62,7 +64,7 @@ int EgInterfDriver::Setup()
 {
 	puts("EgInterfDriver initialising");
 
-	srandom (time (NULL));
+	srand (static_cast<unsigned int> (time (NULL)));
 
 	puts("EgInterfDriver ready");
 
@@ -96,7 +98,7 @@ int EgInterfDriver::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr
 			printf ("EgInterfDriver: Sending data:\n");
 			for (int ii = 0; ii < reinterpret_cast<player_eginterf_cmd*> (data)->doStuff; ii++)
 			{
-				double temp = (((double) random ()) / RAND_MAX) * 10.0f;
+				double temp = (((double) rand ()) / RAND_MAX) * 10.0f;
 				resp.stuff[ii] = temp;
 				printf ("\t%f\n", resp.stuff[ii]);
 			}

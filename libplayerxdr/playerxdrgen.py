@@ -9,6 +9,7 @@ import re
 import string
 import sys
 import os
+import os.path
 
 USAGE = 'USAGE: playerxdrgen.y [-distro] <interface-spec.h> [<extra_interface-spec.h>] <pack.c> <pack.h>'
 
@@ -536,7 +537,7 @@ if __name__ == '__main__':
 #include <stdlib.h>
 """ % {"headerfilename":headerfilename})
   else:
-    ifndefsymbol = '_' + infilenames[0].replace('.','_').replace('/','_').upper() + '_XDR_'
+    ifndefsymbol = '_' + os.path.split (infilenames[0])[1].replace('.','_').replace('/','_').upper() + '_XDR_'
     headerfile.write('#ifndef ' + ifndefsymbol + '\n')
     headerfile.write('#define ' + ifndefsymbol + '\n\n')
     headerfile.write('#include <libplayerxdr/playerxdr.h>\n\n')

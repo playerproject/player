@@ -31,7 +31,9 @@
 #include <config.h>
 */
 
-#include <unistd.h>
+#if !defined (WIN32)
+  #include <unistd.h>
+#endif
 #include <string.h>
 
 #include <libplayercore/playercore.h>

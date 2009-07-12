@@ -52,6 +52,9 @@
 
 #if HAVE_LIBLTDL
   #include <ltdl.h>
+#elif defined (WIN32)
+  #include <Windows.h>
+  #define lt_dlhandle HMODULE
 #else
   #define lt_dlhandle int
 #endif
