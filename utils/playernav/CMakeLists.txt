@@ -7,7 +7,7 @@ IF (BUILD_UTILS_PLAYERNAV)
                              ${GNOMECANVAS_PKG_INCLUDE_DIRS})
         LINK_DIRECTORIES (${GNOMECANVAS_PKG_LIBRARY_DIRS})
         PLAYER_ADD_EXECUTABLE (playernav ${playernavSrcs})
-        TARGET_LINK_LIBRARIES (playernav playerc playerxdr playererror
+        TARGET_LINK_LIBRARIES (playernav playerc playerinterface playercommon
             ${PLAYERC_EXTRA_LINK_LIBRARIES} ${GNOMECANVAS_PKG_LIBRARIES})
         SET_SOURCE_FILES_PROPERTIES (${playernavSrcs} PROPERTIES
             COMPILE_FLAGS "${GNOMECANVAS_CFLAGS}")

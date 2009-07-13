@@ -52,7 +52,7 @@
   #include <netdb.h>
 #endif
 
-#include <libplayerinterface/error.h>  // for error macros
+#include <libplayercommon/playercommon.h>  // for error macros
 #include "addr_util.h"
 
 void

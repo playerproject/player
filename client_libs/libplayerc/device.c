@@ -200,7 +200,7 @@ int playerc_device_get_strprop(playerc_device_t *device, char *property, char **
   if (((*value) = strdup (resp->value)) == NULL)
   {
     player_strprop_req_t_free(resp);
-    PLAYER_ERROR ("Failed to allocate memory to store property value");
+    PLAYERC_ERR ("Failed to allocate memory to store property value");
     return -1;
   }
   player_strprop_req_t_free(resp);

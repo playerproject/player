@@ -5,7 +5,7 @@
  *      Author: tcollett
  */
 
-#include <libplayerinterface/error.h>
+#include <libplayercommon/playercommon.h>
 
 
 #include <libplayercore/filewatcher.h>

@@ -38,8 +38,8 @@ IF (INCLUDE_TCP)
         SET (playerreplaceLib playerreplace)
     ENDIF (NOT HAVE_NANOSLEEP)
     PLAYER_ADD_LIBRARY (playertcp ${playertcpSrcs})
-    TARGET_LINK_LIBRARIES (playertcp playercore playererror playerutils
-                           playerxdr ${playerreplaceLib} ${SOCKET_LIBS})
+    TARGET_LINK_LIBRARIES (playertcp playercore playercommon playerinterface
+                           ${playerreplaceLib} ${SOCKET_LIBS})
     IF (PLAYER_OS_WIN)
         TARGET_LINK_LIBRARIES (playertcp Ws2_32)
     ENDIF (PLAYER_OS_WIN)
@@ -57,7 +57,7 @@ IF (INCLUDE_TCP)
         SET (rtLibFlag -lrt)
     ENDIF (PLAYER_OS_SOLARIS)
     PLAYER_MAKE_PKGCONFIG ("playertcp" "Player TCP messaging library - part of the Player Project"
-                           "playererror playercore ${playerreplaceLib}" "" ""
+                           "playercommon playercore ${playerreplaceLib}" "" ""
                            "${zLibFlag} ${rtLibFlag} ${SOCKET_LIBS_FLAGS}")
 
     PLAYER_INSTALL_HEADERS (playertcp playertcp.h playertcp_errutils.h)
@@ -72,8 +72,8 @@ IF (INCLUDE_UDP)
         SET (playerreplaceLib playerreplace)
     ENDIF (NOT HAVE_COMPRESSBOUND)
     PLAYER_ADD_LIBRARY (playerudp ${playerudpSrcs})
-    TARGET_LINK_LIBRARIES (playerudp playercore playererror playerutils
-                           playerxdr ${playerreplaceLib} ${SOCKET_LIBS})
+    TARGET_LINK_LIBRARIES (playerudp playercore playercommon playerinterface
+                           ${playerreplaceLib} ${SOCKET_LIBS})
     IF (PLAYER_OS_WIN)
         TARGET_LINK_LIBRARIES (playerudp Ws2_32)
     ENDIF (PLAYER_OS_WIN)
@@ -88,7 +88,7 @@ IF (INCLUDE_UDP)
         SET (zLibFlag)
     ENDIF (HAVE_Z)
     PLAYER_MAKE_PKGCONFIG ("playerudp" "Player UDP messaging library - part of the Player Project"
-                           "playererror playercore ${playerreplaceLib}" "" ""
+                           "playercommon playercore ${playerreplaceLib}" "" ""
                            "${zLibFlag} ${SOCKET_LIBS_FLAGS}")
 
     PLAYER_INSTALL_HEADERS (playertcp playerudp.h playertcp_errutils.h)

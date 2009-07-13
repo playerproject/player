@@ -59,7 +59,7 @@
 #include <libplayercore/playertime.h>
 #include <libplayercore/driver.h>
 #include <libplayercore/device.h>
-#include <libplayerinterface/error.h>
+#include <libplayercommon/playercommon.h>
 #include <libplayercore/devicetable.h>
 #include <libplayercore/configfile.h>
 #include <libplayercore/globals.h>

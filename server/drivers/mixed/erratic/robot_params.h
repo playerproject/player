@@ -25,7 +25,7 @@
 #ifndef _ROBOT_PARAMS_H
 #define _ROBOT_PARAMS_H
 
-#include "libplayercore/player.h"
+#include "libplayerinterface/player.h"
 
 void initialize_robot_params(void);
 

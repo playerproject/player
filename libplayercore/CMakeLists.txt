@@ -52,8 +52,8 @@ IF (NOT HAVE_DIRNAME)
     SET (playerreplaceLib playerreplace)
 ENDIF (NOT HAVE_DIRNAME)
 
-PLAYERCORE_ADD_INT_LINK_DIR (${CMAKE_BINARY_DIR}/libplayerinterface)
-PLAYERCORE_ADD_INT_LINK_LIB (playerutils playererror playerinterface)
+PLAYERCORE_ADD_INT_LINK_DIR (${CMAKE_BINARY_DIR}/libplayerinterface ${CMAKE_BINARY_DIR}/libplayercommon)
+PLAYERCORE_ADD_INT_LINK_LIB (playerinterface playercommon)
 
 INCLUDE_DIRECTORIES (${PLAYERCORE_INT_INCLUDE_DIRS} ${PLAYERCORE_EXTRA_INCLUDE_DIRS})
 LINK_DIRECTORIES (${PLAYERCORE_INT_LINK_DIRS} ${PLAYERCORE_EXTRA_LINK_DIRS})
@@ -68,7 +68,7 @@ LIST_TO_STRING_WITH_PREFIX (pkgconfigCFlags "-I" ${PLAYERCORE_EXTRA_INCLUDE_DIRS
 LIST_TO_STRING_WITH_PREFIX (pkgconfigLinkDirs "-L" ${PLAYERCORE_EXTRA_LINK_DIRS})
 LIST_TO_STRING_WITH_PREFIX (pkgconfigLinkLibs "-l" ${PLAYERCORE_EXTRA_LINK_LIBRARIES})
 PLAYER_MAKE_PKGCONFIG ("playercore" "Player core library - part of the Player Project"
-                       "playererror" "" "${pkgconfigCFLags}"
+                       "playerinterface playercommon" "" "${pkgconfigCFLags}"
                        "${pkgconfigLinkDirs} ${pkgconfigLinkLibs}")
 CONFIGURE_FILE (${PLAYER_CMAKE_DIR}/UsePlayerPlugin.cmake.in ${CMAKE_BINARY_DIR}/cmake/UsePlayerPlugin.cmake @ONLY)
 

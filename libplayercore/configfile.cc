@@ -56,8 +56,8 @@
 #include <replace/replace.h>
 
 #include <libplayerinterface/player.h>
-#include <libplayerinterface/playercommon.h>
-#include <libplayerinterface/error.h>
+#include <libplayercommon/playercommon.h>
+#include <libplayercommon/playercommon.h>
 #include <libplayerinterface/interface_util.h>
 #include <libplayerinterface/addr_util.h>
 

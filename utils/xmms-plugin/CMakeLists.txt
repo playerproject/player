@@ -11,7 +11,7 @@ IF (BUILD_UTILS_XMMS)
             OUTPUT_VARIABLE xmmsLibs
             OUTPUT_STRIP_TRAILING_WHITESPACE)
         ADD_LIBRARY (playerxmms STATIC playerxmms.c)
-        TARGET_LINK_LIBRARIES (playerxmms playerc playerxdr playererror ${PLAYERC_EXTRA_LINK_LIBRARIES})
+        TARGET_LINK_LIBRARIES (playerxmms playerc playerinterface playercommon ${PLAYERC_EXTRA_LINK_LIBRARIES})
         SET_SOURCE_FILES_PROPERTIES (playerxmms.c PROPERTIES
             COMPILE_FLAGS "${xmmsCFlags}")
         SET_TARGET_PROPERTIES (playerxmms PROPERTIES

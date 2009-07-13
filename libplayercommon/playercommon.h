@@ -39,7 +39,7 @@
 
 /*
  * Desc: Some useful macros
- * $Id$
+ * $Id: playercommon.h 8003 2009-07-13 10:34:37Z thjc $
  */
 
 #ifndef _PLAYERCOMMON_H
@@ -50,6 +50,8 @@
 #if !defined WIN32
   #include <sys/param.h>
 #endif
+
+#include <libplayercommon/error.h>
 
 #define MAX_FILENAME_SIZE PATH_MAX
 

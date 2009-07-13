@@ -53,7 +53,7 @@
 #endif
 #include <assert.h>
 
-#include <libplayerinterface/error.h>
+#include <libplayercommon/playercommon.h>
 #include <libplayerinterface/interface_util.h>
 #include <libplayercore/driver.h>
 #include <libplayercore/device.h>

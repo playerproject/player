@@ -30,7 +30,7 @@
 #include <stdlib.h>
 
 #include "imu.h"
-#include <libplayerinterface/error.h>
+#include <libplayercommon/playercommon.h>
 
 // Create an sensor model
 imu_model_t *imu_alloc()

@@ -47,18 +47,18 @@ extern "C" {
 
 #if defined (WIN32)
   #if defined (PLAYER_STATIC)
-    #define PLAYERUTILS_EXPORT
-  #elif defined (playerutils_EXPORTS)
-    #define PLAYERUTILS_EXPORT    __declspec (dllexport)
+    #define PLAYERINTERFACE_EXPORT
+  #elif defined (playerinterface_EXPORTS)
+    #define PLAYERINTERFACE_EXPORT    __declspec (dllexport)
   #else
-    #define PLAYERUTILS_EXPORT    __declspec (dllimport)
+    #define PLAYERINTERFACE_EXPORT    __declspec (dllimport)
   #endif
 #else
-  #define PLAYERUTILS_EXPORT
+  #define PLAYERINTERFACE_EXPORT
 #endif
 
-PLAYERUTILS_EXPORT void packedaddr_to_dottedip(char* dest, size_t len, uint32_t addr);
-PLAYERUTILS_EXPORT int hostname_to_packedaddr(uint32_t* dest, const char* hostname);
+PLAYERINTERFACE_EXPORT void packedaddr_to_dottedip(char* dest, size_t len, uint32_t addr);
+PLAYERINTERFACE_EXPORT int hostname_to_packedaddr(uint32_t* dest, const char* hostname);
 
 #ifdef __cplusplus
 }

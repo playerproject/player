@@ -49,7 +49,7 @@ IF (BUILD_DOCUMENTATION)
             DEPENDS ${doxygenConfigFile}
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
             VERBATIM)
-        ADD_DEPENDENCIES (doc playercore playerxdr)
+        ADD_DEPENDENCIES (doc playercore playerinterface)
 
         # Install documentation
         SET (docInstallDir "share/doc/player-${PLAYER_VERSION}")

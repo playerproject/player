@@ -62,7 +62,7 @@ This library provides service discovery capabilities for Player devices.  This l
 extern "C" {
 #endif
 
-#include <libplayercore/player.h>
+#include <libplayerinterface/player.h>
 
 #define PLAYER_SD_SERVICENAME "_player21._tcp"
 #define PLAYER_SD_DEVICE_TXTNAME "device"

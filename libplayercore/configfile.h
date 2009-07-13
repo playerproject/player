@@ -57,7 +57,7 @@
 
 #include <stdio.h>
 
-#include <libplayercore/player.h>
+#include <libplayerinterface/player.h>
 
 /** @brief Class for loading configuration file information.
 

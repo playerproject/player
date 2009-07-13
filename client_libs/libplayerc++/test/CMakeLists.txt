@@ -38,8 +38,8 @@ IF (BUILD_PLAYERCC)
 
         LINK_DIRECTORIES (${PLAYERCC_EXTRA_LINK_DIRS})
         ADD_EXECUTABLE (playerc++_test ${testsSrcs})
-        TARGET_LINK_LIBRARIES (playerc++_test playerc playerc++ playerxdr
-                               playererror playerwkb ${playerreplaceLib}
+        TARGET_LINK_LIBRARIES (playerc++_test playerc playerc++ playerinterface
+                               playercommon playerwkb ${playerreplaceLib}
                                ${PLAYERCC_EXTRA_LINK_LIBRARIES})
     ENDIF (BUILD_CC_TESTS)
   ENDIF (BUILD_PLAYERCC_BOOST)

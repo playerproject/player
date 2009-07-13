@@ -49,7 +49,7 @@
 #include <string.h>
 #include <stdio.h>
 
-// Can't use libplayererror here because of an unresolved circular build
+// Can't use libplayercommon here because of an unresolved circular build
 // dependency
 //#include <libplayercore/error.h>
 
@@ -169,7 +169,7 @@ playerxdr_ftable_add(playerxdr_function_t f, int replace)
           return(0);
         }
       }
-      // Can't use libplayererror here because of an unresolved circular build
+      // Can't use libplayercommon here because of an unresolved circular build
       // dependency
       //PLAYER_ERROR("unable to find entry to replace");
       puts("playerxdr_ftable_add: unable to find entry to replace");

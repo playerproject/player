@@ -227,7 +227,7 @@ void playerc_client_destroy(playerc_client_t *client)
 #if defined (WIN32)
   // Clean up the Windows sockets API (this can safely be done as many times as we like)
   if (WSACleanup () != 0)
-    PLAYER_ERROR1 ("Failed to clean up Windows sockets API with error %s", WSAGetLastError ());
+    PLAYERC_ERROR1 ("Failed to clean up Windows sockets API with error %s", WSAGetLastError ());
 #endif
 
   free(client->data);
@@ -393,13 +393,13 @@ int playerc_client_connect(playerc_client_t *client)
   timer.it_value.tv_usec =
           (int)rint(fmod(client->request_timeout,timer.it_value.tv_sec)*1e6);
   if(setitimer(ITIMER_REAL, &timer, NULL) != 0)
-    PLAYER_WARN("failed to set up connection timer; "
+    PLAYERC_WARN("failed to set up connection timer; "
                 "indefinite hang may result");
 
   /* Turn off system call restart so that connect() will terminate when the
    * alarm goes off */
   if(sigaction(SIGALRM, NULL, &sigact) != 0)
-    PLAYER_WARN("failed to get SIGALRM action data; "
+    PLAYERC_WARN("failed to get SIGALRM action data; "
                 "unexpected exit may result");
   else
   {
@@ -408,7 +408,7 @@ int playerc_client_connect(playerc_client_t *client)
     sigact.sa_flags &= ~SA_RESTART;
     if(sigaction(SIGALRM, &sigact, NULL) != 0)
 #endif
-      PLAYER_WARN("failed to set SIGALRM action data; "
+      PLAYERC_WARN("failed to set SIGALRM action data; "
                   "unexpected exit may result");
   }
 #endif
@@ -421,7 +421,7 @@ int playerc_client_connect(playerc_client_t *client)
   timer.it_value.tv_sec = 0;
   timer.it_value.tv_usec = 0;
   if(setitimer(ITIMER_REAL, &timer, NULL) != 0)
-    PLAYER_WARN("failed to turn off connection timer; "
+    PLAYERC_WARN("failed to turn off connection timer; "
                 "unexpected exit may result");
 
   /* Restore normal SIGALRM behavior */
@@ -430,7 +430,7 @@ int playerc_client_connect(playerc_client_t *client)
   sigact.sa_flags |= SA_RESTART;
   if(sigaction(SIGALRM, &sigact, NULL) != 0)
 #endif
-    PLAYER_WARN("failed to reset SIGALRM action data; "
+    PLAYERC_WARN("failed to reset SIGALRM action data; "
                 "unexpected behavior may result");
 #endif
 
@@ -494,7 +494,7 @@ int playerc_client_connect(playerc_client_t *client)
   //set the datamode to pull
   playerc_client_datamode(client, PLAYER_DATAMODE_PULL);
 
-  PLAYER_MSG4(3,"[%s] connected on [%s:%d] with sock %d\n", banner, client->host, client->port, client->sock);
+  PLAYERC_WARN4("[%s] connected on [%s:%d] with sock %d\n", banner, client->host, client->port, client->sock);
 
   client->connected = 1;
   return 0;
@@ -513,14 +513,14 @@ int playerc_client_disconnect_retry(playerc_client_t *client)
 
   /* Disconnect */
   if((retval = playerc_client_disconnect(client)) != 0)
-    PLAYER_WARN("playerc_client_disconnect() failed");
+    PLAYERC_WARN("playerc_client_disconnect() failed");
 
   for(j=0; (client->retry_limit < 0) || (j<client->retry_limit); j++)
   {
-    PLAYER_WARN1("Reconnecting, attempt %d", j);
+    PLAYERC_WARN1("Reconnecting, attempt %d", j);
     /* Reconnect */
     if((retval = playerc_client_connect(client)) != 0)
-      PLAYER_WARN("playerc_client_connect() failed");
+      PLAYERC_WARN("playerc_client_connect() failed");
     else
     {
       /* Clean out buffers */
@@ -537,13 +537,13 @@ int playerc_client_disconnect_retry(playerc_client_t *client)
           if((retval = playerc_device_subscribe(client->device[i],
                                                 PLAYERC_OPEN_MODE)) != 0)
           {
-            PLAYER_WARN2("playerc_device_subscribe() failed for %d:%d",
+            PLAYERC_WARN2("playerc_device_subscribe() failed for %d:%d",
                          client->device[i]->addr.interf,
                          client->device[i]->addr.index);
 
             // TODO: Subscription failed for one device; should we give up?
             if(playerc_client_disconnect(client) != 0)
-              PLAYER_WARN("playerc_client_disconnect() failed");
+              PLAYERC_WARN("playerc_client_disconnect() failed");
             break;
           }
         }
@@ -558,12 +558,12 @@ int playerc_client_disconnect_retry(playerc_client_t *client)
 
   if((client->retry_limit < 0) || (j < client->retry_limit))
   {
-    PLAYER_WARN("successfully reconnected");
+    PLAYERC_WARN("successfully reconnected");
     return(0);
   }
   else
   {
-    PLAYER_WARN("failed to reconnect");
+    PLAYERC_WARN("failed to reconnect");
     return(-1);
   }
 }

@@ -33,7 +33,7 @@
 #include <stdlib.h>
 
 #include "sonar.h"
-#include <libplayerinterface/error.h>
+#include <libplayercommon/playercommon.h>
 
 // Pre-compute the range sensor probabilities
 void sonar_precompute(sonar_t *self);

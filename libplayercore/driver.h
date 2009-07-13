@@ -61,7 +61,7 @@
 
 #include <pthread.h>
 
-#include <libplayerinterface/playercommon.h>
+#include <libplayercommon/playercommon.h>
 #include <libplayercore/message.h>
 #include <libplayerinterface/player.h>
 #include <libplayercore/property.h>

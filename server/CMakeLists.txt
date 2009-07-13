@@ -29,8 +29,8 @@ ENDIF (NOT HAVE_GETOPT)
 SET (playerSrcs server.cc)
 # Server executable
 ADD_EXECUTABLE (player ${playerSrcs})
-TARGET_LINK_LIBRARIES (player playerdrivers playercore playererror playerutils
-                       playertcp playerudp playerxdr playerwkb ${playerreplaceLib}
+TARGET_LINK_LIBRARIES (player playerdrivers playercore playercommon
+                       playertcp playerudp playerinterface playerwkb ${playerreplaceLib}
                        ${PLAYERCORE_EXTRA_LINK_LIBRARIES})
 IF (INCLUDE_RTKGUI)
     TARGET_LINK_LIBRARIES (player rtk)

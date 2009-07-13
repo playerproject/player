@@ -164,7 +164,7 @@ Linux):
 */
 
 /**
-@defgroup libplayererror libplayererror
+@defgroup libplayercommon libplayercommon
 
 This C library provides error-reporting and debug output facilities.
 Instead of calling directly into the stdio library (printf, puts, etc.),

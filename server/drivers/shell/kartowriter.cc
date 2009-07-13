@@ -244,7 +244,7 @@ int KartoLogger::Unsubscribe(Device* pDevice)
 // #define PLAYER_LOG_REQ_SET_READ_REWIND  4
 // /** Request/reply subtype: set filename to write */
 // #define PLAYER_LOG_REQ_SET_FILENAME     5
-// see libplayercore/player.h
+// see libplayerinterface/player.h
 // Warning !!!
 // If player code changes this code need to be
 // updated.

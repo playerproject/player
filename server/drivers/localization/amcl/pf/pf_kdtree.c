@@ -15,7 +15,7 @@
 
 #include "pf_vector.h"
 #include "pf_kdtree.h"
-#include <libplayerinterface/error.h>
+#include <libplayercommon/playercommon.h>
 
 // Compare keys to see if they are equal
 static int pf_kdtree_equal(pf_kdtree_t *self, int key_a[], int key_b[]);

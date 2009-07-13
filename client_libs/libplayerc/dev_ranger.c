@@ -118,7 +118,7 @@ void playerc_ranger_calculate_bearings(playerc_ranger_t *device)
     if((device->bearings = (double *) realloc(device->bearings, device->bearings_count * sizeof(double))) == NULL)
     {
       device->bearings_count = 0;
-      PLAYER_ERROR("Failed to allocate space to store bearings");
+      PLAYERC_ERR("Failed to allocate space to store bearings");
       return;
     }
 
@@ -149,7 +149,7 @@ void playerc_ranger_calculate_points(playerc_ranger_t *device)
     if((device->points = (player_point_3d_t *) realloc(device->points, device->points_count * sizeof(player_point_3d_t))) == NULL)
     {
       device->points_count = 0;
-      PLAYER_ERROR("Failed to allocate space to store points");
+      PLAYERC_ERR("Failed to allocate space to store points");
       return;
     }
 
@@ -175,7 +175,7 @@ void playerc_ranger_copy_range_data(playerc_ranger_t *device, player_ranger_data
     if((device->ranges = (double *) realloc(device->ranges, data->ranges_count * sizeof(double))) == NULL)
     {
       device->ranges_count = 0;
-      PLAYER_ERROR("Failed to allocate space to store range data");
+      PLAYERC_ERR("Failed to allocate space to store range data");
       return;
     }
   }
@@ -194,7 +194,7 @@ void playerc_ranger_copy_intns_data(playerc_ranger_t *device, player_ranger_data
     if((device->intensities = (double *) realloc(device->intensities, data->intensities_count * sizeof(double))) == NULL)
     {
       device->intensities_count = 0;
-      PLAYER_ERROR("Failed to allocate space to store intensity data");
+      PLAYERC_ERR("Failed to allocate space to store intensity data");
       return;
     }
   }
@@ -226,7 +226,7 @@ void playerc_ranger_copy_geom(playerc_ranger_t *device, player_ranger_geom_t *ge
   {
     if((device->sensor_poses = (player_pose3d_t *) malloc(geom->sensor_poses_count * sizeof(player_pose3d_t))) == NULL)
     {
-      PLAYER_ERROR("Failed to allocate space to store sensor poses");
+      PLAYERC_ERR("Failed to allocate space to store sensor poses");
       return;
     }
     memcpy(device->sensor_poses, geom->sensor_poses, geom->sensor_poses_count * sizeof(player_pose3d_t));
@@ -236,7 +236,7 @@ void playerc_ranger_copy_geom(playerc_ranger_t *device, player_ranger_geom_t *ge
   {
     if((device->sensor_sizes = (player_bbox3d_t *) malloc(geom->sensor_sizes_count * sizeof(player_bbox3d_t))) == NULL)
     {
-      PLAYER_ERROR("Failed to allocate space to store sensor sizes");
+      PLAYERC_ERR("Failed to allocate space to store sensor sizes");
       return;
     }
     memcpy(device->sensor_sizes, geom->sensor_sizes, geom->sensor_sizes_count * sizeof(player_bbox3d_t));
@@ -252,7 +252,7 @@ void playerc_ranger_putmsg(playerc_ranger_t *device, player_msghdr_t *header,
 {
   if(header->size == 0)
   {
-    PLAYER_ERROR2("(putmsg) Ranger message size <= 0 in message %s/%d", msgtype_to_str(header->type), header->subtype);
+    PLAYERC_ERR2("(putmsg) Ranger message size <= 0 in message %s/%d", msgtype_to_str(header->type), header->subtype);
     return;
   }
 

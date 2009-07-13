@@ -70,6 +70,7 @@ IF (PLAYER_OS_WIN)
     INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/replace)
 ENDIF (PLAYER_OS_WIN)
 
+ADD_SUBDIRECTORY (libplayercommon)
 ADD_SUBDIRECTORY (libplayerinterface)
 ADD_SUBDIRECTORY (client_libs)
 ADD_SUBDIRECTORY (libplayercore)

@@ -60,9 +60,9 @@ Geoffrey Biggs, Richard Vaughan.
 #include <playerconfig.h>
 
 /* Get the message structures from Player*/
-#include <libplayerinterface/playercommon.h>
+#include <libplayercommon/playercommon.h>
 #include <libplayerinterface/player.h>
-#include <libplayerinterface/error.h>
+#include <libplayercommon/playercommon.h>
 #include <libplayerinterface/interface_util.h>
 #include <libplayerinterface/playerxdr.h>
 #include <libplayerinterface/functiontable.h>

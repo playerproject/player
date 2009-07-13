@@ -23,8 +23,8 @@
 #include <string.h>
 #include <errno.h>
 
-#include <libplayerinterface/error.h>
-#include <libplayerinterface/playercommon.h>
+#include <libplayercommon/playercommon.h>
+#include <libplayercommon/playercommon.h>
 
 #include "plan.h"
 //#include "heap.h"

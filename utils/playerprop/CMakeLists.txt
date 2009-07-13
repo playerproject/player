@@ -12,7 +12,7 @@ IF (BUILD_UTILS_PLAYERPROP)
 
         LINK_DIRECTORIES (${PLAYERCC_EXTRA_LINK_DIRS})
         PLAYER_ADD_EXECUTABLE (playerprop playerprop.cpp ${getoptSrc})
-        TARGET_LINK_LIBRARIES (playerprop playerc++ playerc playerxdr playererror
+        TARGET_LINK_LIBRARIES (playerprop playerc++ playerc playerinterface playercommon
                                ${playerreplaceLib} ${PLAYERC_EXTRA_LINK_LIBRARIES}
                                ${PLAYERCC_EXTRA_LINK_LIBRARIES})
     ELSE (BUILD_PLAYERCC)

@@ -97,7 +97,7 @@ void playerc_audio_putmsg(playerc_audio_t *device,
     if (device->wav_data.data != NULL)
       free (device->wav_data.data);
     if ((device->wav_data.data = (uint8_t*) malloc (wdata->data_count)) == NULL)
-      PLAYER_ERROR("Failed to allocate space to store wave data locally");
+      PLAYERC_ERR("Failed to allocate space to store wave data locally");
     else
     {
       memcpy(device->wav_data.data, wdata->data, wdata->data_count * sizeof(device->wav_data.data[0]));
@@ -253,7 +253,7 @@ int playerc_audio_sample_retrieve(playerc_audio_t *device, int index)
   if ((device->wav_data.data = (uint8_t*) malloc (resp->sample.data_count)) == NULL)
   {
     player_audio_sample_t_free(resp);
-    PLAYER_ERROR("Failed to allocate space to store wave data locally");
+    PLAYERC_ERR("Failed to allocate space to store wave data locally");
     return -1;
   }
   memcpy(device->wav_data.data, resp->sample.data, resp->sample.data_count * sizeof(device->wav_data.data[0]));

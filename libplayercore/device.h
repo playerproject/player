@@ -58,7 +58,7 @@
   #define PLAYERCORE_EXPORT
 #endif
 
-#include <libplayercore/player.h>
+#include <libplayerinterface/player.h>
 #include <libplayercore/message.h>
 
 #define LOCALHOST_ADDR 16777343

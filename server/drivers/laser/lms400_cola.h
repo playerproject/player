@@ -11,7 +11,7 @@
 #include <sys/types.h>
 #include <vector>
 #include <netinet/in.h>
-#include <libplayercore/player.h>
+#include <libplayerinterface/player.h>
 #include <iostream>
 
 #define BUF_SIZE 1024

@@ -12,7 +12,7 @@
 #include <stdlib.h>
 
 #include "map.h"
-#include <libplayerinterface/error.h>
+#include <libplayercommon/playercommon.h>
 
 // Extract a single range reading from the map.  Unknown cells and/or
 // out-of-bound cells are treated as occupied, which makes it easy to

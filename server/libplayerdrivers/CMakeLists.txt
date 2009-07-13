@@ -90,7 +90,7 @@ ENDIF (NOT PTHREAD_LIB_DIR STREQUAL "")
 
 # Actually add the target
 PLAYER_ADD_LIBRARY (playerdrivers ${driver_config_h} ${driverregistry_cc} ${driversSrcs})
-TARGET_LINK_LIBRARIES (playerdrivers playercore playererror playerwkb ${playerreplaceLib})
+TARGET_LINK_LIBRARIES (playerdrivers playercore playercommon playerwkb ${playerreplaceLib})
 IF (HAVE_JPEG)
     TARGET_LINK_LIBRARIES (playerdrivers playerjpeg)
 ENDIF (HAVE_JPEG)
