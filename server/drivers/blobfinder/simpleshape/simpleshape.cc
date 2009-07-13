@@ -267,7 +267,7 @@ int SimpleShape::MainSetup()
   if (this->LoadModel() != 0)
     return -1;
 
-  return ImageBase::Setup();
+  return ImageBase::MainSetup();
 
   return 0;
 }
