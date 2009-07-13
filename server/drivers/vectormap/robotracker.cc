@@ -114,14 +114,14 @@ driver
 
 /** @} */
 
+#include <libplayercore/playercore.h>
+#include <libplayerwkb/playerwkb.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h> /* strcasecmp() */
 #include <assert.h>
 #include <math.h>
-#include <libplayercore/playercore.h>
-#include <libplayerwkb/playerwkb.h>
 
 #define MAX_BOTS 32
 #define MAX_SHAPE_POINTS 64
