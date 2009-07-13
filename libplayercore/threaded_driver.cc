@@ -62,15 +62,16 @@
   #include <netinet/in.h>
 #endif
 
+#include <libplayerinterface/interface_util.h>
+#include <libplayerinterface/error.h>
+
 #include <libplayercore/playertime.h>
 #include <libplayercore/driver.h>
-#include <libplayercore/error.h>
 #include <libplayercore/devicetable.h>
 #include <libplayercore/configfile.h>
 #include <libplayercore/globals.h>
 #include <libplayercore/filewatcher.h>
 #include <libplayercore/property.h>
-#include <libplayercore/interface_util.h>
 
 // Default constructor for single-interface drivers.  Specify the
 // interface code and buffer sizes.

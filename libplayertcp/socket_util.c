@@ -59,8 +59,8 @@
 #include <string.h>     /* for strncpy(3) */
 #include <time.h>     /* for ctime(3) */
 
-#include <libplayercore/error.h>
-#include <libplayercore/addr_util.h>
+#include <libplayerinterface/error.h>
+#include <libplayerinterface/addr_util.h>
 #include "socket_util.h"
 
 #include "playertcp_errutils.h"

@@ -31,7 +31,7 @@
 #include <string.h>
 #include <assert.h>
 #include "imagebase.h"
-//#include <libplayerxdr/playerxdr.h>
+//#include <libplayerinterface/playerxdr.h>
 #include <config.h>
 #if HAVE_JPEG
 #include <libplayerjpeg/playerjpeg.h>

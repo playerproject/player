@@ -106,7 +106,6 @@ driver
 #include <stdlib.h>       // for atoi(3)
 
 #include <libplayercore/playercore.h>
-#include <libplayercore/error.h>
 
 #include "lasertransform.h"
 

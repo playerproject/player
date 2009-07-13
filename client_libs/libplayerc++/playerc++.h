@@ -61,7 +61,7 @@
 #include "libplayerc++/playerclient.h"
 #include "libplayerc++/playererror.h"
 #include "libplayerc++/clientproxy.h"
-#include "libplayercore/interface_util.h"
+#include "libplayerinterface/interface_util.h"
 
 #if defined (WIN32)
   #if defined (PLAYER_STATIC)

@@ -222,7 +222,6 @@ position devices that use watchdog timers.
 
 #include <replace/replace.h> // for poll(2)
 #include <libplayercore/playercore.h>
-#include <libplayercore/error.h>
 
 extern PlayerTime *GlobalTime;
 

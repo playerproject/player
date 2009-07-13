@@ -3,7 +3,6 @@
 
 #include <libpq-fe.h>
 #include <libplayercore/playercore.h>
-#include <libplayercore/error.h>
 #include <libplayerwkb/playerwkb.h>
 #include <vector>
 #include <string>

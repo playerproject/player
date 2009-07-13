@@ -8,7 +8,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <libplayercore/playercore.h>
-#include <libplayercore/playercommon.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>

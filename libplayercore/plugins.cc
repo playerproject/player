@@ -53,9 +53,9 @@
 #include <limits.h> // for PATH_MAX
 
 #include <libplayercore/drivertable.h>
-#include <libplayercore/error.h>
 #include <libplayercore/globals.h>
-#include <libplayercore/playercommon.h>
+#include <libplayerinterface/playercommon.h>
+#include <libplayerinterface/error.h>
 
 #include <replace/replace.h>
 

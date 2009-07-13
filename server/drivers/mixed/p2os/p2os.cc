@@ -308,7 +308,7 @@ driver
 #include "config.h"
 
 #include "p2os.h"
-#include <libplayerxdr/playerxdr.h>
+#include <libplayerinterface/playerxdr.h>
 
 #include <fcntl.h>
 #include <signal.h>

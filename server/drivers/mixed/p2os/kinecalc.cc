@@ -27,8 +27,7 @@
  *  Robotica, vol.23, no.1, pp.123-129, 2005.
  */
 
-#include <libplayercore/playercommon.h>
-#include <libplayercore/error.h>
+#include <libplayercore/playercore.h>
 #include "kinecalc.h"
 
 #include <math.h>

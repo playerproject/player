@@ -33,7 +33,7 @@
 #include <stdlib.h> /* for abs() */
 #include <unistd.h>
 
-#include <libplayercore/error.h>
+#include <libplayercore/playercore.h>
 
 #include "sip.h"
 

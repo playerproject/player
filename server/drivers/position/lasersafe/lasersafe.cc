@@ -103,7 +103,6 @@ driver
 #include <math.h>
 
 #include <libplayercore/playercore.h>
-#include <libplayercore/error.h>
 
 class LaserSafe : public Driver
 {

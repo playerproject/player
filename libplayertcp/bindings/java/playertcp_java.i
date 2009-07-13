@@ -21,8 +21,8 @@
 // The stuff between the braces gets copied verbatim into the output
 %{
 #include <libplayertcp/playertcp.h>
-#include <libplayerxdr/functiontable.h>
+#include <libplayerinterface/functiontable.h>
 %}
 
 %include <libplayertcp/playertcp.h>
-%include <libplayerxdr/functiontable.h>
+%include <libplayerinterface/functiontable.h>

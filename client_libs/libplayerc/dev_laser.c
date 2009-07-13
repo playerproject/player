@@ -48,7 +48,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <libplayercore/playercommon.h>
+#include <libplayerinterface/playercommon.h>
 #include "playerc.h"
 #include "error.h"
 

@@ -131,8 +131,8 @@ driver
 #include <config.h>
 
 #include <libplayercore/playercore.h>
-#include <libplayerxdr/functiontable.h>
-//#include <libplayerxdr/playerxdr.h>
+#include <libplayerinterface/functiontable.h>
+//#include <libplayerinterface/playerxdr.h>
 
 #include <assert.h>
 #include <ctype.h>

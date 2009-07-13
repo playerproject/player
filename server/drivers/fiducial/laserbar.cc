@@ -107,13 +107,6 @@ driver
 
 #include <libplayercore/playercore.h>
 
-/*#include "error.h"
-#include "driver.h"
-#include "devicetable.h"
-#include "drivertable.h"
-#include "clientdata.h"
-*/
-
 // Driver for detecting laser retro-reflectors.
 class LaserBar : public Driver
 {

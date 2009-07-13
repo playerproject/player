@@ -108,8 +108,7 @@ driver
 #include <assert.h>
 
 #include <libplayercore/playercore.h>
-#include <libplayercore/error.h>
-#include <libplayerxdr/functiontable.h>
+#include <libplayerinterface/functiontable.h>
 
 #if defined (WIN32)
   #define hypot _hypot

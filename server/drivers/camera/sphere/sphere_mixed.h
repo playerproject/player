@@ -22,7 +22,6 @@
 #include <stdint.h>
 
 #include <libplayercore/playercore.h>
-#include <libplayercore/error.h>
 
 #include "v4lcapture.h"
 

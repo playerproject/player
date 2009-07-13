@@ -72,7 +72,6 @@ driver
 #include <assert.h>
 
 #include <libplayercore/playercore.h>
-#include <libplayercore/error.h>
 
 #define DEFAULT_MAXSCANS    100
 #define DEFAULT_MAXPOINTS   1024

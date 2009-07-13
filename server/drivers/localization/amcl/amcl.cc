@@ -293,7 +293,6 @@ changed to match your particular configuration.
 #define PLAYER_ENABLE_MSG 1
 
 #include <libplayercore/playercore.h>
-#include <libplayercore/error.h>
 
 #include "amcl.h"
 // Sensors

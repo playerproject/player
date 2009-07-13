@@ -118,7 +118,6 @@ Ben Grocholsky, Brad Kratochvil
 #include <stddef.h>  /* for size_t and NULL */
 
 #include <libplayercore/playercore.h>
-#include <libplayercore/error.h>
 
 #if HAVE_JPEG
   #include <libplayerjpeg/playerjpeg.h>

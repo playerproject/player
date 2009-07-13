@@ -51,7 +51,7 @@
 /* Include values from the configure script */
 #include "playerconfig.h"
 
-/** @ingroup libplayercore
+/** @ingroup libplayerinterface
  * @defgroup message_basics Messaging basics
  * Interface-independent message types, sizes, units, address structures, etc.
  */
@@ -455,7 +455,7 @@ typedef struct player_strprop_req
 // /////////////////////////////////////////////////////////////////////////////
 
 /**
-@ingroup libplayercore
+@ingroup libplayerinterface
 @defgroup interfaces Interface specifications
 
 All Player communication occurs through <i>interfaces</i>, which specify

@@ -40,21 +40,22 @@
 #ifndef _PLAYERCORE_H
 #define _PLAYERCORE_H
 
+#include <libplayerinterface/error.h>
+#include <libplayerinterface/interface_util.h>
+#include <libplayerinterface/player.h>
+#include <libplayerinterface/playercommon.h>
+#include <libplayerinterface/addr_util.h>
+
 #include <libplayercore/configfile.h>
 #include <libplayercore/device.h>
 #include <libplayercore/devicetable.h>
 #include <libplayercore/driver.h>
 #include <libplayercore/drivertable.h>
-#include <libplayercore/error.h>
 #include <libplayercore/filewatcher.h>
 #include <libplayercore/globals.h>
-#include <libplayercore/interface_util.h>
 #include <libplayercore/message.h>
-#include <libplayercore/player.h>
-#include <libplayercore/playercommon.h>
 #include <libplayercore/playertime.h>
 #include <libplayercore/wallclocktime.h>
-#include <libplayercore/addr_util.h>
 #include <libplayercore/property.h>
 #include <playerconfig.h>
 

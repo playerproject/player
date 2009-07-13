@@ -122,7 +122,7 @@ driver
 #include "khepera.h"
 
 #include <libplayercore/playercore.h>
-#include <libplayerxdr/playerxdr.h>
+#include <libplayerinterface/playerxdr.h>
 
 // we need to debug different things at different times
 //#define DEBUG_POS

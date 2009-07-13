@@ -221,7 +221,7 @@ driver
 
 
 #include <libplayercore/playercore.h>
-#include <libplayerxdr/functiontable.h>
+#include <libplayerinterface/functiontable.h>
 #include "plan.h"
 
 #include <sys/time.h>

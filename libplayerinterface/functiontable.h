@@ -71,7 +71,7 @@ extern "C" {
 	bool_t xdr_longlong_t(XDR *xdrs, long long int *llp);
 #endif
 
-/** @addtogroup libplayerxdr libplayerxdr @{ */
+/** @addtogroup libplayerinterface libplayerinterface @{ */
 
 /** Generic Prototype for a player XDR packing function */
 typedef int (*player_pack_fn_t) (void* buf, size_t buflen, void* msg, int op);

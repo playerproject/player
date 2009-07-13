@@ -45,10 +45,10 @@
 #include <string.h> // for strncpy(3)
 #include <stdlib.h> // for atoi(3)
 
-#include <libplayercore/error.h>
+#include <libplayerinterface/error.h>
+#include <libplayerinterface/interface_util.h>
+#include <libplayerinterface/addr_util.h>
 #include <libplayercore/devicetable.h>
-#include <libplayercore/interface_util.h>
-#include <libplayercore/addr_util.h>
 
 #if defined WIN32
   #define strdup _strdup

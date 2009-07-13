@@ -61,7 +61,6 @@ driver.
 #include <string.h>
 #include <netinet/in.h>
 #include <libplayercore/playercore.h>
-#include <libplayercore/error.h>
 
 #include <stdio.h>
 #include <stdlib.h>

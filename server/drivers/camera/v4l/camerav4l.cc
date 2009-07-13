@@ -181,7 +181,6 @@ binary driver which is a bonus
 #include <time.h>
 
 #include <libplayercore/playercore.h>
-#include <libplayercore/error.h>
 
 #include "v4lcapture.h"  // For Gavin's libfg; should integrate this
 #include "ccvt.h"        // For YUV420P-->RGB conversion

@@ -56,7 +56,6 @@
 /** @} */
 
 #include <libplayercore/playercore.h>
-#include <libplayercore/error.h>
 
 // Driver for detecting laser retro-reflectors.
 class ImageBase : public ThreadedDriver

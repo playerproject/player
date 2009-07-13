@@ -189,7 +189,6 @@
 #include <libdc1394/dc1394_control.h>
 #endif
 #include <libplayercore/playercore.h>
-#include <libplayercore/error.h>
 
 #if DC1394_2_LINUX == 1
 

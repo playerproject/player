@@ -28,7 +28,6 @@
 ///////////////////////////////////////////////////////////////////////////
 
 #include <libplayercore/playercore.h>
-#include <libplayercore/error.h>
 
 class FromRanger : public Driver
 {

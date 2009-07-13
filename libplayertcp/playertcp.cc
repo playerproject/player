@@ -61,7 +61,7 @@
 
 #include <replace/replace.h>
 #include <libplayercore/playercore.h>
-#include <libplayerxdr/playerxdr.h>
+#include <libplayerinterface/playerxdr.h>
 
 #include "playertcp.h"
 #include "socket_util.h"

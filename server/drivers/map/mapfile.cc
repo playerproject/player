@@ -110,7 +110,6 @@ driver
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
 #include <libplayercore/playercore.h>
-#include <libplayercore/error.h>
 
 // compute linear index for given map coords
 #define MAP_IDX(mf, i, j) ((mf->size_x) * (j) + (i))

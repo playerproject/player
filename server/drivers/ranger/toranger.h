@@ -28,7 +28,6 @@
 ///////////////////////////////////////////////////////////////////////////
 
 #include <libplayercore/playercore.h>
-#include <libplayercore/error.h>
 
 class ToRanger : public Driver
 {

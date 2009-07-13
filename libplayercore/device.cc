@@ -53,15 +53,14 @@
 #endif
 #include <assert.h>
 
+#include <libplayerinterface/error.h>
+#include <libplayerinterface/interface_util.h>
 #include <libplayercore/driver.h>
 #include <libplayercore/device.h>
 #include <libplayercore/message.h>
-#include <libplayercore/error.h>
 #include <libplayercore/playertime.h>
 #include <libplayercore/devicetable.h>
 #include <libplayercore/globals.h>
-#include <libplayercore/error.h>
-#include <libplayercore/interface_util.h>
 
 // Constructor
 Device::Device(player_devaddr_t addr, Driver *device) :

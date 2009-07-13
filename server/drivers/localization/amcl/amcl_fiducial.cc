@@ -36,8 +36,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <sys/time.h>
-#include "error.h"
-#include "devicetable.h"
+#include <libplayercore/playercore.h>
 #include "amcl_fiducial.h"
 
 extern int global_playerport; // used to gen. useful output & debug

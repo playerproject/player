@@ -42,7 +42,6 @@
 #endif
 
 #include <libplayercore/playercore.h>
-#include <libplayercore/error.h>
 
 // Driver for computing the free c-space from a laser scan.
 class LaserTransform : public Driver
