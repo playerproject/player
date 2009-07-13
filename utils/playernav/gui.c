@@ -3,7 +3,7 @@
 
 #include <gdk/gdkkeysyms.h>
 
-#include <libplayerinterface/error.h>
+#include <libplayercommon/playercommon.h>
 #include "playernav.h"
 
 // flag and index for robot currently being moved by user (if any)

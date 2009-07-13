@@ -78,7 +78,7 @@
 #define STOP		1
 
 
-#include <libplayercore/player.h>
+#include <libplayerinterface/player.h>
 #include <libplayercore/driver.h>
 #include <libplayercore/drivertable.h>
 

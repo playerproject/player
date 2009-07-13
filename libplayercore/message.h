@@ -60,7 +60,7 @@
 
 #include <pthread.h>
 
-#include <libplayercore/player.h>
+#include <libplayerinterface/player.h>
 
 class MessageQueue;
 

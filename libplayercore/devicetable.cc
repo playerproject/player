@@ -45,7 +45,7 @@
 #include <string.h> // for strncpy(3)
 #include <stdlib.h> // for atoi(3)
 
-#include <libplayerinterface/error.h>
+#include <libplayercommon/playercommon.h>
 #include <libplayerinterface/interface_util.h>
 #include <libplayerinterface/addr_util.h>
 #include <libplayercore/devicetable.h>

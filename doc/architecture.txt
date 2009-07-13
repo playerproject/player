@@ -4,13 +4,13 @@
 
 <p>
 Player is composed primarily of 5 libraries :
-- @ref libplayererror (C): Error reporting facilities
+- @ref libplayercommon (C): Error reporting facilities
 - @ref libplayercore (C++): Basic messaging and queueing functionality,
   support for loading plugins, parsing configuration files
 - @ref libplayerdrivers (C++): The drivers that are included with the
   Player distribution (and which were compiled)
 - @ref libplayertcp (C++): Support for TCP client/server transport
-- @ref libplayerxdr (C++): Support for XDR data marshaling
+- @ref libplayerinterface (C++): Support for interface parsing and XDR data marshaling
 </p>
 
 <p>

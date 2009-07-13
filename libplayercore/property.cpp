@@ -37,9 +37,9 @@
  *
  ********************************************************************/
 
-#include <libplayerinterface/playercommon.h>
+#include <libplayercommon/playercommon.h>
 #include <libplayerinterface/player.h>
-#include <libplayerinterface/error.h>
+#include <libplayercommon/playercommon.h>
 
 #include "property.h"
 #include <libplayercore/configfile.h>

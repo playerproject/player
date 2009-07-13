@@ -16,7 +16,7 @@ IF (BUILD_PLAYERCC)
     LINK_DIRECTORIES (${PLAYERCC_EXTRA_LINK_DIRS})
     MACRO (PLAYERCPP_ADD_EXAMPLE _name)
         ADD_EXECUTABLE (${_name} ${ARGN})
-        TARGET_LINK_LIBRARIES (${_name} playerc++ playerc playerxdr playererror
+        TARGET_LINK_LIBRARIES (${_name} playerc++ playerc playerinterface playercommon
                                ${playerreplaceLib} ${PLAYERC_EXTRA_LINK_LIBRARIES}
                                ${PLAYERCC_EXTRA_LINK_LIBRARIES})
         IF (PLAYER_OS_SOLARIS)

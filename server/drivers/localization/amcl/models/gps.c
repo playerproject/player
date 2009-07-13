@@ -30,7 +30,7 @@
 #include <stdlib.h>
 
 #include "gps.h"
-#include <libplayerinterface/error.h>
+#include <libplayercommon/playercommon.h>
 
 // Create an sensor model
 gps_model_t *gps_alloc()

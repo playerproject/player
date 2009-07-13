@@ -20,7 +20,7 @@
  * Desc: Error handling macros
  * Author: Andrew Howard
  * Date: 13 May 2002
- * CVS: $Id$
+ * CVS: $Id: error.h 8003 2009-07-13 10:34:37Z thjc $
  **************************************************************************/
 
 #ifndef ERROR_HH
@@ -71,7 +71,7 @@ PLAYERERROR_EXPORT extern FILE *msgFile;
 #define PLAYER_ERR_MSG 2
 #define PLAYER_ERR_DBG 2
 
-/** @ingroup libplayererror 
+/** @ingroup libplayercommon 
  @{ */
            
 /// Error message macros

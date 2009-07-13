@@ -5,7 +5,7 @@
  # CVS: $Id$
  **************************************************************************/
 
-#include <libplayerinterface/playercommon.h>
+#include <libplayercommon/playercommon.h>
 
 #include "test.h"
 #include "playerc.h"

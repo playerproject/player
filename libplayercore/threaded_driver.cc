@@ -63,7 +63,7 @@
 #endif
 
 #include <libplayerinterface/interface_util.h>
-#include <libplayerinterface/error.h>
+#include <libplayercommon/playercommon.h>
 
 #include <libplayercore/playertime.h>
 #include <libplayercore/driver.h>

@@ -45,7 +45,7 @@ pkg-config.  You can check like so:
 </p>
 <p><tt>$ pkg-config --libs playercore</tt></p>
 <p>You should get something like (exact results vary by system):</p>
-<p><tt>-lplayercore -lltdl -lpthread -lplayererror</tt></p>
+<p><tt>-lplayercore -lltdl -lpthread -lplayercommon</tt></p>
 <p>If instead you get this:</p>
 <p><tt>Package playercore was not found in the pkg-config search path.<br>
 Perhaps you should add the directory containing `playercore.pc'<br>

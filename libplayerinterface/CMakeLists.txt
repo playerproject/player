@@ -20,14 +20,6 @@ ADD_CUSTOM_TARGET (interface_table ALL
     DEPENDS ${interface_table_h}
     COMMENT "Generating interface_table.h")
 
-SET (playerutilsSrcs interface_util.c
-                     addr_util.c)
-PLAYER_ADD_LIBRARY (playerutils ${playerutilsSrcs} ${interface_table_h})
-TARGET_LINK_LIBRARIES (playerutils)
-IF (PLAYER_OS_WIN)
-    TARGET_LINK_LIBRARIES (playerutils Ws2_32)
-ENDIF (PLAYER_OS_WIN)
-
 SET (playerxdr_h "${CMAKE_CURRENT_BINARY_DIR}/playerxdr.h")
 SET (playerxdr_c "${CMAKE_CURRENT_BINARY_DIR}/playerxdr.c")
 ADD_CUSTOM_COMMAND (OUTPUT ${playerxdr_h} ${playerxdr_c}
@@ -56,6 +48,8 @@ ENDIF (NOT HAVE_XDR)
 SET (playerinterfaceSrcs  ${playerxdr_h}
                     ${playerxdr_c}
                     functiontable.c
+                    addr_util.c
+                    interface_util.c
                     ${functiontable_gen_h})
 
 IF (PLAYER_OS_QNX)
@@ -65,6 +59,7 @@ ELSE (PLAYER_OS_QNX)
 ENDIF (PLAYER_OS_QNX)
 
 INCLUDE_DIRECTORIES (${CMAKE_CURRENT_BINARY_DIR})
+TARGET_LINK_LIBRARIES(playercommon)
 PLAYER_ADD_LIBRARY (playerinterface ${playerinterfaceSrcs})
 IF (PLAYER_OS_WIN)
     TARGET_LINK_LIBRARIES (playerinterface Ws2_32)
@@ -79,23 +74,13 @@ IF (NOT HAVE_XDR)
 ENDIF (NOT HAVE_XDR)
 PLAYER_MAKE_PKGCONFIG ("playerinterface" "Player Interface library - part of the Player Project" "" "" "" "${xdrLibFlag}")
 
-SET (playererrorSrcs error.c)
-PLAYER_ADD_LIBRARY (playererror ${playererrorSrcs})
-PLAYER_MAKE_PKGCONFIG ("playererror" "Player error reporting library - part of the Player Project"
-                       "" "" "" "")
-
-TARGET_LINK_LIBRARIES (playererror)
-PLAYER_MAKE_PKGCONFIG ("playerutils" "Player utilities library - part of the Player Project"
-                       "" "" "" "")
 
 PLAYER_INSTALL_HEADERS (playerinterface ${playerxdr_h} 
                                         addr_util.h 
                                         functiontable.h 
                                         interface_util.h 
                                         ${player_interfaces_h} 
-                                        player.h 
-                                        playercommon.h
-                                        ${playerconfig_h}
-                                        error.h)
+                                        player.h)
 
 INSTALL (FILES ${CMAKE_CURRENT_SOURCE_DIR}/playerxdrgen.py RENAME playerxdrgen DESTINATION bin)
+INSTALL (FILES ${CMAKE_CURRENT_SOURCE_DIR}/playerinterfacegen.py RENAME playerintefacegen DESTINATION bin)

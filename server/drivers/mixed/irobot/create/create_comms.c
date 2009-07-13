@@ -34,7 +34,7 @@
 
 #include "config.h"
 
-#include <libplayerinterface/error.h>
+#include <libplayercommon/playercommon.h>
 #include <playerconfig.h>
 #include <replace/replace.h>
 //#include <sys/poll.h>

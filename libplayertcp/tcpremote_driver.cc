@@ -52,7 +52,7 @@
 #endif
 
 #include <libplayercore/globals.h>
-#include <libplayerinterface/error.h>
+#include <libplayercommon/playercommon.h>
 #include <libplayerinterface/playerxdr.h>
 #include "tcpremote_driver.h"
 #include "playertcp_errutils.h"

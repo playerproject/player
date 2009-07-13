@@ -20,12 +20,12 @@
  * Desc: Error handling macros
  * Author: Andrew Howard
  * Date: 13 May 2002
- * CVS: $Id$
+ * CVS: $Id: error.c 8003 2009-07-13 10:34:37Z thjc $
  **************************************************************************/
 
 #include <stdarg.h>
 
-#include <libplayerinterface/error.h>
+#include <libplayercommon/error.h>
 
 // User-selected msg level: 0 for the most important messages (always
 // printed); 9 for the least important.

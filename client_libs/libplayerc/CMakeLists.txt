@@ -85,8 +85,8 @@ ENDIF (PLAYER_OS_WIN)
 
 LINK_DIRECTORIES (${PLAYERC_EXTRA_LINK_DIRS})
 PLAYER_ADD_LIBRARY (playerc ${playercSrcs})
-ADD_DEPENDENCIES (playerc player_interfaces playerxdr_src)
-TARGET_LINK_LIBRARIES (playerc playerxdr playerutils playererror playerwkb
+ADD_DEPENDENCIES (playerc player_interfaces playerinterface_src)
+TARGET_LINK_LIBRARIES (playerc playerinterface playercommon playerwkb
                        ${playerreplaceLib} ${PLAYERC_EXTRA_LINK_LIBRARIES})
 IF (HAVE_JPEG)
     TARGET_LINK_LIBRARIES (playerc playerjpeg)
@@ -102,5 +102,5 @@ LIST_TO_STRING_WITH_PREFIX (pkgconfigLinkDirs "-L" ${PLAYERC_EXTRA_LINK_DIRS})
 LIST_TO_STRING_WITH_PREFIX (pkgconfigLinkLibs "-l" ${PLAYERC_EXTRA_LINK_LIBRARIES})
 PLAYER_MAKE_PKGCONFIG ("playerc"
                        "Andrew Howard's Player C client library - part of the Player Project"
-                       "playerxdr playererror playerwkb ${playerreplaceLib}" ""
+                       "playerinterface playercommon playerwkb ${playerreplaceLib}" ""
                        "${pkgconfigCFlags}" "${pkgconfigLinkDirs} ${pkgconfigLinkLibs}")

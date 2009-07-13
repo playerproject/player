@@ -6,7 +6,7 @@
 #include "plan.h"
 
 #if !defined (M_PI)
-  #include <libplayerinterface/error.h>
+  #include <libplayercommon/playercommon.h>
 #endif
 
 static double _plan_check_path(plan_t* plan, plan_cell_t* s, plan_cell_t* g);

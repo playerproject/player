@@ -54,8 +54,8 @@
 
 #include <libplayercore/drivertable.h>
 #include <libplayercore/globals.h>
-#include <libplayerinterface/playercommon.h>
-#include <libplayerinterface/error.h>
+#include <libplayercommon/playercommon.h>
+#include <libplayercommon/playercommon.h>
 
 #include <replace/replace.h>
 

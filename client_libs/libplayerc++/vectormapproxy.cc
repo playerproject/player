@@ -126,7 +126,9 @@ void VectorMapProxy::GetLayerData(unsigned layer_index)
     playerc_vectormap_get_layer_data(mDevice, layer_index);
   }
   else
-    PLAYER_ERROR("Map info not cached\n");
+  {
+    throw PlayerError("VectorMapProxy::GetLayerData()", "Map info not cached");
+  }
 }
 
 int VectorMapProxy::GetFeatureCount(unsigned layer_index) const

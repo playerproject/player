@@ -59,7 +59,7 @@
 #include <string.h>     /* for strncpy(3) */
 #include <time.h>     /* for ctime(3) */
 
-#include <libplayerinterface/error.h>
+#include <libplayercommon/playercommon.h>
 #include <libplayerinterface/addr_util.h>
 #include "socket_util.h"
 

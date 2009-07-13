@@ -6,7 +6,7 @@ IF (BUILD_UTILS_PLAYERCAM)
         INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/client_libs ${GTK_PKG_INCLUDE_DIRS})
         LINK_DIRECTORIES (${GTK_PKG_LIBRARY_DIRS})
         PLAYER_ADD_EXECUTABLE (playercam ${playercamSrcs})
-        TARGET_LINK_LIBRARIES (playercam playerc playerxdr playererror
+        TARGET_LINK_LIBRARIES (playercam playerc playerinterface playercommon
             ${PLAYERC_EXTRA_LINK_LIBRARIES} ${GTK_PKG_LIBRARIES})
         SET_SOURCE_FILES_PROPERTIES (${playercamSrcs} PROPERTIES
             COMPILE_FLAGS "${GTK_CFLAGS}")
