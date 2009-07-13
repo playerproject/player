@@ -37,11 +37,12 @@
  *
  ********************************************************************/
 
+#include <libplayerinterface/playercommon.h>
+#include <libplayerinterface/player.h>
+#include <libplayerinterface/error.h>
+
 #include "property.h"
-#include <libplayercore/playercommon.h>
-#include <libplayercore/player.h>
 #include <libplayercore/configfile.h>
-#include <libplayercore/error.h>
 #include <libplayercore/driver.h>
 
 #include <stdlib.h>

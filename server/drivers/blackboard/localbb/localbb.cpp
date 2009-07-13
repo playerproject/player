@@ -67,7 +67,6 @@
 
 #include <sys/types.h> // required by Darwin
 #include <libplayercore/playercore.h>
-#include <libplayercore/error.h>
 #include <vector>
 #include <map>
 #include <iostream>

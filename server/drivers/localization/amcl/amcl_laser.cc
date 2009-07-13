@@ -39,7 +39,6 @@
 #endif
 
 #include <libplayercore/playercore.h>
-#include <libplayercore/error.h>
 #include "amcl_laser.h"
 
 ////////////////////////////////////////////////////////////////////////////////

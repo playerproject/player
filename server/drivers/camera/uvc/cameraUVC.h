@@ -1,5 +1,4 @@
 #include <libplayercore/playercore.h>
-#include <libplayercore/error.h>
 
 #include "UvcInterface.h"
 

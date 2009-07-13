@@ -45,8 +45,8 @@
   #define strdup _strdup
 #endif
 
-#include <libplayercore/player.h>  // for interface constants
-#include <libplayercore/interface_util.h> // for player_interface_t type
+#include <libplayerinterface/player.h>  // for interface constants
+#include <libplayerinterface/interface_util.h> // for player_interface_t type
 
 #include "interface_table.h"
 

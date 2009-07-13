@@ -50,7 +50,7 @@
 
 #include "playerc.h"
 #include "error.h"
-#include <libplayerxdr/playerxdr.h>
+#include <libplayerinterface/playerxdr.h>
 #if !defined (WIN32)
   #include <sys/time.h>
 #endif

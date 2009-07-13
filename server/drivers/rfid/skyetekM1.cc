@@ -88,7 +88,7 @@ driver
 
 // Includes needed for player
 #include <libplayercore/playercore.h>
-#include <libplayerxdr/playerxdr.h>
+#include <libplayerinterface/playerxdr.h>
 
 #define DEFAULT_RFID_PORT "/dev/ttyS0"
 #define DEFAULT_RFID_RATE 9600

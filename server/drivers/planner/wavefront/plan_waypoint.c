@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include <libplayercore/error.h>
+#include <libplayerinterface/error.h>
 
 #include "plan.h"
 

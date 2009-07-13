@@ -160,8 +160,7 @@ driver
 
 #include <reb.h>
 
-#include <error.h>
-#include <playertime.h>
+#include <libplayercore/playercore.h>
 extern PlayerTime* GlobalTime;
 
 // so we can access the deviceTable and extract pointers to the sonar

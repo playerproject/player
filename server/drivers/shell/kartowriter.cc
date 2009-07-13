@@ -98,7 +98,7 @@
 #endif
 #include <math.h>
 #include <assert.h>
-#include <libplayercore/addr_util.h>
+#include <libplayerinterface/addr_util.h>
 #include "sys/types.h"	/* for time_t */
 #include "time.h"	/* for struct tm */
 

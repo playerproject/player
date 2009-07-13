@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #TODO:
-#  - Add an option to specify whether we're building libplayerxdr (whose
+#  - Add an option to specify whether we're building libplayerinterface (whose
 #    header gets installed for general use, has copyright boilerplate,
 #    etc.) or a user XDR lib
 
@@ -513,8 +513,8 @@ if __name__ == '__main__':
 #include <rpc/types.h>
 #include <rpc/xdr.h>
 
-#include <libplayercore/player.h>
-#include <libplayerxdr/functiontable.h>
+#include <libplayerinterface/player.h>
+#include <libplayerinterface/functiontable.h>
 #ifdef __cplusplus
   extern "C" {
 #endif
@@ -540,7 +540,7 @@ if __name__ == '__main__':
     ifndefsymbol = '_' + os.path.split (infilenames[0])[1].replace('.','_').replace('/','_').upper() + '_XDR_'
     headerfile.write('#ifndef ' + ifndefsymbol + '\n')
     headerfile.write('#define ' + ifndefsymbol + '\n\n')
-    headerfile.write('#include <libplayerxdr/playerxdr.h>\n\n')
+    headerfile.write('#include <libplayerinterface/playerxdr.h>\n\n')
     headerfile.write('#include "' + os.path.split(infilenames[0])[-1] + '"\n\n')
     headerfile.write('#ifdef __cplusplus\nextern "C" {\n#endif\n\n')
     

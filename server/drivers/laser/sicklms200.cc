@@ -213,7 +213,7 @@ driver
 #endif
 
 #include <libplayercore/playercore.h>
-#include <libplayerxdr/playerxdr.h>
+#include <libplayerinterface/playerxdr.h>
 #include <replace/replace.h>
 extern PlayerTime* GlobalTime;
 

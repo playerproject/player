@@ -1,7 +1,7 @@
 #include <stddef.h> /* NULL, size_t typedef and some versions of GEOS CAPI need this */
 #include <string.h>
 #include <playerconfig.h> /* this also includes <stdint.h> if needed for types like uint8_t */
-#include <libplayercore/error.h>
+#include <libplayerinterface/error.h>
 
 #include "playerwkb.h"
 

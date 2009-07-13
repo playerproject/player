@@ -55,18 +55,19 @@
 
 #include <replace/replace.h>
 
-#include <libplayercore/player.h>
-#include <libplayercore/playercommon.h>
-#include <libplayercore/error.h>
+#include <libplayerinterface/player.h>
+#include <libplayerinterface/playercommon.h>
+#include <libplayerinterface/error.h>
+#include <libplayerinterface/interface_util.h>
+#include <libplayerinterface/addr_util.h>
+
 #include <libplayercore/configfile.h>
-#include <libplayercore/interface_util.h>
 #include <libplayercore/driver.h>
 #include <libplayercore/drivertable.h>
 #include <libplayercore/devicetable.h>
 #include <libplayercore/globals.h>
 #include <libplayercore/plugins.h>
-#include <libplayercore/addr_util.h>
-#include <libplayerxdr/functiontable.h>
+#include <libplayerinterface/functiontable.h>
 
 #if defined WIN32
   #define snprintf _snprintf

@@ -54,7 +54,7 @@
 
 #include <replace/replace.h>
 #include <libplayercore/playercore.h>
-#include <libplayerxdr/playerxdr.h>
+#include <libplayerinterface/playerxdr.h>
 
 #include "playerudp.h"
 //#include "remote_driver.h"

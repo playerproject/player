@@ -5,9 +5,11 @@
  *      Author: tcollett
  */
 
+#include <libplayerinterface/error.h>
+
+
 #include <libplayercore/filewatcher.h>
 #include <libplayercore/message.h>
-#include <libplayercore/error.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <math.h>

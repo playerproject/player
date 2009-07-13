@@ -61,9 +61,9 @@
 
 #include <pthread.h>
 
-#include <libplayercore/playercommon.h>
+#include <libplayerinterface/playercommon.h>
 #include <libplayercore/message.h>
-#include <libplayercore/player.h>
+#include <libplayerinterface/player.h>
 #include <libplayercore/property.h>
 
 //using namespace std;

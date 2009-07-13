@@ -78,7 +78,6 @@ driver
 /** @} */
 
 #include <libplayercore/playercore.h>
-#include <libplayercore/error.h>
 
 #include <ARToolKitPlus/TrackerSingleMarkerImpl.h>
 #include <ARToolKitPlus/Camera.h>

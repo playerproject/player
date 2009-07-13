@@ -59,7 +59,6 @@ driver
 #include <math.h>
 
 #include <libplayercore/playercore.h>
-#include <libplayercore/error.h>
 
 class BumperSafe : public Driver
 {

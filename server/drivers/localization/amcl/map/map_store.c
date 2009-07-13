@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <libplayercore/error.h>
+#include <libplayerinterface/error.h>
 
 #include "map.h"
 

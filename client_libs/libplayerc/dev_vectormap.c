@@ -58,7 +58,7 @@
 
 #include "playerc.h"
 #include "error.h"
-#include <libplayerxdr/playerxdr.h>
+#include <libplayerinterface/playerxdr.h>
 #include <libplayerwkb/playerwkb.h>
 
 #if defined (WIN32)

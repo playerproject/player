@@ -59,7 +59,7 @@
   #define lt_dlhandle int
 #endif
 
-#include <libplayerxdr/functiontable.h>
+#include <libplayerinterface/functiontable.h>
 
 /// @brief Function signature for interface plugin initialization functions
 typedef playerxdr_function_t* (*InterfPluginInitFn) (void);

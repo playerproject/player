@@ -118,7 +118,6 @@ For more information see http://postgis.refractions.net/
 #include <string>
 #include <vector>
 #include <libplayercore/playercore.h>
-#include <libplayercore/error.h>
 #include "dbconn.h"
 
 using namespace std;

@@ -87,6 +87,8 @@ Listening on ports: 6665
 
 #include <config.h>
 
+#include <libplayercore/playercore.h>
+
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
@@ -96,11 +98,9 @@ Listening on ports: 6665
   #include <unistd.h>
 #endif
 
-#include <libplayercore/playercore.h>
-#include <libplayercore/interface_util.h>
 #include <libplayertcp/playertcp.h>
 #include <libplayertcp/playerudp.h>
-#include <libplayerxdr/functiontable.h>
+#include <libplayerinterface/functiontable.h>
 #include "libplayerdrivers/driverregistry.h"
 #include <config.h>
 

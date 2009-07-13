@@ -60,12 +60,12 @@ Geoffrey Biggs, Richard Vaughan.
 #include <playerconfig.h>
 
 /* Get the message structures from Player*/
-#include <libplayercore/playercommon.h>
-#include <libplayercore/player.h>
-#include <libplayercore/error.h>
-#include <libplayercore/interface_util.h>
-#include <libplayerxdr/playerxdr.h>
-#include <libplayerxdr/functiontable.h>
+#include <libplayerinterface/playercommon.h>
+#include <libplayerinterface/player.h>
+#include <libplayerinterface/error.h>
+#include <libplayerinterface/interface_util.h>
+#include <libplayerinterface/playerxdr.h>
+#include <libplayerinterface/functiontable.h>
 #include <libplayerwkb/playerwkb.h>
 #if defined (WIN32)
   #include <winsock2.h>

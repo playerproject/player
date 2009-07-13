@@ -33,7 +33,6 @@
 #include <math.h>
 
 #include <libplayercore/playercore.h>
-#include <libplayercore/error.h>
 #include "amcl_odom.h"
 
 ////////////////////////////////////////////////////////////////////////////////

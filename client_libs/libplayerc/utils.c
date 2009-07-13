@@ -44,7 +44,7 @@
  **************************************************************************/
 
 #include <string.h>
-#include <libplayerxdr/functiontable.h>
+#include <libplayerinterface/functiontable.h>
 
 #include "playerc.h"
 #include "error.h"

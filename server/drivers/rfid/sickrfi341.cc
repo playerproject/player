@@ -88,7 +88,7 @@ driver
 
 #include "rfi341_protocol.h"
 #include <libplayercore/playercore.h>
-#include <libplayerxdr/playerxdr.h>
+#include <libplayerinterface/playerxdr.h>
 
 #define DEFAULT_RFI341_PORT "/dev/ttyS0"
 #define DEFAULT_RFI341_RATE 9600

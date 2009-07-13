@@ -150,12 +150,7 @@ Andrew Howard
 #include <string.h>
 #include <netinet/in.h>
 
-/*#include <libplayercore/drivertable.h>
-#include <libplayercore/devicetable.h>
-#include <libplayercore/driver.h>*/
 #include <libplayercore/playercore.h>
-#include <libplayercore/error.h>
-// #include <libplayercore/player.h>
 
 #include <libplayerc/playerc.h>
 

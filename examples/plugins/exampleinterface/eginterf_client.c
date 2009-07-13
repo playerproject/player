@@ -14,7 +14,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <libplayerc/playerc.h>
-#include <libplayercore/error.h>
+#include <libplayerinterface/error.h>
 
 #include "example_interface.h"
 #include "example_xdr.h"

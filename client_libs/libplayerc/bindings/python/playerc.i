@@ -396,8 +396,8 @@
 
 // Include Player header so we can pick up some constants and generate
 // wrapper code for structs
-%include "libplayercore/player.h"
-%include "libplayercore/player_interfaces.h"
+%include "libplayerinterface/player.h"
+%include "libplayerinterface/player_interfaces.h"
 
 
 // Use this for regular c-bindings;

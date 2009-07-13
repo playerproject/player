@@ -1,39 +1,8 @@
-INCLUDE (${PLAYER_CMAKE_DIR}/internal/ProcessInterfaces.cmake)
-
 # The Python interpreter is necessary to compile this library
 INCLUDE (FindPythonInterp)
 IF (NOT PYTHONINTERP_FOUND)
     MESSAGE (FATAL_ERROR "No Python interpreter found. Cannot continue.")
 ENDIF (NOT PYTHONINTERP_FOUND)
-
-FILE (GLOB interfaceFiles ${PROJECT_SOURCE_DIR}/libplayercore/interfaces/*.def)
-
-SET (player_interfaces_h "${CMAKE_CURRENT_BINARY_DIR}/player_interfaces.h")
-SET (interface_table_h "${CMAKE_CURRENT_BINARY_DIR}/interface_table.h")
-PROCESS_INTERFACES ("" ${CMAKE_CURRENT_SOURCE_DIR}/interfaces ${player_interfaces_h} ${interfaceFiles})
-ADD_CUSTOM_TARGET (player_interfaces ALL
-    DEPENDS ${player_interfaces_h}
-    COMMENT "Generating player_interfaces.h")
-PROCESS_INTERFACES ("--utils" ${CMAKE_CURRENT_SOURCE_DIR}/interfaces ${interface_table_h} ${player_interfaces_h})
-ADD_CUSTOM_TARGET (interface_table ALL
-    DEPENDS ${interface_table_h}
-    COMMENT "Generating interface_table.h")
-
-# For now, we're generating our own copy of playerxdr.h (and .c as a side-effect) here.
-# This can be fixed when the cross-directory dependency with libplayerxdr is removed.
-SET (playerxdr_h "${CMAKE_CURRENT_BINARY_DIR}/playerxdr.h")
-SET (playerxdr_c "${CMAKE_CURRENT_BINARY_DIR}/playerxdr.c")
-ADD_CUSTOM_COMMAND (OUTPUT ${playerxdr_h} ${playerxdr_c}
-    COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/libplayerxdr/playerxdrgen.py -distro ${CMAKE_CURRENT_SOURCE_DIR}/player.h ${playerxdr_c} ${playerxdr_h} ${CMAKE_CURRENT_BINARY_DIR}/player_interfaces.h
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    DEPENDS ${interfaceFiles} ${CMAKE_CURRENT_BINARY_DIR}/player_interfaces.h)
-
-# Include from the binary dir to get player_interfaces.h and interface_table.h
-INCLUDE_DIRECTORIES (${CMAKE_CURRENT_BINARY_DIR})
-# Possibly use our own copy of XDR
-IF (NOT HAVE_XDR)
-    INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/replace)
-ENDIF (NOT HAVE_XDR)
 
 IF (NOT PTHREAD_INCLUDE_DIR STREQUAL "")
     PLAYERCORE_ADD_INCLUDE_DIR (${PTHREAD_INCLUDE_DIR})
@@ -56,12 +25,6 @@ SET (playercoreSrcs driver.cc
                     property.cpp
                     threaded_driver.cc
                     remote_driver.cc)
-
-# TODO: playerxdr should NOT be linked here; it's a bogus dependency coming
-# from the fact that message cloning functions are auto-generated into
-# playerxdr and used here.  Those functions should go into a separate
-# library.
-PLAYERCORE_ADD_INT_LINK_LIB (playerutils playererror playerxdr)
 
 IF (NOT PLAYER_OS_QNX)
     PLAYERCORE_ADD_LINK_LIB (${PTHREAD_LIB})
@@ -89,9 +52,12 @@ IF (NOT HAVE_DIRNAME)
     SET (playerreplaceLib playerreplace)
 ENDIF (NOT HAVE_DIRNAME)
 
+PLAYERCORE_ADD_INT_LINK_DIR (${CMAKE_BINARY_DIR}/libplayerinterface)
+PLAYERCORE_ADD_INT_LINK_LIB (playerutils playererror playerinterface)
+
 INCLUDE_DIRECTORIES (${PLAYERCORE_INT_INCLUDE_DIRS} ${PLAYERCORE_EXTRA_INCLUDE_DIRS})
 LINK_DIRECTORIES (${PLAYERCORE_INT_LINK_DIRS} ${PLAYERCORE_EXTRA_LINK_DIRS})
-PLAYER_ADD_LIBRARY (playercore ${playercoreSrcs} ${player_interfaces_h} ${playerxdr_h})
+PLAYER_ADD_LIBRARY (playercore ${playercoreSrcs})
 TARGET_LINK_LIBRARIES (playercore ${playerreplaceLib}
                                   ${PLAYERCORE_INT_LINK_LIBRARIES}
                                   ${PLAYERCORE_EXTRA_LINK_LIBRARIES})
@@ -107,38 +73,17 @@ PLAYER_MAKE_PKGCONFIG ("playercore" "Player core library - part of the Player Pr
 CONFIGURE_FILE (${PLAYER_CMAKE_DIR}/UsePlayerPlugin.cmake.in ${CMAKE_BINARY_DIR}/cmake/UsePlayerPlugin.cmake @ONLY)
 
 
-SET (playererrorSrcs error.c)
-PLAYER_ADD_LIBRARY (playererror ${playererrorSrcs})
-PLAYER_MAKE_PKGCONFIG ("playererror" "Player error reporting library - part of the Player Project"
-                       "" "" "" "")
 
-
-SET (playerutilsSrcs interface_util.c
-                     addr_util.c)
-PLAYER_ADD_LIBRARY (playerutils ${playerutilsSrcs} ${interface_table_h})
-TARGET_LINK_LIBRARIES (playerutils playererror)
-IF (PLAYER_OS_WIN)
-    TARGET_LINK_LIBRARIES (playerutils Ws2_32)
-ENDIF (PLAYER_OS_WIN)
-PLAYER_MAKE_PKGCONFIG ("playerutils" "Player utilities library - part of the Player Project"
-                       "" "" "" "")
-
-PLAYER_INSTALL_HEADERS (playercore addr_util.h
+PLAYER_INSTALL_HEADERS (playercore 
                                    configfile.h
                                    device.h
                                    devicetable.h
                                    driver.h
                                    drivertable.h
-                                   error.h
                                    filewatcher.h
                                    globals.h
-                                   interface_util.h
                                    message.h
-                                   playercommon.h
-                                   ${playerconfig_h}
                                    playercore.h
-                                   player.h
-                                   ${player_interfaces_h}
                                    playertime.h
                                    plugins.h
                                    property.h

@@ -83,7 +83,6 @@ driver
 #include <math.h>
 
 #include <libplayercore/playercore.h>
-#include <libplayercore/error.h>
 #include <libplayerjpeg/playerjpeg.h>
 
 class CameraUncompress : public ThreadedDriver

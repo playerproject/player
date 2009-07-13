@@ -25,7 +25,7 @@
 
 #include <stdarg.h>
 
-#include <libplayercore/error.h>
+#include <libplayerinterface/error.h>
 
 // User-selected msg level: 0 for the most important messages (always
 // printed); 9 for the least important.

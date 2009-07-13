@@ -50,11 +50,12 @@
 #include <math.h>
 #include <time.h>
 
+#include <libplayerinterface/player.h>
+#include <libplayerinterface/error.h>
+#include <libplayerinterface/interface_util.h>
+#include <libplayerinterface/playerxdr.h>
+
 #include <libplayercore/message.h>
-#include <libplayercore/player.h>
-#include <libplayercore/error.h>
-#include <libplayercore/interface_util.h>
-#include <playerxdr.h>
 #include <replace/replace.h>
 
 Message::Message(const struct player_msghdr & aHeader,
