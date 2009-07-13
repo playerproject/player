@@ -604,7 +604,11 @@ int SonyEVID30::MainSetup()
   fflush(stdout);
 
   // open it.  non-blocking at first, in case there's no ptz unit.
+#if defined (__QNXNTO__)
+  if((ptz_fd = open(ptz_serial_port, O_RDWR | O_NONBLOCK, S_IRUSR | S_IWUSR )) < 0 )
+#else
   if((ptz_fd = open(ptz_serial_port, O_RDWR | O_SYNC | O_NONBLOCK, S_IRUSR | S_IWUSR )) < 0 )
+#endif
   {
     perror("SonyEVID30::Setup():open():");
     return(-1);
