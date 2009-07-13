@@ -63,6 +63,13 @@ of the board that it is commanding. This driver allows for simple absolute posit
 - address (int)
   - Default 1
   - Address of the motionmind board that you wish to control
+- cpr (int)
+  - Default 500
+  - counts per motor rotation
+- gear_ratio
+  - Default 1.0
+  - n:1 gear_ratio - robot position in m or rad:motor rotation
+	- divide the gear_ratio by 2*PI for rotational actuators
 
 @par Example
 
@@ -81,6 +88,8 @@ driver(
   provides ["position1d:1"]
   requires ["opaque:0"]
   address 2
+  cpr 500
+  gear_ratio 2.0
 )
 
 driver(
@@ -112,7 +121,34 @@ driver(
 #define DEFAULT_RX_BUFFER_SIZE 128
 #define DEFAULT_ADDRESS 1
 #define MESSAGE_LENGTH 7
-#define MSG_TIMEOUT 0.25 //Seconds before it sends another read request if it hasn't yet got a reply
+#define MM_WRITE_MESSAGE_LENGTH 8
+#define MM_MSG_WAIT 20000  //microseconds to wait before sending another command 
+                           //  s/b 1250 according documentation but had comm errors below 20000
+#define MSG_TIMEOUT 250000 //microseconds before it sends another read request if it hasn't yet got a reply
+#define MM_DATA_WAIT 2500  //microseconds to wait before checking for response data
+#define MM_CPU_WAIT 10000  //microseconds to wait before checking for missing response data and to prevent CPU overloading
+#define MM_DEFAULT_CPR 500
+#define MM_DEFAULT_GEAR_RATIO 1.0
+#define MM_READ_POSITION 0x01 // Data0
+#define MM_READ_STATUS 0x01 // Data2
+#define MM_WRITE_REG 0x18
+
+// Status register bit packing
+#define MM_STATUS_NEGLIMIT     0x0001
+#define MM_STATUS_POSLIMIT     0x0002
+#define MM_STATUS_BRAKE        0x0004
+#define MM_STATUS_INDEX        0x0008
+#define MM_STATUS_BADRC        0x0010
+#define MM_STATUS_VNLIMIT      0x0020
+#define MM_STATUS_VPLIMIT      0x0040
+#define MM_STATUS_CURRENTLIMIT 0x0080
+#define MM_STATUS_PWMLIMIT     0x0100
+#define MM_STATUS_INPOSITION   0x0200
+
+// Register indexes for WRITE and WRITE STORE commands
+#define MM_REG_POSITION        0x00
+
+extern PlayerTime *GlobalTime;
 
 ///////////////////////////////////////////////////////////////////////////////
 // The class for the driver
@@ -134,21 +170,36 @@ class MotionMind : public ThreadedDriver
 
   private:
 
-    // Main function for device thread.
-    virtual void Main();
+	// Main function for device thread.
+	virtual void Main();
 
-	//Requests the pos of the robot if it hasnt been already, othwise publishes where it is
+	//Requests the pos of the robot if it hasnt been already
 	void FindCurrentPos();
+	//Requests the status register of the robot if it hasn't been already
+	void FindCurrentStatus();
 
 	// Checks whether or not you have sent a request for the position
 	bool pos_request_sent;
-	struct timeval time_sent;
+	bool status_request_sent;
+	struct timeval msg_sent;
+	struct timeval time_sent_pos;
+	struct timeval time_sent_status;
 
+	int MsgWait();
 	//Makes a command to be sent to the opaque driver
 	void makeAbsolutePositionCommand(uint8_t* buffer, unsigned int address, float position);
 
 	//Makes a command which requests the current osition bback from the motor ocntroller
 	void makeReadPositionCommand(uint8_t* buffer, unsigned int address);
+
+	//Makes a command which requests the current status back from the motor controller
+	void makeReadStatusCommand(uint8_t* buffer, unsigned int address);
+
+	//Makes a command which sets the odometry to the given value
+	void makeSetOdomReq(uint8_t* buffer, unsigned int address, const float position);
+
+	//Converts robot positions to absolute motionmind positions
+	int robot2abspos(const float position);
 
 	// The function to do stuff here
 	void DoStuff();
@@ -165,6 +216,14 @@ class MotionMind : public ThreadedDriver
     unsigned int rx_buffer_size;
     unsigned int rx_count;
 
+	// player position1 data odometric pose, velocity and motor stall info
+		player_position1d_data_t pos_data;
+
+	// counts per rotation
+		int cpr;
+
+	// gear ratio robot:motor
+		double gear_ratio;
 };
 
 
@@ -217,8 +276,15 @@ MotionMind::MotionMind(ConfigFile* cf, int section)
 	rx_buffer = new uint8_t[rx_buffer_size];
 	assert(rx_buffer);
 
-	pos_request_sent = false;
+	cpr = cf->ReadInt(section, "cpr", MM_DEFAULT_CPR);
 
+	this->gear_ratio = cf->ReadFloat(section, "gear_ratio", MM_DEFAULT_GEAR_RATIO);
+	if (this->gear_ratio == 0.0) fprintf (stderr,"gear_ratio cannot be 0.0: adjust your gear_ratio value");
+	assert(this->gear_ratio != 0.0);
+
+	this->pos_request_sent = false;
+	this->status_request_sent = false;
+	GlobalTime->GetTime(&(this->msg_sent));
 	return;
 }
 
@@ -306,10 +372,30 @@ int MotionMind::ProcessMessage(QueuePointer & resp_queue,
 		player_opaque_data_t mData;
 		mData.data_count = MESSAGE_LENGTH;
 		mData.data = buffer;
+		this->MsgWait();
 		opaque->PutMsg(this->InQueue, PLAYER_MSGTYPE_CMD, PLAYER_OPAQUE_CMD_DATA, reinterpret_cast<void*>(&mData),0,NULL);
+		GlobalTime->GetTime(&(this->msg_sent));
 		delete [] buffer;
 		return(0);
 	}
+	if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
+							PLAYER_POSITION1D_REQ_SET_ODOM,
+							this->device_addr))
+	{
+		assert(hdr->size == sizeof(player_position1d_set_odom_req_t));
+		player_position1d_set_odom_req_t* req = reinterpret_cast<player_position1d_set_odom_req_t*> (data);
+		uint8_t* buffer = new uint8_t[MM_WRITE_MESSAGE_LENGTH];
+		this->makeSetOdomReq(buffer, this->address, req->pos);
+		player_opaque_data_t mData;
+		mData.data_count = MM_WRITE_MESSAGE_LENGTH;
+		mData.data = buffer;
+		this->MsgWait();
+		opaque->PutMsg(this->InQueue, PLAYER_MSGTYPE_CMD, PLAYER_OPAQUE_CMD_DATA, reinterpret_cast<void*>(&mData),0,NULL);
+		GlobalTime->GetTime(&(this->msg_sent));
+		delete [] buffer;
+		return(0);
+	}
+
 	return -1;
 }
 
@@ -327,11 +413,14 @@ void MotionMind::Main()
 		// Process incoming messages
 		ProcessMessages();
 
-		// Ask for the current position and publish it
+		// Ask for the current position
 		FindCurrentPos();
+		// Ask for the current position status
+		FindCurrentStatus();
+		// Publish position data
+		this->Publish(this->device_addr, PLAYER_MSGTYPE_DATA, PLAYER_POSITION1D_DATA_STATE, (void*)&pos_data);
 
-		//usleep is called in FindCurrentPos to prevent overloading
-		//usleep(10000);
+		usleep(MM_CPU_WAIT);
 	}
 	return;
 }
@@ -340,7 +429,7 @@ void MotionMind::Main()
 void MotionMind::makeAbsolutePositionCommand(uint8_t* buffer, unsigned int address, float position)
 {
 	unsigned int checksum = 0;
-	int posInt = static_cast<int> (position);
+	int posInt = robot2abspos(position);
 	char* pos = (char*)&posInt;
 	buffer[0] = 0x15;
 	checksum += buffer[0];
@@ -355,31 +444,101 @@ void MotionMind::makeAbsolutePositionCommand(uint8_t* buffer, unsigned int addre
 	buffer[5] = pos[3];
 	checksum += buffer[5];
 	buffer[6] = checksum;
-	buffer[7] = 0x00;
 }
 
 void MotionMind::makeReadPositionCommand(uint8_t* buffer, unsigned int address)
 {
 	unsigned int checksum = 0;
+	// Command
 	buffer[0] = 0x1A;
 	checksum += buffer[0];
+	// Address
 	buffer[1] = address;
 	checksum += buffer[1];
-	buffer[2] = 0x01;
+	// Data0
+	buffer[2] = MM_READ_POSITION;
 	checksum += buffer[2];
+	// Data1
 	buffer[3] = 0x00;
 	checksum += buffer[3];
+	// Data2
 	buffer[4] = 0x00;
 	checksum += buffer[4];
+	// Data3
 	buffer[5] = 0x00;
 	checksum += buffer[5];
+	//Checksum
 	buffer[6] = checksum;
-	buffer[7] = 0x00;
+}
+
+void MotionMind::makeReadStatusCommand(uint8_t* buffer, unsigned int address)
+{
+	unsigned int checksum = 0;
+	// Command
+	buffer[0] = 0x1A;
+	checksum += buffer[0];
+	// Address
+	buffer[1] = address;
+	checksum += buffer[1];
+	// Data0
+	buffer[2] = 0x00;
+	checksum += buffer[2];
+	// Data1
+	buffer[3] = 0x00;
+	checksum += buffer[3];
+	// Data2
+	buffer[4] = MM_READ_STATUS;
+	checksum += buffer[4];
+	// Data3
+	buffer[5] = 0x00;
+	checksum += buffer[5];
+	//Checksum
+	buffer[6] = checksum;
+}
+
+void MotionMind::makeSetOdomReq(uint8_t* buffer, unsigned int address, float position)
+{
+	unsigned int checksum = 0;
+	uint32_t posInt = robot2abspos(position);
+	printf("Setting position register to %0.6f : %d\n",position,posInt);
+	char* pos = (char*)&posInt;
+	// Command
+	buffer[0] = MM_WRITE_REG;
+	checksum += buffer[0];
+	// Address
+	buffer[1] = address;
+	checksum += buffer[1];
+	// Index
+	buffer[2] = MM_REG_POSITION;
+	checksum += buffer[2];
+	// Data0
+	buffer[3] = pos[0];
+	checksum += buffer[3];
+	// Data1
+	buffer[4] = pos[1];
+	checksum += buffer[4];
+	// Data2
+	buffer[5] = pos[2];
+	checksum += buffer[5];
+	// Data3
+	buffer[6] = pos[3];
+	checksum += buffer[6];
+	//Checksum
+	buffer[7] = checksum;
+}
+
+int MotionMind::robot2abspos(const float position)
+{
+	assert(this->gear_ratio != 0.0);
+	int abspos = static_cast<int> ((double)position*(double)this->cpr*this->gear_ratio);
+	return abspos;
 }
 
 // Currently this alternates between reading the pedal position and reading the steering position
 void MotionMind::FindCurrentPos()
 {
+	long elapsed;
+	struct timeval curr;
 	if (!this->pos_request_sent)
 	{
 		uint8_t * buffer = new uint8_t[MESSAGE_LENGTH];
@@ -387,20 +546,24 @@ void MotionMind::FindCurrentPos()
 		player_opaque_data_t mData;
 		mData.data_count = MESSAGE_LENGTH;
 		mData.data = buffer;
+		this->MsgWait();
 		opaque->PutMsg(this->InQueue, PLAYER_MSGTYPE_CMD, PLAYER_OPAQUE_CMD_DATA, reinterpret_cast<void*>(&mData),0,NULL);
+		GlobalTime->GetTime(&(this->msg_sent));
 		delete [] buffer;
 		this->pos_request_sent = true;
-		GlobalTime->GetTime(&(this->time_sent));
-		usleep(10000);
+		GlobalTime->GetTime(&(this->time_sent_pos));
+		usleep(MM_DATA_WAIT);
 	}
-	else
+	while (this->pos_request_sent)
 	{
-		struct timeval curr;
+		ProcessMessages();
 		GlobalTime->GetTime(&curr);
-		if ((curr.tv_sec - this->time_sent.tv_sec)*1e6 + (curr.tv_usec - this->time_sent.tv_usec) > MSG_TIMEOUT*1e6)
+		elapsed = (curr.tv_sec - this->time_sent_pos.tv_sec)*1e6 + (curr.tv_usec - this->time_sent_pos.tv_usec);
+		if ((curr.tv_sec - this->time_sent_pos.tv_sec)*1e6 + (curr.tv_usec - this->time_sent_pos.tv_usec) > MSG_TIMEOUT)
 		{
-			PLAYER_WARN("mm message timeout triggered");
+			printf("%d %ld mm pos request message timeout triggered\n",opaque_id.index,elapsed);
 			this->pos_request_sent = false;
+			break;
 		}
 		// Ensures that you are reading from the right point in the stream
 		while( (rx_count > 0) && (rx_buffer[0] != this->address))
@@ -433,23 +596,116 @@ void MotionMind::FindCurrentPos()
 			}
 			else
 			{
-				player_position1d_data_t data_packet;
-				data_packet.pos = static_cast<float> (position);
-				this->Publish(this->device_addr, PLAYER_MSGTYPE_DATA, PLAYER_POSITION1D_DATA_STATE, (void*)&data_packet);
+				GlobalTime->GetTime(&curr);
+				float robot_pos = (float)((double)position/(this->gear_ratio*((double)cpr)));
+				this->pos_data.pos = robot_pos;
 				rx_count -= 6;
 				memmove(rx_buffer+6, rx_buffer, rx_count);
-				pos_request_sent = false;
+				this->pos_request_sent = false;
 			}
 		}
 		else
 		{
 			// Prevents the CPU from becoming overloaded
-			usleep(10000);
+			usleep(MM_CPU_WAIT);
 		}
 	}
+	GlobalTime->GetTime(&curr);
+	elapsed = (curr.tv_sec - this->time_sent_pos.tv_sec)*1e6 + (curr.tv_usec - this->time_sent_pos.tv_usec);
 }
 
+void MotionMind::FindCurrentStatus()
+{
+	long elapsed;
+	struct timeval curr;
+	if (!this->status_request_sent)
+	{
+		//    printf("%d MotionMind FindCurrentStatus sending status request\n",opaque_id.index);
+		uint8_t * buffer = new uint8_t[MESSAGE_LENGTH];
+		makeReadStatusCommand(buffer, this->address);
+		player_opaque_data_t mData;
+		mData.data_count = MESSAGE_LENGTH;
+		mData.data = buffer;
+		this->MsgWait();
+		opaque->PutMsg(this->InQueue, PLAYER_MSGTYPE_CMD, PLAYER_OPAQUE_CMD_DATA, reinterpret_cast<void*>(&mData),0,NULL);
+		GlobalTime->GetTime(&(this->msg_sent));
+		delete [] buffer;
+		this->status_request_sent = true;
+		GlobalTime->GetTime(&(this->time_sent_status));
+		usleep(MM_DATA_WAIT);
+	}
+	while (this->status_request_sent)
+	{
+		ProcessMessages();
+		GlobalTime->GetTime(&curr);
+		elapsed = (curr.tv_sec - this->time_sent_status.tv_sec)*1e6 + (curr.tv_usec - this->time_sent_status.tv_usec);
+		if ((curr.tv_sec - this->time_sent_status.tv_sec)*1e6 + (curr.tv_usec - this->time_sent_status.tv_usec) > MSG_TIMEOUT)
+		{
+			printf("%d %ld mm status message request timeout triggered\n",opaque_id.index,elapsed);
+			this->status_request_sent = false;
+			break;
+		}
+		// Ensures that you are reading from the right point in the stream
+		while( (rx_count > 0) && (rx_buffer[0] != this->address))
+		{
+			memmove(rx_buffer, rx_buffer+1, rx_count - 1);
+			rx_count--;
+		}
+		if (rx_count >= 4)
+		{
+			assert (rx_buffer[0] == this->address);
+			int32_t status = 0;
+			unsigned char* stat = (unsigned char*)&status;
+			unsigned int checksum = rx_buffer[0];
+			unsigned char* csum = (unsigned char*)&checksum;
+			stat[0] = rx_buffer[1];
+			checksum += rx_buffer[1];
+			stat[1] = rx_buffer[2];
+			checksum += rx_buffer[2];
+			if (csum[0] != rx_buffer[3])
+			{
+				// Checksums don't match - not necessarily bad as it can be due to the address header being in the middle of a responce
+				// to another driver with a different address e.g. the responce is 02 01 xx xx xx xx, the data being sent to device 2
+				// with the info 01 xx xx xx.
+				memmove(rx_buffer, rx_buffer+1, rx_count - 1);
+				rx_count--;
+			}
+			else
+			{
+				this->pos_data.status = 
+					(status & MM_STATUS_NEGLIMIT ? 0x01 : 0x00)     // NEGLIMIT -> lim min
+					| (status & MM_STATUS_POSLIMIT ? 0x04 : 0x00)     // POSLIMIT -> lim max
+					| (status & MM_STATUS_CURRENTLIMIT ? 0x08 : 0x00) // CURRENTLIMIT -> over current
+					| (status & MM_STATUS_INPOSITION ? 0x10 : 0x00)   // INPOSITION -> trajectory complete
+					| (status & MM_STATUS_BRAKE ? 0x00 : 0x20);        // BRAKE -> is enabled (inverted)
+				rx_count -= 4;
+				memmove(rx_buffer+4, rx_buffer, rx_count);
+				status_request_sent = false;
+			}
+		}
+		else
+		{
+			// Prevents the CPU from becoming overloaded
+			usleep(MM_CPU_WAIT);
+		}
+	}
+	elapsed = (curr.tv_sec - this->time_sent_status.tv_sec)*1e6 + (curr.tv_usec - this->time_sent_status.tv_usec);
+}
 
+int MotionMind::MsgWait()
+{
+	struct timeval curr;
+	long elapsed;
+	GlobalTime->GetTime(&curr);
+	elapsed = (curr.tv_sec - this->msg_sent.tv_sec)*1e6 + (curr.tv_usec - this->msg_sent.tv_usec);
+	while (elapsed < MM_MSG_WAIT)
+	{
+		usleep(MM_MSG_WAIT-elapsed);
+		GlobalTime->GetTime(&curr);
+		elapsed = (curr.tv_sec - this->msg_sent.tv_sec)*1e6 + (curr.tv_usec - this->msg_sent.tv_usec);
+	}
+	return 0;
+}
 
 
 
