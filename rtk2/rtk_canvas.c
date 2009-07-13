@@ -483,7 +483,6 @@ void rtk_canvas_render(rtk_canvas_t *canvas)
 {
   int bg_count;
   rtk_fig_t *fig;
-  GdkColor color;
 
   int rcount;
   GdkRectangle clipbox;

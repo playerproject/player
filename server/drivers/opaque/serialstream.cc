@@ -330,10 +330,14 @@ int SerialStream::ProcessMessage(QueuePointer & resp_queue,
 	      return -1;
 	    }
 
-	    if((recv->data_count && (write(opaque_fd, recv->data, recv->data_count)) < recv->data_count))
+	    if ((recv->data_count) > 0)
 	    {
-	      fprintf(stderr,"Error writing to FOB (%d - %s), disabling\n",errno,strerror(errno));
-	      return -1;
+	      int retval = write(opaque_fd, recv->data, recv->data_count);
+	      if ((retval < 0) || (static_cast<unsigned>(retval) != recv->data_count))
+	      {
+	        fprintf(stderr,"Error writing to FOB (%d - %s), disabling\n",errno,strerror(errno));
+	        return -1;
+	      }
 	    }
 
 	    // restore flags
