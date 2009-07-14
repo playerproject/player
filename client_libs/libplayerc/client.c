@@ -385,6 +385,7 @@ int playerc_client_connect(playerc_client_t *client)
   } while (ret == -1 && (errno == EALREADY || errno == EAGAIN || errno == EINPROGRESS));
   */
 
+  // In Windows, the connect timeout is (apparently) a registry setting.
 #if !defined (WIN32)
   /* Set up a timer to interrupt the connection process */
   timer.it_interval.tv_sec = 0;

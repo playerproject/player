@@ -1,7 +1,5 @@
 This list is incomplete.
 
 - Fix usage of user-configured pthreads location
-- Add replacement code for setitimer and related
-- Change nanosleep and usleep in replace to use the high performance timer (and clean up some ifdefs that don't use them yet)
 - Python bindings
 - Finding GTK
