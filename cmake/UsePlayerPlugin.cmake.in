@@ -1,6 +1,7 @@
 CMAKE_MINIMUM_REQUIRED (VERSION 2.4 FATAL_ERROR)
 IF (COMMAND CMAKE_POLICY)
     CMAKE_POLICY (SET CMP0003 NEW)
+    CMAKE_POLICY (SET CMP0011 NEW)
 ENDIF (COMMAND CMAKE_POLICY)
 
 INCLUDE (PlayerUtils)
@@ -65,7 +66,7 @@ ENDIF (NOT PKG_CONFIG_FOUND)
 # to have been installed in the system path (as it should have been with Player).
 MACRO (PROCESS_INTERFACES _file _outputFile)
     ADD_CUSTOM_COMMAND (OUTPUT ${_outputFile}
-        COMMAND playerinterfacegen.py ${ARGN} ${_file} > ${_outputFile}
+        COMMAND playerinterfacegen ${ARGN} ${_file} > ${_outputFile}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         DEPENDS ${_file}
     )
@@ -73,7 +74,7 @@ ENDMACRO (PROCESS_INTERFACES)
 
 MACRO (PROCESS_XDR _interfaceH _xdrH _xdrC)
     ADD_CUSTOM_COMMAND (OUTPUT ${_xdrH} ${_xdrC}
-        COMMAND playerxdrgen.py ${_interfaceH} ${_xdrC} ${_xdrH}
+        COMMAND playerxdrgen ${_interfaceH} ${_xdrC} ${_xdrH}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         DEPENDS ${_interfaceH})
 ENDMACRO (PROCESS_XDR)
@@ -207,7 +208,12 @@ MACRO (PLAYER_ADD_PLUGIN_INTERFACE _interfName _interfDef)
         TARGET_LINK_LIBRARIES (${_interfName} ${PLUGIN_PLAYERC_LINK_LIBS})
     ENDIF (PLUGIN_PLAYERC_LINK_LIBS)
     GET_SOURCE_FILE_PROPERTY (currentCFlags ${xdr_c} COMPILE_FLAGS)
-    SET_SOURCE_FILES_PROPERTIES (${xdr_c} PROPERTIES COMPILE_FLAGS "-Dplayerxdr_EXPORTS ${currentCFlags}")
+    IF (currentCFlags STREQUAL "NOTFOUND")
+        SET (newCFlags "-Dplayerxdr_EXPORTS")
+    ELSE (currentCFlags STREQUAL "NOTFOUND")
+        SET (newCFlags "-Dplayerxdr_EXPORTS ${currentCFlags}")
+    ENDIF (currentCFlags STREQUAL "NOTFOUND")
+    SET_SOURCE_FILES_PROPERTIES (${xdr_c} PROPERTIES COMPILE_FLAGS ${newCFlags})
 
     # Get the current cflags for each source file, and add the global ones
     # (this allows the user to specify individual cflags for each source file

@@ -8,7 +8,8 @@ IF (BUILD_UTILS_PLAYERJOY)
 
             LINK_DIRECTORIES (${PLAYERCC_EXTRA_LINK_DIRS})
             PLAYER_ADD_EXECUTABLE (playerjoy playerjoy.cc)
-            TARGET_LINK_LIBRARIES (playerjoy playerc++ playerc playerinterface playercommon ${PLAYERC_EXTRA_LINK_LIBRARIES}
+            TARGET_LINK_LIBRARIES (playerjoy playerc++ playerc playerinterface
+                                   playercommon ${PLAYERC_EXTRA_LINK_LIBRARIES}
                                    ${PLAYERCC_EXTRA_LINK_LIBRARIES} ${PTHREAD_LIB})
         ELSE (BUILD_PLAYERCC)
             MESSAGE (STATUS "playerjoy will not be built - playerc++ client library is disabled")
