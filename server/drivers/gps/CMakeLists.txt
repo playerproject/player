@@ -7,7 +7,7 @@ PLAYERDRIVER_REQUIRE_PKG (gbxgarminacfr build_gbxgarminacfr GbxGarminAcfr
     gbxgarminacfr_includeDirs gbxgarminacfr_libDirs gbxgarminacfr_linkLibs
     gbxgarminacfr_linkFlags gbxgarminacfr_cFlags)
 PLAYERDRIVER_ADD_DRIVER (gbxgarminacfr build_gbxgarminacfr
-    INCLUDEDIRS "${gbxgarminacfr_includeDirs}" LIBDIRS "${gbxgarminacfr_libDirs}"
-    LINKLIBS "${gbxgarminacfr_linkLibs}" LINKFLAGS "${gbxgarminacfr_linkFlags}"
-    CFLAGS "${gbxgarminacfr_cFlags}" SOURCES gbxgarminacfr.cc)
+    INCLUDEDIRS ${gbxgarminacfr_includeDirs} LIBDIRS ${gbxgarminacfr_libDirs}
+    LINKLIBS ${gbxgarminacfr_linkLibs} LINKFLAGS ${gbxgarminacfr_linkFlags}
+    CFLAGS ${gbxgarminacfr_cFlags} SOURCES gbxgarminacfr.cc)
 

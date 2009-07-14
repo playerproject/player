@@ -22,11 +22,11 @@ SET (amclSrcs   amcl.cc
                 map/map_draw.c)
 
 IF (INCLUDE_RTKGUI)
-    SET (linkFlags "-L${PROJECT_BINARY_DIR}/rtk2 -lrtk ${GTK_LINKFLAGS}")
-    SET (cFlags "-I${PROJECT_SOURCE_DIR}/rtk2 ${GTK_CFLAGS}")
+    SET (linkFlags -L${PROJECT_BINARY_DIR}/rtk2 -lrtk ${GTK_LINKFLAGS})
+    SET (cFlags -I${PROJECT_SOURCE_DIR}/rtk2 ${GTK_CFLAGS})
 ELSE (INCLUDE_RTKGUI)
     SET (linkFlags)
     SET (cFlags)
 ENDIF (INCLUDE_RTKGUI)
 
-PLAYERDRIVER_ADD_DRIVER (amcl build_amcl LINKFLAGS "${linkFlags}" CFLAGS "${cFlags}" SOURCES ${amclSrcs})
+PLAYERDRIVER_ADD_DRIVER (amcl build_amcl LINKFLAGS ${linkFlags} CFLAGS ${cFlags} SOURCES ${amclSrcs})

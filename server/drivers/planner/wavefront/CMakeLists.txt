@@ -3,9 +3,9 @@ PLAYERDRIVER_REQUIRE_PKG (wavefront build_wavefront gdk-pixbuf-2.0
     wavefront_includeDirs wavefront_libDirs wavefront_linkLibs
     wavefront_linkFlags wavefront_cFlags)
 PLAYERDRIVER_ADD_DRIVER (wavefront build_wavefront
-    INCLUDEDIRS "${wavefront_includeDirs}" LIBDIRS "${wavefront_libDirs}"
-    LINKLIBS "${wavefront_linkLibs}" LINKFLAGS "${wavefront_linkFlags}"
-    CFLAGS "${wavefront_cFlags}"
+    INCLUDEDIRS ${wavefront_includeDirs} LIBDIRS ${wavefront_libDirs}
+    LINKLIBS ${wavefront_linkLibs} LINKFLAGS ${wavefront_linkFlags}
+    CFLAGS ${wavefront_cFlags}
     SOURCES plan.c plan_plan.c plan_waypoint.c wavefront.cc heap.c plan_control.c)
 
 # Also build and install standalone non-Player lib

@@ -1,4 +1,2 @@
 - Java bindings for core, xdr, tcp, etc
-- dist tarballs, packages, etc - add in the extra_dist files to the source one, make the debian one
 - Figure out why C++ tests and C++ examples don't link properly when building as static libs, even though the server and utils do.
-- PLAYER_PROCESS_ARGUMENTS should not need to have arguments enclosed in quotes. Fix this.
