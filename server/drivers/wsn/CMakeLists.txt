@@ -35,5 +35,5 @@ ELSE ("${PHIDGETACC_DIR}" STREQUAL "")
 ENDIF ("${PHIDGETACC_DIR}" STREQUAL "")
 PLAYERDRIVER_REQUIRE_HEADER (phidgetAcc build_phidgetAcc ${phidgetReqHeader})
 PLAYERDRIVER_ADD_DRIVER (phidgetAcc build_phidgetAcc
-    LINKFLAGS ${phidgetExtraLibs} CFLAGS "${phidgetExtraFlags}"
+    LINKFLAGS ${phidgetExtraLibs} CFLAGS ${phidgetExtraFlags}
     SOURCES phidgetAcc.cc)

@@ -15,6 +15,6 @@ ENDIF ("${UNICAP_DIR}" STREQUAL "")
 PLAYERDRIVER_REQUIRE_HEADER (unicapimage build_unicapimage ${unicapReqHeader})
 
 PLAYERDRIVER_ADD_DRIVER (unicapimage build_unicapimage
-                         LINKFLAGS "-L{UNICAP_DIR}/lib -lunicap -lrt"
-                         CFLAGS "-I${UNICAP_DIR}/include -I${UNICAP_DIR}/include/unicap"
+                         LINKFLAGS -L{UNICAP_DIR}/lib -lunicap -lrt
+                         CFLAGS -I${UNICAP_DIR}/include -I${UNICAP_DIR}/include/unicap
                          SOURCES unicapImage.cc)
