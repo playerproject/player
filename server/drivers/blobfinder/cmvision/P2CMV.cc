@@ -65,12 +65,19 @@ configuration file.
   - Default: 0
   - If set to 1, the blobfinder will output a testpattern of three blobs.
 
-
 - colorfile (string)
   - Default: ""
   - CMVision configuration file.  In the colors section, the tuple is the RGB
   value of the intended color.  In the thresholds section, the values are the
   min:max of the respective YUV channels.
+
+- minblobarea (int)
+  - Default: CMV_MIN_AREA (20)
+  - minimum number of pixels required to qualify as a blob
+
+- maxblobarea (int)
+  - Default: 0 (off)
+  - maximum number of pixels allowed to qualify as a blob
 
 @verbatim
 [Colors]
@@ -92,6 +99,9 @@ driver
   name "cmvision"
   provides ["blobfinder:0"]
   requires ["camera:0"]
+  colorfile "/path/to/colorfile"
+  minblobarea 1
+  maxblobarea 100
 )
 @endverbatim
 
@@ -135,6 +145,17 @@ Ben Grocholsky, Brad Kratochvil
 #define DEFAULT_CMV_WIDTH CMV_DEFAULT_WIDTH
 #define DEFAULT_CMV_HEIGHT CMV_DEFAULT_HEIGHT
 
+#define RGB2YUV(r, g, b, y, u, v)\
+  y = (306*r + 601*g + 117*b)  >> 10;\
+  u = ((-172*r - 340*g + 512*b) >> 10)  + 128;\
+  v = ((512*r - 429*g - 83*b) >> 10) + 128;\
+  y = y < 0 ? 0 : y;\
+  u = u < 0 ? 0 : u;\
+  v = v < 0 ? 0 : v;\
+  y = y > 255 ? 255 : y;\
+  u = u > 255 ? 255 : u;\
+  v = v > 255 ? 255 : v
+
 /********************************************************************/
 
 class CMVisionBF: public ThreadedDriver
@@ -148,6 +169,8 @@ class CMVisionBF: public ThreadedDriver
     uint8_t*         mImg;
     uint8_t*         mTmp;
     const char*      mColorFile;
+    uint16_t         mMinArea;
+    uint16_t         mMaxArea;
 
     player_blobfinder_data_t   mData;
     unsigned int     allocated_blobs;
@@ -175,6 +198,10 @@ class CMVisionBF: public ThreadedDriver
     void MainQuit();
     
     void ProcessImageData();
+    int ProcessBlobfinderReqSetColor(player_msghdr_t *hdr, 
+                                     player_blobfinder_color_config_t *data);
+    int ProcessBlobfinderReqGetColor(player_msghdr_t *hdr, 
+                                     player_blobfinder_color_config_t *data);
 };
 
 // a factory creation function
@@ -204,6 +231,8 @@ CMVisionBF::CMVisionBF( ConfigFile* cf, int section)
 {
   mColorFile  = cf->ReadString(section, "colorfile", "");
   mDebugLevel = cf->ReadInt(section, "debuglevel", 0);
+  mMinArea    = cf->ReadInt(section, "minblobarea", CMV_MIN_AREA);
+  mMaxArea    = cf->ReadInt(section, "maxblobarea", 0);
   // Must have an input camera
   if (cf->ReadDeviceAddr(&mCameraAddr, section, "requires",
                          PLAYER_CAMERA_CODE, -1, NULL) != 0)
@@ -243,6 +272,8 @@ CMVisionBF::MainSetup()
   }
 
   mVision = new CMVision();
+  mVision->set_cmv_min_area(mMinArea);
+  mVision->set_cmv_max_area(mMaxArea);
   // clean our data
   memset(&mData,0,sizeof(mData));
   allocated_blobs = 0;
@@ -498,7 +529,110 @@ CMVisionBF::ProcessMessage(QueuePointer & resp_queue,
     }
     return(0);
   }
+  else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_BLOBFINDER_REQ_SET_COLOR, device_addr))
+  {
+    assert(hdr->size == sizeof(player_blobfinder_color_config_t));
+    player_blobfinder_color_config_t* color_data = reinterpret_cast<player_blobfinder_color_config_t *>(data);
+    if (this->ProcessBlobfinderReqSetColor(hdr,color_data) < 0) 
+    {
+      Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, hdr->subtype);
+      return(-1);
+    }
+    Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype);
+    return(0);
+  }
+  else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_BLOBFINDER_REQ_GET_COLOR, device_addr))
+  {
+    assert(hdr->size == sizeof(player_blobfinder_color_config_t));
+    player_blobfinder_color_config_t* color_data = reinterpret_cast<player_blobfinder_color_config_t *>(data);
+    player_blobfinder_color_config_t resp;
+    resp.channel=color_data->channel;
+    int tmp;
+    if ((tmp = this->ProcessBlobfinderReqGetColor(hdr,&resp)) < 0)  
+    {   
+      printf("ERROR! %d\n",tmp);
+      Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, hdr->subtype,&resp,sizeof(resp),NULL);
+      return(-1);
+    }   
+    printf("test: %d %d %d \n",resp.channel,resp.rmin,resp.rmax);
+    Publish(device_addr,
+         resp_queue, PLAYER_MSGTYPE_RESP_ACK,
+         hdr->subtype,
+         &resp,
+         //reinterpret_cast<player_blobfinder_color_config_t*>(&resp),
+         sizeof(resp),NULL);
+    return(0);
+  }
 
   // Tell the caller that you don't know how to handle this message
   return(-1);
 }
+
+int
+CMVisionBF::ProcessBlobfinderReqSetColor(player_msghdr_t *hdr,
+                                         player_blobfinder_color_config_t *data)
+{
+  if(data->channel < 0 || data->channel >= CMV_MAX_COLORS)
+  {
+    PLAYER_ERROR("CMVisionBF::ProcessBlobfinderReqSetColor data->channel out of range");
+    return(-1);
+  }
+
+  // Get and copy existing color_info for the channel
+  // Should this function skip this and just change the existing color_info?
+  CMVision::color_info *oldinfo;
+  CMVision::color_info newinfo;
+  oldinfo = mVision->getColorInfo(data->channel);
+  memcpy(&newinfo,oldinfo,sizeof(CMVision::color_info));
+
+  // Convert RGB data to YUV
+  RGB2YUV( data->rmin, data->gmin, data->bmin, newinfo.y_low, newinfo.u_low, newinfo.v_low );
+  RGB2YUV( data->rmax, data->gmax, data->bmax, newinfo.y_high, newinfo.u_high, newinfo.v_high );
+  printf(" colorinfo (%d:%d,%d,%d,%d,%d,%d)\n",
+    data->channel,
+    newinfo.y_low,
+    newinfo.y_high,
+    newinfo.u_low,
+    newinfo.u_high,
+    newinfo.v_low,
+    newinfo.v_high);
+//  mVision->setColorInfo(data->channel,newinfo);
+  mVision->setThreshold(data->channel,
+    newinfo.y_low,
+    newinfo.y_high,
+    newinfo.u_low,
+    newinfo.u_high,
+    newinfo.v_low,
+    newinfo.v_high);
+  return(0);
+}
+
+int
+CMVisionBF::ProcessBlobfinderReqGetColor(player_msghdr_t *hdr,
+                                         player_blobfinder_color_config_t *data)
+{
+  assert(hdr);
+  assert(data);
+  if(data->channel < 0 || data->channel >= CMV_MAX_COLORS)
+  {
+    PLAYER_ERROR("CMVisionBF::ProcessBlobfinderReqSetColor data->channel out of range");
+    return(-1);
+  }
+
+  int v1,v2,v3,v4,v5,v6;
+
+  if (mVision->getThreshold((int)data->channel,v1,v2,v3,v4,v5,v6)) {
+    data->rmin = v1;
+    data->rmax = v2;
+    data->gmin = v3; 
+    data->gmax = v4;
+    data->bmin = v5; 
+    data->bmax = v6; 
+    return(0);
+  }
+  else {
+    PLAYER_ERROR("CMVisionBF::ProcessBlobfinderReqSetColor getThreshold failed");
+    return(-1);
+  }
+}
+

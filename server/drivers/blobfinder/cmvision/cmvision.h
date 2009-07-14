@@ -179,6 +179,9 @@ protected:
 
   unsigned options;
 
+  int cmv_min_area;
+  int cmv_max_area;
+
 protected:
 // Private functions
   void classifyFrame(image_pixel * restrict img,unsigned * restrict map);
@@ -238,6 +241,8 @@ public:
   bool processFrame(unsigned *map);
   int numRegions(int color_id);
   region *getRegions(int color_id);
+  void set_cmv_min_area(int area) { cmv_min_area = area; }
+  void set_cmv_max_area(int area) { cmv_max_area = area; }
 };
 
 #endif
