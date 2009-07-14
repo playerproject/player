@@ -1,5 +1,3 @@
-LINK_DIRECTORIES (${CMAKE_BINARY_DIR}/libplayercommon)
-
 SET (playerwkbSrcs playerwkb.c)
 PLAYER_ADD_LIBRARY (playerwkb ${playerwkbSrcs})
 

@@ -39,6 +39,8 @@ eginterf_t *eginterf_create (playerc_client_t *client, int index)
 void eginterf_destroy (eginterf_t *device)
 {
 	playerc_device_term (&device->info);
+	if (device->stuff != NULL)
+		free (device->stuff);
 	free (device);
 }
 

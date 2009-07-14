@@ -74,8 +74,7 @@ CONFIGURE_FILE (${PLAYER_CMAKE_DIR}/UsePlayerPlugin.cmake.in ${CMAKE_BINARY_DIR}
 
 
 
-PLAYER_INSTALL_HEADERS (playercore 
-                                   configfile.h
+PLAYER_INSTALL_HEADERS (playercore configfile.h
                                    device.h
                                    devicetable.h
                                    driver.h
@@ -88,3 +87,4 @@ PLAYER_INSTALL_HEADERS (playercore
                                    plugins.h
                                    property.h
                                    wallclocktime.h)
+
