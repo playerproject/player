@@ -37,15 +37,6 @@ PLAYERDRIVER_ADD_DRIVER (laserrescan build_laserrescan SOURCES laserrescan.cc la
 PLAYERDRIVER_OPTION (lasercutter build_lasercutter ON)
 PLAYERDRIVER_ADD_DRIVER (lasercutter build_lasercutter SOURCES lasercutter.cc lasertransform.cc)
 
-PLAYERDRIVER_OPTION (urglaser build_urglaser ON)
-PLAYERDRIVER_REJECT_OS (urglaser build_urglaser PLAYER_OS_WIN)
-PLAYERDRIVER_ADD_DRIVER (urglaser build_urglaser SOURCES urg_laser.cc urglaserdriver.cc)
-IF (NOT PLAYER_OS_WIN)
-    # Also build and install standalone non-Player lib
-    PLAYER_ADD_LIBRARY (urglaser_standalone urg_laser.cc)
-    PLAYER_INSTALL_HEADERS (standalone_drivers urg_laser.h)
-ENDIF (NOT PLAYER_OS_WIN)
-
 PLAYERDRIVER_OPTION (rs4leuze build_rs4leuze ON)
 PLAYERDRIVER_REJECT_OS (rs4leuze build_rs4leuze PLAYER_OS_WIN)
 PLAYERDRIVER_ADD_DRIVER (rs4leuze build_rs4leuze SOURCES RS4LeuzeLaserDriver.cc RS4Leuze_laser.cc)
