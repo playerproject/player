@@ -11,3 +11,7 @@ PLAYERDRIVER_ADD_DRIVER (gbxgarminacfr build_gbxgarminacfr
     LINKLIBS ${gbxgarminacfr_linkLibs} LINKFLAGS ${gbxgarminacfr_linkFlags}
     CFLAGS ${gbxgarminacfr_cFlags} SOURCES gbxgarminacfr.cc)
 
+PLAYERDRIVER_OPTION (rt3xxx build_rt3xxx ON)
+PLAYERDRIVER_REJECT_OS (rt3xxx build_rt3xxx PLAYER_OS_WIN)
+PLAYERDRIVER_ADD_DRIVER (rt3xxx build_rt3xxx SOURCES rt3xxx.cc)
+
