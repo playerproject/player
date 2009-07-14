@@ -464,7 +464,7 @@ int CMVision::separateRegions(region * restrict reg,int num)
   for(i=0; i<num; i++){
     p = &reg[i];
     area = p->area;
-    if(area >= CMV_MIN_AREA){
+    if(area >= cmv_min_area && (cmv_max_area == 0 || area <= cmv_max_area)){
       if(area > max_area) max_area = area;
       l = p->color;
       region_count[l]++;

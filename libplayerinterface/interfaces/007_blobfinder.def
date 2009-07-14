@@ -10,6 +10,7 @@ message { DATA, BLOBS, 1, player_blobfinder_data_t };
 
 message { REQ, SET_COLOR, 1, player_blobfinder_color_config_t };
 message { REQ, SET_IMAGER_PARAMS, 2, player_blobfinder_imager_config_t };
+message { REQ, GET_COLOR, 3, player_blobfinder_color_config_t };
 
 
 /** @brief Structure describing a single blob. */
