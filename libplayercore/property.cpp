@@ -95,6 +95,62 @@ const bool Property::KeyIsEqual (const char *rhs)
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+BoolProperty::BoolProperty (const char *newKey, bool newValue, bool readOnly)
+	: Property (newKey, readOnly), value (newValue)
+{
+}
+
+BoolProperty::BoolProperty (const char *newKey, bool newValue, bool readOnly, Driver * driver, ConfigFile*cf, int section)
+: Property (newKey, readOnly), value (newValue)
+{
+	driver->RegisterProperty(newKey, this, cf, section);
+}
+
+
+void BoolProperty::SetValue (bool newValue)
+{
+	value = newValue;
+}
+
+void BoolProperty::GetValueToMessage (void *data) const
+{
+	reinterpret_cast<player_boolprop_req_t*> (data)->value = value;
+}
+
+void BoolProperty::SetValueFromMessage (const void *data)
+{
+	if (readonly)
+	{
+		PLAYER_WARN2 ("Property %s is read only, cannot change value %d", key, reinterpret_cast<const player_boolprop_req_t*> (data)->value);
+		return;
+	}
+
+	value = reinterpret_cast<const player_boolprop_req_t*> (data)->value;
+}
+
+bool BoolProperty::ReadConfig (ConfigFile *cf, int section)
+{
+	// Read a boolean from the config file section, using the current prop value as the default
+	value = cf->ReadBool (section, key, value);
+
+	return true;
+}
+
+const BoolProperty& BoolProperty::operator= (const BoolProperty &rhs)
+{
+	value = rhs.GetValue ();
+	return *this;
+}
+
+bool BoolProperty::operator= (bool rhs)
+{
+	value = rhs;
+	return value;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
 IntProperty::IntProperty (const char *newKey, int newValue, bool readOnly)
 	: Property (newKey, readOnly), value (newValue)
 {

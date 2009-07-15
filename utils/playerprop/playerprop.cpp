@@ -47,9 +47,11 @@ void PrintUsage (void)
 {
 	cout	<< "Usage: playerprop -d <device> [-i <index> -h <host> -p <port>] <command> <args>" << endl << endl
 			<< "Commands:" << endl
+			<< "getbool <prop name>         Get a boolean property" << endl
 			<< "getint <prop name>          Get an interger property" << endl
 			<< "getdbl <prop name>          Get a double property" << endl
 			<< "getstr <prop name>          Get a string property" << endl
+			<< "setbool <prop name> <value> Set a boolean property" << endl
 			<< "setint <prop name> <value>  Set an interger property" << endl
 			<< "setdbl <prop name> <value>  Set a double property" << endl
 			<< "setstr <prop name> <value>  Set a string property" << endl;
@@ -94,6 +96,7 @@ int GetOptions (int argc, char *argv[])
 int main (int argc, char *argv[])
 {
 	ClientProxy* deviceProxy;
+	bool boolValue;
 	int32_t argsIndex = 0, intValue;
 	double dblValue;
 	char *strValue;
@@ -198,7 +201,12 @@ int main (int argc, char *argv[])
 		exit (-1);
 	}
 
-	if (strncmp (argv[argsIndex], "getint", 6) == 0)
+	if (strncmp (argv[argsIndex], "getbool", 7) == 0)
+	{
+		if (deviceProxy->GetBoolProp (argv[argsIndex + 1], &boolValue) >= 0)
+			cout << "Property " << argv[argsIndex + 1] << " = " << boolValue << endl;
+	}
+	else if (strncmp (argv[argsIndex], "getint", 6) == 0)
 	{
 		if (deviceProxy->GetIntProp (argv[argsIndex + 1], &intValue) >= 0)
 			cout << "Property " << argv[argsIndex + 1] << " = " << intValue << endl;
@@ -215,6 +223,13 @@ int main (int argc, char *argv[])
 			cout << "Property " << argv[argsIndex + 1] << " = " << strValue << endl;
 			free (strValue);
 		}
+	}
+	else if (strncmp (argv[argsIndex], "setbool", 7) == 0)
+	{
+		if (strncmp (argv[argsIndex + 2], "true", 4) == 0)
+			deviceProxy->SetBoolProp (argv[argsIndex + 1], true);
+		else
+			deviceProxy->SetBoolProp (argv[argsIndex + 1], false);
 	}
 	else if (strncmp (argv[argsIndex], "setint", 6) == 0)
 	{

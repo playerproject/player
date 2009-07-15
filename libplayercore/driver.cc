@@ -405,7 +405,25 @@ int Driver::ProcessInternalMessages(QueuePointer &resp_queue,
 {
   Property *property = NULL;
 
-  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_GET_INTPROP_REQ))
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_GET_BOOLPROP_REQ))
+  {
+    player_boolprop_req_t req = *reinterpret_cast<player_boolprop_req_t*> (data);
+    if ((property = propertyBag.GetProperty (req.key)) == NULL)
+      return -1;
+    property->GetValueToMessage (reinterpret_cast<void*> (&req));
+    Publish(hdr->addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_GET_BOOLPROP_REQ, reinterpret_cast<void*> (&req), sizeof(player_boolprop_req_t), NULL);
+    return 0;
+  }
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SET_BOOLPROP_REQ))
+  {
+    player_boolprop_req_t req = *reinterpret_cast<player_boolprop_req_t*> (data);
+    if ((property = propertyBag.GetProperty (req.key)) == NULL)
+      return -1;
+    property->SetValueFromMessage (reinterpret_cast<void*> (&req));
+    Publish(hdr->addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_SET_BOOLPROP_REQ, NULL, 0, NULL);
+    return 0;
+  }
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_GET_INTPROP_REQ))
   {
     player_intprop_req_t req = *reinterpret_cast<player_intprop_req_t*> (data);
     if ((property = propertyBag.GetProperty (req.key)) == NULL)

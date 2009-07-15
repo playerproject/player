@@ -105,6 +105,10 @@
    - Default: 0m
    - Minimum possible distance. Below that means there is an error (a scratch on the laser for
      instance). The reading is then adjusted to the average of the neighboring valid beams.
+ - hw_timestamps (boolean)
+   - Default: false
+   - When false, the server will use server time stamps in data messages. When true, the time stamp
+     in the laser data will be used.
 
  @par Example
 
@@ -132,6 +136,7 @@ const int DEFAULT_SPEED_LEVEL = 0;
 const int DEFAULT_SENSITIVITY = 0;
 const int DEFAULT_GET_INTENSITIES = 0;
 const double DEFAULT_MIN_DIST = 0.0;
+const bool DEFAULT_TIMESTAMPS = false;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Driver object
@@ -157,6 +162,7 @@ class HokuyoDriver : public ThreadedDriver
 		double _minAngle, _maxAngle;
 		IntProperty _baudRate, _speedLevel, _highSensitivity;
 		DoubleProperty _minDist;
+		BoolProperty _hwTimeStamps;
 		std::string _portOpts;
 		// Geometry
 		player_ranger_geom_t _geom;
@@ -181,6 +187,7 @@ HokuyoDriver::HokuyoDriver (ConfigFile* cf, int section) :
 	_speedLevel ("speed_level", DEFAULT_SPEED_LEVEL, false),
 	_highSensitivity ("high_sensitivity", DEFAULT_SENSITIVITY, false),
 	_minDist ("min_dist", DEFAULT_MIN_DIST, false),
+	_hwTimeStamps ("hw_timestamps", DEFAULT_TIMESTAMPS, false),
 	_ranges (NULL), _intensities (NULL)
 {
 	// Get the baudrate, speed and sensitivity
@@ -188,6 +195,7 @@ HokuyoDriver::HokuyoDriver (ConfigFile* cf, int section) :
 	RegisterProperty ("speed_level", &_speedLevel, cf, section);
 	RegisterProperty ("high_sensitivity", &_highSensitivity, cf, section);
 	RegisterProperty ("min_dist", &_minDist, cf, section);
+	RegisterProperty ("hw_timestamps", &_hwTimeStamps, cf, section);
 
 	// Get config
 	_getIntensities = cf->ReadBool (section, "get_intensities", false);
@@ -516,13 +524,31 @@ bool HokuyoDriver::ReadLaser (void)
 
 		rangeData.ranges = _ranges;
 		rangeData.ranges_count = _data.Length ();
-		Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_RANGE,
-				reinterpret_cast<void*> (&rangeData), sizeof (rangeData), NULL);
+		if (_hwTimeStamps.GetValue ())
+		{
+			double ts = _data.TimeStamp () / 1000.0;
+			Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_RANGE,
+					reinterpret_cast<void*> (&rangeData), sizeof (rangeData), &ts);
+		}
+		else
+		{
+			Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_RANGE,
+					reinterpret_cast<void*> (&rangeData), sizeof (rangeData), NULL);
+		}
 
 		intensityData.intensities = _intensities;
 		intensityData.intensities_count = _data.Length ();
-		Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_INTNS,
-				reinterpret_cast<void*> (&intensityData), sizeof (intensityData), NULL);
+		if (_hwTimeStamps.GetValue ())
+		{
+			double ts = _data.TimeStamp () / 1000.0;
+			Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_INTNS,
+					reinterpret_cast<void*> (&intensityData), sizeof (intensityData), &ts);
+		}
+		else
+		{
+			Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_INTNS,
+					reinterpret_cast<void*> (&intensityData), sizeof (intensityData), NULL);
+		}
 	}
 	else
 	{
@@ -553,8 +579,17 @@ bool HokuyoDriver::ReadLaser (void)
 		}
 		rangeData.ranges = _ranges;
 		rangeData.ranges_count = _data.Length ();
-		Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_RANGE,
-				reinterpret_cast<void*> (&rangeData), sizeof (rangeData), NULL);
+		if (_hwTimeStamps.GetValue ())
+		{
+			double ts = _data.TimeStamp () / 1000.0;
+			Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_RANGE,
+					reinterpret_cast<void*> (&rangeData), sizeof (rangeData), &ts);
+		}
+		else
+		{
+			Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_RANGE,
+					reinterpret_cast<void*> (&rangeData), sizeof (rangeData), NULL);
+		}
 	}
 
 	return true;

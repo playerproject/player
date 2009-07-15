@@ -245,6 +245,12 @@ class PLAYERCC_EXPORT ClientProxy
     /// type and subtype. If it does, the return value will be 1, and 0 otherwise.
     int HasCapability(uint32_t aType, uint32_t aSubtype);
 
+    /// @brief Request a boolean property
+    int GetBoolProp(char *aProperty, bool *aValue);
+
+    /// @brief Set a boolean property
+    int SetBoolProp(char *aProperty, bool aValue);
+
     /// @brief Request an integer property
     int GetIntProp(char *aProperty, int32_t *aValue);
 

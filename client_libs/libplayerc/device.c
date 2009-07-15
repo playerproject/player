@@ -115,6 +115,40 @@ int playerc_device_hascapability(playerc_device_t *device, uint32_t type, uint32
 		  &capreq, NULL) >= 0 ? 1 : 0;
 }
 
+int playerc_device_get_boolprop(playerc_device_t *device, char *property, BOOL *value)
+{
+  int result = 0;
+
+  player_boolprop_req_t req, *resp;
+  req.key = property;
+  req.key_count = strlen (property) + 1;
+  req.value = FALSE;
+
+  if((result = playerc_client_request(device->client, device,
+                            PLAYER_GET_BOOLPROP_REQ, &req, (void**)&resp)) < 0)
+    return result;
+
+  *value = resp->value;
+  player_boolprop_req_t_free(resp);
+  return 0;
+}
+
+int playerc_device_set_boolprop(playerc_device_t *device, char *property, BOOL value)
+{
+  int result = 0;
+
+  player_boolprop_req_t req;
+  req.key = property;
+  req.key_count = strlen (property) + 1;
+  req.value = value;
+
+  if((result = playerc_client_request(device->client, device,
+                            PLAYER_SET_BOOLPROP_REQ, &req, NULL)) < 0)
+    return result;
+
+  return 0;
+}
+
 int playerc_device_get_intprop(playerc_device_t *device, char *property, int32_t *value)
 {
   int result = 0;
