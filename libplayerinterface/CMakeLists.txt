@@ -22,7 +22,6 @@ SET (interfaceFiles interfaces/001_player.def
                     interfaces/022_ir.def
                     interfaces/023_wifi.def
                     interfaces/025_localize.def
-                    interfaces/026_mcom.def
                     interfaces/030_position3d.def
                     interfaces/031_simulation.def
                     interfaces/033_blinkenlight.def

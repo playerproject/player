@@ -1,8 +1,10 @@
 description {
- * @brief Array of ultrasonic rangers
+ * @brief \b DEPRECATED Array of ultrasonic rangers
 
 The @p sonar interface provides access to a collection of fixed range
 sensors, such as a sonar array.
+
+This interface is \b deprecated. Use the @ref interface_ranger instead.
 }
 
 /** Request/reply subtype: get geometry */

@@ -2,8 +2,6 @@ description {
 * @brief A multi-jointed limb
 
 The limb interface provides access to a multi-jointed limb
-
-@todo Use pre-defined types, like player_pose3d_t, wherever possible
 }
 
 /** Idle */
