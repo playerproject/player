@@ -1,8 +1,10 @@
 description { 
-* @brief Array of infrared rangers
+* @brief \b DEPRECATED Array of infrared rangers
 
 The @p ir interface provides access to an array of infrared (IR) range
 sensors.
+
+This interface is \b deprecated. Use the @ref interface_ranger instead.
 }
 
 /** Request/reply subtype: get pose */

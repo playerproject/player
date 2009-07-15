@@ -154,9 +154,6 @@ PLAYERXDR_EXPORT int playerxdr_ftable_add_multi(playerxdr_function_t *flist, int
  *
  * This function adds all the standard Player message types into the table
  * that is searched by the playerxdr_get_* functions.
- *
- * @todo Add the ability to extend the function table for user-defined
- * message types.
  */
 PLAYERXDR_EXPORT void playerxdr_ftable_init(void);
 

@@ -204,17 +204,8 @@ int main(int argc, const char *argv[])
       */
 
       /*
-      if(strcmp(device, "mcom") == 0 || strcmp(device, "all") == 0)
-        test_mcom(&client, index);
-
       if(strcmp(device, "localize") == 0 || strcmp(device, "all") == 0)
         test_localize(&client, index);
-
-      if(strcmp(device, "audiodsp") == 0 || strcmp(device, "all") == 0)
-        test_audiodsp(&client, index);
-
-      if(strcmp(device, "audiomixer") == 0 || strcmp(device, "all") == 0)
-        test_audiomixer(&client, index);
 
       if(strcmp(device, "blinkenlight") == 0 || strcmp(device, "all") == 0)
         test_blinkenlight(&client, index);
