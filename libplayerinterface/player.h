@@ -411,6 +411,19 @@ Querying driver properties
 #define PLAYER_SET_DBLPROP_REQ 251
 #define PLAYER_GET_STRPROP_REQ 250
 #define PLAYER_SET_STRPROP_REQ 249
+#define PLAYER_GET_BOOLPROP_REQ 248
+#define PLAYER_SET_BOOLPROP_REQ 247
+
+/** @brief Request to get a boolean property */
+typedef struct player_boolprop_req
+{
+	/** The property key's length */
+	uint32_t key_count;
+	/** The property key */
+	char *key;
+	/** The property value */
+	char value;
+} player_boolprop_req_t;
 
 /** @brief Request to get an integer property */
 typedef struct player_intprop_req

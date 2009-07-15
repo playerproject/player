@@ -880,6 +880,12 @@ PLAYERC_EXPORT int playerc_device_unsubscribe(playerc_device_t *device);
 /** @brief Request capabilities of device */
 PLAYERC_EXPORT int playerc_device_hascapability(playerc_device_t *device, uint32_t type, uint32_t subtype);
 
+/** @brief Request a boolean property */
+PLAYERC_EXPORT int playerc_device_get_boolprop(playerc_device_t *device, char *property, BOOL *value);
+
+/** @brief Set a boolean property */
+PLAYERC_EXPORT int playerc_device_set_boolprop(playerc_device_t *device, char *property, BOOL value);
+
 /** @brief Request an integer property */
 PLAYERC_EXPORT int playerc_device_get_intprop(playerc_device_t *device, char *property, int32_t *value);
 

@@ -82,6 +82,34 @@ class PLAYERCORE_EXPORT Property
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+/// Boolean property class
+class PLAYERCORE_EXPORT BoolProperty : public Property
+{
+	public:
+		BoolProperty (const char *newKey, bool newValue, bool readOnly);
+		/** Constructor that registers the property with a driver as well while it is constructed */
+		BoolProperty (const char *newKey, bool newValue, bool readOnly, Driver * driver, ConfigFile*cf, int section);
+
+		bool GetValue (void) const		{ return value; }
+		void SetValue (bool newValue);
+		void GetValueToMessage (void *data) const;
+		void SetValueFromMessage (const void *data);
+
+		// Config file read method
+		virtual bool ReadConfig (ConfigFile *cf, int section);
+
+		// Operators
+		operator bool (void)			{ return value; }
+		const BoolProperty& operator= (const BoolProperty &rhs);
+		bool operator= (bool rhs);
+
+	private:
+		bool value;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
 /// Integer property class
 class PLAYERCORE_EXPORT IntProperty : public Property
 {

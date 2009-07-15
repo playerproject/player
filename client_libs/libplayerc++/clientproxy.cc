@@ -110,6 +110,21 @@ int ClientProxy::HasCapability(uint32_t aType, uint32_t aSubtype)
   return playerc_device_hascapability (mInfo, aType, aSubtype);
 }
 
+int ClientProxy::GetBoolProp(char *aProperty, bool *aValue)
+{
+  scoped_lock_t lock(mPc->mMutex);
+  int temp;
+  int result = playerc_device_get_boolprop (mInfo, aProperty, &temp);
+  *aValue = temp;
+  return result;
+}
+
+int ClientProxy::SetBoolProp(char *aProperty, bool aValue)
+{
+  scoped_lock_t lock(mPc->mMutex);
+  return playerc_device_set_boolprop (mInfo, aProperty, aValue);
+}
+
 int ClientProxy::GetIntProp(char *aProperty, int32_t *aValue)
 {
   scoped_lock_t lock(mPc->mMutex);
