@@ -1,2 +1,1 @@
 - Java bindings for core, xdr, tcp, etc
-- Figure out why C++ tests and C++ examples don't link properly when building as static libs, even though the server and utils do.
