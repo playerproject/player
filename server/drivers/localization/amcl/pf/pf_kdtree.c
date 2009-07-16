@@ -31,7 +31,7 @@ static pf_kdtree_node_t *pf_kdtree_find_node(pf_kdtree_t *self, pf_kdtree_node_t
 static void pf_kdtree_cluster_node(pf_kdtree_t *self, pf_kdtree_node_t *node, int depth);
 
 // Recursive node printing
-static void pf_kdtree_print_node(pf_kdtree_t *self, pf_kdtree_node_t *node);
+//static void pf_kdtree_print_node(pf_kdtree_t *self, pf_kdtree_node_t *node);
 
 
 #ifdef INCLUDE_RTKGUI
@@ -316,7 +316,7 @@ pf_kdtree_node_t *pf_kdtree_find_node(pf_kdtree_t *self, pf_kdtree_node_t *node,
 
 ////////////////////////////////////////////////////////////////////////////////
 // Recursive node printing
-void pf_kdtree_print_node(pf_kdtree_t *self, pf_kdtree_node_t *node)
+/*void pf_kdtree_print_node(pf_kdtree_t *self, pf_kdtree_node_t *node)
 {
   if (node->leaf)
   {
@@ -330,7 +330,7 @@ void pf_kdtree_print_node(pf_kdtree_t *self, pf_kdtree_node_t *node)
     pf_kdtree_print_node(self, node->children[1]);
   }
   return;
-}
+}*/
 
 
 ////////////////////////////////////////////////////////////////////////////////
