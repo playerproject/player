@@ -1820,17 +1820,11 @@ int ReadLog::ParseLocalize(player_devaddr_t id,
 	    hypoths.pending_count = atoi(tokens[7]);
 	    hypoths.pending_time = atof(tokens[8]);
 	    hypoths.hypoths_count = atoi(tokens[9]);
+	    hypoths.hypoths = new player_localize_hypoth_t[hypoths.hypoths_count];
 
             count = 0;
             for (i = 10; i < token_count; i += 7)
             {
-              // TODO: This will probably go boom, as it hasn't been updated to use
-              // use the dynamic message structures yet
-#if defined (WIN32)
-#pragma message ("Oh my! readlog.cc has not been updated to use the new dynamic message structures!")
-#else
-#pragma message "Oh my! readlog.cc has not been updated to use the new dynamic message structures!"
-#endif
               hypoths.hypoths[count].mean.px = atof(tokens[i + 0]);
               hypoths.hypoths[count].mean.py = atof(tokens[i + 1]);
               hypoths.hypoths[count].mean.pa = atof(tokens[i + 2]);
@@ -1845,12 +1839,14 @@ int ReadLog::ParseLocalize(player_devaddr_t id,
             {
               PLAYER_ERROR2("hypoths count mismatch at %s:%d",
                             this->filename, linenum);
+              delete [] hypoths.hypoths;
               return -1;
 
             }
 
             this->Publish(id, static_cast<uint8_t> (type), static_cast<uint8_t> (subtype),
                           (void*)&hypoths, sizeof(hypoths), &time);
+            delete [] hypoths.hypoths;
             return(0);
           }
 
@@ -1936,25 +1932,21 @@ int ReadLog::ParseSonar(player_devaddr_t id,
             }
             data.ranges_count = atoi(tokens[7]);
             int count = 0;
+            data.ranges = new float[data.ranges_count];
             for(int i=8;i<token_count;i++)
             {
-              // TODO: This will probably go boom, as it hasn't been updated to use
-              // use the dynamic message structures yet
-#if defined (WIN32)
-#pragma message ("Oh my! readlog.cc has not been updated to use the new dynamic message structures!")
-#else
-#pragma message "Oh my! readlog.cc has not been updated to use the new dynamic message structures!"
-#endif
               data.ranges[count++] = static_cast<float> (atof(tokens[i]));
             }
             if(count != (int)data.ranges_count)
             {
               PLAYER_ERROR2("range count mismatch at %s:%d",
                             this->filename, linenum);
+              delete [] data.ranges;
               return -1;
             }
             this->Publish(id, static_cast<uint8_t> (type), static_cast<uint8_t> (subtype),
                           (void*)&data, sizeof(data), &time);
+            delete [] data.ranges;
             return(0);
           }
         case PLAYER_SONAR_DATA_GEOM:
@@ -1966,16 +1958,10 @@ int ReadLog::ParseSonar(player_devaddr_t id,
               return -1;
             }
             geom.poses_count = atoi(tokens[7]);
+            geom.poses = new player_pose3d_t[geom.poses_count];
             int count = 0;
             for(int i=8;i<token_count;i+=3)
             {
-              // TODO: This will probably go boom, as it hasn't been updated to use
-              // use the dynamic message structures yet
-#if defined (WIN32)
-#pragma message ("Oh my! readlog.cc has not been updated to use the new dynamic message structures!")
-#else
-#pragma message "Oh my! readlog.cc has not been updated to use the new dynamic message structures!"
-#endif
               geom.poses[count].px = atof(tokens[i]);
               geom.poses[count].py = atof(tokens[i+1]);
               geom.poses[count].pyaw = atof(tokens[i+2]);
@@ -1985,10 +1971,12 @@ int ReadLog::ParseSonar(player_devaddr_t id,
             {
               PLAYER_ERROR2("range count mismatch at %s:%d",
                             this->filename, linenum);
+              delete [] geom.poses;
               return -1;
             }
             this->Publish(id, static_cast<uint8_t> (type), static_cast<uint8_t> (subtype),
                           (void*)&geom, sizeof(geom), &time);
+            delete [] geom.poses;
             return(0);
           }
         default:
@@ -2168,17 +2156,11 @@ int ReadLog::ParseOpaque(player_devaddr_t id,
             }
 
             data.data_count = atoi(tokens[7]);
+            data.data = new uint8_t[data.data_count];
 
             count = 0;
             for (i = 8; i < token_count; i++)
             {
-              // TODO: This will probably go boom, as it hasn't been updated to use
-              // use the dynamic message structures yet
-#if defined (WIN32)
-#pragma message ("Oh my! readlog.cc has not been updated to use the new dynamic message structures!")
-#else
-#pragma message "Oh my! readlog.cc has not been updated to use the new dynamic message structures!"
-#endif
               data.data[count] = atoi(tokens[i]);
               count++;
             }
@@ -2187,10 +2169,12 @@ int ReadLog::ParseOpaque(player_devaddr_t id,
             {
               PLAYER_ERROR2("data count mismatch at %s:%d",
                             this->filename, linenum);
+              delete [] data.data;
               return -1;
            }
             this->Publish(id, static_cast<uint8_t> (type), static_cast<uint8_t> (subtype),
                           (void*)&data, sizeof(data), &time);
+            delete [] data.data;
             return(0);
           }
 
@@ -2215,17 +2199,10 @@ int ReadLog::ParseOpaque(player_devaddr_t id,
             }
 
             data.data_count = atoi(tokens[7]);
-
+            data.data = new uint8_t[data.data_count];
             count = 0;
             for (i = 8; i < token_count; i++)
             {
-              // TODO: This will probably go boom, as it hasn't been updated to use
-              // use the dynamic message structures yet
-#if defined (WIN32)
-#pragma message ("Oh my! readlog.cc has not been updated to use the new dynamic message structures!")
-#else
-#pragma message "Oh my! readlog.cc has not been updated to use the new dynamic message structures!"
-#endif
               data.data[count] = atoi(tokens[i]);
               count++;
             }
@@ -2234,10 +2211,12 @@ int ReadLog::ParseOpaque(player_devaddr_t id,
             {
               PLAYER_ERROR2("data count mismatch at %s:%d",
                             this->filename, linenum);
+              delete [] data.data;
               return -1;
            }
             this->Publish(id, static_cast<uint8_t> (type), static_cast<uint8_t> (subtype),
                           (void*)&data, sizeof(data), &time);
+            delete [] data.data;
             return(0);
           }
 
@@ -2280,15 +2259,9 @@ int ReadLog::ParseWifi(player_devaddr_t id,
 
             reported_count = atoi(tokens[7]);
             data.links_count = 0;
+            data.links = new player_wifi_link_t[data.links_count];
             for(i = 8; (i+8) < token_count; i += 9)
             {
-              // TODO: This will probably go boom, as it hasn't been updated to use
-              // use the dynamic message structures yet
-#if defined (WIN32)
-#pragma message ("Oh my! readlog.cc has not been updated to use the new dynamic message structures!")
-#else
-#pragma message "Oh my! readlog.cc has not been updated to use the new dynamic message structures!"
-#endif
               link = data.links + data.links_count;
 
               memcpy(link->mac, tokens[i + 0]+1, strlen(tokens[i+0])-2);
@@ -2311,6 +2284,7 @@ int ReadLog::ParseWifi(player_devaddr_t id,
 
             this->Publish(id, static_cast<uint8_t> (type), static_cast<uint8_t> (subtype),
                           (void*)&data, sizeof(data), &time);
+            delete [] data.links;
             return(0);
           }
         default:
@@ -2516,6 +2490,7 @@ int ReadLog::ParsePointCloud3d (player_devaddr_t id,
                         PLAYER_ERROR2("invalid line at %s:%d", this->filename, linenum);
                         return -1;
                     }
+                    data.points = new player_pointcloud3d_element[data.points_count];
 		    for (i = 0; i < data.points_count; i++)
 		    {
 			player_pointcloud3d_element_t element;
@@ -2525,17 +2500,11 @@ int ReadLog::ParsePointCloud3d (player_devaddr_t id,
 			point.py = atof (tokens[9+i*3]);
 			point.pz = atof (tokens[10+i*3]);
 			element.point = point;
-            // TODO: This will probably go boom, as it hasn't been updated to use
-            // use the dynamic message structures yet
-#if defined (WIN32)
-#pragma message ("Oh my! readlog.cc has not been updated to use the new dynamic message structures!")
-#else
-#pragma message "Oh my! readlog.cc has not been updated to use the new dynamic message structures!"
-#endif
 			data.points[i] = element;
 		    }
                     this->Publish (id, static_cast<uint8_t> (type), static_cast<uint8_t> (subtype),
                                   (void*)&data, sizeof(data), &time);
+                    delete [] data.points;
                     return (0);
                 }
 
