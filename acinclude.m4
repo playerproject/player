@@ -169,6 +169,13 @@ dnl libdc1394 v1 has varying API's, depending on the version.  So also do some c
 dnl to see what the function signatures look like
 dc1394_dma_setup_args="0"
 AC_CHECK_LIB(raw1394,main)
+
+linux_dc1394="0"
+AC_CHECK_HEADER(
+          dc1394/linux/control.h,
+           linux_dc1394="1",[],
+           [[#include <dc1394/dc1394.h>]])
+        
 AC_CHECK_HEADER(dc1394/control.h,
   [dc1394_dma_setup_args="20"
     AC_CHECK_HEADER(
@@ -194,6 +201,9 @@ AC_CHECK_HEADER(dc1394/control.h,
 AC_DEFINE_UNQUOTED(DC1394_DMA_SETUP_CAPTURE_ARGS, $dc1394_dma_setup_args,
               [arg count for dma capture function])
 
+AC_DEFINE_UNQUOTED(DC1394_2_LINUX, $linux_dc1394,
+              [using dc1394 v2 with Linux])
+ 
 
 PLAYER_ADD_DRIVER([cameracompress],[yes],[jpeglib.h],[],[-ljpeg])
 
