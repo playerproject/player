@@ -14,6 +14,9 @@ message { DATA, CALIB, 2, player_imu_data_calib_t };
 message { DATA, QUAT, 3, player_imu_data_quat_t };
 /** Data subtype: Euler orientation data        */
 message { DATA, EULER, 4, player_imu_data_euler_t };
+/** Data subtype: All IMU position/orientation data        */
+message { DATA, FULLSTATE, 5, player_imu_data_fullstate_t };
+
 
 /** Request/reply subtype: set data type */
 message { REQ, SET_DATATYPE, 1, player_imu_datatype_config_t };
@@ -84,6 +87,26 @@ typedef struct player_imu_data_euler
     /** Orientation data as Euler angles */
     player_orientation_3d_t orientation;
 } player_imu_data_euler_t;
+
+
+/** @brief Data: all of the calibrated IMU data (@ref PLAYER_IMU_DATA_FULLSTATE)
+
+The @p imu interface returns the complete 3D coordinates + angles position in
+space, as well as velocity and acceleration of the IMU sensor. */
+typedef struct player_imu_data_fullstate
+{
+    /** The complete pose of the IMU in 3D coordinates + angles */
+    player_pose3d_t pose;
+	/** The complete velocity of the IMU in 3D coordinates + angles */
+    player_pose3d_t vel;
+	/** The complete acceleration of the IMU in 3D coordinates + angles */
+    player_pose3d_t acc;
+    
+    int abcdefgh;
+} player_imu_data_fullstate_t;
+
+
+
 
 /** @brief Request/reply: change the data type to one of the predefined data
 structures.
