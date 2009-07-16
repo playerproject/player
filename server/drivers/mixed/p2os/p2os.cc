@@ -111,6 +111,10 @@ them named:
   - Controls a CMUCam2 connected to the AUX port on the P2OS board
     (if equipped).
 
+- @ref interface_ptz
+  - Controls a Canon VCC4 PTZ camera connected to the AUX2 port on 
+    the P2OS board (if equipped).
+
 - @ref interface_audio
   - Controls the sound system of the AmigoBot, which can play back
     recorded wav files.
