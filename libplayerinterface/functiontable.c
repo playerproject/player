@@ -126,13 +126,18 @@ static playerxdr_function_t init_ftable[] =
   {0,0,0,NULL,NULL,NULL}
 };
 
-static playerxdr_function_t* ftable;
-static int ftable_len;
+static playerxdr_function_t* ftable=NULL;
+static int ftable_len=0;
 
 void
 playerxdr_ftable_init()
 {
   playerxdr_function_t* f;
+
+  // if for some reason this method gets called more than once just ignore the call
+  if (ftable)
+    return;
+
   ftable_len = 0;
   for(f = init_ftable; f->packfunc; f++)
     ftable_len++;
