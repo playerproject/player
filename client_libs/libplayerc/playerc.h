@@ -3548,6 +3548,8 @@ typedef struct
 
     /** The complete pose of the IMU in 3D coordinates + angles             */
     player_pose3d_t pose;
+	player_pose3d_t vel;
+	player_pose3d_t acc;
 
     /** Calibrated IMU data (accel, gyro, magnetometer)                     */
     player_imu_data_calib_t calib_data;

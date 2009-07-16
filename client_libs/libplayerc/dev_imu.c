@@ -125,6 +125,17 @@ void playerc_imu_putmsg (playerc_imu_t *device,
 		device->pose.pyaw   = imu_data->orientation.pyaw;
 		break;
 	    }
+		case PLAYER_IMU_DATA_FULLSTATE:
+		{
+			player_imu_data_fullstate_t* imu_data = (player_imu_data_fullstate_t*)data;
+			device->calib_data.accel_x = imu_data->acc.px;
+			device->calib_data.accel_y = imu_data->acc.py;
+			device->calib_data.accel_z = imu_data->acc.pz;
+			device->pose = imu_data->pose;
+			device->vel  = imu_data->vel;
+			device->acc  = imu_data->acc;
+			break;
+		}
 	    default:
 	    {
 		PLAYERC_WARN1 ("skipping imu message with unknown data subtype: %d\n",
