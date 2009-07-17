@@ -3316,6 +3316,17 @@ PLAYERC_EXPORT int playerc_simulation_get_property(playerc_simulation_t *device,
                                     char* property,
                                     void* value,
                                     size_t value_len);
+
+/** @brief  pause / unpause the simulation */
+PLAYERC_EXPORT int playerc_simulation_pause(playerc_simulation_t *device );
+
+/** @brief  reset the simulation state  */
+PLAYERC_EXPORT int playerc_simulation_reset(playerc_simulation_t *device );
+
+/** @brief make the simulation save the status/world */
+PLAYERC_EXPORT int playerc_simulation_save(playerc_simulation_t *device );
+
+
 /** @} */
 /***************************************************************************/
 
