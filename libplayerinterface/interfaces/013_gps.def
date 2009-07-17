@@ -11,8 +11,6 @@ message { DATA, STATE, 1, player_gps_data_t };
 /** @brief Data: state (@ref PLAYER_GPS_DATA_STATE)
 
 The @p gps interface gives current global position and heading information.
-
-@todo: Review the units used here
 */
 typedef struct player_gps_data
 {
