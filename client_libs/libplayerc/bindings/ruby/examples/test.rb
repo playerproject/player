@@ -3,6 +3,7 @@
 require 'playerc'
 require 'laser'
 require 'fiducial'
+require 'simulation'
 #require 'wifi'
 
 class PlayercExamples
