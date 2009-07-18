@@ -98,6 +98,7 @@ ELSE (PLAYER_OS_QNX)
     SET (interfaceLibFlag)
 ENDIF (PLAYER_OS_QNX)
 
+
 INCLUDE_DIRECTORIES (${CMAKE_CURRENT_BINARY_DIR})
 PLAYER_ADD_LIBRARY (playerinterface ${playerinterfaceSrcs})
 IF (PLAYER_OS_WIN)
@@ -113,6 +114,8 @@ IF (NOT HAVE_XDR)
 ENDIF (NOT HAVE_XDR)
 PLAYER_MAKE_PKGCONFIG ("playerinterface" "Player Interface library - part of the Player Project"
                        "" "" "" "${interfaceLibFlag}")
+
+TARGET_LINK_LIBRARIES (playerinterface playercommon)
 
 PLAYER_INSTALL_HEADERS (playerinterface ${playerxdr_h} 
                                         addr_util.h 
