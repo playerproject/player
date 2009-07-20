@@ -50,6 +50,10 @@
 
 #include <stdio.h>
 
+#if defined (WIN32)
+  #define snprintf _snprintf
+#endif
+
 #define PLAYERC_ERROR_SIZE 1024
 // Use this function to read the error string
 const char *playerc_error_str(void);

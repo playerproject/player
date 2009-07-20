@@ -17,7 +17,7 @@ test_ranger(PlayerClient* client, int index)
 
   rp.RequestGeom();
 
-  std::cout << "There are " << rp.GetSensorCount() << " individual range sensors.\n";
+  std::cout << "There are " << rp.GetElementCount() << " individual range sensors.\n";
 
   for(int t = 0; t < 3; t++)
   {

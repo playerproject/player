@@ -4,6 +4,23 @@ description {
 Receive data from a range sensor, such as a laser scanner, sonar array or IR
 array.
 
+This interface is designed for sensors that return a single set of values, such
+as a planar laser scanner, or for arrays of sensors that each produce a single
+value, such as an array (possibly multi-dimensional) of sonar devices or infra-
+red sensors. If you are implementing a driver for a sensor such as a complex
+laser scanner that returns multiple sets of values with each scan, you should
+either provide one ranger device per value set, using the same timestamp in
+each to allow synchronisation, or provide a pointcloud3d device.
+
+The ranges and intensities arrays are implemented based on these principles.
+This means that if the sensor is made up of a single element (e.g. a laser
+scanner) then all the range readings originate at a single point and only the
+sensor's global pose matters. If the sensor is made up of multiple elements
+(e.g. an array of sonar sensors) then the element_poses array should contain
+one pose per sensor, and the range readings each originate from one pose, in
+the same order. To determine how to interpret the ranges and intensities
+arrays, check if elements_poses_count is 1 or more.
+
 @section properties Recommended Properties
 
 The following properties are recommended to be provided by drivers supporting
@@ -25,12 +42,12 @@ this interface, depending on device type.
 
 /** Data subtype: range scan */
 message { DATA, RANGE, 1, player_ranger_data_range_t };
-/** Data subtype: pose-stamped range scan */
-message { DATA, RANGEPOSE, 2, player_ranger_data_rangepose_t };
+/** Data subtype: range scan with extra info */
+message { DATA, RANGESTAMPED, 2, player_ranger_data_rangestamped_t };
 /** Data subtype: intensity scan */
 message { DATA, INTNS, 3, player_ranger_data_intns_t };
-/** Data subtype: pose-stamped intensity scan */
-message { DATA, INTNSPOSE, 4, player_ranger_data_intnspose_t };
+/** Data subtype: intensity scan with extra info */
+message { DATA, INTNSSTAMPED, 4, player_ranger_data_intnsstamped_t };
 /** Data subtype: sensor geometry */
 message { DATA, GEOM, 5, player_ranger_geom_t };
 
@@ -45,6 +62,25 @@ message { REQ, SET_CONFIG, 4, player_ranger_config_t };
 /** Request/reply subtype: get configuration */
 message { REQ, GET_CONFIG, 5, player_ranger_config_t };
 
+/** @brief Device configuration request (@ref PLAYER_RANGER_REQ_GET_CONFIG)
+
+Request and change the device's configuration. */
+typedef struct player_ranger_config
+{
+  /** Start angle of scans [rad]. May be unfilled. */
+  double min_angle;
+  /** End angle of scans [rad]. May be unfilled. */
+  double max_angle;
+  /** Scan resolution [rad]. May be unfilled. */
+  double angular_res;
+  /** Maximum range [m]. May be unfilled. */
+  double max_range;
+  /** Range resolution [m]. May be unfilled. */
+  double range_res;
+  /** Scanning frequency [Hz]. May be unfilled. */
+  double frequency;
+} player_ranger_config_t;
+
 /** @brief Data and Request/reply: Get geometry. (@ref PLAYER_RANGER_REQ_GET_GEOM)
 
 The ranger device position, orientation and size. */
@@ -54,14 +90,14 @@ typedef struct player_ranger_geom
   player_pose3d_t pose;
   /** Size of the device [m, m, m]. */
   player_bbox3d_t size;
-  /** Number of individual range sensors that make up the device. */
-  uint32_t sensor_poses_count;
-  /** Pose of each individual range sensor that makes up the device (in device CS). */
-  player_pose3d_t *sensor_poses;
-  /** Number of individual range sensors that make up the device. */
-  uint32_t sensor_sizes_count;
-  /** Size of each individual range sensor that makes up the device. */
-  player_bbox3d_t *sensor_sizes;
+  /** Number of individual elements that make up the device. */
+  uint32_t element_poses_count;
+  /** Pose of each individual element that makes up the device (in device CS). */
+  player_pose3d_t *element_poses;
+  /** Number of individual elements that make up the device. */
+  uint32_t element_sizes_count;
+  /** Size of each individual element that makes up the device. */
+  player_bbox3d_t *element_sizes;
 } player_ranger_geom_t;
 
 /** @brief Data: range scan (@ref PLAYER_RANGER_DATA_RANGE)
@@ -75,17 +111,23 @@ typedef struct player_ranger_data_range
   double *ranges;
 } player_ranger_data_range_t;
 
-/** @brief Data: pose-stamped range scan (@ref PLAYER_RANGER_DATA_RANGEPOSE)
+/** @brief Data: Stamped range scan (@ref PLAYER_RANGER_DATA_RANGESTAMPED)
 
-A range scan with the (possibly estimated) pose of the device when the scan was
-acquired. */
-typedef struct player_ranger_data_rangepose
+A range scan optionally with the (possibly estimated) geometry of the device
+when the scan was acquired and optional sensor configuration. */
+typedef struct player_ranger_data_rangestamped
 {
   /** The scan data. */
   player_ranger_data_range_t data;
+  /** If non-zero, the geometry data has been filled. */
+  uint8_t have_geom;
   /** The geometry of the device at the time the scan was acquired. */
   player_ranger_geom_t geom;
-} player_ranger_data_rangepose_t;
+  /** If non-zero, the configuration data has been filled. */
+  uint8_t have_config;
+  /** The sensor configuration at the time the scan was acquired. */
+  player_ranger_config_t config;
+} player_ranger_data_rangestamped_t;
 
 /** @brief Data: intensity scan (@ref PLAYER_RANGER_DATA_INTNS)
 
@@ -98,17 +140,23 @@ typedef struct player_ranger_data_intns
   double *intensities;
 } player_ranger_data_intns_t;
 
-/** @brief Data: post-stamped intensity scan (@ref PLAYER_RANGER_DATA_INTNSPOSE)
+/** @brief Data: Stamped intensity scan (@ref PLAYER_RANGER_DATA_INTNSSTAMPED)
 
-An intensity scan with the (possibly estimated) pose of the device when the scan
-was acquired. */
-typedef struct player_ranger_data_intnspose
+An intensity scan with optionally the (possibly estimated) geometry of the
+device when the scan was acquired an optional sensor configuration. */
+typedef struct player_ranger_data_intnsstamped
 {
   /** The scan data. */
   player_ranger_data_intns_t data;
+  /** If non-zero, the geometry data has been filled. */
+  uint8_t have_geom;
   /** The geometry of the device at the time the scan was acquired. */
   player_ranger_geom_t geom;
-} player_ranger_data_intnspose_t;
+  /** If non-zero, the configuration data has been filled. */
+  uint8_t have_config;
+  /** The sensor configuration at the time the scan was acquired. */
+  player_ranger_config_t config;
+} player_ranger_data_intnsstamped_t;
 
 /** @brief Request/reply: Turn power on/off (@ref PLAYER_RANGER_REQ_POWER)
 
@@ -130,23 +178,4 @@ typedef struct player_ranger_intns_config
   /** TRUE to turn data on, FALSE to turn data off. */
   uint8_t state;
 } player_ranger_intns_config_t;
-
-/** @brief Device configuration request (@ref PLAYER_RANGER_REQ_GET_CONFIG)
-
-Request and change the device's configuration. */
-typedef struct player_ranger_config
-{
-  /** Start angle of scans [rad]. May be unfilled. */
-  double min_angle;
-  /** End angle of scans [rad]. May be unfilled. */
-  double max_angle;
-  /** Scan resolution [rad]. May be unfilled. */
-  double resolution;
-  /** Maximum range [m]. May be unfilled. */
-  double max_range;
-  /** Range resolution [m]. May be unfilled. */
-  double range_res;
-  /** Scanning frequency [Hz]. May be unfilled. */
-  double frequency;
-} player_ranger_config_t;
 

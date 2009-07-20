@@ -119,9 +119,11 @@ driver
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h> /* strcasecmp() */
 #include <assert.h>
 #include <math.h>
+#if !defined (WIN32)
+  #include <strings.h> /* strcasecmp() */
+#endif
 
 #define MAX_BOTS 32
 #define MAX_SHAPE_POINTS 64
@@ -523,7 +525,11 @@ int RoboTracker::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, 
           assert(layer_data->features[j].name);
           for (i = 0; i < (this->position_devices); i++)
           {
+#if defined (WIN32)
+            if (!_stricmp(layer_data->features[j].name, this->names[i]))
+#else
             if (!strcasecmp(layer_data->features[j].name, this->names[i]))
+#endif
             {
               to_add--;
               break;
@@ -584,7 +590,11 @@ int RoboTracker::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, 
             new_layer_data->features[j].attrib[0] = '\0';
             new_layer_data->features[j].attrib_count = 1;
           }
+#if defined (WIN32)
+          for (i = 0; i < (this->position_devices); i++) if (!_stricmp(layer_data->features[j].name, this->names[i])) break;
+#else
           for (i = 0; i < (this->position_devices); i++) if (!strcasecmp(layer_data->features[j].name, this->names[i])) break;
+#endif
           if (i < (this->position_devices))
           {
             new_layer_data->features[j].wkb_count = player_wkb_create_linestring(this->wkbProcessor, this->shape, this->shape_points, this->pos_data[i].pos.px, this->pos_data[i].pos.py, NULL, 0);

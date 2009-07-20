@@ -216,12 +216,12 @@ HokuyoDriver::HokuyoDriver (ConfigFile* cf, int section) :
 	_geom.size.sw = cf->ReadTupleLength (section, "size", 0, 0.0);
 	_geom.size.sl = cf->ReadTupleLength (section, "size", 1, 0.0);
 	_geom.size.sh = cf->ReadTupleLength (section, "size", 2, 0.0);
-	_geom.sensor_poses_count = 1;
-	_geom.sensor_poses = &_sensorPose;
-	memcpy(_geom.sensor_poses, &_geom.pose, sizeof (_geom.pose));
-	_geom.sensor_sizes_count = 1;
-	_geom.sensor_sizes = &_sensorSize;
-	memcpy(_geom.sensor_sizes, &_geom.size, sizeof (_geom.size));
+	_geom.element_poses_count = 1;
+	_geom.element_poses = &_sensorPose;
+	memcpy(_geom.element_poses, &_geom.pose, sizeof (_geom.pose));
+	_geom.element_sizes_count = 1;
+	_geom.element_sizes = &_sensorSize;
+	memcpy(_geom.element_sizes, &_geom.size, sizeof (_geom.size));
 
 	// Turn on/off verbose mode
 	_device.SetVerbose (_verbose);

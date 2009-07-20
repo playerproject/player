@@ -63,6 +63,7 @@ ENDIF (NOT HAVE_COMPRESSBOUND)
 
 IF (replaceSrcs)
     PLAYER_ADD_LIBRARY (playerreplace ${replaceSrcs})
+    TARGET_LINK_LIBRARIES (playerreplace playercommon)
     IF (NOT HAVE_XDR OR NOT HAVE_POLL)
         TARGET_LINK_LIBRARIES (playerreplace Ws2_32)
     ENDIF (NOT HAVE_XDR OR NOT HAVE_POLL)

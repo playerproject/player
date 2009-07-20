@@ -44,10 +44,10 @@ ToRanger::ToRanger (ConfigFile* cf, int section)
 // Destructor
 ToRanger::~ToRanger (void)
 {
-	if (deviceGeom.sensor_poses != NULL)
-		delete deviceGeom.sensor_poses;
-	if (deviceGeom.sensor_sizes != NULL)
-		delete deviceGeom.sensor_sizes;
+	if (deviceGeom.element_poses != NULL)
+		delete deviceGeom.element_poses;
+	if (deviceGeom.element_sizes != NULL)
+		delete deviceGeom.element_sizes;
 }
 
 // Setup function
@@ -64,15 +64,15 @@ int ToRanger::Setup (void)
 // Ensures all the ranger data memory is freed
 int ToRanger::Shutdown (void)
 {
-	if (deviceGeom.sensor_poses != NULL)
+	if (deviceGeom.element_poses != NULL)
 	{
-		delete deviceGeom.sensor_poses;
-		deviceGeom.sensor_poses = NULL;
+		delete deviceGeom.element_poses;
+		deviceGeom.element_poses = NULL;
 	}
-	if (deviceGeom.sensor_sizes != NULL)
+	if (deviceGeom.element_sizes != NULL)
 	{
-		delete deviceGeom.sensor_sizes;
-		deviceGeom.sensor_sizes = NULL;
+		delete deviceGeom.element_sizes;
+		deviceGeom.element_sizes = NULL;
 	}
 
 	return 0;

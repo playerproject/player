@@ -63,7 +63,7 @@ INCLUDE (${PLAYER_CMAKE_DIR}/internal/LibraryUtils.cmake)
 INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR} ${PROJECT_BINARY_DIR}/libplayercore)
 # Extra directories where needed libraries, etc may be located (set by the user)
 INCLUDE_DIRECTORIES (${PLAYER_EXTRA_INCLUDE_DIRS})
-LINK_DIRECTORIES (${PLAYER_EXTRA_LIB_DIRS} )
+LINK_DIRECTORIES (${PLAYER_EXTRA_LIB_DIRS})
 
 IF (PLAYER_OS_WIN)
     # This is pretty much a universal include on Windows
@@ -85,12 +85,9 @@ ADD_SUBDIRECTORY (examples)
 ADD_SUBDIRECTORY (utils)
 ADD_SUBDIRECTORY (doc)
 ADD_SUBDIRECTORY (cmake)            # CMake modules for Player libraries
-IF (PLAYER_OS_WIN)
+IF (PLAYER_OS_WIN OR PLAYER_OS_OSX)
     ADD_SUBDIRECTORY (replace)
-ENDIF (PLAYER_OS_WIN)
-IF (PLAYER_OS_OSX)
-    ADD_SUBDIRECTORY (replace)
-ENDIF (PLAYER_OS_OSX)
+ENDIF (PLAYER_OS_WIN OR PLAYER_OS_OSX)
 MESSAGE (STATUS "")
 
 SET (PLAYERCORE_INT_LINK_LIBRARIES "" CACHE INTERNAL "Libs to link playercore to" FORCE)

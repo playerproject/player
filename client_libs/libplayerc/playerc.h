@@ -3021,15 +3021,15 @@ typedef struct
   /** Device info; must be at the start of all device structures. */
   playerc_device_t info;
 
-  /** Number of individual range sensors in the device. */
-  uint32_t sensor_count;
+  /** Number of individual elements in the device. */
+  uint32_t element_count;
 
   /** Start angle of scans [rad]. May be unfilled. */
   double min_angle;
   /** End angle of scans [rad]. May be unfilled. */
   double max_angle;
   /** Scan resolution [rad]. May be unfilled. */
-  double resolution;
+  double angular_res;
   /** Maximum range [m]. May be unfilled. */
   double max_range;
   /** Range resolution [m]. May be unfilled. */
@@ -3042,27 +3042,28 @@ typedef struct
       playerc_ranger_get_geom(), or from pose-stamped data. */
   player_pose3d_t device_pose;
   player_bbox3d_t device_size;
-  /** Geometry of each individual range sensor in the device (e.g. a single
+  /** Geometry of each individual element in the device (e.g. a single
       sonar sensor in a sonar array). These values are filled in by calling
       playerc_ranger_get_geom(), or from pose-stamped data. */
-  player_pose3d_t *sensor_poses;
-  player_bbox3d_t *sensor_sizes;
+  player_pose3d_t *element_poses;
+  player_bbox3d_t *element_sizes;
 
-  /** Number of individual ranges in a scan. */
+  /** Number of ranges in a scan. */
   uint32_t ranges_count;
   /** Range data [m]. */
   double *ranges;
 
-  /** Number of individual intensities in a scan. */
+  /** Number of intensities in a scan. */
   uint32_t intensities_count;
   /** Intensity data [m]. Note that this data may require setting of the
   suitable property on the driver to before it will be filled. Possible
   properties include intns_on for laser devices and volt_on for IR devices. */
   double *intensities;
 
-  /** Number of individual scan bearings. */
+  /** Number of scan bearings. */
   uint32_t bearings_count;
-  /** Scan bearings [radians]. */
+  /** Scan bearings in the XY plane [radians]. Note that for multi-element
+  devices, these bearings will be from the pose of each element. */
   double *bearings;
 
   /** Number of scan points. */
@@ -3109,7 +3110,7 @@ PLAYERC_EXPORT int playerc_ranger_intns_config(playerc_ranger_t *device, uint8_t
 @param range_res Range resolution [m].
 @param frequency Scanning frequency [Hz]. */
 PLAYERC_EXPORT int playerc_ranger_set_config(playerc_ranger_t *device, double min_angle,
-                              double max_angle, double resolution,
+                              double max_angle, double angular_res,
                               double max_range, double range_res,
                               double frequency);
 
@@ -3122,7 +3123,7 @@ PLAYERC_EXPORT int playerc_ranger_set_config(playerc_ranger_t *device, double mi
 @param range_res Range resolution [m].
 @param frequency Scanning frequency [Hz]. */
 PLAYERC_EXPORT int playerc_ranger_get_config(playerc_ranger_t *device, double *min_angle,
-                              double *max_angle, double *resolution,
+                              double *max_angle, double *angular_res,
                               double *max_range, double *range_res,
                               double *frequency);
 
