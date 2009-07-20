@@ -75,10 +75,10 @@ void playerc_ranger_destroy(playerc_ranger_t *device)
     free(device->ranges);
   if(device->intensities != NULL)
     free(device->intensities);
-  if(device->sensor_poses != NULL)
-    free(device->sensor_poses);
-  if(device->sensor_sizes != NULL)
-    free(device->sensor_sizes);
+  if(device->element_poses != NULL)
+    free(device->element_poses);
+  if(device->element_sizes != NULL)
+    free(device->element_sizes);
   if(device->bearings != NULL)
     free(device->bearings);
   if(device->points != NULL)
@@ -122,11 +122,21 @@ void playerc_ranger_calculate_bearings(playerc_ranger_t *device)
       return;
     }
 
-    b = device->min_angle;
-    for (ii = 0; ii < device->bearings_count; ii++)
+    if (device->element_count == 1)
     {
-      device->bearings[ii] = b;
-      b += device->resolution;
+      b = device->min_angle;
+      for (ii = 0; ii < device->bearings_count; ii++)
+      {
+        device->bearings[ii] = b + device->device_pose.pyaw;
+        b += device->angular_res;
+      }
+    }
+    else
+    {
+      for (ii = 0; ii < device->element_count; ii++)
+      {
+        device->bearings[ii] = device->element_poses[ii].pyaw;
+      }
     }
   }
 }
@@ -153,14 +163,28 @@ void playerc_ranger_calculate_points(playerc_ranger_t *device)
       return;
     }
 
-    b = device->min_angle;
-    for (ii = 0; ii < device->points_count; ii++)
+    if (device->element_count == 1)
     {
-      double r = device->ranges[ii];
-      device->points[ii].px = r * cos(b);
-      device->points[ii].py = r * sin(b);
-      device->points[ii].pz = 0.0;
-      b += device->resolution;
+      b = device->min_angle;
+      for (ii = 0; ii < device->points_count; ii++)
+      {
+        double r = device->ranges[ii];
+        device->points[ii].px = r * cos(b);
+        device->points[ii].py = r * sin(b);
+        device->points[ii].pz = 0.0;
+        b += device->angular_res;
+      }
+    }
+    else
+    {
+      for (ii = 0; ii < device->element_count; ii++)
+      {
+        double r = device->ranges[ii];
+        double s = r * cos(device->element_poses[ii].ppitch);
+        device->points[ii].px = s * cos(device->element_poses[ii].pyaw) + device->element_poses[ii].px;
+        device->points[ii].py = s * sin(device->element_poses[ii].pyaw) + device->element_poses[ii].py;
+        device->points[ii].pz = r * sin(device->element_poses[ii].ppitch) + device->element_poses[ii].pz;
+      }
     }
   }
 }
@@ -210,39 +234,51 @@ void playerc_ranger_copy_geom(playerc_ranger_t *device, player_ranger_geom_t *ge
   device->device_pose = geom->pose;
   device->device_size = geom->size;
 
-  if(device->sensor_poses != NULL)
+  if(device->element_poses != NULL)
   {
-    free(device->sensor_poses);
-    device->sensor_poses = NULL;
+    free(device->element_poses);
+    device->element_poses = NULL;
   }
-  if(device->sensor_sizes != NULL)
+  if(device->element_sizes != NULL)
   {
-    free(device->sensor_sizes);
-    device->sensor_sizes = NULL;
+    free(device->element_sizes);
+    device->element_sizes = NULL;
   }
-  device->sensor_count = 0;
+  device->element_count = 0;
 
-  if(geom->sensor_poses_count > 0)
+  if(geom->element_poses_count > 0)
   {
-    if((device->sensor_poses = (player_pose3d_t *) malloc(geom->sensor_poses_count * sizeof(player_pose3d_t))) == NULL)
+    if((device->element_poses = (player_pose3d_t *) malloc(geom->element_poses_count * sizeof(player_pose3d_t))) == NULL)
     {
       PLAYERC_ERR("Failed to allocate space to store sensor poses");
       return;
     }
-    memcpy(device->sensor_poses, geom->sensor_poses, geom->sensor_poses_count * sizeof(player_pose3d_t));
+    memcpy(device->element_poses, geom->element_poses, geom->element_poses_count * sizeof(player_pose3d_t));
   }
 
-  if (geom->sensor_sizes_count > 0)
+  if (geom->element_sizes_count > 0)
   {
-    if((device->sensor_sizes = (player_bbox3d_t *) malloc(geom->sensor_sizes_count * sizeof(player_bbox3d_t))) == NULL)
+    if((device->element_sizes = (player_bbox3d_t *) malloc(geom->element_sizes_count * sizeof(player_bbox3d_t))) == NULL)
     {
       PLAYERC_ERR("Failed to allocate space to store sensor sizes");
       return;
     }
-    memcpy(device->sensor_sizes, geom->sensor_sizes, geom->sensor_sizes_count * sizeof(player_bbox3d_t));
+    memcpy(device->element_sizes, geom->element_sizes, geom->element_sizes_count * sizeof(player_bbox3d_t));
   }
 
-  device->sensor_count = geom->sensor_poses_count;
+  device->element_count = geom->element_poses_count;
+}
+
+
+// Copy config to the device
+void playerc_ranger_copy_config(playerc_ranger_t *device, player_ranger_config_t *config)
+{
+  device->min_angle = config->min_angle;
+  device->max_angle = config->max_angle;
+  device->angular_res = config->angular_res;
+  device->max_range = config->max_range;
+  device->range_res = config->range_res;
+  device->frequency = config->frequency;
 }
 
 
@@ -262,10 +298,14 @@ void playerc_ranger_putmsg(playerc_ranger_t *device, player_msghdr_t *header,
     playerc_ranger_calculate_bearings(device);
     playerc_ranger_calculate_points(device);
   }
-  else if((header->type == PLAYER_MSGTYPE_DATA) && (header->subtype == PLAYER_RANGER_DATA_RANGEPOSE))
+  else if((header->type == PLAYER_MSGTYPE_DATA) && (header->subtype == PLAYER_RANGER_DATA_RANGESTAMPED))
   {
-    playerc_ranger_copy_range_data(device, &((player_ranger_data_rangepose_t *) data)->data);
-    playerc_ranger_copy_geom(device, &((player_ranger_data_rangepose_t *) data)->geom);
+    player_ranger_data_rangestamped_t *stampedData = (player_ranger_data_rangestamped_t*) data;
+    playerc_ranger_copy_range_data(device, &stampedData->data);
+    if (stampedData->have_geom)
+      playerc_ranger_copy_geom(device, &stampedData->geom);
+    if (stampedData->have_config)
+      playerc_ranger_copy_config(device, &stampedData->config);
     playerc_ranger_calculate_bearings(device);
     playerc_ranger_calculate_points(device);
   }
@@ -273,10 +313,14 @@ void playerc_ranger_putmsg(playerc_ranger_t *device, player_msghdr_t *header,
   {
     playerc_ranger_copy_intns_data(device, (player_ranger_data_intns_t *) data);
   }
-  else if((header->type == PLAYER_MSGTYPE_DATA) && (header->subtype == PLAYER_RANGER_DATA_INTNSPOSE))
+  else if((header->type == PLAYER_MSGTYPE_DATA) && (header->subtype == PLAYER_RANGER_DATA_INTNSSTAMPED))
   {
-    playerc_ranger_copy_intns_data(device, &((player_ranger_data_intnspose_t *) data)->data);
-    playerc_ranger_copy_geom(device, &((player_ranger_data_intnspose_t *) data)->geom);
+    player_ranger_data_intnsstamped_t *stampedData = (player_ranger_data_intnsstamped_t*) data;
+    playerc_ranger_copy_intns_data(device, &stampedData->data);
+    if (stampedData->have_geom)
+      playerc_ranger_copy_geom(device, &stampedData->geom);
+    if (stampedData->have_config)
+      playerc_ranger_copy_config(device, &stampedData->config);
   }
   else if((header->type == PLAYER_MSGTYPE_DATA) && (header->subtype == PLAYER_RANGER_DATA_GEOM))
   {
@@ -333,7 +377,7 @@ int playerc_ranger_intns_config(playerc_ranger_t *device, uint8_t value)
 
 // Ranger set config
 int playerc_ranger_set_config(playerc_ranger_t *device, double min_angle,
-                              double max_angle, double resolution,
+                              double max_angle, double angular_res,
                               double max_range, double range_res,
                               double frequency)
 {
@@ -341,7 +385,7 @@ int playerc_ranger_set_config(playerc_ranger_t *device, double min_angle,
 
   config.min_angle = min_angle;
   config.max_angle = max_angle;
-  config.resolution = resolution;
+  config.angular_res = angular_res;
   config.max_range = max_range;
   config.range_res = range_res;
   config.frequency = frequency;
@@ -351,19 +395,14 @@ int playerc_ranger_set_config(playerc_ranger_t *device, double min_angle,
                             (void*)&config, (void**)&resp) < 0)
     return -1;
 
-  device->min_angle = resp->min_angle;
-  device->max_angle = resp->max_angle;
-  device->resolution = resp->resolution;
-  device->max_range = resp->max_range;
-  device->range_res = resp->range_res;
-  device->frequency = resp->frequency;
+  playerc_ranger_copy_config(device, resp);
   player_ranger_config_t_free(resp);
   return 0;
 }
 
 // Ranger get config
 int playerc_ranger_get_config(playerc_ranger_t *device, double *min_angle,
-                              double *max_angle, double *resolution,
+                              double *max_angle, double *angular_res,
                               double *max_range, double *range_res,
                               double *frequency)
 {
@@ -374,19 +413,14 @@ int playerc_ranger_get_config(playerc_ranger_t *device, double *min_angle,
                             NULL, (void**)&config) < 0)
     return(-1);
 
-  device->min_angle = config->min_angle;
-  device->max_angle = config->max_angle;
-  device->resolution = config->resolution;
-  device->max_range = config->max_range;
-  device->range_res = config->range_res;
-  device->frequency = config->frequency;
+  playerc_ranger_copy_config(device, config);
   player_ranger_config_t_free(config);
   if (min_angle != NULL)
     *min_angle = device->min_angle;
   if (max_angle != NULL)
     *max_angle = device->max_angle;
-  if (resolution != NULL)
-    *resolution = device->resolution;
+  if (angular_res != NULL)
+    *angular_res = device->angular_res;
   if (max_range != NULL)
     *max_range = device->max_range;
   if (range_res != NULL)

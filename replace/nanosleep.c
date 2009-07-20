@@ -2,6 +2,7 @@
 #include <windows.h>
 
 #include "replace.h"
+#include "libplayercommon/error.h"
 
 // Replacement for nanosleep on Windows.
 // NOTES:
@@ -20,9 +21,9 @@ int nanosleep (const struct timespec *req, struct timespec *rem)
 	{
 		LPVOID buffer = NULL;
 		FormatMessage (FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
-						GetLastError(), 0, reinterpret_cast<LPTSTR> (&buffer), 0, NULL);
+						GetLastError(), 0, (LPTSTR) &buffer, 0, NULL);
 		PLAYER_ERROR2 ("nanosleep: CreateWaitableTimer failed: (%d) %s\n",
-						GetLastError (), reinterpret_cast<LPTSTR> (buffer));
+						GetLastError (), (LPTSTR) buffer);
 		LocalFree (buffer);
 		return -1;
 	}
@@ -31,9 +32,9 @@ int nanosleep (const struct timespec *req, struct timespec *rem)
 	{
 		LPVOID buffer = NULL;
 		FormatMessage (FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
-						GetLastError(), 0, reinterpret_cast<LPTSTR> (&buffer), 0, NULL);
+						GetLastError(), 0, (LPTSTR) &buffer, 0, NULL);
 		PLAYER_ERROR2 ("nanosleep: SetWaitableTimer failed: (%d) %s\n",
-						GetLastError (), reinterpret_cast<LPTSTR> (buffer));
+						GetLastError (), (LPTSTR) buffer);
 		LocalFree (buffer);
 		return -1;
 	}
@@ -42,9 +43,9 @@ int nanosleep (const struct timespec *req, struct timespec *rem)
 	{
 		LPVOID buffer = NULL;
 		FormatMessage (FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
-						GetLastError(), 0, reinterpret_cast<LPTSTR> (&buffer), 0, NULL);
+						GetLastError(), 0, (LPTSTR) &buffer, 0, NULL);
 		PLAYER_ERROR2 ("nanosleep: WaitForSingleObject failed: (%d) %s\n",
-						GetLastError (), reinterpret_cast<LPTSTR> (buffer));
+						GetLastError (), (LPTSTR) buffer);
 		LocalFree (buffer);
 		return -1;
 	}

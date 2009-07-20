@@ -98,9 +98,9 @@ ELSE (PLAYER_OS_QNX)
     SET (interfaceLibFlag)
 ENDIF (PLAYER_OS_QNX)
 
-
 INCLUDE_DIRECTORIES (${CMAKE_CURRENT_BINARY_DIR})
 PLAYER_ADD_LIBRARY (playerinterface ${playerinterfaceSrcs})
+TARGET_LINK_LIBRARIES (playerinterface playercommon)
 IF (PLAYER_OS_WIN)
     TARGET_LINK_LIBRARIES (playerinterface Ws2_32)
 ENDIF (PLAYER_OS_WIN)
@@ -115,13 +115,11 @@ ENDIF (NOT HAVE_XDR)
 PLAYER_MAKE_PKGCONFIG ("playerinterface" "Player Interface library - part of the Player Project"
                        "" "" "" "${interfaceLibFlag}")
 
-TARGET_LINK_LIBRARIES (playerinterface playercommon)
-
-PLAYER_INSTALL_HEADERS (playerinterface ${playerxdr_h} 
-                                        addr_util.h 
-                                        functiontable.h 
-                                        interface_util.h 
-                                        ${player_interfaces_h} 
+PLAYER_INSTALL_HEADERS (playerinterface ${playerxdr_h}
+                                        addr_util.h
+                                        functiontable.h
+                                        interface_util.h
+                                        ${player_interfaces_h}
                                         player.h)
 
 INSTALL (FILES ${CMAKE_CURRENT_SOURCE_DIR}/playerxdrgen.py RENAME playerxdrgen

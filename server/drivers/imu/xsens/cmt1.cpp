@@ -199,7 +199,7 @@ XsensResultValue Cmt1s::close (void)
 			char buffer[1024];
 			uint32_t length;
 			do {
-				::ReadFile(m_handle, buffer, 1024, &length, NULL);
+				::ReadFile(m_handle, buffer, 1024, reinterpret_cast<LPDWORD> (&length), NULL);
 			} while (length > 0);
 		::CloseHandle(m_handle);
 	#else
@@ -461,7 +461,7 @@ XsensResultValue Cmt1s::readData (const uint32_t maxLength, uint8_t* data,
 		return (m_lastResult = XRV_NOPORTOPEN);
 
 #ifdef _WIN32
-	BOOL rres = ::ReadFile(m_handle, data, maxLength, length, NULL);
+	BOOL rres = ::ReadFile(m_handle, data, maxLength, reinterpret_cast<LPDWORD> (length), NULL);
 	if (m_onBytesReceived != NULL && *length > 0)
 	{
 		CmtBinaryData* bytes = (CmtBinaryData*) malloc(sizeof(CmtBinaryData));
@@ -599,7 +599,7 @@ XsensResultValue Cmt1s::writeData (const uint32_t length,  const uint8_t* data,
 		return (m_lastResult = XRV_NOPORTOPEN);
 
 #ifdef _WIN32
-	if (WriteFile(m_handle, data, length, written, NULL))
+	if (WriteFile(m_handle, data, length, reinterpret_cast<LPDWORD> (written), NULL))
 	{
 #ifdef _LOG_RX_TX
 		if (written[0] > 0)

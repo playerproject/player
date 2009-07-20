@@ -187,50 +187,50 @@ int SonarToRanger::ConvertGeom (player_sonar_geom_t *geom)
 	double minX = 0.0f, maxX = 0.0f, minY = 0.0f, maxY = 0.0f, minZ = 0.0f, maxZ = 0.0f;
 
 	// Prepare some space for storing geometry data - the parent class will clean this up when necessary
-	if (deviceGeom.sensor_poses != NULL)
-		delete deviceGeom.sensor_poses;
-	if (deviceGeom.sensor_sizes != NULL)
-		delete deviceGeom.sensor_sizes;
+	if (deviceGeom.element_poses != NULL)
+		delete deviceGeom.element_poses;
+	if (deviceGeom.element_sizes != NULL)
+		delete deviceGeom.element_sizes;
 	memset (&deviceGeom, 0, sizeof (player_ranger_geom_t));
-	if ((deviceGeom.sensor_poses = new player_pose3d_t[geom->poses_count]) == NULL)
+	if ((deviceGeom.element_poses = new player_pose3d_t[geom->poses_count]) == NULL)
 	{
 		PLAYER_ERROR ("Failed to allocate memory for sensor poses");
-		deviceGeom.sensor_poses = NULL;
+		deviceGeom.element_poses = NULL;
 		return 0;
 	}
-	memset (deviceGeom.sensor_poses, 0, sizeof (player_pose3d_t) * geom->poses_count);
-	if ((deviceGeom.sensor_sizes = new player_bbox3d_t[geom->poses_count]) == NULL)
+	memset (deviceGeom.element_poses, 0, sizeof (player_pose3d_t) * geom->poses_count);
+	if ((deviceGeom.element_sizes = new player_bbox3d_t[geom->poses_count]) == NULL)
 	{
 		PLAYER_ERROR ("Failed to allocate memory for sensor sizes");
-		delete deviceGeom.sensor_sizes;
-		deviceGeom.sensor_sizes = NULL;
+		delete deviceGeom.element_sizes;
+		deviceGeom.element_sizes = NULL;
 		return 0;
 	}
-	memset (deviceGeom.sensor_sizes, 0, sizeof (player_bbox3d_t) * geom->poses_count);
+	memset (deviceGeom.element_sizes, 0, sizeof (player_bbox3d_t) * geom->poses_count);
 
 	// Copy across the poses, making a note of the bounding box for all poses
-	deviceGeom.sensor_poses_count = geom->poses_count;
+	deviceGeom.element_poses_count = geom->poses_count;
 	for (uint32_t ii = 0; ii < geom->poses_count; ii++)
 	{
 		minX = (geom->poses[ii].px < minX) ? geom->poses[ii].px : minX;
 		maxX = (geom->poses[ii].px > maxX) ? geom->poses[ii].px : maxX;
-		deviceGeom.sensor_poses[ii].px = geom->poses[ii].px;
+		deviceGeom.element_poses[ii].px = geom->poses[ii].px;
 		minY = (geom->poses[ii].py < minY) ? geom->poses[ii].py : minY;
 		maxY = (geom->poses[ii].py > maxY) ? geom->poses[ii].py : maxY;
-		deviceGeom.sensor_poses[ii].py = geom->poses[ii].py;
-    minZ = (geom->poses[ii].pz < minZ) ? geom->poses[ii].pz : minZ;
-    maxZ = (geom->poses[ii].pz > maxZ) ? geom->poses[ii].pz : maxZ;
-    deviceGeom.sensor_poses[ii].pz = geom->poses[ii].pz;
-    deviceGeom.sensor_poses[ii].proll = geom->poses[ii].proll;
-    deviceGeom.sensor_poses[ii].ppitch = geom->poses[ii].ppitch;
-		deviceGeom.sensor_poses[ii].pyaw = geom->poses[ii].pyaw;
+		deviceGeom.element_poses[ii].py = geom->poses[ii].py;
+		minZ = (geom->poses[ii].pz < minZ) ? geom->poses[ii].pz : minZ;
+		maxZ = (geom->poses[ii].pz > maxZ) ? geom->poses[ii].pz : maxZ;
+		deviceGeom.element_poses[ii].pz = geom->poses[ii].pz;
+		deviceGeom.element_poses[ii].proll = geom->poses[ii].proll;
+		deviceGeom.element_poses[ii].ppitch = geom->poses[ii].ppitch;
+		deviceGeom.element_poses[ii].pyaw = geom->poses[ii].pyaw;
 	}
 	// Even though the sensor sizes are all zero, they're still there
-	deviceGeom.sensor_sizes_count = geom->poses_count;
+	deviceGeom.element_sizes_count = geom->poses_count;
 	// Set the device size
 	deviceGeom.size.sw = maxX - minX;
 	deviceGeom.size.sl = maxY - minY;
-  deviceGeom.size.sh = maxZ - minZ;
+	deviceGeom.size.sh = maxZ - minZ;
 
 	return 0;
 }

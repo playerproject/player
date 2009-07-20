@@ -76,18 +76,18 @@ void RangerProxy::Unsubscribe()
   mDevice = NULL;
 }
 
-player_pose3d_t RangerProxy::GetSensorPose(uint32_t aIndex) const
+player_pose3d_t RangerProxy::GetElementPose(uint32_t aIndex) const
 {
-  if (aIndex > mDevice->sensor_count)
+  if (aIndex > mDevice->element_count)
     throw PlayerError("RangerProxy::GetSensorPose", "index out of bounds");
-  return GetVar(mDevice->sensor_poses[aIndex]);
+  return GetVar(mDevice->element_poses[aIndex]);
 }
 
-player_bbox3d_t RangerProxy::GetSensorSize(uint32_t aIndex) const
+player_bbox3d_t RangerProxy::GetElementSize(uint32_t aIndex) const
 {
-  if (aIndex > mDevice->sensor_count)
+  if (aIndex > mDevice->element_count)
     throw PlayerError("RangerProxy::GetSensorSize", "index out of bounds");
-  return GetVar(mDevice->sensor_sizes[aIndex]);
+  return GetVar(mDevice->element_sizes[aIndex]);
 }
 
 double RangerProxy::GetRange(uint32_t aIndex) const
@@ -125,11 +125,11 @@ void RangerProxy::RequestGeom()
     throw PlayerError("RangerProxy::RequestGeom()", "error requesting geometry");
 }
 
-void RangerProxy::Configure(double aMinAngle, double aMaxAngle, double aResolution,
+void RangerProxy::Configure(double aMinAngle, double aMaxAngle, double aAngularRes,
                             double aMaxRange, double aRangeRes, double aFrequency)
 {
   scoped_lock_t lock(mPc->mMutex);
-  if (0 != playerc_ranger_set_config(mDevice, aMinAngle, aMaxAngle, aResolution,
+  if (0 != playerc_ranger_set_config(mDevice, aMinAngle, aMaxAngle, aAngularRes,
                                      aMaxRange, aRangeRes, aFrequency))
     throw PlayerError("RangerProxy::Configure()", "error setting config");
 }
@@ -153,13 +153,13 @@ std::ostream& std::operator << (std::ostream &os, const PlayerCc::RangerProxy &c
         pose.proll << ", " << pose.ppitch << ", " << pose.pyaw << ")" << endl;
   size = c.GetDeviceSize ();
   os << "Device size: (" << size.sw << ", " << size.sl << ", " << size.sh << ")" << endl;
-  if (c.GetSensorCount() > 0)
+  if (c.GetElementCount() > 0)
   {
-    os << c.GetSensorCount() << " sensors:" << endl;
-    for (uint32_t ii = 0; ii < c.GetSensorCount(); ii++)
+    os << c.GetElementCount() << " sensors:" << endl;
+    for (uint32_t ii = 0; ii < c.GetElementCount(); ii++)
     {
-      pose = c.GetSensorPose(ii);
-      size = c.GetSensorSize(ii);
+      pose = c.GetElementPose(ii);
+      size = c.GetElementSize(ii);
       os << "  Pose: (" << pose.px << ", " << pose.py << ", " << pose.pz << "), (" <<
          pose.proll << ", " << pose.ppitch << ", " << pose.pyaw << ")" << "\tSize: (" <<
          size.sw << ", " << size.sl << ", " << size.sh << ")" << endl;

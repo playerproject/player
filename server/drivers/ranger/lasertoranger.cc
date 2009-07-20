@@ -172,18 +172,18 @@ int LaserToRanger::Setup (void)
 	inputDevice->PutMsg (InQueue, PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_GET_CONFIG, NULL, 0, NULL);
 
 	// Prepare some space for storing geometry data - the parent class will clean this up when necessary
-	deviceGeom.sensor_poses_count = 1;
-	if ((deviceGeom.sensor_poses = new player_pose3d_t) == NULL)
+	deviceGeom.element_poses_count = 1;
+	if ((deviceGeom.element_poses = new player_pose3d_t) == NULL)
 	{
 		PLAYER_ERROR ("Failed to allocate memory for sensor poses");
 		return -1;
 	}
-	deviceGeom.sensor_sizes_count = 1;
-	if ((deviceGeom.sensor_sizes = new player_bbox3d_t) == NULL)
+	deviceGeom.element_sizes_count = 1;
+	if ((deviceGeom.element_sizes = new player_bbox3d_t) == NULL)
 	{
 		PLAYER_ERROR ("Failed to allocate memory for sensor sizes");
-		delete deviceGeom.sensor_sizes;
-		deviceGeom.sensor_sizes = NULL;
+		delete deviceGeom.element_sizes;
+		deviceGeom.element_sizes = NULL;
 		return -1;
 	}
 
@@ -208,8 +208,8 @@ int LaserToRanger::ConvertData (player_msghdr *hdr, void *data)
 {
 	player_laser_data_t *scanData = NULL;
 	player_pose2d_t *pose = NULL;
-	player_ranger_data_rangepose_t rangeData;
-	player_ranger_data_intnspose_t intensityData;
+	player_ranger_data_rangestamped_t rangeData;
+	player_ranger_data_intnsstamped_t intensityData;
 
 	memset (&rangeData, 0, sizeof (rangeData));
 	memset (&intensityData, 0, sizeof (intensityData));
@@ -234,7 +234,7 @@ int LaserToRanger::ConvertData (player_msghdr *hdr, void *data)
 		deviceGeom.pose.proll = 0.0f;
 		deviceGeom.pose.ppitch = 0.0f;
 		deviceGeom.pose.pyaw = pose->pa;
-		*(deviceGeom.sensor_poses) = deviceGeom.pose;
+		*(deviceGeom.element_poses) = deviceGeom.pose;
 	}
 	// Handle any data we got data
 	if (data != NULL)
@@ -262,7 +262,7 @@ int LaserToRanger::ConvertData (player_msghdr *hdr, void *data)
 			else
 			{
 				rangeData.geom = deviceGeom;
-				Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_RANGEPOSE, reinterpret_cast<void*> (&rangeData), sizeof (rangeData), NULL);
+				Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_RANGESTAMPED, reinterpret_cast<void*> (&rangeData), sizeof (rangeData), NULL);
 			}
 			// Delete the space we allocated for the data
 			delete[] rangeData.data.ranges;
@@ -285,7 +285,7 @@ int LaserToRanger::ConvertData (player_msghdr *hdr, void *data)
 			else
 			{
 				rangeData.geom = deviceGeom;
-				Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_INTNSPOSE, reinterpret_cast<void*> (&intensityData), sizeof (intensityData), NULL);
+				Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_INTNSSTAMPED, reinterpret_cast<void*> (&intensityData), sizeof (intensityData), NULL);
 			}
 			// Delete the space we allocated for the data
 			delete[] intensityData.data.intensities;
@@ -307,8 +307,8 @@ bool LaserToRanger::HandleGeomRequest (player_laser_geom_t *data)
 	deviceGeom.size.sl = data->size.sl;
 	deviceGeom.size.sh = data->size.sh;
 
-	*(deviceGeom.sensor_poses) = deviceGeom.pose;
-	*(deviceGeom.sensor_sizes) = deviceGeom.size;
+	*(deviceGeom.element_poses) = deviceGeom.pose;
+	*(deviceGeom.element_sizes) = deviceGeom.size;
 
 	return true;
 }
@@ -320,7 +320,7 @@ void LaserToRanger::HandleConfigResp (player_ranger_config_t *dest, player_laser
 	// Copy it into the destination
 	dest->min_angle = data->min_angle;
 	dest->max_angle = data->max_angle;
-	dest->resolution = data->resolution;
+	dest->angular_res = data->resolution;
 	dest->max_range = data->max_range;
 	dest->range_res = data->range_res;
 	dest->frequency = data->scanning_frequency;
@@ -376,7 +376,7 @@ int LaserToRanger::ProcessMessage (QueuePointer &respQueue, player_msghdr *hdr, 
 		player_ranger_config_t *req = reinterpret_cast<player_ranger_config_t*> (data);
 		laserConfig.min_angle = static_cast<float> (req->min_angle);
 		laserConfig.max_angle = static_cast<float> (req->max_angle);
-		laserConfig.resolution = static_cast<float> (req->resolution);
+		laserConfig.resolution = static_cast<float> (req->angular_res);
 		laserConfig.max_range = static_cast<float> (req->max_range);
 		laserConfig.range_res = static_cast<float> (req->range_res);
 		laserConfig.scanning_frequency = static_cast<float> (req->frequency);

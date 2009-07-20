@@ -147,7 +147,11 @@ Bitlogic::Bitlogic(ConfigFile * cf, int section) : Driver(cf, section, true, PLA
   }
   for (i = 0; i < static_cast<int>(this->slots); i++)
   {
+#if defined (WIN32)
+    _snprintf(key, sizeof key, "%d", i);
+#else
     snprintf(key, sizeof key, "%d", i);
+#endif
     if (cf->ReadDeviceAddr(&(this->dio_provided_addrs[i]), section, "provides", PLAYER_DIO_CODE, -1, key))
     {
       this->SetError(-1);

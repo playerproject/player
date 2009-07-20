@@ -19,4 +19,7 @@ PLAYERDRIVER_OPTION (vec2map build_vec2map ON)
 PLAYERDRIVER_ADD_DRIVER (vec2map build_vec2map SOURCES vec2map.cc)
 
 PLAYERDRIVER_OPTION (robotracker build_robotracker ON)
+# This driver uses GlobalTime from libplayercore, which currently doesn't
+# get exported correctly.
+PLAYERDRIVER_REJECT_OS (robotracker build_robotracker PLAYER_OS_WIN)
 PLAYERDRIVER_ADD_DRIVER (robotracker build_robotracker SOURCES robotracker.cc)

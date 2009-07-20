@@ -85,7 +85,7 @@ ENDIF (PLAYER_OS_WIN)
 
 LINK_DIRECTORIES (${PLAYERC_EXTRA_LINK_DIRS})
 PLAYER_ADD_LIBRARY (playerc ${playercSrcs})
-ADD_DEPENDENCIES (playerc player_interfaces playerinterface_src)
+ADD_DEPENDENCIES (playerc player_interfaces)
 TARGET_LINK_LIBRARIES (playerc playerinterface playercommon playerwkb
                        ${playerreplaceLib} ${PLAYERC_EXTRA_LINK_LIBRARIES})
 IF (HAVE_JPEG)

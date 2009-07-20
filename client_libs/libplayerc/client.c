@@ -227,7 +227,7 @@ void playerc_client_destroy(playerc_client_t *client)
 #if defined (WIN32)
   // Clean up the Windows sockets API (this can safely be done as many times as we like)
   if (WSACleanup () != 0)
-    PLAYERC_ERROR1 ("Failed to clean up Windows sockets API with error %s", WSAGetLastError ());
+    PLAYERC_ERR1 ("Failed to clean up Windows sockets API with error %s", WSAGetLastError ());
 #endif
 
   free(client->data);

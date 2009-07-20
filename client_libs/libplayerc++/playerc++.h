@@ -2224,7 +2224,7 @@ class PLAYERCC_EXPORT RangerProxy : public ClientProxy
     ~RangerProxy();
 
     /// Return the individual range sensor count
-    uint32_t GetSensorCount() const { return GetVar(mDevice->sensor_count); };
+    uint32_t GetElementCount() const { return GetVar(mDevice->element_count); };
 
     /// Return the device pose
     player_pose3d_t GetDevicePose() const { return GetVar(mDevice->device_pose); };
@@ -2232,9 +2232,9 @@ class PLAYERCC_EXPORT RangerProxy : public ClientProxy
     player_bbox3d_t GetDeviceSize() const { return GetVar(mDevice->device_size); };
 
     /// Return the pose of an individual sensor
-    player_pose3d_t GetSensorPose(uint32_t aIndex) const;
+    player_pose3d_t GetElementPose(uint32_t aIndex) const;
     /// Return the size of an individual sensor
-    player_bbox3d_t GetSensorSize(uint32_t aIndex) const;
+    player_bbox3d_t GetElementSize(uint32_t aIndex) const;
 
     /// Return the number of range readings
     uint32_t GetRangeCount() const { return GetVar(mDevice->ranges_count); };
@@ -2265,7 +2265,7 @@ class PLAYERCC_EXPORT RangerProxy : public ClientProxy
     /// @p aFrequency is measured in Hz.
     void Configure(double aMinAngle,
                    double aMaxAngle,
-                   double aResolution,
+                   double aAngularRes,
                    double aMaxRange,
                    double aRangeRes,
                    double aFrequency);
@@ -2281,7 +2281,7 @@ class PLAYERCC_EXPORT RangerProxy : public ClientProxy
     double GetMaxAngle() const { return GetVar(mDevice->max_angle); };
 
     /// Angular resolution of a scan (configured value)
-    double GetResolution() const { return GetVar(mDevice->resolution); };
+    double GetAngularRes() const { return GetVar(mDevice->angular_res); };
 
     /// Maximum detectable range of a scan (configured value)
     double GetMaxRange() const { return GetVar(mDevice->max_range); };

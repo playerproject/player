@@ -206,13 +206,13 @@ int RangerToLaser::ConvertData (player_msghdr *hdr, void *data)
 				rangeCount = reinterpret_cast<player_ranger_data_range_t*> (data)->ranges_count;
 			}
 			break;
-		case PLAYER_RANGER_DATA_RANGEPOSE:
-			if (reinterpret_cast<player_ranger_data_rangepose_t*> (data)->data.ranges_count > 0)
+		case PLAYER_RANGER_DATA_RANGESTAMPED:
+			if (reinterpret_cast<player_ranger_data_rangestamped_t*> (data)->data.ranges_count > 0)
 			{
-				rangeData = reinterpret_cast<player_ranger_data_rangepose_t*> (data)->data.ranges;
-				rangeCount = reinterpret_cast<player_ranger_data_rangepose_t*> (data)->data.ranges_count;
+				rangeData = reinterpret_cast<player_ranger_data_rangestamped_t*> (data)->data.ranges;
+				rangeCount = reinterpret_cast<player_ranger_data_rangestamped_t*> (data)->data.ranges_count;
 			}
-			pose = &reinterpret_cast<player_ranger_data_rangepose_t*> (data)->geom;
+			pose = &reinterpret_cast<player_ranger_data_rangestamped_t*> (data)->geom;
 			break;
 		case PLAYER_RANGER_DATA_INTNS:
 			if (reinterpret_cast<player_ranger_data_intns_t*> (data)->intensities_count > 0)
@@ -221,13 +221,13 @@ int RangerToLaser::ConvertData (player_msghdr *hdr, void *data)
 				intensityCount = reinterpret_cast<player_ranger_data_intns_t*> (data)->intensities_count;
 			}
 			break;
-		case PLAYER_RANGER_DATA_INTNSPOSE:
-			if (reinterpret_cast<player_ranger_data_intnspose_t*> (data)->data.intensities_count > 0)
+		case PLAYER_RANGER_DATA_INTNSSTAMPED:
+			if (reinterpret_cast<player_ranger_data_intnsstamped_t*> (data)->data.intensities_count > 0)
 			{
-				intensityData = reinterpret_cast<player_ranger_data_intnspose_t*> (data)->data.intensities;
-				intensityCount = reinterpret_cast<player_ranger_data_intnspose_t*> (data)->data.intensities_count;
+				intensityData = reinterpret_cast<player_ranger_data_intnsstamped_t*> (data)->data.intensities;
+				intensityCount = reinterpret_cast<player_ranger_data_intnsstamped_t*> (data)->data.intensities_count;
 			}
-			pose = &reinterpret_cast<player_ranger_data_intnspose_t*> (data)->geom;
+			pose = &reinterpret_cast<player_ranger_data_intnsstamped_t*> (data)->geom;
 			break;
 		case PLAYER_RANGER_DATA_GEOM:
 		default:
@@ -305,7 +305,7 @@ void RangerToLaser::CopyConfig (player_ranger_config_t *data)
 {
 	config.min_angle = static_cast<float> (data->min_angle);
 	config.max_angle = static_cast<float> (data->max_angle);
-	config.resolution = static_cast<float> (data->resolution);
+	config.resolution = static_cast<float> (data->angular_res);
 	config.max_range = static_cast<float> (data->max_range);
 	config.range_res = static_cast<float> (data->range_res);
 	config.scanning_frequency = static_cast<float> (data->frequency);
@@ -350,7 +350,7 @@ int RangerToLaser::ProcessMessage (QueuePointer &respQueue, player_msghdr *hdr, 
 		player_ranger_config_t translation;
 		translation.min_angle = req->min_angle;
 		translation.max_angle = req->max_angle;
-		translation.resolution = req->resolution;
+		translation.angular_res = req->resolution;
 		translation.max_range = req->max_range;
 		translation.range_res = req->range_res;
 		translation.frequency = req->scanning_frequency;

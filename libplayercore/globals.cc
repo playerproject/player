@@ -54,23 +54,23 @@
 #endif
 
 // this table holds all the currently *instantiated* devices
-DeviceTable* deviceTable;
+PLAYERCORE_EXPORT DeviceTable* deviceTable;
 
 // this table holds all the currently *available* drivers
-DriverTable* driverTable;
+PLAYERCORE_EXPORT DriverTable* driverTable;
 
 // the global PlayerTime object has a method
 //   int GetTime(struct timeval*)
 // which everyone must use to get the current time
-PlayerTime* GlobalTime;
+PLAYERCORE_EXPORT PlayerTime* GlobalTime;
 
 // global class for watching for changes in files and sockets
-FileWatcher* fileWatcher;
+PLAYERCORE_EXPORT FileWatcher* fileWatcher;
 
-char playerversion[32];
+PLAYERCORE_EXPORT char playerversion[32];
 
-bool player_quit;
-bool player_quiet_startup;
+PLAYERCORE_EXPORT bool player_quit;
+PLAYERCORE_EXPORT bool player_quiet_startup;
 
 // global access to the cmdline arguments
 int player_argc;
