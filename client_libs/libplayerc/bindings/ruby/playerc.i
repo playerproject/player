@@ -312,7 +312,7 @@ change to hash when we know how to use hash_lookup
   int i;
   if (RARRAY_LEN($input) != $1_dim0) 
   {
-    SWIG_exception( SWIG_TypeError, "Size mismatch on the array" );
+    rb_raise( rb_eRuntimeError, "Size mismatch on the array" );
     return 0;
   }
 
@@ -330,7 +330,7 @@ change to hash when we know how to use hash_lookup
   int i;
   if (RARRAY_LEN($input) != $1_dim0) 
   {
-    SWIG_exception( SWIG_TypeError, "Size mismatch on the array" );
+    rb_raise( rb_eRuntimeError, "Size mismatch on the array" );
     return 0;
   }
 
@@ -369,7 +369,7 @@ change to hash when we know how to use hash_lookup
 
   if (RARRAY_LEN($input) != $1_dim0) 
   {
-    SWIG_exception( SWIG_TypeError, "Size mismatch on the array" );
+    rb_raise( rb_eRuntimeError, "Size mismatch on the array" );
     return 0;
   }
 
