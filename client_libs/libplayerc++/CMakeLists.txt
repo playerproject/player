@@ -1,4 +1,5 @@
 ADD_SUBDIRECTORY (test)
+ADD_SUBDIRECTORY (bindings)
 
 # Possibly use our own copy of XDR, and need gettimeofday replacement
 IF (NOT HAVE_XDR OR NOT HAVE_GETTIMEOFDAY)

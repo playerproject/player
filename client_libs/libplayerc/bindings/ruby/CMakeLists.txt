@@ -1,12 +1,10 @@
 FIND_PACKAGE (Ruby)
 
+IF (RUBY_LIBRARY AND RUBY_INCLUDE_PATH)
+    SET (RUBY_FOUND TRUE)
+ENDIF (RUBY_LIBRARY AND RUBY_INCLUDE_PATH)
 
-if(RUBY_LIBRARY AND RUBY_INCLUDE_PATH)
-    SET(RUBY_FOUND TRUE)
-endif (RUBY_LIBRARY AND RUBY_INCLUDE_PATH)
-
-
-  IF(RUBY_FOUND)
+IF(RUBY_FOUND)
     OPTION (BUILD_RUBY_BINDINGS "Build the Ruby bindings for the C client library" ON)
 
     IF (BUILD_RUBY_BINDINGS)
@@ -15,7 +13,7 @@ endif (RUBY_LIBRARY AND RUBY_INCLUDE_PATH)
             MESSAGE (STATUS "Ruby bindings for C client library will be built")
 
             #INCLUDE (${SWIG_USE_FILE})
-			INCLUDE (${PLAYER_CMAKE_DIR}/internal/UseSwig_Player.cmake)
+            INCLUDE (${PLAYER_CMAKE_DIR}/internal/UseSwig_Player.cmake)
 
             INCLUDE_DIRECTORIES (${RUBY_INCLUDE_PATH})
             INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR})
@@ -51,7 +49,6 @@ endif (RUBY_LIBRARY AND RUBY_INCLUDE_PATH)
             IF (HAVE_JPEG)
                 TARGET_LINK_LIBRARIES (${SWIG_MODULE_playercr_REAL_NAME} playerjpeg)
             ENDIF (HAVE_JPEG)
-
 
             #TODO: find ruby in windows, check install dir is correct  
             STRING(REPLACE "/usr/" "" ruby_relative_sitelib_dir ${RUBY_SITELIB_DIR})
