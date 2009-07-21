@@ -1,0 +1,6 @@
+Makefile
+Makefile.in
+libplayercpp_py.html
+playercpp.i
+playercpp_example.py
+setup.py.cmake
