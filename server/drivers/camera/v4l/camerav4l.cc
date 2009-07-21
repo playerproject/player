@@ -185,9 +185,6 @@ binary driver which is a bonus
 #include "v4lcapture.h"  // For Gavin's libfg; should integrate this
 #include "ccvt.h"        // For YUV420P-->RGB conversion
 
-// Time for timestamps
-extern PlayerTime *GlobalTime;
-
 // Driver for detecting laser retro-reflectors.
 class CameraV4L : public ThreadedDriver
 {

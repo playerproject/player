@@ -28,9 +28,6 @@
 #define PLAYER_CAMERA_FORMAT_RGB 6
 #define PLAYER_CAMERA_FORMAT_YUV420P 7
 
-// Time for timestamps
-extern PlayerTime *GlobalTime;
-
 ////////////////////////////////////////////////////////////////////////////////
 // The class for the driver
 class SphereDriver : public ThreadedDriver

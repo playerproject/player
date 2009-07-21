@@ -73,8 +73,6 @@ driver
 
 #define RQ_QUEUE_LEN 10
 
-extern PlayerTime * GlobalTime;
-
 class Globalize : public Driver
 {
   public:

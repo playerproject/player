@@ -93,8 +93,6 @@ driver
 
 #define MESSAGE_LEN 38U
 
-//extern PlayerTime *GlobalTime;
-
 ///////////////////////////////////////////////////////////////////////////////
 // The class for the driver
 class sickLDMRS : public ThreadedDriver

@@ -93,8 +93,6 @@
 #include <libplayercore/globals.h>
 
 
-extern PlayerTime* GlobalTime;
-
 #define DWORD unsigned int
 #define DEFAULT_PBS_PORT "/dev/ttyS0"
 #define NUMBER_OF_RANGE_READINGS 121

@@ -95,8 +95,6 @@ driver
 
 #include <libplayercore/playercore.h>
 
-extern PlayerTime *GlobalTime;
-
 #define WIFI_INFO_FILE "/proc/net/wireless"
 
 #define WIFI_UPDATE_INTERVAL 1000 // in milliseconds

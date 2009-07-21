@@ -148,8 +148,6 @@ driver(
 // Register indexes for WRITE and WRITE STORE commands
 #define MM_REG_POSITION        0x00
 
-extern PlayerTime *GlobalTime;
-
 ///////////////////////////////////////////////////////////////////////////////
 // The class for the driver
 class MotionMind : public ThreadedDriver

@@ -70,12 +70,6 @@ should include most GPS devices that use NMEA to communicate.
  - debug (int)
    - Default: 0
    - Debugging level of the underlying library to get verbose output.
- - pose (float 6-tuple: (m, m, m, rad, rad, rad))
-   - Default: [0.0 0.0 0.0 0.0 0.0 0.0]
-   - Pose (x, y, z, roll, pitch, yaw) of the laser relative to its parent object (e.g. the robot).
- - size (float 3-tuple: (m, m, m))
-   - Default: [0.0 0.0 0.0]
-   - Size of the laser in metres.
 
 @par Example
 
@@ -117,10 +111,6 @@ class GbxGarminAcfr : public ThreadedDriver
         // Configuration parameters
         gbxgarminacfr::Config _config;
         unsigned int _debug;
-        // Geometry
-        player_ranger_geom_t _geom;
-        player_pose3d_t _sensorPose;
-        player_bbox3d_t _sensorSize;
         // Data storage
         player_gps_data_t _gpsData;
         // The hardware device itself
@@ -151,22 +141,6 @@ GbxGarminAcfr::GbxGarminAcfr (ConfigFile* cf, int section)
     _config.ignoreUnknown = cf->ReadInt (section, "ignore_unknown", false);
     _config.device = cf->ReadString (section, "port", "/dev/ttyS0");
     _debug = cf->ReadBool (section, "debug", 0);
-    // Set up geometry information
-    _geom.pose.px = cf->ReadTupleLength (section, "pose", 0, 0.0f);
-    _geom.pose.py = cf->ReadTupleLength (section, "pose", 1, 0.0f);
-    _geom.pose.pz = cf->ReadTupleLength (section, "pose", 2, 0.0f);
-    _geom.pose.proll = cf->ReadTupleAngle (section, "pose", 3, 0.0f);
-    _geom.pose.ppitch = cf->ReadTupleAngle (section, "pose", 4, 0.0f);
-    _geom.pose.pyaw = cf->ReadTupleAngle (section, "pose", 5, 0.0f);
-    _geom.size.sw = cf->ReadTupleLength (section, "size", 0, 0.0f);
-    _geom.size.sl = cf->ReadTupleLength (section, "size", 1, 0.0f);
-    _geom.size.sh = cf->ReadTupleLength (section, "size", 2, 0.0f);
-    _geom.sensor_poses_count = 1;
-    _geom.sensor_poses = &_sensorPose;
-    memcpy (_geom.sensor_poses, &_geom.pose, sizeof (_geom.pose));
-    _geom.sensor_sizes_count = 1;
-    _geom.sensor_sizes = &_sensorSize;
-    memcpy (_geom.sensor_sizes, &_geom.size, sizeof (_geom.size));
 
     memset (&_gpsData, 0, sizeof (_gpsData));
 }

@@ -223,8 +223,6 @@ position devices that use watchdog timers.
 #include <replace/replace.h> // for poll(2)
 #include <libplayercore/playercore.h>
 
-extern PlayerTime *GlobalTime;
-
 #define XAXIS 1
 #define YAXIS 2
 #define YAWAXIS 0

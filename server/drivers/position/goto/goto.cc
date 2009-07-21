@@ -127,8 +127,6 @@ driver
 
 #define RQ_QUEUE_LEN 10
 
-extern PlayerTime * GlobalTime;
-
 class Goto : public Driver
 {
   public:

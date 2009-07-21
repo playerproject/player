@@ -103,10 +103,6 @@ class OceanServer : public ThreadedDriver
         // Configuration parameters
         std::string _port;
         unsigned int _debug;
-        // Geometry
-        player_ranger_geom_t _geom;
-        player_pose3d_t _sensorPose;
-        player_bbox3d_t _sensorSize;
         // The hardware device itself
         std::auto_ptr<gbxsmartbatteryacfr::OceanServer> _device;
         // Objects to handle messages from the driver
@@ -130,22 +126,6 @@ OceanServer::OceanServer (ConfigFile* cf, int section)
     // Setup config object
     _port = cf->ReadString (section, "port", "/dev/ttyS0");
     _debug = cf->ReadBool (section, "debug", 0);
-    // Set up geometry information
-    _geom.pose.px = cf->ReadTupleLength (section, "pose", 0, 0.0f);
-    _geom.pose.py = cf->ReadTupleLength (section, "pose", 1, 0.0f);
-    _geom.pose.pz = cf->ReadTupleLength (section, "pose", 2, 0.0f);
-    _geom.pose.proll = cf->ReadTupleAngle (section, "pose", 3, 0.0f);
-    _geom.pose.ppitch = cf->ReadTupleAngle (section, "pose", 4, 0.0f);
-    _geom.pose.pyaw = cf->ReadTupleAngle (section, "pose", 5, 0.0f);
-    _geom.size.sw = cf->ReadTupleLength (section, "size", 0, 0.0f);
-    _geom.size.sl = cf->ReadTupleLength (section, "size", 1, 0.0f);
-    _geom.size.sh = cf->ReadTupleLength (section, "size", 2, 0.0f);
-    _geom.sensor_poses_count = 1;
-    _geom.sensor_poses = &_sensorPose;
-    memcpy (_geom.sensor_poses, &_geom.pose, sizeof (_geom.pose));
-    _geom.sensor_sizes_count = 1;
-    _geom.sensor_sizes = &_sensorSize;
-    memcpy (_geom.sensor_sizes, &_geom.size, sizeof (_geom.size));
 }
 
 OceanServer::~OceanServer (void)
