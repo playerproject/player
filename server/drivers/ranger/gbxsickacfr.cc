@@ -138,8 +138,8 @@ class GbxSickAcfr : public ThreadedDriver
         unsigned int connectionDelay;
         // Geometry
         player_ranger_geom_t geom;
-        player_pose3d_t sensorPose;
-        player_bbox3d_t sensorSize;
+        player_pose3d_t elementPose;
+        player_bbox3d_t elementSize;
         // Data storage
         float *rawRanges;
         double *ranges;
@@ -190,12 +190,12 @@ GbxSickAcfr::GbxSickAcfr (ConfigFile* cf, int section)
     geom.size.sw = cf->ReadTupleLength (section, "size", 0, 0.0f);
     geom.size.sl = cf->ReadTupleLength (section, "size", 1, 0.0f);
     geom.size.sh = cf->ReadTupleLength (section, "size", 2, 0.0f);
-    geom.sensor_poses_count = 1;
-    geom.sensor_poses = &sensorPose;
-    memcpy (geom.sensor_poses, &geom.pose, sizeof (geom.pose));
-    geom.sensor_sizes_count = 1;
-    geom.sensor_sizes = &sensorSize;
-    memcpy (geom.sensor_sizes, &geom.size, sizeof (geom.size));
+    geom.element_poses_count = 1;
+    geom.element_poses = &elementPose;
+    memcpy (geom.element_poses, &geom.pose, sizeof (geom.pose));
+    geom.element_sizes_count = 1;
+    geom.element_sizes = &elementSize;
+    memcpy (geom.element_sizes, &geom.size, sizeof (geom.size));
 }
 
 GbxSickAcfr::~GbxSickAcfr (void)
@@ -331,7 +331,7 @@ int GbxSickAcfr::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, v
         player_ranger_config_t rangerConfig;
         rangerConfig.min_angle = config.startAngle;
         rangerConfig.max_angle = config.startAngle + config.fieldOfView;
-        rangerConfig.resolution = config.fieldOfView / static_cast<double> (config.numberOfSamples - 1);
+        rangerConfig.angular_res = config.fieldOfView / static_cast<double> (config.numberOfSamples - 1);
         rangerConfig.max_range = config.maxRange;
         rangerConfig.range_res = 0.0f;
         rangerConfig.frequency = 0.0f;

@@ -315,7 +315,6 @@ driver
 
 #include <libplayercore/playercore.h>
 #include <libplayerinterface/playerxdr.h>
-extern PlayerTime* GlobalTime;
 
 extern int               RFLEX::joy_control;
 

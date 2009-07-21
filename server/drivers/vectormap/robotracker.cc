@@ -130,8 +130,6 @@ driver
 
 #define EPS 0.00000000000001
 
-extern PlayerTime * GlobalTime;
-
 class RoboTracker : Driver
 {
 public:

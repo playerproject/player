@@ -48,9 +48,8 @@ ranger_t* ranger_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client
   snprintf(label, sizeof(label), "ranger:%d (%s)", index, ranger->drivername);
   ranger->menu = rtk_menu_create_sub(mainwnd->device_menu, label);
   ranger->subscribe_item = rtk_menuitem_create(ranger->menu, "Subscribe", 1);
-  ranger->style_item = rtk_menuitem_create(ranger->menu, "Filled", 0);
+  ranger->style_item = rtk_menuitem_create(ranger->menu, "Filled", 1);
   ranger->intns_item = rtk_menuitem_create(ranger->menu, "Draw intensity data", 1);
-  ranger->device_item = rtk_menuitem_create(ranger->menu, "Singular", 1);
 
   // Set the initial menu state
   rtk_menuitem_check(ranger->subscribe_item, subscribe);
@@ -70,7 +69,7 @@ void ranger_delete_figures(ranger_t *ranger)
 
   if (ranger->scan_fig != NULL)
   {
-    for (ii = 0; ii < ranger->proxy->sensor_count; ii++)
+    for (ii = 0; ii < ranger->proxy->element_count; ii++)
       rtk_fig_destroy(ranger->scan_fig[ii]);
     free(ranger->scan_fig);
     ranger->scan_fig = NULL;
@@ -90,7 +89,6 @@ void ranger_destroy(ranger_t *ranger)
   rtk_menuitem_destroy(ranger->subscribe_item);
   rtk_menuitem_destroy(ranger->style_item);
   rtk_menuitem_destroy(ranger->intns_item);
-  rtk_menuitem_destroy(ranger->device_item);
   rtk_menu_destroy(ranger->menu);
 
   free(ranger->drivername);
@@ -121,29 +119,45 @@ void ranger_update(ranger_t *ranger)
       {
         PRINT_ERR1("libplayerc error: %s", playerc_error_str());
         ranger->start_angle = 0.0f;
-        ranger->resolution = 0.0f;
+        ranger->angular_res = 0.0f;
       }
       else
       {
         ranger->start_angle = ranger->proxy->min_angle;
-        ranger->resolution = ranger->proxy->resolution;
+        ranger->angular_res = ranger->proxy->angular_res;
       }
 
       // Delete any current figures
       ranger_delete_figures(ranger);
       // Create the figures
-      if ((ranger->scan_fig = malloc(ranger->proxy->sensor_count * sizeof(rtk_fig_t*))) == NULL )
+      if (ranger->proxy->element_count == 1)
       {
-        PRINT_ERR1("Failed to allocate memory for %d figures to display ranger", ranger->proxy->sensor_count);
-        return;
+        if ((ranger->scan_fig = malloc(sizeof(rtk_fig_t*))) == NULL )
+        {
+          PRINT_ERR("Failed to allocate memory for a figure to display ranger");
+          return;
+        }
+        ranger->scan_fig[0] = rtk_fig_create(ranger->mainwnd->canvas, ranger->mainwnd->robot_fig, 1);
+        rtk_fig_origin(ranger->scan_fig[0],
+                       ranger->proxy->device_pose.px,
+                       ranger->proxy->device_pose.py,
+                       ranger->proxy->device_pose.pyaw);
       }
-      for (ii = 0; ii < ranger->proxy->sensor_count; ii++)
+      else
       {
-        ranger->scan_fig[ii] = rtk_fig_create(ranger->mainwnd->canvas, ranger->mainwnd->robot_fig, 1);
-        rtk_fig_origin(ranger->scan_fig[ii],
-                       ranger->proxy->sensor_poses[ii].px,
-                       ranger->proxy->sensor_poses[ii].py,
-                       ranger->proxy->sensor_poses[ii].pyaw);
+        if ((ranger->scan_fig = malloc(ranger->proxy->element_count * sizeof(rtk_fig_t*))) == NULL )
+        {
+          PRINT_ERR1("Failed to allocate memory for %d figures to display ranger", ranger->proxy->element_count);
+          return;
+        }
+        for (ii = 0; ii < ranger->proxy->element_count; ii++)
+        {
+          ranger->scan_fig[ii] = rtk_fig_create(ranger->mainwnd->canvas, ranger->mainwnd->robot_fig, 1);
+          rtk_fig_origin(ranger->scan_fig[ii],
+                         ranger->proxy->element_poses[ii].px,
+                         ranger->proxy->element_poses[ii].py,
+                         ranger->proxy->element_poses[ii].pyaw);
+        }
       }
     }
   }
@@ -172,67 +186,52 @@ void ranger_update(ranger_t *ranger)
     // deleted above.  I don't know whether commenting it out is the right
     // thing to do - BPG.
     /*
-    for (ii = 0; ii < ranger->proxy->sensor_count; ii++)
+    for (ii = 0; ii < ranger->proxy->element_count; ii++)
       rtk_fig_show(ranger->scan_fig[ii], 0);
       */
   }
 }
 
-// Converts a range reading into a point in the CS of the ranger device
-// based on the pose of the sensor the reading is likely to belong to
-void range_to_point(ranger_t *ranger, int index, int sensor_num, double angle, double *point)
-{
-  // Point position = point from range -> rotate by range angle// -> rotate by sensor yaw -> translate by sensor position
-  point[0] = ranger->proxy->ranges[index] * cos(angle);// + ranger->proxy->sensor_poses[sensor_num].pyaw) + ranger->proxy->sensor_poses[sensor_num].px;
-  point[1] = ranger->proxy->ranges[index] * sin(angle);// + ranger->proxy->sensor_poses[sensor_num].pyaw) + ranger->proxy->sensor_poses[sensor_num].py;
-}
-
 // Draw the ranger scan
 void ranger_draw(ranger_t *ranger)
 {
-  int ii = 0, jj = 0;
-  int point_count;
+  int ii = 0;
   double point1[2], point2[2]; 
   double (*points)[2];
-  double current_angle = 0.0f, temp = 0.0f;
-  unsigned int ranges_per_sensor = 0;
+  double temp = 0.0;
 
-  // Drawing type depends on the selected sensor type
+  // Drawing type depends on the assumed sensor type
   // Singular sensors (e.g. sonar sensors):
-  //   Draw a cone for the first range scan of each sensor
+  //   Draw a cone for each range scan
   // Non-singular sensors (e.g. laser scanner):
   //   Draw the edge of the scan and empty space
 
-  // Calculate the number of ranges per sensor
-  if (ranger->proxy->sensor_count == 0)
-    ranges_per_sensor = ranger->proxy->ranges_count;
-  else
-    ranges_per_sensor = ranger->proxy->ranges_count / ranger->proxy->sensor_count;
-
-  if (rtk_menuitem_ischecked(ranger->device_item))
+  if (ranger->proxy->element_count > 1)
   {
     // Draw sonar-like
     points = calloc(3, sizeof(double)*2);
     temp = 20.0f * M_PI / 180.0f / 2.0f;
-    for (ii = 0; ii < ranger->proxy->sensor_count; ii++)
+    for (ii = 0; ii < ranger->proxy->ranges_count; ii++)
     {
       rtk_fig_show(ranger->scan_fig[ii], 1);
       rtk_fig_clear(ranger->scan_fig[ii]);
       rtk_fig_color_rgb32(ranger->scan_fig[ii], COLOR_SONAR_SCAN);
 
-      // Draw a cone for the first range for each sensor
-      // Assume the range is straight ahead (ignore min_angle and resolution properties)
+      // Draw a cone for each range
+      // Assume the range is straight ahead (ignore min_angle and angular_res properties)
       points[0][0] = 0.0f;
       points[0][1] = 0.0f;
-      points[1][0] = ranger->proxy->ranges[ii * ranges_per_sensor] * cos(-temp);
-      points[1][1] = ranger->proxy->ranges[ii * ranges_per_sensor] * sin(-temp);
-      points[2][0] = ranger->proxy->ranges[ii * ranges_per_sensor] * cos(temp);
-      points[2][1] = ranger->proxy->ranges[ii * ranges_per_sensor] * sin(temp);
+      points[1][0] = ranger->proxy->ranges[ii] * cos(-temp);
+      points[1][1] = ranger->proxy->ranges[ii] * sin(-temp);
+      points[2][0] = ranger->proxy->ranges[ii] * cos(temp);
+      points[2][1] = ranger->proxy->ranges[ii] * sin(temp);
       rtk_fig_polygon(ranger->scan_fig[ii], 0, 0, 0, 3, points, 1);
 
       // Draw the sensor itself
       rtk_fig_color_rgb32(ranger->scan_fig[ii], COLOR_LASER);
-      rtk_fig_rectangle(ranger->scan_fig[ii], 0, 0, 0, ranger->proxy->sensor_sizes[ii].sw, ranger->proxy->sensor_sizes[ii].sl, 0);
+      rtk_fig_rectangle(ranger->scan_fig[ii], 0, 0, 0,
+                        ranger->proxy->element_sizes[ii].sw,
+                        ranger->proxy->element_sizes[ii].sl, 0);
     }
     free(points);
     points=NULL;
@@ -243,92 +242,75 @@ void ranger_draw(ranger_t *ranger)
     if (rtk_menuitem_ischecked(ranger->style_item))
     {
       // Draw each sensor in turn
-      points = calloc(ranger->proxy->sensor_count, sizeof(double)*2);
-      for (ii = 0; ii < ranger->proxy->sensor_count; ii++)
+      points = calloc(ranger->proxy->ranges_count + 1, sizeof(double)*2);
+      rtk_fig_show(ranger->scan_fig[0], 1);
+      rtk_fig_clear(ranger->scan_fig[0]);
+
+      // Draw empty space
+      points[0][0] = 0.0;
+      points[0][1] = 0.0;
+      for (ii = 0; ii < ranger->proxy->ranges_count; ii++)
       {
-        rtk_fig_show(ranger->scan_fig[ii], 1);
-        rtk_fig_clear(ranger->scan_fig[ii]);
-
-        // Draw empty space
-        points[0][0] = ranger->proxy->sensor_poses[ii].px;
-        points[0][1] = ranger->proxy->sensor_poses[ii].py;
-        point_count = 1;
-        current_angle = ranger->start_angle;
-        // Loop over the ranges
-        for (jj = ii * ranges_per_sensor; jj < (ii + 1) * ranges_per_sensor; jj++)
-        {
-          range_to_point(ranger, jj, ii, current_angle, points[point_count]);
-          // Move round to the angle of the next range
-          current_angle += ranger->resolution;
-          point_count++;
-        }
-        rtk_fig_color_rgb32(ranger->scan_fig[ii], COLOR_LASER_EMP);
-        rtk_fig_polygon(ranger->scan_fig[ii], 0, 0, 0, point_count, points, 1);
-
-        // Draw occupied space
-        rtk_fig_color_rgb32(ranger->scan_fig[ii], COLOR_LASER_OCC);
-        current_angle = ranger->start_angle;
-        for (jj = ii * ranges_per_sensor; jj < (ii + 1) * ranges_per_sensor; jj++)
-        {
-          range_to_point(ranger, jj, ii, current_angle - ranger->resolution, point1);
-          range_to_point(ranger, jj, ii, current_angle + ranger->resolution, point2);
-          rtk_fig_line(ranger->scan_fig[ii], point1[0], point1[1], point2[0], point2[1]);
-          current_angle += ranger->resolution;
-        }
+        points[ii + 1][0] = ranger->proxy->points[ii].px;
+        points[ii + 1][1] = ranger->proxy->points[ii].py;
       }
+      rtk_fig_color_rgb32(ranger->scan_fig[0], COLOR_LASER_EMP);
+      rtk_fig_polygon(ranger->scan_fig[0], 0, 0, 0,
+                      ranger->proxy->ranges_count + 1, points, 1);
       free(points);
       points = NULL;
+
+      // Draw occupied space
+      rtk_fig_color_rgb32(ranger->scan_fig[0], COLOR_LASER_OCC);
+      for (ii = 1; ii < ranger->proxy->ranges_count; ii++)
+      {
+        point1[0] = ranger->proxy->points[ii - 1].px;
+        point1[1] = ranger->proxy->points[ii - 1].py;
+        point2[0] = ranger->proxy->points[ii].px;
+        point2[1] = ranger->proxy->points[ii].py;
+        rtk_fig_line(ranger->scan_fig[0], point1[0], point1[1], point2[0], point2[1]);
+      }
     }
     else
     {
-      // Draw a range scan for each individual sensor in the device
-      for (ii = 0; ii < ranger->proxy->sensor_count; ii++)
-      {
-        rtk_fig_show(ranger->scan_fig[ii], 1);
-        rtk_fig_clear(ranger->scan_fig[ii]);
+      rtk_fig_show(ranger->scan_fig[0], 1);
+      rtk_fig_clear(ranger->scan_fig[0]);
 
-        rtk_fig_color_rgb32(ranger->scan_fig[ii], COLOR_LASER_OCC);
-        current_angle = ranger->start_angle;
-        // Get the first point
-        range_to_point(ranger, ii * ranges_per_sensor, ii, ranger->start_angle, point1);
-        // Loop over the rest of the ranges
-        for (jj = ii * ranges_per_sensor + 1; jj < (ii + 1) * ranges_per_sensor; jj++)
-        {
-          range_to_point(ranger, jj, ii, current_angle, point2);
-          // Draw a line from point 1 (previous point) to point 2 (current point)
-          rtk_fig_line(ranger->scan_fig[ii], point1[0], point1[1], point2[0], point2[1]);
-          point1[0] = point2[0];
-          point1[1] = point2[1];
-          // Move round to the angle of the next range
-          current_angle += ranger->resolution;
-        }
+      rtk_fig_color_rgb32(ranger->scan_fig[0], COLOR_LASER_OCC);
+      // Get the first point
+      point1[0] = ranger->proxy->points[0].px;
+      point1[1] = ranger->proxy->points[0].py;
+      // Loop over the rest of the ranges
+      for (ii = 1; ii < ranger->proxy->ranges_count; ii++)
+      {
+        point2[0] = ranger->proxy->points[ii].px;
+        point2[1] = ranger->proxy->points[ii].py;
+        // Draw a line from point 1 (previous point) to point 2 (current point)
+        rtk_fig_line(ranger->scan_fig[0], point1[0], point1[1], point2[0], point2[1]);
+        point1[0] = point2[0];
+        point1[1] = point2[1];
       }
     }
 
-    // For each sensor...
-    for (ii = 0; ii < ranger->proxy->sensor_count; ii++)
+    if (rtk_menuitem_ischecked(ranger->intns_item))
     {
-      if (rtk_menuitem_ischecked(ranger->intns_item))
+      // Draw an intensity scan
+      if (ranger->proxy->intensities_count > 0)
       {
-        // Draw an intensity scan
-        if (ranger->proxy->intensities_count > 0)
+        for (ii = 0; ii < ranger->proxy->intensities_count; ii++)
         {
-          current_angle = ranger->start_angle;
-          for (jj = ii * ranges_per_sensor; jj < (ii + 1) * ranges_per_sensor; jj++)
+          if (ranger->proxy->intensities[ii] != 0)
           {
-            if (ranger->proxy->intensities[0] != 0)
-            {
-              range_to_point(ranger, jj, ii, current_angle, point1);
-              rtk_fig_rectangle(ranger->scan_fig[ii], point1[0], point1[1], 0, 0.05, 0.05, 1);
-            }
-            current_angle += ranger->resolution;
+            point1[0] = ranger->proxy->points[ii].px;
+            point1[1] = ranger->proxy->points[ii].py;
+            rtk_fig_rectangle(ranger->scan_fig[0], point1[0], point1[1], 0, 0.05, 0.05, 1);
           }
         }
       }
-
-      // Draw the sensor itself
-      rtk_fig_color_rgb32(ranger->scan_fig[ii], COLOR_LASER);
-      rtk_fig_rectangle(ranger->scan_fig[ii], 0, 0, 0, ranger->proxy->sensor_sizes[ii].sw, ranger->proxy->sensor_sizes[ii].sl, 0);
     }
+
+    // Draw the sensor itself
+    rtk_fig_color_rgb32(ranger->scan_fig[0], COLOR_LASER);
+    rtk_fig_rectangle(ranger->scan_fig[0], 0, 0, 0, ranger->proxy->device_size.sw, ranger->proxy->device_size.sl, 0);
   }
 }

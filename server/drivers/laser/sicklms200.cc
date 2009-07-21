@@ -215,7 +215,6 @@ driver
 #include <libplayercore/playercore.h>
 #include <libplayerinterface/playerxdr.h>
 #include <replace/replace.h>
-extern PlayerTime* GlobalTime;
 
 #define DEFAULT_LASER_PORT "/dev/ttyS1"
 #define DEFAULT_LASER_CONNECT_RATE 9600

@@ -77,8 +77,6 @@ driver
 
 #include <libplayercore/playercore.h>
 
-extern PlayerTime *GlobalTime;
-
 #define AODV_INFO_FILE "/proc/aodv/route_table"
 
 class Aodv : public Driver

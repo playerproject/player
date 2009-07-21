@@ -95,8 +95,6 @@ driver
 
 #include <libplayercore/playercore.h>
 
-extern PlayerTime *GlobalTime;
-
 class Iwspy : public ThreadedDriver
 {
   public: Iwspy( ConfigFile *cf, int section);

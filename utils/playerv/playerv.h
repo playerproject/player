@@ -604,7 +604,6 @@ typedef struct
   rtk_menuitem_t *subscribe_item;
   rtk_menuitem_t *style_item;
   rtk_menuitem_t *intns_item;
-  rtk_menuitem_t *device_item;
   // Figure for drawing the scan
   rtk_fig_t **scan_fig;
   // Need to track this for creating figures
@@ -612,7 +611,7 @@ typedef struct
 
   // Properties from the device that may be necessary
   double start_angle;
-  double resolution;
+  double angular_res;
 
 } ranger_t;
 
