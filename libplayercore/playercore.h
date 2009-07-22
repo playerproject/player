@@ -42,8 +42,10 @@
 
 #include <libplayerinterface/interface_util.h>
 #include <libplayerinterface/player.h>
-#include <libplayercommon/playercommon.h>
+#include <libplayerinterface/playerxdr.h> // for cleanup and copy methods
 #include <libplayerinterface/addr_util.h>
+
+#include <libplayercommon/playercommon.h>
 
 #include <libplayercore/configfile.h>
 #include <libplayercore/device.h>
