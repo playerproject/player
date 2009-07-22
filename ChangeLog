@@ -1,3 +1,22 @@
+3.0.0-rc1 (2009-07-21)
+ Lots of new goodies with the 3.0 release
+  - A new build system with cmake (Thanks Geoff)
+  - Windows build support (Again, thanks to Geoff)
+  - Client library changes
+      Ruby binding for the c client lib (Thanks Jordi)
+      Python bindings for the c++ client lib (Thanks Piotr)
+      Reworked python bindings for c client lib (Thanks Luke)
+  - Major changes to the inner workings of threaded drivers.
+  - New remote driver connection internals
+  - Lots of new drivers
+  - Interface changes
+      Simplified ranger interface
+      Deprecated laser, sonar and IR interfaces (Please upgrade to ranger interface for future releases)
+      Remove mcom interface (use opaque instead)
+  - Compatibility fixes for Solaris and QNX (Thanks Paul for this)
+  - Lots of other tweaks and bug fixes as always.
+
+
 2007-12-13 12:36  gerkey
 
 	* COPYING.lib (1.2), Makefile.am (1.42): added lgpl
