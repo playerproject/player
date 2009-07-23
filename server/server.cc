@@ -415,6 +415,7 @@ PrintUsage()
   fprintf(stderr, "  -p <port>      : port where Player will listen. "
           "Default: %d\n", PLAYERTCP_DEFAULT_PORT);
   fprintf(stderr, "  -q             : quiet mode: minimizes the console output on startup.\n");
+  fprintf(stderr, "  -l <logfile>   : log player output to the specified file
   fprintf(stderr, "  <configfile>   : load the the indicated config file\n");
   fprintf(stderr, "\nThe following %d drivers were compiled into Player:\n\n    ",
           driverTable->Size());
