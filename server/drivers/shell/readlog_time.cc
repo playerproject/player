@@ -1,5 +1,6 @@
 /*
  *  Player - One Hell of a Robot Server
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
  *
  *  This program is free software; you can redistribute it and/or modify
