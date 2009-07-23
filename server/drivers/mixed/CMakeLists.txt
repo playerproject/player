@@ -1,5 +1,5 @@
 ADD_SUBDIRECTORY (botrics)
-ADD_SUBDIRECTORY (chatterbox)
+#ADD_SUBDIRECTORY (chatterbox)
 ADD_SUBDIRECTORY (clodbuster)
 ADD_SUBDIRECTORY (cmucam2)
 ADD_SUBDIRECTORY (epuck)
