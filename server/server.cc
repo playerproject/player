@@ -415,7 +415,7 @@ PrintUsage()
   fprintf(stderr, "  -p <port>      : port where Player will listen. "
           "Default: %d\n", PLAYERTCP_DEFAULT_PORT);
   fprintf(stderr, "  -q             : quiet mode: minimizes the console output on startup.\n");
-  fprintf(stderr, "  -l <logfile>   : log player output to the specified file");
+  fprintf(stderr, "  -l <logfile>   : log player output to the specified file\n");
   fprintf(stderr, "  <configfile>   : load the the indicated config file\n");
   fprintf(stderr, "\nThe following %d drivers were compiled into Player:\n\n    ",
           driverTable->Size());
@@ -439,7 +439,7 @@ ParseArgs(int* port, int* debuglevel, char** cfgfilename, int* gz_serverid, char
           int argc, char** argv)
 {
   int ch;
-  const char* optflags = "d:p:hq";
+  const char* optflags = "d:p:l:hq";
 
   // Get letter options
   while((ch = getopt(argc, argv, optflags)) != -1)
