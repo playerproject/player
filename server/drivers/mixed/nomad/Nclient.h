@@ -1,14 +1,35 @@
+/* 
+ * Copyright (C) 1991-2000  Nomadic Technologies
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option) 
+ * any later version.
+ *  
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the  
+ * GNU General Public License for more details.
+ *  
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  
+ * 02111-1307, USA.
+ */
+
 /*
  * Nclient.h
  *
  * Interface file for direct connections to the robot or for
  * connections to Nserver.
- * 
- * Copyright 1991-1998, Nomadic Technologies, Inc.
- *
  */
 
-/* $Header: /home/cvs/host/client/Nclient.h,v 1.25 1998/05/04 17:34:52 kamason Exp $ */
+/*
+ * $Log: Nclient.h,v $
+ * Revision 1.1.1.1  2001/08/23 19:05:14  bananajr
+ * initial commit
+ *
+ */
 
 #ifndef _HOST_CLIENT_NCLIENT_H_
 #define _HOST_CLIENT_NCLIENT_H_
@@ -92,7 +113,9 @@ extern "C" {
 #define STATE_CONF_STEER           36
 #define STATE_CONF_TURRET          37
 #define STATE_VEL_TRANS            38
+#define STATE_VEL_RIGHT            38	/* for scout */
 #define STATE_VEL_STEER            39
+#define STATE_VEL_LEFT             39	/* for scout */
 #define STATE_VEL_TURRET           40
 #define STATE_MOTOR_STATUS         41
 #define STATE_LASER                42
@@ -186,6 +209,12 @@ extern "C" {
 #define ARM_WS 41
 #define ARM_MV 42
 
+/*
+ * function prototypes for arm
+ */
+long arm_mv(long l_mode, long l_v, long g_mode, long g_v);
+long arm_ws(short lift, short grip, long timeout, long *time_remain);
+long arm_zr(short mode);
 
 /*
  * For requesting the PosData the following defines should be used.
@@ -262,6 +291,14 @@ extern "C" {
  */
 #define USER_BUFFER_LENGTH	0xFFFF
 
+
+/* these definitions apply to the Scout and SuperScout */
+#define ROTATION_CONSTANT	0.118597  /* inches/degree (known to 100 ppm) */
+
+#define RIGHT(trans, steer)	(trans + (int)((float)steer*ROTATION_CONSTANT))
+#define LEFT(trans, steer)	(trans - (int)((float)steer*ROTATION_CONSTANT))
+
+#define scout_vm(trans, steer)	vm(RIGHT(trans, steer), LEFT(trans, steer), 0)
 
 /********************
  *                  *
@@ -566,8 +603,6 @@ int create_robot(long robot_id);
  *         conn     -- TCP port for TCP, baud rate for serial
  */
 int connect_robot(long robot_id, ...);
-
-int old_connect_robot(long robot_id); /* added by Deryck Morales */
 
 /*
  * disconnect_robot - requests the server to close the connect with robot
