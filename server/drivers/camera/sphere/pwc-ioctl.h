@@ -1,8 +1,8 @@
 #ifndef PWC_IOCTL_H
 #define PWC_IOCTL_H
 
-/* (C) 2001-2004 Nemosoft Unv.
-   (C) 2004      Luc Saillard (luc@saillard.org)
+/* Copyright (C) 2001-2004 Nemosoft Unv.
+   Copyright (C) 2004      Luc Saillard (luc@saillard.org)
 
    NOTE: this version of pwc is an unofficial (modified) release of pwc & pcwx
    driver and thus may have bugs that are not present in the original version.
