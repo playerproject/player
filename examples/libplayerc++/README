@@ -16,6 +16,11 @@ until the generate option becomes available, then use that (press 'g' in the
 ncurses UI). Then use the standard method of compiling for your environment to
 compile (on Linux, this will probably be GNU Makefiles, so type 'make').
 
+License
+-------
+The examples provided here are licensed under the BSD license, see each individaul
+example for its author and license terms.
+
 Running
 -------
 
