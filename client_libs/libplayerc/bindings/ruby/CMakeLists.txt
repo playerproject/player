@@ -25,7 +25,7 @@ IF(RUBY_FOUND)
             # Generate playerc_wrap.i and playerc_wrap.h from playerc.h
             SET (playerc_wrap_prefix "${CMAKE_CURRENT_BINARY_DIR}/playerc_wrap")
             ADD_CUSTOM_COMMAND (OUTPUT "${playerc_wrap_prefix}.i"
-                COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/playerc_swig_parse.py ${PROJECT_SOURCE_DIR}/client_libs/libplayerc/playerc.h ${playerc_wrap_prefix}
+                COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/../python/playerc_swig_parse.py ${PROJECT_SOURCE_DIR}/client_libs/libplayerc/playerc.h ${playerc_wrap_prefix}
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                 VERBATIM)
 
