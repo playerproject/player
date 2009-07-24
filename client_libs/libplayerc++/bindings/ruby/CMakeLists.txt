@@ -23,7 +23,7 @@ IF(RUBY_FOUND)
 
             SET (CMAKE_SWIG_FLAGS "-w801")
 
-            SET (playercpp_ruby_i "${CMAKE_CURRENT_SOURCE_DIR}/playercpp.i")
+            SET (playercpp_ruby_i "${CMAKE_CURRENT_SOURCE_DIR}/../python/playercpp.i")
             SET_SOURCE_FILES_PROPERTIES(${playercpp_ruby_i} PROPERTIES CPLUSPLUS ON)
 
             #If playercr is called simply playerc, all sorts of errors happen
