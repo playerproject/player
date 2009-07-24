@@ -135,7 +135,6 @@ Ben Grocholsky, Brad Kratochvil
 
 #include "conversions.h"
 #include "cmvision.h"
-#include "capture.h"
 
 #define CMV_NUM_CHANNELS CMV_MAX_COLORS
 #define CMV_HEADER_SIZE 4*CMV_NUM_CHANNELS
