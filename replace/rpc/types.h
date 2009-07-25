@@ -26,6 +26,8 @@
  * 2550 Garcia Avenue
  * Mountain View, California  94043
  */
+// Taken from glibc and modified for stand-alone compilation. Distributed in
+// a package copyright the Free Software Foundation.
 /* fixincludes should not add extern "C" to this file */
 /*
  * Rpc additions to <sys/types.h>
