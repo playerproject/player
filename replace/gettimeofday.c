@@ -1,4 +1,6 @@
 // From: http://www.openasthra.com/c-tidbits/gettimeofday-function-for-windows/
+// No official copyright in source link or license info
+// but code should be trivial enough to not be an issue
 
 #include <time.h>
 #include <windows.h>
