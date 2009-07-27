@@ -2,7 +2,7 @@ dnl Process this file with autoconf to produce a configure script.
 
 dnl Initialize autoconf with name and version of package to be built.
 dnl PACKAGE and VERSION will be so defined in <config.h>.
-AC_INIT(player,2.1.3-svn)
+AC_INIT(player,2.1.3)
 
 dnl Player version information.  In an ideal world, we would just declare
 dnl the following 3 values, then reuse them throughout.  Unfortunately,

@@ -1,3 +1,14 @@
+2009-07-27: thjc
+	* 2.1.3 release
+		Backported hokuyo_aist driver from trunk
+		Patch [2805687] fixes to camera1394 driver
+		Applied playerv ir fix from trunk
+		Fix for bit manipulation in p20s checksum code
+		Fix for vfh minimum turnrate from Andreas Vogt
+		Added a player geos wrapper so we can build with gcc 4.3
+		Bugfix [2525924] VFH stall escape bug
+		Bugfix [2513331] no timestamp from "cameracompress" driver also applies to camera uncompress
+
 2009-01-16: thjc
 	* 2.1.2 released
 		Fixed many compiler warnings
