@@ -91,7 +91,7 @@ Try to use BuildWKB() method as in sicknav200 driver instead of GEOS. Note that 
 #include <pthread.h>
 #include <libplayercore/playercore.h>
 #ifdef HAVE_GEOS
-#include <player_geos.h>
+#include <libplayercore/player_geos.h>
 #endif
 
 #define EPS 0.00001

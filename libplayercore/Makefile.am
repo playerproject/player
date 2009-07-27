@@ -25,7 +25,7 @@ libplayercore_la_SOURCES = driver.cc driver.h \
                           wallclocktime.cc wallclocktime.h playertime.h \
                           plugins.cc plugins.h \
                           globals.cc globals.h \
-                          property.cpp property.h
+                          property.cpp property.h player_geos.h
 libplayercore_la_LDFLAGS = $(PLAYER_VERSION_INFO) -rpath $(libdir) $(top_builddir)/libplayercore/libplayererror.la $(top_builddir)/libplayercore/libplayerutils.la
 libplayercore_la_DEPENDENCIES = $(top_builddir)/libplayercore/libplayererror.la $(top_builddir)/libplayercore/libplayerutils.la $(top_builddir)/libplayercore/player_interfaces.h
 
