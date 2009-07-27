@@ -1,0 +1,44 @@
+================
+ PROJECT GOALS
+----------------
+To create a simple, robust vision system suitable for real time
+robotics applications. The system aims to perform global low
+level color vision at video rates without the use of special
+purpose harware.
+
+================
+ STATUS
+----------------
+This is version 1.2 of the library, with additional enhancements, and
+a few more bug fixes since the 1.0-1.1 releases.
+
+The library proper is now under the LGPL, although newer major
+versions will fall under the GPL until they mature.  The example
+programs still fall under the GPL, since many contributors make this
+difficult to change, and the fact they are not necessary for linking
+for third party programs using CMVision.
+
+CMVision's performance allows it to track up to 32 colors at
+approximately 4,000,000 pixels/sec on a 200MHz machine.  If you try
+CMVision and see an improvement in your project, send me the
+performance data!
+
+CMVision is the fastest freely available library of its type.
+
+================
+  CONTACT INFO
+----------------
+The project web page:
+  www.coral.cs.cmu.edu/cmvision
+Contact:
+  jbruce@cs.cmu.edu
+
+================
+  CONTRIBUTORS
+----------------
+  James Bruce
+  Zia Khan
+  Petter Reinholdtsen
+  Tucker Balch
+  Anna Costa
+  Manuela Veloso

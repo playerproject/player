@@ -1,0 +1,14 @@
+Makefile
+Makefile.in
+stamp-h*
+playerconfig.h
+playerutils.pc
+playercore.pc
+playererror.pc
+interface_table.c
+player_interfaces.h
+.libs
+.deps
+*.lo
+*.a
+*.la

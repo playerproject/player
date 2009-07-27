@@ -1,0 +1,7 @@
+Makefile
+Makefile.in
+.deps
+*.la
+*.a
+.libs
+*.lo

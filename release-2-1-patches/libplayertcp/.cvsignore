@@ -1,0 +1,9 @@
+Makefile
+Makefile.in
+playertcp.pc
+playerudp.pc
+.libs
+.deps
+*.la
+*.a
+*.lo

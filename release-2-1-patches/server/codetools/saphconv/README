@@ -1,0 +1,15 @@
+These files will parse Saphira (.p) robot configuration files, producing 
+two C/C++ source files:
+  robot_params.cc
+  robot_params.h
+Together, these files define some structs and an init function that can be
+used to build an index into a global table of robot parameters.
+
+To use:
+
+  $ ./saphconv.tcl <files>
+
+where <files> is a list of Saphira .p files to parse.
+
+
+        brian gerkey (gerkey@usc.edu)

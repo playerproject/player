@@ -1,0 +1,10 @@
+Makefile
+Makefile.in
+playerc++.pc
+playerc++config.h
+stamp-h3
+
+.libs
+.deps
+*.lo
+*.la
