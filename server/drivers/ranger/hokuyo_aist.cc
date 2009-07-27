@@ -6,7 +6,7 @@
  *
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU Lesser General Public License as published by the Free Software Foundation, either version
- * 3 of the License, or (at your option) any later version.
+ * 2 of the License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
  * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -43,19 +43,26 @@
 
  @par Configuration requests
 
+ - PLAYER_RANGER_REQ_INTNS
+ - PLAYER_RANGER_REQ_POWER
  - PLAYER_RANGER_REQ_GET_GEOM
  - PLAYER_RANGER_REQ_GET_CONFIG
  - PLAYER_RANGER_REQ_SET_CONFIG
- - PLAYER_RANGER_REQ_POWER
- - Note: Only the min_angle, max_angle and frequency values can be configured using this request.
-   In addition, the frequency value must be equivalent to a suitable RPM value (see the hokuyo_aist
-   library documentation for suitable values).
+ - Note: Only the min_angle and max_angle values can be configured using this request. To change
+   the scanning frequency, use the speed_level property.
 
  @par Configuration file options
 
+ - get_intensities (boolean)
+   - Default: false
+   - Set to non-zero to get intensity data with each range scan on models that support it. This can
+     also be enabled/disabled using the PLAYER_RANGER_REQ_INTNS message. Note that the data
+     retrieval mode used to get intensity data requires that the scan is performed *after* the
+     command is received, so this will introduce a slight delay before the data is delivered.
  - portopts (string)
    - Default: "type=serial,device=/dev/ttyACM0,timeout=1"
-   - Options to create the Flexiport port with.
+   - Options to create the Flexiport port with. Note that any baud rate specified in this line
+     should be the scanner's startup baud rate.
  - pose (float 6-tuple: (m, m, m, rad, rad, rad))
    - Default: [0.0 0.0 0.0 0.0 0.0 0.0]
    - Pose (x, y, z, roll, pitch, yaw) of the laser relative to its parent object (e.g. the robot).
@@ -63,30 +70,41 @@
    - Default: [0.0 0.0 0.0]
    - Size of the laser in metres.
  - min_angle (float, radians)
-   - Default: -2.08 rad (-119.0 degrees)
+   - Default: -4.0 rad (Will use laser default)
    - Minimum scan angle to return. Will be adjusted if outside the laser's scannable range.
  - max_angle (float, radians)
-   - Default: 2.08 rad (119.0 degrees)
+   - Default: 4.0 rad (Will use laser default)
    - Maximum scan angle to return. Will be adjusted if outside the laser's scannable range.
- - frequency (float, Hz)
-   - Default: 10Hz
-   - The frequency at which the laser operates. This must be equivalent to a suitable RPM value. See
-   - the hokuyo_aist library documentation for suitable values.
  - power (boolean)
    - Default: true
    - If true, the sensor power will be switched on upon driver activation (i.e. when the first
-   client connects). Otherwise a power request must be made to turn it on before data will be
-   received.
+     client connects). Otherwise a power request must be made to turn it on before data will be
+     received.
  - verbose (boolean)
    - Default: false
    - Enable verbose debugging information in the underlying library.
+ - ignoreunknowns (boolean)
+   - Default: false
+   - Ignore unknown lines sent by the laser in response to sensor info request commands.
 
  @par Properties
 
- - baudrate (integer)
+ - baud_rate (integer)
    - Default: 19200bps
    - Change the baud rate of the connection to the laser. See hokuyo_aist documentation for valid
-     values.
+     values. This is separate from the scanner's power-on default baud rate, which should be
+     specified in portopts.
+ - speed_level (integer, 0 to 10 or 99)
+   - Default: 0
+   - The speed at which the laser operates, as a level down from maximum speed. See the hokuyo_aist
+     library documentation for suitable values.
+ - high_sensitivity (integer)
+   - Default: 0
+   - Set to non-zero to enable high sensitivity mode on models that support it.
+ - min_dist (float, metres)
+   - Default: 0m
+   - Minimum possible distance. Below that means there is an error (a scratch on the laser for
+     instance). The reading is then adjusted to the average of the neighboring valid beams.
 
  @par Example
 
@@ -110,7 +128,10 @@
 #include <libplayercore/playercore.h>
 
 const int DEFAULT_BAUDRATE = 19200;
-const int DEFAULT_SPEED = 600;
+const int DEFAULT_SPEED_LEVEL = 0;
+const int DEFAULT_SENSITIVITY = 0;
+const int DEFAULT_GET_INTENSITIES = 0;
+const double DEFAULT_MIN_DIST = 0.0;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Driver object
@@ -132,10 +153,10 @@ class HokuyoDriver : public Driver
 		bool AllocateDataSpace (void);
 
 		// Configuration parameters
-		bool _verbose, _powerOnStartup;
-		int _frequency;
+		bool _verbose, _powerOnStartup, _getIntensities, _ignoreUnknowns;
 		double _minAngle, _maxAngle;
-		IntProperty _baudRate;
+		IntProperty _baudRate, _speedLevel, _highSensitivity;
+		DoubleProperty _minDist;
 		std::string _portOpts;
 		// Geometry
 		player_ranger_geom_t _geom;
@@ -146,6 +167,8 @@ class HokuyoDriver : public Driver
 		// Data storage
 		hokuyo_aist::HokuyoData _data;
 		double *_ranges;
+		double *_intensities;
+		int _numRanges;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -154,17 +177,25 @@ class HokuyoDriver : public Driver
 
 HokuyoDriver::HokuyoDriver (ConfigFile* cf, int section) :
 	Driver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_RANGER_CODE),
-	_baudRate ("baudrate", DEFAULT_BAUDRATE, false), _ranges (NULL)
+	_baudRate ("baud_rate", DEFAULT_BAUDRATE, false),
+	_speedLevel ("speed_level", DEFAULT_SPEED_LEVEL, false),
+	_highSensitivity ("high_sensitivity", DEFAULT_SENSITIVITY, false),
+	_minDist ("min_dist", DEFAULT_MIN_DIST, false),
+	_ranges (NULL), _intensities (NULL)
 {
-	// Get the baudrate and motor speed
-	RegisterProperty ("baudrate", &_baudRate, cf, section);
+	// Get the baudrate, speed and sensitivity
+	RegisterProperty ("baud_rate", &_baudRate, cf, section);
+	RegisterProperty ("speed_level", &_speedLevel, cf, section);
+	RegisterProperty ("high_sensitivity", &_highSensitivity, cf, section);
+	RegisterProperty ("min_dist", &_minDist, cf, section);
 
 	// Get config
-	_minAngle = cf->ReadFloat (section, "min_angle", -2.08);
-	_maxAngle = cf->ReadFloat (section, "max_angle", 2.08);
-	_frequency = cf->ReadInt (section, "frequency", 10);
+	_getIntensities = cf->ReadBool (section, "get_intensities", false);
+	_minAngle = cf->ReadFloat (section, "min_angle", -4.0);
+	_maxAngle = cf->ReadFloat (section, "max_angle", 4.0);
 	_portOpts = cf->ReadString (section, "portopts", "type=serial,device=/dev/ttyACM0,timeout=1");
 	_verbose = cf->ReadBool (section, "verbose", false);
+	_ignoreUnknowns = cf->ReadBool (section, "ignoreunknowns", false);
 	_powerOnStartup = cf->ReadBool (section, "power", true);
 
 	// Set up geometry information
@@ -192,6 +223,8 @@ HokuyoDriver::~HokuyoDriver (void)
 {
 	if (_ranges != NULL)
 		delete[] _ranges;
+	if (_intensities != NULL)
+		delete[] _intensities;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -203,11 +236,21 @@ bool HokuyoDriver::AllocateDataSpace (void)
 	if (_ranges != NULL)
 		delete _ranges;
 
-	int numRanges = _device.AngleToStep (_maxAngle) - _device.AngleToStep (_minAngle) + 1;
-	if ((_ranges = new double[numRanges]) == NULL)
+	_numRanges = _device.AngleToStep (_maxAngle) - _device.AngleToStep (_minAngle) + 1;
+	if ((_ranges = new double[_numRanges]) == NULL)
 	{
-		PLAYER_ERROR1 ("hokuyo_aist: Failed to allocate space for %d range readings.", numRanges);
+		PLAYER_ERROR1 ("hokuyo_aist: Failed to allocate space for %d range readings.", _numRanges);
 		return false;
+	}
+
+	if (_getIntensities)
+	{
+		if ((_intensities = new double[_numRanges]) == NULL)
+		{
+			PLAYER_ERROR1 ("hokuyo_aist: Failed to allocate space for %d intensity readings.",
+						_numRanges);
+			return false;
+		}
 	}
 
 	return true;
@@ -238,13 +281,15 @@ int HokuyoDriver::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, 
 			PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_SET_CONFIG);
 	HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data,
 			PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_POWER);
+	HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data,
+			PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_INTNS);
 
 	// Property handlers that need to be done manually due to calling into the hokuyo_aist library.
 	if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_SET_INTPROP_REQ, this->device_addr))
 	{
 		player_intprop_req_t *req = reinterpret_cast<player_intprop_req_t*> (data);
 		// Change in the baud rate
-		if (strncmp (req->key, "baudrate", 8) == 0)
+		if (strncmp (req->key, "baud_rate", 9) == 0)
 		{
 			try
 			{
@@ -274,6 +319,46 @@ int HokuyoDriver::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, 
 					0, NULL);
 			return 0;
 		}
+		else if (strncmp (req->key, "speed_level", 11) == 0)
+		{
+			try
+			{
+				_device.SetMotorSpeed (req->value);
+			}
+			catch (hokuyo_aist::HokuyoError &e)
+			{
+				PLAYER_ERROR2 ("hokuyo_aist: Error while changing motor speed: (%d) %s",
+						e.Code (), e.what ());
+				SetError (e.Code ());
+				Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, PLAYER_SET_INTPROP_REQ,
+						NULL, 0, NULL);
+				return 0;
+			}
+			_speedLevel.SetValueFromMessage (data);
+			Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_SET_INTPROP_REQ, NULL,
+					0, NULL);
+			return 0;
+		}
+		else if (strncmp (req->key, "high_sensitivity", 16) == 0)
+		{
+			try
+			{
+				_device.SetHighSensitivity (req->value != 0);
+			}
+			catch (hokuyo_aist::HokuyoError &e)
+			{
+				PLAYER_ERROR2 ("hokuyo_aist: Error while changing sensitivity: (%d) %s",
+						e.Code (), e.what ());
+				SetError (e.Code ());
+				Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, PLAYER_SET_INTPROP_REQ,
+						NULL, 0, NULL);
+				return 0;
+			}
+			_highSensitivity.SetValueFromMessage (data);
+			Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_SET_INTPROP_REQ, NULL,
+					0, NULL);
+			return 0;
+		}
 	}
 
 	// Standard ranger messages
@@ -297,6 +382,32 @@ int HokuyoDriver::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, 
 					NULL, 0, NULL);
 		}
 		Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_RANGER_REQ_POWER, NULL,
+				0, NULL);
+		return 0;
+	}
+	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_INTNS, device_addr))
+	{
+		bool newValue = (reinterpret_cast<player_ranger_intns_config_t*> (data)->state != 0);
+		if (newValue && !_getIntensities)
+		{
+			// State change, allocate space for intensity data
+			if ((_intensities = new double[_numRanges]) == NULL)
+			{
+				PLAYER_ERROR1 ("hokuyo_aist: Failed to allocate space for %d intensity readings.",
+							_numRanges);
+				Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, PLAYER_RANGER_REQ_INTNS,
+						NULL, 0, NULL);
+				return 0;
+			}
+		}
+		else if (!newValue && _getIntensities)
+		{
+			// State change, remove allocated space
+			delete[] _intensities;
+			_intensities = NULL;
+		}
+		_getIntensities = newValue;
+		Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_RANGER_REQ_INTNS, NULL,
 				0, NULL);
 		return 0;
 	}
@@ -339,7 +450,6 @@ int HokuyoDriver::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, 
 			return 0;
 		}
 
-		_frequency = static_cast<int> (newParams->frequency);
 		try
 		{
 			hokuyo_aist::HokuyoSensorInfo info;
@@ -354,7 +464,6 @@ int HokuyoDriver::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, 
 				_maxAngle = info.maxAngle;
 				PLAYER_WARN1 ("hokuyo_aist: Adjusted max_angle to %lf", _maxAngle);
 			}
-			_device.SetMotorSpeed (_frequency * 60);
 		}
 		catch (hokuyo_aist::HokuyoError &e)
 		{
@@ -376,25 +485,78 @@ int HokuyoDriver::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, 
 
 bool HokuyoDriver::ReadLaser (void)
 {
-	player_ranger_data_range_t rangeData;
-
-	try
+	if (_getIntensities)
 	{
-		_device.GetRanges (&_data, _minAngle, _maxAngle);
-	}
-	catch (hokuyo_aist::HokuyoError &e)
-	{
-		PLAYER_ERROR2 ("hokuyo_aist: Failed to read scan: (%d) %s", e.Code (), e.what ());
-		SetError (e.Code ());
-		return false;
-	}
+		player_ranger_data_range_t rangeData;
+		player_ranger_data_intns_t intensityData;
 
-	for (unsigned int ii = 0; ii < _data.Length (); ii++)
-		_ranges[ii] = _data[ii] / 1000.0f;
-	rangeData.ranges = _ranges;
-	rangeData.ranges_count = _data.Length ();
-	Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_RANGE,
-			reinterpret_cast<void*> (&rangeData), sizeof (rangeData), NULL);
+		try
+		{
+			_device.GetNewRangesAndIntensitiesByAngle (&_data, _minAngle, _maxAngle);
+		}
+		catch (hokuyo_aist::HokuyoError &e)
+		{
+			PLAYER_ERROR2 ("hokuyo_aist: Failed to read scan: (%d) %s", e.Code (), e.what ());
+			SetError (e.Code ());
+			return false;
+		}
+
+		double lastValidValue = _minDist;
+		for (unsigned int ii = 0; ii < _data.Length (); ii++)
+		{
+			_ranges[ii] = _data[ii] / 1000.0f;
+			_intensities[ii] = _data.Intensities ()[ii];
+			if (_minDist > 0)
+			{
+				if (_ranges[ii] < _minDist)
+					_ranges[ii] = lastValidValue;
+				else
+					lastValidValue = _ranges[ii];
+			}
+		}
+
+		rangeData.ranges = _ranges;
+		rangeData.ranges_count = _data.Length ();
+		Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_RANGE,
+				reinterpret_cast<void*> (&rangeData), sizeof (rangeData), NULL);
+
+		intensityData.intensities = _intensities;
+		intensityData.intensities_count = _data.Length ();
+		Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_INTNS,
+				reinterpret_cast<void*> (&intensityData), sizeof (intensityData), NULL);
+	}
+	else
+	{
+		player_ranger_data_range_t rangeData;
+
+		try
+		{
+			_device.GetRangesByAngle (&_data, _minAngle, _maxAngle);
+		}
+		catch (hokuyo_aist::HokuyoError &e)
+		{
+			PLAYER_ERROR2 ("hokuyo_aist: Failed to read scan: (%d) %s", e.Code (), e.what ());
+			SetError (e.Code ());
+			return false;
+		}
+
+		double lastValidValue = _minDist;
+		for (unsigned int ii = 0; ii < _data.Length (); ii++)
+		{
+			_ranges[ii] = _data[ii] / 1000.0f;
+			if (_minDist > 0)
+			{
+				if (_ranges[ii] < _minDist)
+					_ranges[ii] = lastValidValue;
+				else
+					lastValidValue = _ranges[ii];
+			}
+		}
+		rangeData.ranges = _ranges;
+		rangeData.ranges_count = _data.Length ();
+		Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_RANGE,
+				reinterpret_cast<void*> (&rangeData), sizeof (rangeData), NULL);
+	}
 
 	return true;
 }
@@ -403,8 +565,9 @@ int HokuyoDriver::Setup (void)
 {
 	try
 	{
+		_device.IgnoreUnknowns (_ignoreUnknowns);
 		// Open the laser
-		_device.Open (_portOpts);
+		_device.OpenWithProbing (_portOpts);
 		// Get the sensor information and check _minAngle and _maxAngle are OK
 		hokuyo_aist::HokuyoSensorInfo info;
 		_device.GetSensorInfo (&info);
@@ -430,9 +593,28 @@ int HokuyoDriver::Setup (void)
 		}
 		catch (hokuyo_aist::HokuyoError &e)
 		{
-			if (e.Code () != hokuyo_aist::HOKUYO_ERR_NOTSERIAL)
-				throw;
-			PLAYER_WARN ("hokuyo_aist: Cannot change the baud rate of a non-serial connection.");
+			if (e.Code () == hokuyo_aist::HOKUYO_ERR_NOTSERIAL)
+				PLAYER_WARN ("hokuyo_aist: Cannot change the baud rate of a non-serial connection.");
+			else
+				PLAYER_WARN2 ("hokuyo_aist: Error changing baud rate: (%d) %s", e.Code (), e.what ());
+		}
+		try
+		{
+			// Catch any errors here as this is an optional setting not supported by all models
+			_device.SetMotorSpeed (_speedLevel.GetValue ());
+		}
+		catch (hokuyo_aist::HokuyoError &e)
+		{
+			PLAYER_WARN2 ("hokuyo_aist: Unable to set motor speed: (%d) %s", e.Code (), e.what ());
+		}
+		try
+		{
+			// Optional setting
+			_device.SetHighSensitivity (_highSensitivity.GetValue () != 0);
+		}
+		catch (hokuyo_aist::HokuyoError &e)
+		{
+			PLAYER_WARN2 ("hokuyo_aist: Unable to set sensitivity: (%d) %s", e.Code (), e.what ());
 		}
 	}
 	catch (hokuyo_aist::HokuyoError &e)
@@ -453,7 +635,10 @@ int HokuyoDriver::Shutdown (void)
 	_device.Close ();
 	_data.CleanUp ();
 	if (_ranges != NULL)
+	{
 		delete[] _ranges;
+		_ranges = NULL;
+	}
 
 	return 0;
 }
