@@ -10,7 +10,7 @@ ELSE (NOT "${CANLIB_DIR}" STREQUAL "")
     SET (segwayrmpExtraFlags "-I${CANLIB_DIR}/include")
     SET (segwayrmpExtraLibs "-L${CANLIB_DIR}/lib -lcanlib")
 ENDIF (NOT "${CANLIB_DIR}" STREQUAL "")
-PLAYERDRIVER_REQUIRE_HEADER (segwayrmpifk build_segwayrmpifk ${segwayrmpReqHeader})
-PLAYERDRIVER_ADD_DRIVER (segwayrmpifk build_segwayrmpifk
+PLAYERDRIVER_REQUIRE_HEADER (segwayrmp build_segwayrmp ${segwayrmpReqHeader})
+PLAYERDRIVER_ADD_DRIVER (segwayrmp build_segwayrmp
     LINKFLAGS ${segwayrmpExtraLibs} CFLAGS ${segwayrmpExtraFlags}
-    SOURCES segwayrmp.cc canio_kvaser.cc)
+    SOURCES segwayrmp.cc canio_kvaser.cc usb_packet.cc)
