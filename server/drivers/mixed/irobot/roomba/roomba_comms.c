@@ -60,7 +60,7 @@ roomba_destroy(roomba_comm_t* r)
 }
 
 int
-roomba_open(roomba_comm_t* r, unsigned char fullcontrol)
+roomba_open(roomba_comm_t* r, unsigned char fullcontrol, int roomba500)
 {
   struct termios term;
   int flags;
@@ -98,8 +98,17 @@ roomba_open(roomba_comm_t* r, unsigned char fullcontrol)
   }
 
   cfmakeraw(&term);
-  cfsetispeed(&term, B57600);
-  cfsetospeed(&term, B57600);
+  
+  if (roomba500)
+  {
+    cfsetispeed(&term, B115200);
+    cfsetospeed(&term, B115200);
+  }
+  else
+  {
+    cfsetispeed(&term, B57600);
+    cfsetospeed(&term, B57600);
+  }
 
   if(tcsetattr(r->fd, TCSAFLUSH, &term) < 0 )
   {

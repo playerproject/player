@@ -123,7 +123,7 @@ typedef struct
 
 roomba_comm_t* roomba_create(const char* serial_port);
 void roomba_destroy(roomba_comm_t* r);
-int roomba_open(roomba_comm_t* r, unsigned char fullcontrol);
+int roomba_open(roomba_comm_t* r, unsigned char fullcontrol, int roomba500);
 int roomba_init(roomba_comm_t* r, unsigned char fullcontrol);
 int roomba_close(roomba_comm_t* r);
 int roomba_set_speeds(roomba_comm_t* r, double tv, double rv);
