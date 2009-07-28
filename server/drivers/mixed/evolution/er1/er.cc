@@ -113,6 +113,9 @@ driver
 
 #define DEG2RAD_CONV(x) ((x)*(M_PI/180))
 #include <libplayercore/playercore.h>
+#if !defined (HAVE_CFMAKERAW)
+  #include <replace/replace.h>
+#endif
 
 static float lastlvel, lastrvel;
 
