@@ -80,6 +80,10 @@ The roomba driver provides the following device interfaces:
 - bumplock (integer)
   - Default: 0
   - If set to 1, the robot will stop whenever bumpers are closed
+- roomba500 (boolean)
+  - Default: false
+  - If set to true, the driver will start at the faster default baudrate
+    of the Roomba 500 series
 
 @par Example
 
@@ -90,6 +94,7 @@ driver
   provides ["position2d:0" "power:0" "bumper:0" "ir:0" "opaque:0"]
   port "/dev/ttyS2"
   safe 1
+  roomba500 false
 )
 @endverbatim
 
@@ -143,6 +148,8 @@ class Roomba : public ThreadedDriver
 
     bool bumplock;
     bool bumplocked;
+
+    bool roomba500;
 
     player_devaddr_t position_addr;
     player_devaddr_t power_addr;
@@ -253,6 +260,7 @@ Roomba::Roomba(ConfigFile* cf, int section)
   this->serial_port = cf->ReadString(section, "port", "/dev/ttyS0");
   this->safe = cf->ReadInt(section, "safe", 1);
   this->bumplock = cf->ReadInt(section, "bumplock", 0);
+  this->roomba500 = cf->ReadBool(section, "roomba500", 0);
   this->bumplocked = false;
   this->roomba_dev = NULL;
 }
@@ -262,7 +270,7 @@ Roomba::MainSetup()
 {
   this->roomba_dev = roomba_create(this->serial_port);
 
-  if(roomba_open(this->roomba_dev, !this->safe) < 0)
+  if(roomba_open(this->roomba_dev, !this->safe, this->roomba500) < 0)
   {
     roomba_destroy(this->roomba_dev);
     this->roomba_dev = NULL;
