@@ -1,5 +1,6 @@
 ADD_SUBDIRECTORY (ascension)
 ADD_SUBDIRECTORY (bumpersafe)
+ADD_SUBDIRECTORY (deadstop)
 ADD_SUBDIRECTORY (globalize)
 ADD_SUBDIRECTORY (goto)
 ADD_SUBDIRECTORY (isense)
