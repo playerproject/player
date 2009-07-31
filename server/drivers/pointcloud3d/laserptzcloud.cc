@@ -1,6 +1,12 @@
 /*
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2006 - Radu Bogdan Rusu (rusu@cs.tum.edu)
+ *
+ *  Copyright (C) 2009 - Markus Eich (markus.eich@dfki.de)
+ *
+ *  G. Chliveros [minor changes for allowing compatibility with releases 2.1.2 and 2.1.3]
+ *  
+ *
  * 
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -59,7 +65,7 @@ driver
 )
 @endverbatim
 
-@author Radu Bogdan Rusu
+@author Radu Bogdan Rusu, Markus Eich
 
  */
 /** @} */
@@ -73,17 +79,35 @@ driver
 #include <stdlib.h>
 #include <assert.h>
 
+#include <vector>
+#include <iostream>
+
 #include <libplayercore/playercore.h>
 #include <libplayercore/error.h>
 
-#define DEFAULT_MAXSCANS    100
-#define DEFAULT_MAXPOINTS   1024
 #define DEFAULT_MAXDISTANCE 10
+#define DEFAULT_MINDISTANCE 0.020
+
 
 // PTZ defaults for tilt
 #define PTZ_PAN  0
 #define PTZ_TILT 1
 #define DEFAULT_PTZ_PAN_OR_TILT PTZ_TILT
+
+
+using namespace std;
+
+
+struct ScanHelper{
+        
+    float min_angle;
+    float resolution;
+    uint32_t ranges_count;
+    vector<float> ranges;
+    double timestamp;
+ };
+
+
 
 // The laser device class.
 class LaserPTZCloud : public Driver
@@ -93,6 +117,7 @@ class LaserPTZCloud : public Driver
         LaserPTZCloud (ConfigFile* cf, int section);
         ~LaserPTZCloud ();
 
+    // Implementations of virtual functions
         int Setup();
         int Shutdown();
 
@@ -109,24 +134,17 @@ class LaserPTZCloud : public Driver
         Device*          ptz_device;
 
         // Laser scans
-        player_laser_data_t* scans;
-        // Laser timestamps
-        double* scantimes;
-        // Maximum number of laser scans to buffer
-        int maxnumscans;
-        // Total number of laser scans
-        int numscans;
+    vector<ScanHelper> scans;
 
-        // 3D points buffer
-        player_point_3d_t* points;
-        // Maximum number of poins in a graphics3d data packet
-        int maxpoints;
 
         // Maximum distance that we should consider from the laser
         float maxdistance;
+        float mindistance;
 
         // PTZ tilt parameters
         float ptz_pan_or_tilt;
+
+	player_laser_data_t test_data;	
 
         // Timeouts, delays
         float delay;
@@ -180,35 +198,13 @@ LaserPTZCloud::LaserPTZCloud (ConfigFile* cf, int section)
     this->ptz_device = NULL;
 
     // ---[ PTZ parameters ]---
-    this->ptz_pan_or_tilt = cf->ReadFloat 
-            (section, "ptz_pan_or_tilt", DEFAULT_PTZ_PAN_OR_TILT);
-
-    // Maximum number of laser scans to buffer
-    this->maxnumscans = cf->ReadInt (section, "max_scans", DEFAULT_MAXSCANS);
+    this->ptz_pan_or_tilt = static_cast<float> (cf->ReadFloat
+            (section, "ptz_pan_or_tilt", DEFAULT_PTZ_PAN_OR_TILT));
 
     // Maximum allowed distance
-    this->maxdistance = cf->ReadFloat (section, "max_distance", DEFAULT_MAXDISTANCE);
+    this->maxdistance = static_cast<float> (cf->ReadFloat (section, "max_distance", DEFAULT_MAXDISTANCE));
+    this->mindistance = static_cast<float> (cf->ReadFloat (section, "min_distance", DEFAULT_MINDISTANCE));       
 
-    // Maximum number of points that can be sent at once
-    this->maxpoints   = cf->ReadInt (section, "max_points", DEFAULT_MAXPOINTS);
-    if (this->maxpoints > DEFAULT_MAXPOINTS)
-    {
-        maxpoints = MIN (maxpoints, DEFAULT_MAXPOINTS);
-        PLAYER_WARN1 ("number of points cannot exceeded MAXPOINTS (%d)", 
-                      DEFAULT_MAXPOINTS);
-    }
-
-    // Allocate memory for the buffer
-    this->scans = (player_laser_data_t*)calloc 
-	(this->maxnumscans, sizeof (player_laser_data_t));
-    assert (this->scans);
-    // Allocate memory for the laser timestamps
-    this->scantimes = (double*)calloc (this->maxnumscans, sizeof (double));
-    assert (this->scantimes);
-
-    // Allocate memory for the points buffer
-    this->points = (player_point_3d_t*)calloc 
-        (this->maxnumscans, sizeof (player_point_3d_t));
     return;
 }
 
@@ -216,8 +212,8 @@ LaserPTZCloud::LaserPTZCloud (ConfigFile* cf, int section)
 // Destructor.
 LaserPTZCloud::~LaserPTZCloud()
 {
-    free (this->scans);
-    free (this->scantimes);
+
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -248,7 +244,6 @@ int LaserPTZCloud::Setup()
         return (-1);
     }
 
-    this->numscans     = 0;
     this->lastposetime = -1;
     return (0);
 }
@@ -274,25 +269,41 @@ int LaserPTZCloud::ProcessMessage (QueuePointer &resp_queue,
 	PLAYER_LASER_DATA_SCAN, 
         this->laser_addr))
     {
-        // Buffer the scan
-        // is there room?
-        if (this->numscans >= this->maxnumscans)
-        {
-            PLAYER_WARN1 ("exceeded maximum number of scans to buffer (%d)",
-                          this->maxnumscans);
-            return (0);
-        }
-        // store the scan and timestamp
-        this->scans[this->numscans]     = *((player_laser_data_t*)data);
-        this->scantimes[this->numscans] = hdr->timestamp;
-        this->numscans++;
-        return (0);
+
+	player_laser_data_t laser;
+
+	laser=*((player_laser_data_t*)data);
+
+	ScanHelper storage;
+	vector<float>::iterator iter;
+
+	storage.min_angle=laser.min_angle;
+	storage.resolution=laser.resolution;
+	storage.ranges_count=laser.ranges_count;
+	storage.timestamp=hdr->timestamp;
+
+	for (int i=0;i<storage.ranges_count;i++)
+	    storage.ranges.push_back(laser.ranges[i]);
+
+	scans.push_back(storage);
+
+	return (0);
+	
     }
     // Is it a ptz pose?
     else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_DATA, 
              PLAYER_PTZ_DATA_STATE, this->ptz_addr))
     {
         player_ptz_data_t newpose = *((player_ptz_data_t*)data);
+
+	double scantime;
+	ScanHelper laserdata;
+	player_pointcloud3d_data_t cloud_data;
+	double t1,t0;
+	double angle_x,angle_y;
+	double offset_dx, offset_dz;
+	vector <player_pointcloud3d_element_t> pointlist;
+
         // Is it the first pose?
         if (this->lastposetime < 0)
         {
@@ -303,62 +314,82 @@ int LaserPTZCloud::ProcessMessage (QueuePointer &resp_queue,
         else
         {
             // Interpolate pose for all buffered scans and send them out
-            double t1 = hdr->timestamp - this->lastposetime;
+            t1 = hdr->timestamp - this->lastposetime;
 
             if (newpose.tilt != lastpose.tilt)
-                for (int i = 0; i < this->numscans; i++)
         	{
-            	    double t0 = this->scantimes[i] - this->lastposetime;
 
-            	    float corrected_tilt = this->lastpose.tilt + t0 * 
-                        (newpose.tilt - this->lastpose.tilt) / t1;
+		while (!scans.empty()){	 
+		    //take first scan from vector
+		    laserdata=scans.front();	
 
-            	    // Convert the vertical angle to radians
-            	    //float angle_y = corrected_tilt * M_PI/180.0;
-		    // No need to: already converted from PTZ
-            	    float angle_y = corrected_tilt;
+		    //process it
+		    t0 = laserdata.timestamp - this->lastposetime;
+		    
+		    angle_y = this->lastpose.tilt + t0 * (newpose.tilt - this->lastpose.tilt) / t1;
 
             	    // Calculate the horizontal angles and the cartesian coordinates
-            	    float angle_x    = this->scans[i].min_angle;
-            	    float resolution = this->scans[i].resolution;
+		    angle_x    = laserdata.min_angle;
 
-            	    int ranges_count = (int)(this->scans[i].ranges_count);
+		    offset_dx=0.0;//offset in x plane w.r.t. servo turn point. needs to be calibrated or measured
+		    offset_dz=0.0;//offset in height w.r.t. servo turn point. needs to be calibrated or measured
 		
-            	    // The 3D point array
-            	    player_pointcloud3d_data_t cloud_data;
-            	    player_pointcloud3d_element_t all_elements[ranges_count];
 
-            	    int counter = 0;
-            	    for (int j = 0; j < ranges_count; j++)
+		    //process all points in a scan 
+		    for (int i = 0; i < laserdata.ranges_count; i++)
             	    {
-                	float distance = this->scans[i].ranges[j];
-                	if (distance < maxdistance)
-                	{
-                    	    float X = distance * cos (angle_x) * sin (angle_y);
-                    	    float Y = distance * cos (angle_x) * cos (angle_y);
-                    	    float Z = distance * sin (angle_x);
 
-                    	    player_point_3d_t p3d;
-                    	    p3d.px = X;
-                    	    p3d.py = Y;
-                    	    p3d.pz = Z;
-                    	    all_elements[counter].point = p3d;
-                    	    counter++;
-                	}
-                	angle_x += resolution;
+			if (laserdata.ranges[i] < maxdistance && laserdata.ranges[i] > mindistance)
+			{
+			    player_pointcloud3d_element_t element;	      
+			    
+
+/*
+			    element.point.px = laserdata.ranges[i] * cos (angle_x) * sin (angle_y);
+			    element.point.py = laserdata.ranges[i] * cos (angle_x) * cos (angle_y);
+			    element.point.pz = laserdata.ranges[i] * sin (angle_x);
+*/
+//ToDo adjust color to range. Should give a nice visualization.
+
+
+			    element.color.alpha=255;
+			    element.color.red=floor(255.0*(1.0-laserdata.ranges[i]/maxdistance));
+			    element.color.green=floor(255.0*(laserdata.ranges[i]/maxdistance));
+			    element.color.blue=0x00;
+
+			    element.point.px = laserdata.ranges[i] * cos (angle_y) * cos (angle_x)+ cos (angle_y)*offset_dx + sin (angle_y)*offset_dz;
+			    element.point.py = laserdata.ranges[i] * sin (angle_x);
+			    element.point.pz = laserdata.ranges[i] * sin (angle_y)* cos(angle_x) - sin (angle_y)*offset_dx+cos(angle_y)*offset_dz;
+			    
+			    pointlist.push_back(element);
             	    }
 		
-            	    cloud_data.points_count = counter;
-            	    cloud_data.points = (player_pointcloud3d_element_t*)calloc(sizeof(cloud_data.points[0]),cloud_data.points_count);
-            	    for (int j=0; j < counter; j++)
-                	cloud_data.points[j] = all_elements[j];
+			angle_x += laserdata.resolution;
+		    }
+		    
+
+		    //publish pointcloud
+		    cloud_data.points_count = pointlist.size();
+		    cloud_data.points = new player_pointcloud3d_element_t[cloud_data.points_count];
+		    int i=0;
+		    while (!pointlist.empty())
+		    {
+			cloud_data.points[i] = pointlist.front();
+			pointlist.erase(pointlist.begin());
+			i++;			
+		    }			
 		
             	    Publish (this->device_addr, PLAYER_MSGTYPE_DATA, 
                          PLAYER_POINTCLOUD3D_DATA_STATE, &cloud_data, 
                          sizeof (player_pointcloud3d_data_t), NULL);
-            	    free(cloud_data.points);
-        	}
-            this->numscans     = 0;
+		    delete []cloud_data.points;
+
+		    laserdata.ranges.erase(laserdata.ranges.begin(),laserdata.ranges.end());
+		    scans.erase(scans.begin());
+
+        	}						
+	    }
+	    pointlist.erase(pointlist.begin(),pointlist.end());
             this->lastpose     = newpose;
             this->lastposetime = hdr->timestamp;
         }
