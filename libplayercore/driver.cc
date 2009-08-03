@@ -154,7 +154,7 @@ Driver::Publish(QueuePointer &queue,
                 player_msghdr_t* hdr,
                 void* src, bool copy)
 {
-  Message msg(*hdr,src,copy);
+  Message msg(*hdr,src,InQueue,copy);
   // push onto the given queue, which provides its own locking
   if(!queue->Push(msg))
   {
@@ -183,7 +183,7 @@ Driver::Publish(player_msghdr_t* hdr,
     this->Unlock();
     return;
   }
-  Message msg(*hdr,src,copy);
+  Message msg(*hdr,src,InQueue,copy);
   for(size_t i=0;i<dev->len_queues;i++)
   {
     if(dev->queues[i] != NULL)
