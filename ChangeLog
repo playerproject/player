@@ -1,3 +1,20 @@
+3.0.0-rc2 (2009-08-04)
+ - Ruby bindings for C++ library, thanks to Piotr for the Python bindings
+ - Many copyright clarifications and changes (drivers should all be GPLv2 compat now)
+ - add log file switch to server usage information
+ - Fixed bug #2826061 CMake Plugin Bug
+ - remove chatterbox driver as not of general use
+ - Applied patch #2824989 Support for Roomba 500 series
+ - Applied patch #2826950 Player SVN trunk: er1 cfmakeraw
+ - Applied patch #2825148 Segway RMP driver update
+ - Applied patch #2825176 Segway RMP400 Driver
+ - Applied patch #2828031 Player SVN trunk: new driver: deadstop
+ - Set source queue in Publish calls, fixes behaviour in passthrough
+ - Applied patch #2828425 Improved timestamps for Hokuyo
+ - Fixed bug #2825091 Phidgets drivers won't compile
+ - Added a min_range value to the ranger interface (apparently people actually use the feature request tracker).
+ - Added playercommon to playerreplace pkgconfig file
+
 3.0.0-rc1 (2009-07-21)
  Lots of new goodies with the 3.0 release
   - A new build system with cmake (Thanks Geoff)
