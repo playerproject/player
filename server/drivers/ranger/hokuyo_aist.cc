@@ -492,6 +492,7 @@ int HokuyoDriver::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, 
 
 bool HokuyoDriver::ReadLaser (void)
 {
+	double time1, time2;
 	if (_getIntensities)
 	{
 		player_ranger_data_range_t rangeData;
@@ -499,7 +500,10 @@ bool HokuyoDriver::ReadLaser (void)
 
 		try
 		{
+			GlobalTime->GetTimeDouble (&time1);
 			_device.GetNewRangesAndIntensitiesByAngle (&_data, _minAngle, _maxAngle);
+			GlobalTime->GetTimeDouble (&time2);
+			time1 = (time1 + time2) / 2.0;
 		}
 		catch (hokuyo_aist::HokuyoError &e)
 		{
@@ -533,7 +537,7 @@ bool HokuyoDriver::ReadLaser (void)
 		else
 		{
 			Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_RANGE,
-					reinterpret_cast<void*> (&rangeData), sizeof (rangeData), NULL);
+					reinterpret_cast<void*> (&rangeData), sizeof (rangeData), &time1);
 		}
 
 		intensityData.intensities = _intensities;
@@ -547,7 +551,7 @@ bool HokuyoDriver::ReadLaser (void)
 		else
 		{
 			Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_INTNS,
-					reinterpret_cast<void*> (&intensityData), sizeof (intensityData), NULL);
+					reinterpret_cast<void*> (&intensityData), sizeof (intensityData), &time1);
 		}
 	}
 	else
@@ -556,7 +560,10 @@ bool HokuyoDriver::ReadLaser (void)
 
 		try
 		{
+			GlobalTime->GetTimeDouble (&time1);
 			_device.GetRangesByAngle (&_data, _minAngle, _maxAngle);
+			GlobalTime->GetTimeDouble (&time2);
+			time1 = (time1 + time2) / 2.0;
 		}
 		catch (hokuyo_aist::HokuyoError &e)
 		{
@@ -588,7 +595,7 @@ bool HokuyoDriver::ReadLaser (void)
 		else
 		{
 			Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_RANGE,
-					reinterpret_cast<void*> (&rangeData), sizeof (rangeData), NULL);
+					reinterpret_cast<void*> (&rangeData), sizeof (rangeData), &time1);
 		}
 	}
 
