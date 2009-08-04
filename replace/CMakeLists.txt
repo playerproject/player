@@ -67,6 +67,6 @@ IF (replaceSrcs)
     IF (NOT HAVE_XDR OR NOT HAVE_POLL)
         TARGET_LINK_LIBRARIES (playerreplace Ws2_32)
     ENDIF (NOT HAVE_XDR OR NOT HAVE_POLL)
-    PLAYER_MAKE_PKGCONFIG ("playerreplace" "Player library of replacements for missing platform functionality - part of the Player Project" "${ws2_32Lib}" "" "" "")
+    PLAYER_MAKE_PKGCONFIG ("playerreplace" "Player library of replacements for missing platform functionality - part of the Player Project" "playercommon ${ws2_32Lib}" "" "" "")
 ENDIF (replaceSrcs)
 
