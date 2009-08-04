@@ -435,6 +435,7 @@ int HokuyoDriver::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, 
 		rangerConfig.min_angle = _minAngle; // These two are user-configurable
 		rangerConfig.max_angle = _maxAngle;
 		rangerConfig.angular_res = info.resolution;
+		rangerConfig.min_range = info.minRange / 1000.0;
 		rangerConfig.max_range = info.maxRange / 1000.0;
 		rangerConfig.range_res = 0.001; // 1mm
 		rangerConfig.frequency = info.speed / 60.0;

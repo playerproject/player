@@ -126,18 +126,19 @@ void RangerProxy::RequestGeom()
 }
 
 void RangerProxy::Configure(double aMinAngle, double aMaxAngle, double aAngularRes,
-                            double aMaxRange, double aRangeRes, double aFrequency)
+                            double aMinRange, double aMaxRange, double aRangeRes,
+                            double aFrequency)
 {
   scoped_lock_t lock(mPc->mMutex);
   if (0 != playerc_ranger_set_config(mDevice, aMinAngle, aMaxAngle, aAngularRes,
-                                     aMaxRange, aRangeRes, aFrequency))
+                                     aMinRange, aMaxRange, aRangeRes, aFrequency))
     throw PlayerError("RangerProxy::Configure()", "error setting config");
 }
 
 void RangerProxy::RequestConfigure()
 {
   scoped_lock_t lock(mPc->mMutex);
-  if (0 != playerc_ranger_get_config(mDevice, NULL, NULL, NULL, NULL, NULL, NULL))
+  if (0 != playerc_ranger_get_config(mDevice, NULL, NULL, NULL, NULL, NULL, NULL, NULL))
     throw PlayerError("RangerProxy::RequestConfigure()", "error getting config");
 }
 
@@ -165,6 +166,12 @@ std::ostream& std::operator << (std::ostream &os, const PlayerCc::RangerProxy &c
          size.sw << ", " << size.sl << ", " << size.sh << ")" << endl;
     }
   }
+  os << "Configuration: " << endl;
+  os << "Minimum angle: " << c.GetMinAngle () << "\tMaximum angle: " << c.GetMaxAngle () <<
+        "\tAngular resolution: " << c.GetAngularRes () << endl;
+  os << "Minimum range: " << c.GetMinRange () << "\tMaximum range: " << c.GetMaxRange () <<
+        "Range resolution: " << c.GetRangeRes () << endl;
+  os << "Scanning frequency: " << c.GetFrequency () << endl;
   if (c.GetRangeCount() > 0)
   {
     os << c.GetRangeCount() << " range readings:" << endl << "  [";

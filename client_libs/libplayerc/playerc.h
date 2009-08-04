@@ -3030,6 +3030,9 @@ typedef struct
   double max_angle;
   /** Scan resolution [rad]. May be unfilled. */
   double angular_res;
+  /** Minimum range [m]. Values below this are typically errors and should
+  usually not be treated as valid data. May be unfilled. */
+  double min_range;
   /** Maximum range [m]. May be unfilled. */
   double max_range;
   /** Range resolution [m]. May be unfilled. */
@@ -3111,8 +3114,8 @@ PLAYERC_EXPORT int playerc_ranger_intns_config(playerc_ranger_t *device, uint8_t
 @param frequency Scanning frequency [Hz]. */
 PLAYERC_EXPORT int playerc_ranger_set_config(playerc_ranger_t *device, double min_angle,
                               double max_angle, double angular_res,
-                              double max_range, double range_res,
-                              double frequency);
+                              double min_range, double max_range,
+                              double range_res, double frequency);
 
 /** @brief Get the ranger device's configuration. Not all values may be filled.
 
@@ -3124,8 +3127,8 @@ PLAYERC_EXPORT int playerc_ranger_set_config(playerc_ranger_t *device, double mi
 @param frequency Scanning frequency [Hz]. */
 PLAYERC_EXPORT int playerc_ranger_get_config(playerc_ranger_t *device, double *min_angle,
                               double *max_angle, double *angular_res,
-                              double *max_range, double *range_res,
-                              double *frequency);
+                              double *min_range, double *max_range,
+                              double *range_res, double *frequency);
 
 /** @} */
 /**************************************************************************/
