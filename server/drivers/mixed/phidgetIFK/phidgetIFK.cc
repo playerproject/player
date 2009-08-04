@@ -121,7 +121,6 @@ public:
 
     // Destructor
     ~PhidgetIFK();
-    Shutdown
     // Must implement the following methods.
     virtual int MainSetup();
     virtual void MainQuit();
@@ -561,13 +560,13 @@ void PhidgetIFK::Main() {
         gettimeofday( &tv_framerate_start, NULL );
 
         if (done != 0) {
-            cout << "Error in nanosleep! ERRNO: " << errno << " ";
+            std::cout << "Error in nanosleep! ERRNO: " << errno << " ";
             if (errno == EINTR) {
-                cout << "EINTR" ;
+                std::cout << "EINTR" ;
             } else if (errno == EINVAL) {
-                cout << "EINVAL" ;
+                std::cout << "EINVAL" ;
             }
-            cout << endl;
+            std::cout << endl;
         }
 
 
