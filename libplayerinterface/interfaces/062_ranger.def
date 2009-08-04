@@ -73,6 +73,9 @@ typedef struct player_ranger_config
   double max_angle;
   /** Scan resolution [rad]. May be unfilled. */
   double angular_res;
+  /** Minimum range [m]. Values below this are typically errors and should
+  usually not be treated as valid data. May be unfilled. */
+  double min_range;
   /** Maximum range [m]. May be unfilled. */
   double max_range;
   /** Range resolution [m]. May be unfilled. */

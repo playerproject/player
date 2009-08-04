@@ -2261,11 +2261,12 @@ class PLAYERCC_EXPORT RangerProxy : public ClientProxy
 
     /// Configure the ranger scan pattern. Angles @p aMinAngle and
     /// @p aMaxAngle are measured in radians. @p aResolution is measured in
-    /// radians. @p aMaxRange and @p aRangeRes is measured in metres.
+    /// radians. @p aMinRange, @p aMaxRange and @p aRangeRes is measured in metres.
     /// @p aFrequency is measured in Hz.
     void Configure(double aMinAngle,
                    double aMaxAngle,
                    double aAngularRes,
+                   double aMinRange,
                    double aMaxRange,
                    double aRangeRes,
                    double aFrequency);
@@ -2282,6 +2283,9 @@ class PLAYERCC_EXPORT RangerProxy : public ClientProxy
 
     /// Angular resolution of a scan (configured value)
     double GetAngularRes() const { return GetVar(mDevice->angular_res); };
+
+    /// Minimum detectable range of a scan (configured value)
+    double GetMinRange() const { return GetVar(mDevice->min_range); };
 
     /// Maximum detectable range of a scan (configured value)
     double GetMaxRange() const { return GetVar(mDevice->max_range); };

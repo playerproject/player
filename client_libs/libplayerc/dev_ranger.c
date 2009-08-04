@@ -378,14 +378,15 @@ int playerc_ranger_intns_config(playerc_ranger_t *device, uint8_t value)
 // Ranger set config
 int playerc_ranger_set_config(playerc_ranger_t *device, double min_angle,
                               double max_angle, double angular_res,
-                              double max_range, double range_res,
-                              double frequency)
+                              double min_range, double max_range,
+                              double range_res, double frequency)
 {
   player_ranger_config_t config, *resp;
 
   config.min_angle = min_angle;
   config.max_angle = max_angle;
   config.angular_res = angular_res;
+  config.min_range = min_range;
   config.max_range = max_range;
   config.range_res = range_res;
   config.frequency = frequency;
@@ -403,8 +404,8 @@ int playerc_ranger_set_config(playerc_ranger_t *device, double min_angle,
 // Ranger get config
 int playerc_ranger_get_config(playerc_ranger_t *device, double *min_angle,
                               double *max_angle, double *angular_res,
-                              double *max_range, double *range_res,
-                              double *frequency)
+                              double *min_range, double *max_range,
+                              double *range_res, double *frequency)
 {
   player_ranger_config_t *config;
 
@@ -421,6 +422,8 @@ int playerc_ranger_get_config(playerc_ranger_t *device, double *min_angle,
     *max_angle = device->max_angle;
   if (angular_res != NULL)
     *angular_res = device->angular_res;
+  if (min_range != NULL)
+    *min_range = device->min_range;
   if (max_range != NULL)
     *max_range = device->max_range;
   if (range_res != NULL)

@@ -115,7 +115,7 @@ void ranger_update(ranger_t *ranger)
         PRINT_ERR1("libplayerc error: %s", playerc_error_str());
 
       // Request the device config for min angle and resolution
-      if (playerc_ranger_get_config(ranger->proxy, NULL, NULL, NULL, NULL, NULL, NULL) != 0)
+      if (playerc_ranger_get_config(ranger->proxy, NULL, NULL, NULL, NULL, NULL, NULL, NULL) != 0)
       {
         PRINT_ERR1("libplayerc error: %s", playerc_error_str());
         ranger->start_angle = 0.0f;
