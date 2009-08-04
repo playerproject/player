@@ -109,7 +109,7 @@ class PhidgetAcc : public ThreadedDriver {
 		~PhidgetAcc();
 
 		virtual int MainSetup();
-		virtual int MainQuit();
+		virtual void MainQuit();
 
 		virtual int ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, void * data);
 
