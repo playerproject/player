@@ -85,20 +85,27 @@ ENDMACRO (PLAYERDRIVER_ADD_EXTRA)
 MACRO (PLAYERDRIVER_OPTION _name _cumulativeVar _defaultValue)
     # Default _cumulativeVar
     SET (${_cumulativeVar} TRUE)
-    # Check if the disabled reason has been customised
-    IF (${ARGC} GREATER 3)
-        SET (_reason ${ARGV3})
-    ELSE (${ARGC} GREATER 3)
-        SET (_reason "Disabled")
-    ENDIF (${ARGC} GREATER 3)
-    # Add an option for it.
-    PLAYERDRIVER_ADD_DRIVEROPTION (${_name} ${_defaultValue} FALSE)
+    # Add an option for the driver
+    PLAYERDRIVER_ADD_DRIVEROPTION (${_name} ${_defaultValue} 0)
 
     # Check if it's been disabled, if it has set _cumulativeVar and
     # add it to the list of reasons
     PLAYERDRIVER_MAKE_OPTION_NAME (optionName ${_name})
     IF (NOT ${optionName})
         SET (${_cumulativeVar} FALSE)
+        # Check if the disabled reason has been customised
+        IF (${ARGC} GREATER 3)
+            SET (_reason ${ARGV3})
+        ELSE (${ARGC} GREATER 3)
+            # Check if there is already a reason for this driver to be disabled
+            # (this prevents reconfigure from overwriting a previous reason).
+            GET_FROM_GLOBAL_MAP (_prevReason PLAYER_NOT_BUILT_REASONS ${_name})
+            IF ("${_prevReason}" STREQUAL "")
+                SET (_reason "Disabled")
+            ELSE ("${_prevReason}" STREQUAL "")
+                SET (_reason "${_prevReason}")
+            ENDIF ("${_prevReason}" STREQUAL "")
+        ENDIF (${ARGC} GREATER 3)
         PLAYERDRIVER_ADD_TO_NOT_BUILT (${_name} "${_reason}")
     ENDIF (NOT ${optionName})
 ENDMACRO (PLAYERDRIVER_OPTION)
@@ -124,7 +131,7 @@ MACRO (PLAYERDRIVER_REQUIRE_OS _name _cumulativeVar)
         IF (NOT isThisOS)
             SET (${_cumulativeVar} FALSE)
             PLAYERDRIVER_ADD_TO_NOT_BUILT (${_name} "Cannot build on this operating system.")
-            PLAYERDRIVER_ADD_DRIVEROPTION (${_name} OFF TRUE)
+            PLAYERDRIVER_ADD_DRIVEROPTION (${_name} OFF 1)
         ENDIF (NOT isThisOS)
     ENDIF (${_cumulativeVar})
 ENDMACRO (PLAYERDRIVER_REQUIRE_OS)
@@ -145,7 +152,7 @@ MACRO (PLAYERDRIVER_REJECT_OS _name _cumulativeVar)
             IF (${osVar})
                 SET (${_cumulativeVar} FALSE)
                 PLAYERDRIVER_ADD_TO_NOT_BUILT (${_name} "Cannot build on this operating system.")
-                PLAYERDRIVER_ADD_DRIVEROPTION (${_name} OFF TRUE)
+                PLAYERDRIVER_ADD_DRIVEROPTION (${_name} OFF 1)
             ENDIF (${osVar})
         ENDFOREACH (osVar ${ARGN})
     ENDIF (${_cumulativeVar})
@@ -169,7 +176,7 @@ MACRO (PLAYERDRIVER_REQUIRE_PKG _name _cumulativeVar _package _includeDirs _libD
         IF (${_cumulativeVar})
             SET (${_cumulativeVar} FALSE)
             PLAYERDRIVER_ADD_TO_NOT_BUILT (${_name} "Could not find pkg-config")
-            PLAYERDRIVER_ADD_DRIVEROPTION (${_name} OFF TRUE)
+            PLAYERDRIVER_ADD_DRIVEROPTION (${_name} OFF 1)
         ENDIF (${_cumulativeVar})
     ELSE (NOT PKG_CONFIG_FOUND)
         IF (${ARGC} GREATER 7)
@@ -197,7 +204,7 @@ MACRO (PLAYERDRIVER_REQUIRE_PKG _name _cumulativeVar _package _includeDirs _libD
             # Case where cumulativeVar is set but package wasn't found - don't build
             SET (${_cumulativeVar} FALSE)
             PLAYERDRIVER_ADD_TO_NOT_BUILT (${_name} "Could not find package ${_package}")
-            PLAYERDRIVER_ADD_DRIVEROPTION (${_name} OFF TRUE)
+            PLAYERDRIVER_ADD_DRIVEROPTION (${_name} OFF 1)
         ENDIF (${_cumulativeVar} AND ${_pkgVar}_FOUND)
     ENDIF (NOT PKG_CONFIG_FOUND)
 ENDMACRO (PLAYERDRIVER_REQUIRE_PKG)
@@ -238,7 +245,7 @@ MACRO (PLAYERDRIVER_REQUIRE_HEADER _name _cumulativeVar _header)
         # Case where cumulativeVar is set but header wasn't found - don't build
         SET (${_cumulativeVar} FALSE)
         PLAYERDRIVER_ADD_TO_NOT_BUILT (${_name} "Could not find header ${_header}")
-        PLAYERDRIVER_ADD_DRIVEROPTION (${_name} OFF TRUE)
+        PLAYERDRIVER_ADD_DRIVEROPTION (${_name} OFF 1)
     ENDIF (${_cumulativeVar} AND ${resultVar})
 ENDMACRO (PLAYERDRIVER_REQUIRE_HEADER)
 
@@ -274,7 +281,7 @@ MACRO (PLAYERDRIVER_REQUIRE_HEADER_CPP _name _cumulativeVar _header)
         # Case where cumulativeVar is set but header wasn't found - don't build
         SET (${_cumulativeVar} FALSE)
         PLAYERDRIVER_ADD_TO_NOT_BUILT (${_name} "Could not find header ${_header}")
-        PLAYERDRIVER_ADD_DRIVEROPTION (${_name} OFF TRUE)
+        PLAYERDRIVER_ADD_DRIVEROPTION (${_name} OFF 1)
     ENDIF (${_cumulativeVar} AND ${resultVar})
 ENDMACRO (PLAYERDRIVER_REQUIRE_HEADER_CPP)
 
@@ -306,7 +313,7 @@ MACRO (PLAYERDRIVER_REQUIRE_FUNCTION _name _cumulativeVar _function)
         # Case where cumulativeVar is set but function wasn't found - don't build
         SET (${_cumulativeVar} FALSE)
         PLAYERDRIVER_ADD_TO_NOT_BUILT (${_name} "Could not find function ${_function}")
-        PLAYERDRIVER_ADD_DRIVEROPTION (${_name} OFF TRUE)
+        PLAYERDRIVER_ADD_DRIVEROPTION (${_name} OFF 1)
     ENDIF (${_cumulativeVar} AND foundFunction)
 ENDMACRO (PLAYERDRIVER_REQUIRE_FUNCTION)
 
@@ -341,9 +348,35 @@ MACRO (PLAYERDRIVER_REQUIRE_LIB _name _cumulativeVar _library _function _path)
         # Case where cumulativeVar is set but library wasn't found - don't build
         SET (${_cumulativeVar} FALSE)
         PLAYERDRIVER_ADD_TO_NOT_BUILT (${_name} "Could not find library ${_library}")
-        PLAYERDRIVER_ADD_DRIVEROPTION (${_name} OFF TRUE)
+        PLAYERDRIVER_ADD_DRIVEROPTION (${_name} OFF 1)
     ENDIF (${_cumulativeVar} AND foundLibrary)
 ENDMACRO (PLAYERDRIVER_REQUIRE_LIB)
+
+
+###############################################################################
+# PLAYERDRIVER_REQUIRE_ENVVAR (_name _cumulativeVar _envvar _dest)
+# Require an environment variable be set, and store its value in the variable
+# stored in _dest.
+#
+# _name:            Driver name.
+# _cumulativeVar:   The option used in the calling CMakeLists.txt to check if
+#                   the driver has been enabled.
+# _envvar:          The environment variable to check for.
+# _dest:            The variable to store the value in. Set to NOTFOUND if the
+#                   environment variable is not set.
+MACRO (PLAYERDRIVER_REQUIRE_ENVVAR _name _cumulativeVar _envvar _dest)
+    # Using ${_envvar} directly in $ENV{} results in a segfault under 2.6.4
+    SET (_tempVarName ${_envvar})
+    SET (${_dest} $ENV{${_tempVarName}})
+    IF (NOT ${_dest})
+        SET (${_dest} "NOTFOUND")
+        IF (${_cumulativeVar})
+            SET (${_cumulativeVar} FALSE)
+            PLAYERDRIVER_ADD_TO_NOT_BUILT (${_name} "${_envvar} was not set.")
+            PLAYERDRIVER_ADD_DRIVEROPTION (${_name} OFF 1)
+        ENDIF (${_cumulativeVar})
+    ENDIF (NOT ${_dest})
+ENDMACRO (PLAYERDRIVER_REQUIRE_ENVVAR)
 
 
 ###############################################################################
@@ -378,14 +411,12 @@ ENDMACRO (PLAYERDRIVER_ADD_DEFINEOPTION)
 MACRO (PLAYERDRIVER_ADD_DRIVEROPTION _name _value _force)
     # Get the option name for this driver
     PLAYERDRIVER_MAKE_OPTION_NAME (optionName ${_name})
-#     MESSAGE (STATUS "${_name} _force is ${_force}")
-    IF (_force)
+    IF (${_force})
         # Force the option value
-        MESSAGE (STATUS "forcing option")
         SET (${optionName} ${_value} CACHE BOOL "Build driver ${_name}" FORCE)
-    ELSE (_force)
+    ELSE (${_force})
         SET (${optionName} ${_value} CACHE BOOL "Build driver ${_name}")
-    ENDIF (_force)
+    ENDIF (${_force})
 ENDMACRO (PLAYERDRIVER_ADD_DRIVEROPTION)
 
 
