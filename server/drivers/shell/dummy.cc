@@ -167,7 +167,7 @@ void Dummy::Main(void)
 
     while (1)
     {
-        pthread_testcancel();
+        TestCancel();
         if (nanosleep(&req, NULL) == -1)
         continue;
 
