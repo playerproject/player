@@ -528,13 +528,6 @@ MessageQueue::Push(Message & msg)
 
   this->PushBack(msg,true);
 
-  // If it was a response, then mark it , to prompt
-  // processing of the queue.
-  if(!this->data_requested &&
-     (hdr->type == PLAYER_MSGTYPE_RESP_ACK ||
-     hdr->type == PLAYER_MSGTYPE_RESP_NACK ))
-    this->SetDataRequested(true,true);
-
   this->Unlock();
   if(!this->filter_on || this->Filter(msg))
     this->DataAvailable();
