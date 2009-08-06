@@ -100,16 +100,20 @@
 #endif
 
 #ifndef __cplusplus
-  #define true 1
-  #define false 0
+  #if !defined (true)
+    #define true 1
+  #endif
+  #if !defined (false)
+    #define false 0
+  #endif
 #endif
 
 #ifndef TRUE
-	#define TRUE true
+  #define TRUE true
 #endif
 
 #ifndef FALSE
-	#define FALSE false
+  #define FALSE false
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
