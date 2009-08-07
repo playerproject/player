@@ -292,9 +292,9 @@ them named:
 - armgrip_innersize (3 floats, metres)
   - Default: (0.054, 0.025, 1.0)
   - Size of the inside of the arm's gripper (largest object it can hold)
-- oldschool (integer)
-  - Default: 0 (no effect)
-  - If set to 1, checksum will be compared the same way as in older versions of this driver
+- ignore_checksum (boolean)
+  - Default: False (no effect)
+  - If set to True, the checksum will be ignored
 
 
 @par Example
@@ -560,7 +560,7 @@ P2OS::P2OS(ConfigFile* cf, int section)
   ::initialize_robot_params();
 
   // Read config file options
-  this->oldschool = cf->ReadInt(section, "oldschool", 0);
+  this->ignore_checksum = cf->ReadBool(section, "ignore_checksum", false);
   this->bumpstall = cf->ReadInt(section,"bumpstall",-1);
   this->pulse = cf->ReadFloat(section,"pulse",-1);
   this->rot_kp = cf->ReadInt(section, "rot_kp", -1);
@@ -998,7 +998,7 @@ int P2OS::MainSetup()
     }
     usleep(P2OS_CYCLETIME_USEC);
 
-    if(receivedpacket.Receive(this->psos_fd, this->oldschool))
+    if(receivedpacket.Receive(this->psos_fd, this->ignore_checksum))
     {
       if((psos_state == NO_SYNC) && (num_sync_attempts >= 0))
       {
@@ -1728,7 +1728,7 @@ P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
 
     /* receive a packet */
     pthread_testcancel();
-    if(packet.Receive(this->psos_fd, this->oldschool))
+    if(packet.Receive(this->psos_fd, this->ignore_checksum))
     {
       puts("RunPsosThread(): Receive errored");
       pthread_exit(NULL);
