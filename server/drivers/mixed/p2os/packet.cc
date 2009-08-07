@@ -55,13 +55,19 @@ void P2OSPacket::PrintHex() {
 }
 
 
-bool P2OSPacket::Check() {
+bool P2OSPacket::Check(bool oldschool) {
   short chksum;
   chksum = CalcChkSum();
 
-  if ( chksum == (packet[size-2] << 8 | packet[size-1]))
-    return(true);
-
+  if (oldschool)
+  {
+    if ( (chksum == packet[size-2] << 8) | packet[size-1])
+      return(true);
+  } else
+  {
+    if ( chksum == (packet[size-2] << 8 | packet[size-1]))
+      return(true);
+  }
 
   return(false);
 }
@@ -84,7 +90,7 @@ int P2OSPacket::CalcChkSum() {
   return(c);
 }
 
-int P2OSPacket::Receive( int fd )
+int P2OSPacket::Receive( int fd, bool oldschool )
 {
   unsigned char prefix[3];
   //int skipped=0;
@@ -131,7 +137,7 @@ int P2OSPacket::Receive( int fd )
         return(1);
       }
     }
-  } while (!Check());
+  } while (!Check(oldschool));
   return(0);
 }
 
