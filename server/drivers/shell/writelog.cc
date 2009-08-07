@@ -1636,6 +1636,22 @@ The format for each @ref interface_imu message is:
 	-> proll   (float): roll angle
 	-> ppitch  (float): pitch angle
 	-> pyaw    (float): yaw angle
+	- for PLAYER_IMU_DATA_FULLSTATE (player_imu_data_fullstate_t):
+	-> pose_px     (float): X pose
+	-> pose_py     (float): Y pose
+	-> pose_pz     (float): Z pose
+	-> pose_proll  (float): roll angle
+	-> pose_ppitch (float): pitch angle
+	-> pose_pyaw   (float): yaw angle
+	-> vel_px     (float): X velocity
+	-> vel_py     (float): Y velocity
+	-> vel_pz     (float): Z velocity
+	-> vel_proll  (float): roll anglular velocity
+	-> vel_ppitch (float): pitch anglular velocity
+	-> vel_pyaw   (float): yaw anglular velocity
+	-> acc_px     (float): X acceleration
+	-> acc_py     (float): Y acceleration
+	-> acc_pz     (float): Z acceleration
  */
 int
 WriteLog::WriteIMU (player_msghdr_t* hdr, void *data)
@@ -1718,6 +1734,29 @@ WriteLog::WriteIMU (player_msghdr_t* hdr, void *data)
                             idata->orientation.pyaw);
                     return (0);
 		}
+		
+				case PLAYER_IMU_DATA_FULLSTATE:
+				{
+					player_imu_data_fullstate_t* idata;
+					idata = (player_imu_data_fullstate_t*)data;
+					fprintf (this->file,"%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f",
+							  idata->pose.px,
+							  idata->pose.py,
+							  idata->pose.pz,
+							  idata->pose.proll,
+							  idata->pose.ppitch,
+							  idata->pose.pyaw,
+							  idata->vel.px,
+							  idata->vel.py,
+							  idata->vel.pz,
+							  idata->vel.proll,
+							  idata->vel.ppitch,
+							  idata->vel.pyaw,
+							  idata->acc.px,
+							  idata->acc.py,
+							  idata->acc.pz);
+							  return (0);
+				}
 
                 default:
                     return (-1);

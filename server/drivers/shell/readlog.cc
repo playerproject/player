@@ -2458,6 +2458,39 @@ int ReadLog::ParseIMU (player_devaddr_t id,
                                   (void*)&data, sizeof(data), &time);
                     return (0);
 		}
+		
+		case PLAYER_IMU_DATA_FULLSTATE:
+		{
+			if (token_count < 22)
+			{
+				PLAYER_ERROR2("invalid line at %s:%d", this->filename, linenum);
+				return -1;
+			}
+			player_imu_data_fullstate_t data;
+			
+			data.pose.px = static_cast<float> (atof (tokens[7]));
+			data.pose.py = static_cast<float> (atof (tokens[8]));
+			data.pose.pz = static_cast<float> (atof (tokens[9]));
+			data.pose.proll  = static_cast<float> (atof (tokens[10]));
+			data.pose.ppitch  = static_cast<float> (atof (tokens[11]));
+			data.pose.pyaw  = static_cast<float> (atof (tokens[12]));
+			data.vel.px = static_cast<float> (atof (tokens[13]));
+			data.vel.py = static_cast<float> (atof (tokens[14]));
+			data.vel.pz = static_cast<float> (atof (tokens[15]));
+			data.vel.proll  = static_cast<float> (atof (tokens[16]));
+			data.vel.ppitch  = static_cast<float> (atof (tokens[17]));
+			data.vel.pyaw  = static_cast<float> (atof (tokens[18]));
+			data.acc.px = static_cast<float> (atof (tokens[19]));
+			data.acc.py = static_cast<float> (atof (tokens[20]));
+			data.acc.pz = static_cast<float> (atof (tokens[21]));
+			data.acc.proll = 0;
+			data.acc.ppitch = 0;
+			data.acc.pyaw = 0;
+			
+			this->Publish (id, static_cast<uint8_t> (type), static_cast<uint8_t> (subtype),
+							(void*)&data, sizeof(data), &time);
+							return (0);
+		}
                 default:
                     PLAYER_ERROR1 ("unknown IMU data subtype %d\n", subtype);
                     return (-1);
