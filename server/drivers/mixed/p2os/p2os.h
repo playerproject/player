@@ -225,6 +225,8 @@ class circbuf{
 class P2OS : public ThreadedDriver
 {
   private:
+    int oldschool;
+
     player_p2os_data_t p2os_data;
 
     player_devaddr_t position_id;

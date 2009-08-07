@@ -190,7 +190,7 @@ typedef struct
   int Qtt; //
   int Qxx; //
   int Qyy; //
-  int RangeConvFactor; //
+  double RangeConvFactor; //
   int RearBumpers; //
   int RecoverOnFail; //
   int ReflectorMatchDist; //

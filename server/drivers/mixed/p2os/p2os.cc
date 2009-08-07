@@ -292,7 +292,9 @@ them named:
 - armgrip_innersize (3 floats, metres)
   - Default: (0.054, 0.025, 1.0)
   - Size of the inside of the arm's gripper (largest object it can hold)
-
+- oldschool (integer)
+  - Default: 0 (no effect)
+  - If set to 1, checksum will be compared the same way as in older versions of this driver
 
 
 @par Example
@@ -558,6 +560,7 @@ P2OS::P2OS(ConfigFile* cf, int section)
   ::initialize_robot_params();
 
   // Read config file options
+  this->oldschool = cf->ReadInt(section, "oldschool", 0);
   this->bumpstall = cf->ReadInt(section,"bumpstall",-1);
   this->pulse = cf->ReadFloat(section,"pulse",-1);
   this->rot_kp = cf->ReadInt(section, "rot_kp", -1);
@@ -700,7 +703,7 @@ int P2OS::MainSetup()
   // connection code might not work (i think that the radio modems operate at
   // 9600).
   int bauds[] = {B9600, B38400, B19200, B115200, B57600};
-  int numbauds = sizeof(bauds);
+  int numbauds = sizeof bauds / sizeof(int);
   int currbaud = 0;
 
   struct termios term;
@@ -791,7 +794,11 @@ int P2OS::MainSetup()
     fflush(stdout);
 
     if((this->psos_fd = open(this->psos_serial_port,
+#ifdef __QNXNTO__
+                     O_RDWR | O_NONBLOCK, S_IRUSR | S_IWUSR )) < 0 )
+#else
                      O_RDWR | O_SYNC | O_NONBLOCK, S_IRUSR | S_IWUSR )) < 0 )
+#endif
     {
       perror("P2OS::Setup():open():");
       return(1);
@@ -991,7 +998,7 @@ int P2OS::MainSetup()
     }
     usleep(P2OS_CYCLETIME_USEC);
 
-    if(receivedpacket.Receive(this->psos_fd))
+    if(receivedpacket.Receive(this->psos_fd, this->oldschool))
     {
       if((psos_state == NO_SYNC) && (num_sync_attempts >= 0))
       {
@@ -1064,7 +1071,6 @@ int P2OS::MainSetup()
 
   if(psos_state != READY)
   {
-    if(this->psos_use_tcp)
     printf("Couldn't synchronize with P2OS.\n"
            "  Most likely because the robot is not connected %s %s\n",
            this->psos_use_tcp ? "to the ethernet-serial bridge device " : "to the serial port",
@@ -1111,7 +1117,6 @@ int P2OS::MainSetup()
             "using defaults\n",stderr);
     param_idx = 0;
   }
-
   // first, receive a packet so we know we're connected.
   if(!this->sippacket)
     this->sippacket = new SIP(param_idx);
@@ -1723,7 +1728,7 @@ P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
 
     /* receive a packet */
     pthread_testcancel();
-    if(packet.Receive(this->psos_fd))
+    if(packet.Receive(this->psos_fd, this->oldschool))
     {
       puts("RunPsosThread(): Receive errored");
       pthread_exit(NULL);
