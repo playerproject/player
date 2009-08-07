@@ -50,9 +50,9 @@ class P2OSPacket
   void PrintHex();
   int Build( unsigned char *data, unsigned char datasize );
   int Send( int fd );
-  int Receive( int fd, bool oldschool );
-  bool Check(bool oldschool = false);
-  
+  int Receive( int fd, bool ignore_checksum );
+  bool Check( bool ignore_checksum = false );
+
   bool operator!= ( P2OSPacket p ) {
     if ( size != p.size) return(true);
 

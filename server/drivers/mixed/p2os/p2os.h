@@ -225,8 +225,6 @@ class circbuf{
 class P2OS : public ThreadedDriver
 {
   private:
-    int oldschool;
-
     player_p2os_data_t p2os_data;
 
     player_devaddr_t position_id;
@@ -349,7 +347,6 @@ class P2OS : public ThreadedDriver
     const char* psos_tcp_host;  // hostname to use if using TCP
     int psos_tcp_port;  // remote port to use if using TCP
 
-
     struct timeval lastblob_tv;
 
     // Max motor speeds (mm/sec,deg/sec)
@@ -366,6 +363,7 @@ class P2OS : public ThreadedDriver
     int radio_modemp; // are we using a radio modem?
     int joystickp; // are we using a joystick?
     int bumpstall; // should we change the bumper-stall behavior?
+    bool ignore_checksum;
 
     // PTZ Camera Stuff
     player_ptz_data_t  ptz_data;
