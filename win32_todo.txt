@@ -1,5 +1,4 @@
 This list is incomplete.
 
-- Fix usage of user-configured pthreads location
 - Python bindings
 - Finding GTK
