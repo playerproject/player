@@ -187,7 +187,7 @@ SegwayRMP400::SegwayRMP400(ConfigFile* cf, int section): ThreadedDriver(cf,secti
 	counter = 0;
 	
 	// Check config file for additional options
-	this->fullspeed = cf->ReadInt(section, "fullspeed_data", 1);
+	this->fullspeed = cf->ReadInt(section, "fullspeed_data", 1) == 0 ? false : true;
 	
 
 }

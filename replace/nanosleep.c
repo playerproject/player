@@ -28,6 +28,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 #if defined (WIN32)
+#define _WIN32_WINNT 0x0500
 #include <windows.h>
 
 #include "replace.h"

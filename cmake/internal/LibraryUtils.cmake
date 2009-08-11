@@ -203,3 +203,26 @@ MACRO (PLAYER_INSTALL_HEADERS _subdir)
             DESTINATION ${PLAYER_INCLUDE_INSTALL_DIR}/lib${_subdir}
             COMPONENT headers)
 ENDMACRO (PLAYER_INSTALL_HEADERS)
+
+
+###############################################################################
+# PLAYER_CLEAR_CACHED_LISTS ()
+# Clears all the cached lists (prevents accumulation of the same value over and
+# over).
+MACRO (PLAYER_CLEAR_CACHED_LISTS)
+    SET (PLAYER_EXTRA_INCLUDE_DIRS "" CACHE INTERNAL "Extra include directories" FORCE)
+    SET (PLAYER_EXTRA_LINK_DIRS "" CACHE INTERNAL "Library directories to link in" FORCE)
+    SET (PLAYERCORE_INT_INCLUDE_DIRS "" CACHE INTERNAL "Extra include directories for playercore" FORCE)
+    SET (PLAYERCORE_INT_LINK_DIRS "" CACHE INTERNAL "Library directories to link playercore to" FORCE)
+    SET (PLAYERCORE_INT_LINK_LIBRARIES "" CACHE INTERNAL "Libs to link playercore to" FORCE)
+    SET (PLAYERCORE_EXTRA_INCLUDE_DIRS "" CACHE INTERNAL "Extra include directories with playercore" FORCE)
+    SET (PLAYERCORE_EXTRA_LINK_DIRS "" CACHE INTERNAL "Library directories to link in with playercore" FORCE)
+    SET (PLAYERCORE_EXTRA_LINK_LIBRARIES "" CACHE INTERNAL "Libs to link to with playercore" FORCE)
+    SET (PLAYERC_EXTRA_INCLUDE_DIRS "" CACHE INTERNAL "Extra include directories when using playerc" FORCE)
+    SET (PLAYERC_EXTRA_LINK_DIRS "" CACHE INTERNAL "Library directories to link in when using playerc" FORCE)
+    SET (PLAYERC_EXTRA_LINK_LIBRARIES "" CACHE INTERNAL "Libs to link to with playerc" FORCE)
+    SET (PLAYERCC_EXTRA_INCLUDE_DIRS "" CACHE INTERNAL "Extra include directories when using playercc" FORCE)
+    SET (PLAYERCC_EXTRA_LINK_DIRS "" CACHE INTERNAL "Library directories to link in when using playercc" FORCE)
+    SET (PLAYERCC_EXTRA_LINK_LIBRARIES "" CACHE INTERNAL "Libs to link to with playercc" FORCE)
+ENDMACRO (PLAYER_CLEAR_CACHED_LISTS)
+

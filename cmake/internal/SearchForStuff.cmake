@@ -194,10 +194,10 @@ IF (PLAYER_OS_WIN)
         MESSAGE (FATAL_ERROR "Set PTHREAD_DIR to the directory in which you have installed pthreads-win32, then re-run CMake.")
     ENDIF (PTHREAD_DIR STREQUAL "")
     SET (PTHREAD_INCLUDE_DIR "${PTHREAD_DIR}/include" CACHE PATH "Include directory for a POSIX threads implementation providing pthread.h.")
-    SET (PTHREAD_LIB_DIR "${PTHREAD_DIR}/lib" CACHE PATH "Library directory for a POSIX threads implementation providing pthread.lib (if using pthreads for Win32, rename the .lib and .dll you have chosen).")
+    SET (PTHREAD_LIB_DIR "${PTHREAD_DIR}/lib" CACHE PATH "Library directory for a POSIX threads implementation providing pthread.lib.")
 ELSE (PLAYER_OS_WIN)
     SET (PTHREAD_INCLUDE_DIR "" CACHE PATH "Include directory for a POSIX threads implementation providing pthread.h.")
-    SET (PTHREAD_LIB_DIR "" CACHE PATH "Library directory for a POSIX threads implementation providing pthread.lib (if using pthreads for Win32, rename the .lib and .dll you have chosen).")
+    SET (PTHREAD_LIB_DIR "" CACHE PATH "Library directory for a POSIX threads implementation providing pthread.lib.")
 ENDIF (PLAYER_OS_WIN)
 MARK_AS_ADVANCED (PTHREAD_INCLUDE_DIR)
 IF (NOT PTHREAD_INCLUDE_DIR STREQUAL "")
@@ -225,4 +225,10 @@ ELSE (HAVE_PTHREAD_H)
     MESSAGE (FATAL_ERROR "Could not find pthread.h. Perhaps you need to set PTHREAD_INCLUDE_DIR and PTHREAD_LIB_DIR in advanced mode.")
 ENDIF (HAVE_PTHREAD_H)
 SET (CMAKE_REQUIRED_INCLUDES)
+
+IF (PLAYER_OS_WIN)
+    TRY_COMPILE (HAVE_SETDLLDIRECTORY
+        ${CMAKE_CURRENT_BINARY_DIR}/test_have_setdlldirectory
+        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/internal/setdlldirectory.c)
+ENDIF (PLAYER_OS_WIN)
 
