@@ -68,11 +68,9 @@ LIST_TO_STRING_WITH_PREFIX (pkgconfigCFlags "-I" ${PLAYERCORE_EXTRA_INCLUDE_DIRS
 LIST_TO_STRING_WITH_PREFIX (pkgconfigLinkDirs "-L" ${PLAYERCORE_EXTRA_LINK_DIRS})
 LIST_TO_STRING_WITH_PREFIX (pkgconfigLinkLibs "-l" ${PLAYERCORE_EXTRA_LINK_LIBRARIES})
 PLAYER_MAKE_PKGCONFIG ("playercore" "Player core library - part of the Player Project"
-                       "playerinterface playercommon" "" "${pkgconfigCFLags}"
+                       "playerinterface playercommon" "" "${pkgconfigCFlags}"
                        "${pkgconfigLinkDirs} ${pkgconfigLinkLibs}")
 CONFIGURE_FILE (${PLAYER_CMAKE_DIR}/UsePlayerPlugin.cmake.in ${CMAKE_BINARY_DIR}/cmake/UsePlayerPlugin.cmake @ONLY)
-
-
 
 PLAYER_INSTALL_HEADERS (playercore configfile.h
                                    device.h

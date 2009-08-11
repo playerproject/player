@@ -55,7 +55,7 @@ CONFIGURE_FILE (${PROJECT_SOURCE_DIR}/config.h.in ${PROJECT_BINARY_DIR}/config.h
 SET (playerconfig_h_in "${CMAKE_CURRENT_SOURCE_DIR}/playerconfig.h.in")
 SET (playerconfig_h "${CMAKE_CURRENT_BINARY_DIR}/playerconfig.h")
 CONFIGURE_FILE (${playerconfig_h_in} ${playerconfig_h})
-INSTALL (FILES ${playerconfig_h} DESTINATION ${PLAYER_INCLUDE_INSTALL_DIR})
+INSTALL (FILES ${playerconfig_h} DESTINATION ${PLAYER_INCLUDE_INSTALL_DIR} COMPONENT headers)
 # Include some useful macros
 INCLUDE (${PLAYER_CMAKE_DIR}/internal/LibraryUtils.cmake)
 
@@ -88,10 +88,7 @@ ADD_SUBDIRECTORY (cmake)            # CMake modules for Player libraries
 ADD_SUBDIRECTORY (replace)
 MESSAGE (STATUS "")
 
-SET (PLAYERCORE_INT_LINK_LIBRARIES "" CACHE INTERNAL "Libs to link playercore to" FORCE)
-SET (PLAYERCORE_EXTRA_LINK_LIBRARIES "" CACHE INTERNAL "Libs to link to with playercore" FORCE)
-SET (PLAYERC_EXTRA_LINK_LIBRARIES "" CACHE INTERNAL "Libs to link to with playerc" FORCE)
-SET (PLAYERCC_EXTRA_LINK_LIBRARIES "" CACHE INTERNAL "Libs to link to with playercc" FORCE)
+PLAYER_CLEAR_CACHED_LISTS ()
 
 # Create packages
 INCLUDE (InstallRequiredSystemLibraries)

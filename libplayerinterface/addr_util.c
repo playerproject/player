@@ -79,7 +79,6 @@ hostname_to_packedaddr(uint32_t* dest, const char* hostname)
   int retval;
   struct addrinfo* addr = NULL;
 #else
-  struct sockaddr_in saddr;
   struct hostent* entp;
 #endif
   char host[256];

@@ -40,7 +40,11 @@
 
 #include <string.h>
 #include <stdlib.h>
-#if defined WIN32
+#if defined (WIN32)
+  #if defined (HAVE_SETDLLDIRECTORY)
+    #define _WIN32_WINNT 0x0502
+  #endif
+  #include <windows.h>
   #include <direct.h>
   #include <vector>
   #include <string>
@@ -54,7 +58,6 @@
 
 #include <libplayercore/drivertable.h>
 #include <libplayercore/globals.h>
-#include <libplayercommon/playercommon.h>
 #include <libplayercommon/playercommon.h>
 
 #include <replace/replace.h>
@@ -159,9 +162,9 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
   }
   else
   {
+#if defined (HAVE_SETDLLDIRECTORY)
     // Add the various search paths to the list
-
-    // start with $PLAYERPATH, if set
+    // Start with $PLAYERPATH, if set
     char playerpath[PATH_MAX];
     size_t size = PATH_MAX;
     errno_t err;
@@ -218,6 +221,19 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
       return handle;
     }
     return NULL;
+#else // defined (HAVE_SETDLLDIRECTORY)
+    lt_dlhandle handle = LoadLibrary( pluginname );
+    if (handle == NULL)
+    {
+      LPVOID buffer = NULL;
+      FormatMessage( FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
+                     GetLastError(), 0, reinterpret_cast<LPTSTR> (&buffer), 0, NULL );
+      PLAYER_ERROR2( "Failed to load plugin: %s\n", reinterpret_cast<LPTSTR> (buffer) );
+      LocalFree( buffer );
+      return NULL;
+    }
+    return handle;
+#endif // defined (HAVE_SETDLLDIRECTORY)
   }
 #else
   PLAYER_ERROR("Sorry, no support for shared libraries, so can't load plugins.");

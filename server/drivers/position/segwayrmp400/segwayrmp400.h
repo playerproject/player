@@ -28,11 +28,13 @@
 
 #include <stdio.h>
 #include <pthread.h>
-#include <unistd.h>
-#include <netinet/in.h>
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
+#if !defined (WIN32)
+  #include <unistd.h>
+  #include <netinet/in.h>
+#endif
 
 #include <libplayercore/playercore.h>
 
