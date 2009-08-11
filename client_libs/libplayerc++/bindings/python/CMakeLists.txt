@@ -22,8 +22,9 @@ IF (PYTHONINTERP_FOUND)
 
             SET_SOURCE_FILES_PROPERTIES(${playercpp_i} PROPERTIES CPLUSPLUS ON)
 
-            SWIG_ADD_MODULE (playercpp python ${playercpp_i})
-            SWIG_LINK_LIBRARIES (playercpp ${PYTHON_LIBRARIES} playerc++)
+            SET (SWIG_MODULE_playercpppy_EXTRA_DEPS ${PROJECT_SOURCE_DIR}/client_libs/libplayerc++/playerc++.h)
+            SWIG_ADD_MODULE (playercpppy python ${playercpp_i})
+            SWIG_LINK_LIBRARIES (playercpppy ${PYTHON_LIBRARIES} playerc++)
 
             IF (PYTHON_OS_WIN)
                 GET_FILENAME_COMPONENT (playercpyInstallDir ${PYTHON_EXECUTABLE} PATH)
@@ -38,7 +39,8 @@ IF (PYTHONINTERP_FOUND)
             SET (PYTHON_BINDINGS_INSTALL_DIR ${playercpppyInstallDir} CACHE PATH "Python bindings installation directory under $prefix")
             MARK_AS_ADVANCED (PYTHON_BINDINGS_INSTALL_DIR)
 
-            INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/playercpp.py ${CMAKE_CURRENT_BINARY_DIR}/_playercpp.so
+            INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/playercpppy.py
+                     ${CMAKE_CURRENT_BINARY_DIR}/_playercpppy.so
                      DESTINATION ${PYTHON_BINDINGS_INSTALL_DIR})
         ELSE (SWIG_FOUND)
             MESSAGE (STATUS "Python bindings for C++ client library will not be built - could not find Swig")

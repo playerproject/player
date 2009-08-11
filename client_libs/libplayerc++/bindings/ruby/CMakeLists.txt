@@ -12,7 +12,6 @@ IF(RUBY_FOUND)
         IF (SWIG_FOUND)
             MESSAGE (STATUS "Ruby bindings for C++ client library will be built")
 
-            #INCLUDE (${SWIG_USE_FILE})
             INCLUDE (${PLAYER_CMAKE_DIR}/internal/UseSwig_Player.cmake)
 
             INCLUDE_DIRECTORIES (${RUBY_INCLUDE_PATH})
@@ -23,16 +22,14 @@ IF(RUBY_FOUND)
 
             SET (CMAKE_SWIG_FLAGS "-w801")
 
-            SET (playercpp_ruby_i "${CMAKE_CURRENT_SOURCE_DIR}/../python/playercpp.i")
-            SET_SOURCE_FILES_PROPERTIES(${playercpp_ruby_i} PROPERTIES CPLUSPLUS ON)
+            SET (playercpp_ruby_i "${CMAKE_CURRENT_SOURCE_DIR}/playercpp.i")
+            SET_SOURCE_FILES_PROPERTIES (${playercpp_ruby_i} PROPERTIES CPLUSPLUS ON)
 
-            #If playercr is called simply playerc, all sorts of errors happen
-            #I guess is namespace conflict with Python bindings' playerc
-            #currently we create playercr locally but install it as playerc 
+            SET (SWIG_MODULE_playercppr_EXTRA_DEPS ${PROJECT_SOURCE_DIR}/client_libs/libplayerc++/playerc++.h)
             SWIG_ADD_MODULE (playercppr ruby ${playercpp_ruby_i})
             SWIG_LINK_LIBRARIES (playercppr ${RUBY_LIBRARY} playerc++)
 
-             #TODO: find ruby in windows, check install dir is correct  
+            # TODO: find ruby in windows, check install dir is correct  
             STRING(REPLACE "/usr/" "" ruby_relative_sitelib_dir ${RUBY_SITELIB_DIR})
             STRING(REPLACE "/opt/" "" ruby_relative_sitelib_dir ${ruby_relative_sitelib_dir})
             STRING(REPLACE "local/" "" ruby_relative_sitelib_dir ${ruby_relative_sitelib_dir})
@@ -40,8 +37,7 @@ IF(RUBY_FOUND)
             MARK_AS_ADVANCED (RUBY_BINDINGS_INSTALL_DIR)
 
             INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/playercppr.so
-                DESTINATION ${RUBY_BINDINGS_INSTALL_DIR}
-                RENAME playercpp.so)
+                DESTINATION ${RUBY_BINDINGS_INSTALL_DIR})
         ELSE (SWIG_FOUND)
             MESSAGE (STATUS "Ruby bindings for C++ client library will not be built - could not find Swig")
         ENDIF (SWIG_FOUND)
