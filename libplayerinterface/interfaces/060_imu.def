@@ -101,8 +101,6 @@ typedef struct player_imu_data_fullstate
     player_pose3d_t vel;
 	/** The complete acceleration of the IMU in 3D coordinates + angles */
     player_pose3d_t acc;
-    
-    int abcdefgh;
 } player_imu_data_fullstate_t;
 
 
