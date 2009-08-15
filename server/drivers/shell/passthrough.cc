@@ -387,7 +387,9 @@ void PassThrough::Update()
 			player_msghdr * hdr = msg->GetHeader();
 			void * data = msg->GetPayload();
 			ProcessMessage(*itr, hdr, data);
+			delete msg;
 		}
+
 	}
 }
 
