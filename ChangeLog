@@ -1,3 +1,13 @@
+3.0.0-rc3 (2009-08-16)
+ - Fix hang on unsubscribe with dummy driver
+ - Fix for out of sync data for clients in PULL mode
+ - Guard true/false definition
+ - Applied patch #2832969: Update to writelog and readlog
+ - Applied patch #2832758: p2os big patch
+ - Fixes for building on Windows. Made the generated installer work, including installing example source that actually works.
+ - Fixed major mem leak in passthrough driver.
+ - Removed spurious random int from IMU interface
+
 3.0.0-rc2 (2009-08-04)
  - Ruby bindings for C++ library, thanks to Piotr for the Python bindings
  - Many copyright clarifications and changes (drivers should all be GPLv2 compat now)
