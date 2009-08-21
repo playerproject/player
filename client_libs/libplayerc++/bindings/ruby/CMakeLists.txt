@@ -38,7 +38,8 @@ IF(BUILD_PLAYERCC)
                 MARK_AS_ADVANCED (RUBY_BINDINGS_INSTALL_DIR)
 
                 INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/playercppr.so
-                    DESTINATION ${RUBY_BINDINGS_INSTALL_DIR})
+                    DESTINATION ${RUBY_BINDINGS_INSTALL_DIR}
+                    RENAME playercpp.so)
             ELSE (SWIG_FOUND)
                 MESSAGE (STATUS "Ruby bindings for C++ client library will not be built - could not find Swig")
             ENDIF (SWIG_FOUND)
