@@ -21,6 +21,8 @@
 
 %module playercpp
 
+
+
 /* ignore for boost related gotchas */
 %ignore PlayerCc::PlayerClient::mutex_t;
 %ignore PlayerCc::PlayerClient::mMutex;
@@ -39,6 +41,18 @@
 %apply double & OUTPUT { double &a };
 
 
+//exceptions
+%exception {
+ try {
+ $action
+ }
+ catch (const PlayerCc::PlayerError &e) {
+ static VALUE playererror = rb_define_class("PlayerError", rb_eStandardError);
+ rb_raise(playererror, e.GetErrorStr().c_str());
+ }
+}
+
+
 %{
 #include "libplayerc++/playerc++.h"
 %}
@@ -47,5 +61,6 @@
 %include "libplayerc++/playerclient.h"
 %include "libplayerc++/clientproxy.h"
 %include "libplayerc++/playerc++.h"
+%include "libplayerc++/playererror.h"
 %include "libplayerinterface/player.h"
 
