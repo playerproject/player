@@ -21,10 +21,6 @@
 
 %module playercpp
 
-%{
-#include "libplayerc++/playerc++.h"
-%}
-
 /* ignore for boost related gotchas */
 %ignore PlayerCc::PlayerClient::mutex_t;
 %ignore PlayerCc::PlayerClient::mMutex;
@@ -33,6 +29,20 @@
 /* handle std::string and so on */
 %include stl.i
 %include stdint.i
+
+//advanced types wrapping
+%include typemaps.i
+
+// For simulationProxy::GetPose2d()
+%apply double & OUTPUT { double &x };
+%apply double & OUTPUT { double &y };
+%apply double & OUTPUT { double &a };
+
+
+%{
+#include "libplayerc++/playerc++.h"
+%}
+
 
 %include "libplayerc++/playerclient.h"
 %include "libplayerc++/clientproxy.h"
