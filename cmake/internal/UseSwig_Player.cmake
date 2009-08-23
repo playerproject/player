@@ -126,7 +126,7 @@ MACRO(SWIG_ADD_SOURCE_TO_MODULE name outfiles infile)
     -o "${swig_generated_file_fullname}"
     "${infile}"
     MAIN_DEPENDENCY "${swig_source_file_fullname}"
-    DEPENDS ${SWIG_MODULE_${name}_EXTRA_DEPS}
+    DEPENDS ${SWIG_MODULE_${name}_EXTRA_DEPS} ${infile}
     COMMENT "Swig source") 
   SET_SOURCE_FILES_PROPERTIES("${swig_generated_file_fullname}" ${swig_extra_generated_files}
     PROPERTIES GENERATED 1)
