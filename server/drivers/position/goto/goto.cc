@@ -67,6 +67,18 @@
 - send_everything (integer)
   - Default: 1
   - If set to 1, data and commands are sent at once
+- max_vel
+  - Default: 0.7
+  - Maximum speed forward
+- min_vel
+  - Default: 0.1
+  - Minimum speed forward
+- max_angular_vel
+  - Default: 45.0
+  - Maximum rotation speed
+- min_angular_vel
+  - Default: 10.0 
+  - Minimum rotation speed
 
 @par Example
 
@@ -105,7 +117,7 @@ driver
 #define AVMAX 45.0
 #define MAXD 2.0
 #define TVMIN 0.1
-#define TVMAX 0.7
+#define TVMAX 3 
 
 #ifndef M_PI
 #define M_PI        3.14159265358979323846
@@ -152,6 +164,10 @@ class Goto : public Driver
     double dist_tol;
     double angle_tol;
     double max_dist;
+    double max_vel;
+    double min_vel;
+    double max_angular_vel;
+    double min_angular_vel;
     int debug;
     int reactive;
     int forward_enabled;
@@ -283,6 +299,39 @@ Goto::Goto(ConfigFile* cf, int section) : Driver(cf, section, true, PLAYER_MSGQU
   this->forward_enabled = cf->ReadInt(section, "forward_enabled", 0);
   this->early_check = cf->ReadInt(section, "early_check", 1);
   this->send_everything = cf->ReadInt(section, "send_everything", 1);
+
+  this->max_vel = cf->ReadFloat(section, "max_vel", TVMAX);
+  if ((this->max_vel) < 0.0)
+  {
+    PLAYER_ERROR1("Invalid max_vel %.4f", this->max_vel);
+    this->SetError(-1);
+    return;
+  }
+
+  this->min_vel = cf->ReadFloat(section, "min_vel", TVMIN);
+  if ((this->min_vel) < 0.0)
+  {
+    PLAYER_ERROR1("Invalid min_vel %.4f", this->min_vel);
+    this->SetError(-1);
+    return;
+  }
+
+  this->max_angular_vel = cf->ReadFloat(section, "max_angular_vel", AVMAX);
+  if ((this->max_angular_vel) < 0.0)
+  {
+    PLAYER_ERROR1("Invalid max_angular_vel %.4f", this->max_angular_vel);
+    this->SetError(-1);
+    return;
+  }
+
+  this->min_angular_vel = cf->ReadFloat(section, "min_angular_vel", AVMIN);
+  if ((this->min_angular_vel) < 0.0)
+  {
+    PLAYER_ERROR1("Invalid min_angular_vel %.4f", this->min_angular_vel);
+    this->SetError(-1);
+    return;
+  }
+
 }
 
 Goto::~Goto() { }
@@ -474,9 +523,9 @@ int Goto::ProcessMessage(QueuePointer &resp_queue,
           tv = 0.0;
         } else
         {
-          tv = (TVMIN) + (dist / ((M_SQRT2) * (MAXD))) * ((TVMAX) - (TVMIN));
+          tv = (this->min_vel) + (dist / ((M_SQRT2) * (MAXD))) * ((this->max_vel) - (this->min_vel));
         }
-        av = DTOR(AVMIN) + (fabs(ad) / (M_PI)) * (DTOR(AVMAX) - DTOR(AVMIN));
+        av = DTOR(this->min_angular_vel) + (fabs(ad) / (M_PI)) * (DTOR(this->max_angular_vel) - DTOR(this->min_angular_vel));
         if (ad < 0.0) av = -av;
         vel_cmd.vel.px = tv;
         vel_cmd.vel.py = 0.0;
@@ -534,7 +583,7 @@ int Goto::ProcessMessage(QueuePointer &resp_queue,
           GlobalTime->GetTimeDouble(&(this->stall_start_time));
           this->stall_length = (static_cast<double>(rand()) / static_cast<double>(RAND_MAX)) + 0.3;
           this->stall_turn = ((static_cast<double>(rand()) / static_cast<double>(RAND_MAX)) * 4.0) - 2.0;
-          vel_cmd.vel.px = -(TVMAX);
+          vel_cmd.vel.px = -(this->max_vel);
           vel_cmd.vel.py = 0.0;
           vel_cmd.vel.pa = this->stall_turn;
           this->stall_state++;
@@ -545,13 +594,13 @@ int Goto::ProcessMessage(QueuePointer &resp_queue,
         if ((t - (this->stall_start_time)) >= (this->stall_length))
         {
           this->stall_start_time = t;
-          vel_cmd.vel.px = ((TVMAX) * 0.65);
+          vel_cmd.vel.px = ((this->max_vel) * 0.65);
           vel_cmd.vel.py = 0.0;
           vel_cmd.vel.pa = 0.0;
           this->stall_state++;
         } else
         {
-          vel_cmd.vel.px = -(TVMAX);
+          vel_cmd.vel.px = -(this->max_vel);
           vel_cmd.vel.py = 0.0;
           vel_cmd.vel.pa = this->stall_turn;
         }
@@ -567,7 +616,7 @@ int Goto::ProcessMessage(QueuePointer &resp_queue,
           this->stall_state++;
         } else
         {
-          vel_cmd.vel.px = ((TVMAX) * 0.65);
+          vel_cmd.vel.px = ((this->max_vel) * 0.65);
           vel_cmd.vel.py = 0.0;
           vel_cmd.vel.pa = 0.0;
         }
