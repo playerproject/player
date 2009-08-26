@@ -42,6 +42,8 @@ IF(RUBY_FOUND)
             #If playercr is called simply playerc, all sorts of errors happen
             #I guess is namespace conflict with Python bindings' playerc
             #currently we create playercr locally but install it as playerc 
+            SET (SWIG_MODULE_playercr_EXTRA_DEPS ${PROJECT_SOURCE_DIR}/client_libs/libplayerc/playerc.h
+                                                 ${PROJECT_BINARY_DIR}/libplayerinterface/player_interfaces.h)
             SWIG_ADD_MODULE (playercr ruby ${playerc_i})
             SWIG_LINK_LIBRARIES (playercr ${RUBY_LIBRARY})
             ADD_DEPENDENCIES (${SWIG_MODULE_playercr_REAL_NAME} playerc_wrap_i_target)

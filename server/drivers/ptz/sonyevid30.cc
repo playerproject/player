@@ -108,6 +108,7 @@ driver
 #include "config.h"
 
 #include <fcntl.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
@@ -116,6 +117,7 @@ driver
 #include <stdlib.h>
 #include <unistd.h>
 #include <math.h>
+#include <time.h>
 
 #include <libplayercore/playercore.h>
 #include <replace/replace.h>
@@ -142,6 +144,22 @@ driver
 
 #define VISCA_COMMAND_CODE	0x01
 #define VISCA_INQUIRY_CODE	0x09
+
+#ifndef M_PI
+#define M_PI           3.14159265358979323846
+#endif
+
+// Convert degrees to radians
+#ifndef DTOR
+#define DTOR(d) ((static_cast<double>(d)) * (M_PI) / 180.0)
+#endif
+
+// Convert radians to degrees
+#ifndef RTOD
+#define	RTOD(r) ((static_cast<double>(r)) * 180.0 / M_PI)
+#endif
+
+#define EPS 0.0000001
 
 /*
  *
@@ -198,14 +216,22 @@ inline float clip_float(float x, float min, float max)
 
 float evid_cam_pan_radians(evid_cam_t cam, short pan_cu)
 {
+/*
 	float conv_factor = -cam.pan_max_rad / cam.pan_max_cu;
 	return pan_cu * conv_factor;
+*/
+        cam = cam;
+        return DTOR(-pan_cu);
 }
 
 float evid_cam_tilt_radians(evid_cam_t cam, short tilt_cu)
 {
+/*
 	float conv_factor = cam.tilt_max_rad / cam.tilt_max_cu;
 	return tilt_cu * conv_factor;
+*/
+        cam = cam;
+        return DTOR(tilt_cu);
 }
 
 float evid_cam_panspeed_radians(evid_cam_t cam, short panspeed_cu)
@@ -232,24 +258,35 @@ float evid_cam_tiltspeed_radians(evid_cam_t cam, short tiltspeed_cu)
 
 float evid_cam_zoom_radians(evid_cam_t cam, short zoom_cu)
 {
+/*
 	float conv_factor = (cam.fov_max_rad - cam.fov_min_rad)
 							/ (cam.fov_max_cu - cam.fov_min_cu);
 
 	return (zoom_cu - cam.fov_min_cu) * conv_factor + cam.fov_min_rad;
+*/
+        return DTOR(RTOD(cam.fov_max_rad) + (static_cast<double>(zoom_cu) * (RTOD(cam.fov_min_rad) - RTOD(cam.fov_max_rad))) / 1024.0);
 }
 
 short evid_cam_pan_cu(evid_cam_t cam, float pan_radians)
 {
+/*
 	float conv_factor = -cam.pan_max_cu / cam.pan_max_rad;
 	pan_radians = clip_float(pan_radians, -cam.pan_max_rad, cam.pan_max_rad);
 	return (short) rint(pan_radians * conv_factor);
+*/
+        cam = cam;
+        return static_cast<short>(-(RTOD(pan_radians)));
 }
 
 short evid_cam_tilt_cu(evid_cam_t cam, float tilt_radians)
 {
+/*
 	float conv_factor = cam.tilt_max_cu / cam.tilt_max_rad;
 	tilt_radians = clip_float(tilt_radians, cam.tilt_min_rad, cam.tilt_max_rad);
 	return (short) rint(tilt_radians * conv_factor);
+*/
+	cam = cam;
+	return static_cast<short>(RTOD(tilt_radians));
 }
 
 /*
@@ -314,6 +351,7 @@ short evid_cam_tiltspeed_cu(evid_cam_t cam, float tiltspeed_radians)
  */
 short evid_cam_zoom_cu(evid_cam_t cam, float zoom_radians)
 {
+/*
 	float conv_factor = (cam.fov_max_cu - cam.fov_min_cu)
 							/ (cam.fov_max_rad - cam.fov_min_rad);
 	if (zoom_radians == 0) {
@@ -323,6 +361,9 @@ short evid_cam_zoom_cu(evid_cam_t cam, float zoom_radians)
 		return (short) ((zoom_radians - cam.fov_min_rad) * conv_factor
 					+ cam.fov_min_cu);
 	}
+*/
+        if (fabs(zoom_radians) < EPS) zoom_radians = cam.fov_max_rad;
+        return (1024 * (static_cast<short>(RTOD(zoom_radians)) - static_cast<short>(RTOD(cam.fov_max_rad)))) / (static_cast<short>(RTOD(cam.fov_min_rad)) - static_cast<short>(RTOD(cam.fov_max_rad)));
 }
 
 /*
@@ -705,9 +746,9 @@ void SonyEVID30::MainQuit()
 
   // put the camera back to center
   usleep(PTZ_SLEEP_TIME_USEC);
-  SendAbsPanTilt(0,0);
+  SendAbsPanTilt(evid_cam_pan_cu(this->cam_config_, 0.0), evid_cam_tilt_cu(this->cam_config_, 0.0));
   usleep(PTZ_SLEEP_TIME_USEC);
-	SendAbsZoom(cam_config_.fov_max_cu);
+  SendAbsZoom(evid_cam_zoom_cu(this->cam_config_, 0.0));
 
   if(close(ptz_fd))
     perror("SonyEVID30::Shutdown():close():");
@@ -1201,11 +1242,11 @@ int SonyEVID30::GetCameraType()
 			cam_config_ = SONY_EVI_CAMERAS[0];
 		}
 
-		if (maxfov != 0) {
-			cam_config_.fov_max_rad = maxfov;
-		}
-		if (minfov != 0) {
-			cam_config_.fov_min_rad = minfov;
+		if (!(fabs(this->maxfov) < EPS)) {
+			this->cam_config_.fov_max_rad = this->maxfov;
+                }
+		if (!(fabs(this->minfov) < EPS)) {
+			this->cam_config_.fov_min_rad = this->minfov;
 		}
 	}
 	return 0;
@@ -1297,7 +1338,7 @@ int SonyEVID30::ProcessPtzRequest(player_ptz_cmd_t *cmd)
 	switch (control_mode_) {
 	case PLAYER_PTZ_VELOCITY_CONTROL:
 		// Change of velocity requested?
-		if (cmd->panspeed != panspeed_demand_rad
+                if (cmd->panspeed != panspeed_demand_rad
 		|| cmd->tiltspeed != tiltspeed_demand_rad) {
 			panspeed_demand_rad = cmd->panspeed;
 			tiltspeed_demand_rad = cmd->tiltspeed;
@@ -1497,6 +1538,7 @@ void SonyEVID30::Main()
 {
 	while (1) {
     player_ptz_data_t data;
+    struct timespec ts;
 
     // Process incoming requests
     pthread_testcancel();
@@ -1514,7 +1556,9 @@ void SonyEVID30::Main()
     pthread_testcancel();
     Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_PTZ_DATA_STATE, &data,sizeof(player_ptz_data_t),NULL);
 
-    usleep(PTZ_SLEEP_TIME_USEC);
+    ts.tv_sec = 0;
+    ts.tv_nsec = PTZ_SLEEP_TIME_USEC * 1000;
+    nanosleep(&ts, NULL);
     }
 }
 
