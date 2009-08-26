@@ -36,6 +36,8 @@ IF (PYTHONINTERP_FOUND)
             # Copy playerc.i to the build directory
             SET (playerc_i "${CMAKE_CURRENT_SOURCE_DIR}/playerc.i")
 
+            SET (SWIG_MODULE_playerc_EXTRA_DEPS ${PROJECT_SOURCE_DIR}/client_libs/libplayerc/playerc.h
+                                                ${PROJECT_BINARY_DIR}/libplayerinterface/player_interfaces.h)
             SWIG_ADD_MODULE (playerc python ${playerc_i})
             SWIG_LINK_LIBRARIES (playerc ${PYTHON_LIBRARIES})
             ADD_DEPENDENCIES (${SWIG_MODULE_playerc_REAL_NAME} playerc_wrap_i_target)
