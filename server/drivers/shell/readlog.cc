@@ -57,6 +57,7 @@ playback control.
 The readlog driver can provide the following device interfaces.
 
 - @ref interface_laser
+- @ref interface_ranger
 - @ref interface_position2d
 - @ref interface_sonar
 - @ref interface_wifi
@@ -158,6 +159,7 @@ driver
   #define strdup _strdup
 #endif
 
+
 #if 0
 // we use this pointer to reset timestamps in the client objects when the
 // log gets rewound
@@ -205,6 +207,11 @@ class ReadLog: public ThreadedDriver
   private: int ProcessLaserConfig(QueuePointer & resp_queue,
                                   player_msghdr_t * hdr,
                                   void * data);
+
+  // Process ranger interface configuration requests
+  private: int ProcessRangerConfig(QueuePointer & resp_queue,
+				   player_msghdr_t * hdr,
+				   void * data);
 
   // Process sonar interface configuration requests
   private: int ProcessSonarConfig(QueuePointer & resp_queue,
@@ -265,6 +272,12 @@ class ReadLog: public ThreadedDriver
 
   // Parse laser data
   private: int ParseLaser(player_devaddr_t id,
+                          unsigned short type, unsigned short subtype,
+                          int linenum,
+                          int token_count, char **tokens, double time);
+
+  // Parse ranger data
+  private: int ParseRanger(player_devaddr_t id,
                           unsigned short type, unsigned short subtype,
                           int linenum,
                           int token_count, char **tokens, double time);
@@ -395,6 +408,12 @@ class ReadLog: public ThreadedDriver
   // Should we auto-rewind?  This is set in the log devie in the .cfg
   // file, and defaults to false
   public: bool autorewind;
+
+  private: typedef struct {
+    player_ranger_geom_t* geom;
+    player_ranger_config_t* config;
+  } ranger_meta_t;
+
 };
 
 
@@ -1024,6 +1043,76 @@ ReadLog::ProcessLaserConfig(QueuePointer & resp_queue,
 }
 
 int
+ReadLog::ProcessRangerConfig(QueuePointer & resp_queue,
+                            player_msghdr_t * hdr,
+                            void * data)
+{
+  switch(hdr->subtype)
+  {
+    case PLAYER_RANGER_REQ_GET_GEOM:
+      {
+        // Find the right place from which to retrieve it
+        int j;
+        for(j=0;j<this->provide_count;j++)
+        {
+          if(Device::MatchDeviceAddress(this->provide_ids[j], hdr->addr))
+            break;
+        }
+        if(j>=this->provide_count)
+        {
+          puts("no matching device");
+          return(-1);
+        }
+
+        if(!this->provide_metadata[j])
+        {
+          puts("no metadata");
+          return(-1);
+        }
+
+        this->Publish(this->provide_ids[j], resp_queue,
+                      PLAYER_MSGTYPE_RESP_ACK, hdr->subtype,
+                      ((ranger_meta_t*)this->provide_metadata[j])->geom,
+                      sizeof(player_ranger_geom_t),
+                      NULL);
+        return(0);
+      }
+
+    case PLAYER_RANGER_REQ_GET_CONFIG:
+      {
+        // Find the right place from which to retrieve it
+        int j;
+        for(j=0;j<this->provide_count;j++)
+        {
+          if(Device::MatchDeviceAddress(this->provide_ids[j], hdr->addr))
+            break;
+        }
+        if(j>=this->provide_count)
+        {
+          puts("no matching device");
+          return(-1);
+        }
+
+        if(!this->provide_metadata[j])
+        {
+          puts("no metadata");
+          return(-1);
+        }
+
+        this->Publish(this->provide_ids[j], resp_queue,
+                      PLAYER_MSGTYPE_RESP_ACK, hdr->subtype,
+                      ((ranger_meta_t*)this->provide_metadata[j])->config,
+                      sizeof(player_ranger_config_t),
+                      NULL);
+        return(0);
+      }
+
+    default:
+      return(-1);
+  }
+}
+
+int
 ReadLog::ProcessSonarConfig(QueuePointer & resp_queue,
                             player_msghdr_t * hdr,
                             void * data)
@@ -1147,6 +1236,11 @@ ReadLog::ProcessMessage(QueuePointer & resp_queue,
     return(this->ProcessLaserConfig(resp_queue, hdr, data));
   }
   else if((hdr->type == PLAYER_MSGTYPE_REQ) &&
+          (hdr->addr.interf == PLAYER_RANGER_CODE))
+  {
+    return(this->ProcessRangerConfig(resp_queue, hdr, data));
+  }
+  else if((hdr->type == PLAYER_MSGTYPE_REQ) &&
           (hdr->addr.interf == PLAYER_SONAR_CODE))
   {
     return(this->ProcessSonarConfig(resp_queue, hdr, data));
@@ -1257,6 +1351,9 @@ int ReadLog::ParseData(player_devaddr_t id,
 #endif
   if (id.interf == PLAYER_LASER_CODE)
     return this->ParseLaser(id, type, subtype, linenum,
+                            token_count, tokens, time);
+  if (id.interf == PLAYER_RANGER_CODE)
+    return this->ParseRanger(id, type, subtype, linenum,
                             token_count, tokens, time);
   else if (id.interf == PLAYER_FIDUCIAL_CODE)
     return this->ParseFiducial(id, type, subtype, linenum,
@@ -1681,54 +1778,6 @@ int ReadLog::ParseLaser(player_devaddr_t id,
             return ret;
           }
 
-		  case PLAYER_LASER_DATA_SCANANGLE:
-          {
-			  player_laser_data_scanangle_t data;
-
-			  if (token_count < 13)
-			  {
-				  PLAYER_ERROR2("incomplete line at %s:%d",
-								this->filename, linenum);
-				  return -1;
-			  }
-
-			  data.id = atoi(tokens[7]);
-			  data.max_range = static_cast<float> (atof(tokens[8]));
-			  data.ranges_count = atoi(tokens[9]);
-			  data.intensity_count = data.ranges_count;
-			  data.angles_count = data.ranges_count;
-
-			  data.ranges = new float[ data.ranges_count ];
-			  data.intensity = new uint8_t[ data.ranges_count ];
-			  data.angles = new float[ data.ranges_count ];
-
-			  count = 0;
-			  for (i = 10; i < token_count; i += 3)
-			  {
-				  data.ranges[count] = static_cast<float> (atof(tokens[i + 0]));
-				  data.angles[count] = static_cast<float> (atof(tokens[i + 1]));
-				  data.intensity[count] = atoi(tokens[i + 2]);
-				  count += 1;
-			  }
-
-			  if (count != (int)data.ranges_count)
-			  {
-				  PLAYER_ERROR2("range count mismatch at %s:%d",
-								this->filename, linenum);
-				  ret = -1;
-			  }
-			  else
-			  {
-				  this->Publish(id, static_cast<uint8_t> (type), static_cast<uint8_t> (subtype),
-								(void*)&data, sizeof(data), &time);
-			  }
-			  delete [] data.ranges;
-			  delete [] data.intensity;
-			  delete [] data.angles;
-
-			  return ret;
-          }
-
 
         default:
           PLAYER_ERROR1("unknown laser data subtype %d\n", subtype);
@@ -1785,6 +1834,630 @@ int ReadLog::ParseLaser(player_devaddr_t id,
 
     default:
       PLAYER_ERROR1("unknown laser msg type %d\n", type);
+      return(-1);
+  }
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+// Parse ranger data
+int ReadLog::ParseRanger(player_devaddr_t id,
+                        unsigned short type, unsigned short subtype,
+                        int linenum,
+                        int token_count, char **tokens, double time)
+{
+  int i, count, ret;
+  ret = 0;
+  switch(type)
+  {
+    case PLAYER_MSGTYPE_DATA:
+      switch(subtype)
+      {
+        case PLAYER_RANGER_DATA_RANGE:
+          {
+            player_ranger_data_range_t data;
+
+            if (token_count < 8)
+            {
+              PLAYER_ERROR2("incomplete line at %s:%d",
+                            this->filename, linenum);
+              return -1;
+            }
+
+            data.ranges_count = atoi(tokens[7]);
+
+            data.ranges = new double[ data.ranges_count ];
+
+            count = 0;
+            for (i = 8; i < token_count; i++)
+            {
+              data.ranges[count] = static_cast<double> (atof(tokens[i + 0]));
+              count++;
+            }
+
+            if (count != (int)data.ranges_count)
+            {
+              PLAYER_ERROR2("range count mismatch at %s:%d",
+                            this->filename, linenum);
+              ret = -1;
+            }
+            else
+            {
+              this->Publish(id, static_cast<uint8_t> (type), static_cast<uint8_t> (subtype),
+                          (void*)&data, sizeof(data), &time);
+            }
+            delete [] data.ranges;
+
+            return ret;
+          }
+
+        case PLAYER_RANGER_DATA_RANGESTAMPED:
+          {
+            player_ranger_data_rangestamped_t data;
+
+            if (token_count < 10)
+            {
+              PLAYER_ERROR2("incomplete line at %s:%d",
+                            this->filename, linenum);
+              return -1;
+            }
+
+	    int total_count=7;
+            data.data.ranges_count = atoi(tokens[total_count]);
+	    total_count++;
+
+            data.data.ranges = new double[ data.data.ranges_count ];
+	    
+            count = 0;
+	    int loop_size=fmin(token_count, total_count+data.data.ranges_count);
+            for (i = total_count; i < loop_size; i += 2)
+            {
+              data.data.ranges[count] = static_cast<double> (atof(tokens[i]));
+              count++;
+	      total_count++;
+            }
+
+            if (count != (int)data.data.ranges_count)
+            {
+              PLAYER_ERROR2("range count mismatch at %s:%d",
+                            this->filename, linenum);
+              delete [] data.data.ranges;
+	      return -1;
+            }
+
+            data.have_geom = atoi(tokens[total_count]);
+	    total_count++;
+
+	    if (data.have_geom)
+	      {
+		if (token_count < total_count+11)
+		  {
+		    PLAYER_ERROR2("incomplete line at %s:%d",
+				  this->filename, linenum);
+		    delete [] data.data.ranges;
+		    return -1;
+		  }
+
+		data.geom.pose.px = static_cast<double> (atof(tokens[total_count]));
+		total_count++;
+		data.geom.pose.py = static_cast<double> (atof(tokens[total_count]));
+		total_count++;
+		data.geom.pose.pz = static_cast<double> (atof(tokens[total_count]));
+		total_count++;
+		data.geom.pose.proll = static_cast<double> (atof(tokens[total_count]));
+		total_count++;
+		data.geom.pose.ppitch = static_cast<double> (atof(tokens[total_count]));
+		total_count++;
+		data.geom.pose.pyaw = static_cast<double> (atof(tokens[total_count]));
+		
+		total_count++;
+		data.geom.size.sw = static_cast<double> (atof(tokens[total_count]));
+		total_count++;
+		data.geom.size.sl = static_cast<double> (atof(tokens[total_count]));
+		total_count++;
+		data.geom.size.sh = static_cast<double> (atof(tokens[total_count]));
+		total_count++;
+
+		data.geom.element_poses_count = atoi(tokens[total_count]);
+		total_count++;
+		
+		data.geom.element_poses = new player_pose3d_t [ data.geom.element_poses_count ];
+
+		count = 0;
+		loop_size=fmin(token_count, total_count+data.geom.element_poses_count*6);
+		for (i = total_count; i < loop_size; i += 6)
+		  {
+		    data.geom.element_poses[count].px = static_cast<double> (atof(tokens[i]));
+		    total_count++;
+		    data.geom.element_poses[count].py = static_cast<double> (atof(tokens[i+1]));
+		    total_count++;
+		    data.geom.element_poses[count].pz = static_cast<double> (atof(tokens[i+2]));
+		    total_count++;
+		    data.geom.element_poses[count].proll = static_cast<double> (atof(tokens[i+3]));
+		    total_count++;
+		    data.geom.element_poses[count].ppitch = static_cast<double> (atof(tokens[i+4]));
+		    total_count++;
+		    data.geom.element_poses[count].pyaw = static_cast<double> (atof(tokens[i+5]));
+		    total_count++;
+		    count++;
+		  }
+
+		if (count != (int)data.geom.element_poses_count || total_count > token_count)
+		  {
+		    PLAYER_ERROR2("poses count mismatch at %s:%d",
+				  this->filename, linenum);
+		    delete [] data.data.ranges;
+		    delete [] data.geom.element_poses;
+		    return -1;
+		  }
+
+
+		data.geom.element_sizes_count = atoi(tokens[total_count]);
+		total_count++;
+		
+		data.geom.element_sizes = new player_bbox3d_t [ data.geom.element_sizes_count ];
+
+		count = 0;
+		loop_size=fmin(token_count, total_count+data.geom.element_sizes_count*3);
+		for (i = total_count; i < loop_size; i += 3)
+		  {
+		    data.geom.element_sizes[count].sw = static_cast<double> (atof(tokens[i]));
+		    total_count++;
+		    data.geom.element_sizes[count].sl = static_cast<double> (atof(tokens[i+1]));
+		    total_count++;
+		    data.geom.element_sizes[count].sh = static_cast<double> (atof(tokens[i+2]));
+		    total_count++;
+		    count++;
+		  }
+
+		if (count != (int)data.geom.element_sizes_count || total_count > token_count)
+		  {
+		    PLAYER_ERROR2("sizes count mismatch at %s:%d",
+				  this->filename, linenum);
+		    delete [] data.data.ranges;
+		    delete [] data.geom.element_poses;
+		    delete [] data.geom.element_sizes;
+		    return -1;
+		  }
+	      }
+
+            data.have_config = atoi(tokens[total_count]);
+
+	    if (data.have_config)
+	      {
+		
+		if (token_count < total_count+7)
+		  {
+		    PLAYER_ERROR2("incomplete line at %s:%d",
+				  this->filename, linenum);
+		    delete [] data.data.ranges;
+		    if (data.have_geom)
+		      {
+			delete [] data.geom.element_poses;
+			delete [] data.geom.element_sizes;
+		      }
+		    return -1;
+		  }
+
+		data.config.min_angle = static_cast<double> (atof(tokens[total_count]));
+		total_count++;
+		data.config.max_angle = static_cast<double> (atof(tokens[total_count]));
+		total_count++;
+		data.config.angular_res = static_cast<double> (atof(tokens[total_count]));
+		total_count++;
+		data.config.min_range = static_cast<double> (atof(tokens[total_count]));
+		total_count++;
+		data.config.max_range = static_cast<double> (atof(tokens[total_count]));
+		total_count++;
+		data.config.range_res = static_cast<double> (atof(tokens[total_count]));
+		total_count++;
+		data.config.frequency = static_cast<double> (atof(tokens[total_count]));
+		total_count++;		
+	      }
+
+	    if (total_count != token_count)
+	      {
+		PLAYER_ERROR2("invalid line at %s:%d: number of tokens does not "
+			      "match count", filename, linenum);
+		delete [] data.data.ranges;
+		if (data.have_geom)
+		  {
+		    delete [] data.geom.element_poses;
+		    delete [] data.geom.element_sizes;
+		  }		
+		return -1;
+	      }
+	    
+	    this->Publish(id, static_cast<uint8_t> (type), static_cast<uint8_t> (subtype),
+                          (void*)&data, sizeof(data), &time);
+	    delete [] data.data.ranges;
+	    if (data.have_geom)
+	      {
+		delete [] data.geom.element_poses;
+		delete [] data.geom.element_sizes;
+	      }
+	    
+            return ret;
+          }
+
+        case PLAYER_RANGER_DATA_INTNS:
+          {
+            player_ranger_data_intns_t data;
+
+            if (token_count < 8)
+            {
+              PLAYER_ERROR2("incomplete line at %s:%d",
+                            this->filename, linenum);
+              return -1;
+            }
+
+            data.intensities_count = atoi(tokens[7]); 
+            data.intensities = new double[ data.intensities_count ];
+
+            count = 0;
+            for (i = 8; i < token_count; i++)
+            {
+              data.intensities[count] = static_cast<double> (atof(tokens[i + 0]));
+              count++;
+            }
+
+            if (count != (int)data.intensities_count)
+            {
+              PLAYER_ERROR2("range count mismatch at %s:%d",
+                            this->filename, linenum);
+              ret = -1;
+            }
+            else
+            {
+              this->Publish(id, static_cast<uint8_t> (type), static_cast<uint8_t> (subtype),
+                          (void*)&data, sizeof(data), &time);
+            }
+            delete [] data.intensities;
+
+            return ret;
+          }
+
+        case PLAYER_RANGER_DATA_INTNSSTAMPED:
+          {
+            player_ranger_data_intnsstamped_t data;
+
+            if (token_count < 10)
+            {
+              PLAYER_ERROR2("incomplete line at %s:%d",
+                            this->filename, linenum);
+              return -1;
+            }
+
+	    int total_count=7;
+            data.data.intensities_count = atoi(tokens[total_count]);
+	    total_count++;
+
+            data.data.intensities = new double[ data.data.intensities_count ];
+	    
+            count = 0;
+	    int loop_size=fmin(token_count, total_count+data.data.intensities_count);
+            for (i = total_count; i < loop_size; i += 2)
+            {
+              data.data.intensities[count] = static_cast<double> (atof(tokens[i]));
+              count++;
+	      total_count++;
+            }
+
+            if (count != (int)data.data.intensities_count)
+            {
+              PLAYER_ERROR2("range count mismatch at %s:%d",
+                            this->filename, linenum);
+              delete [] data.data.intensities;
+	      return -1;
+            }
+
+            data.have_geom = atoi(tokens[total_count]);
+	    total_count++;
+
+	    if (data.have_geom)
+	      {
+		if (token_count < total_count+11)
+		  {
+		    PLAYER_ERROR2("incomplete line at %s:%d",
+				  this->filename, linenum);
+		    delete [] data.data.intensities;
+		    return -1;
+		  }
+
+		data.geom.pose.px = static_cast<double> (atof(tokens[total_count]));
+		total_count++;
+		data.geom.pose.py = static_cast<double> (atof(tokens[total_count]));
+		total_count++;
+		data.geom.pose.pz = static_cast<double> (atof(tokens[total_count]));
+		total_count++;
+		data.geom.pose.proll = static_cast<double> (atof(tokens[total_count]));
+		total_count++;
+		data.geom.pose.ppitch = static_cast<double> (atof(tokens[total_count]));
+		total_count++;
+		data.geom.pose.pyaw = static_cast<double> (atof(tokens[total_count]));
+		
+		total_count++;
+		data.geom.size.sw = static_cast<double> (atof(tokens[total_count]));
+		total_count++;
+		data.geom.size.sl = static_cast<double> (atof(tokens[total_count]));
+		total_count++;
+		data.geom.size.sh = static_cast<double> (atof(tokens[total_count]));
+		total_count++;
+
+		data.geom.element_poses_count = atoi(tokens[total_count]);
+		total_count++;
+		
+		data.geom.element_poses = new player_pose3d_t [ data.geom.element_poses_count ];
+
+		count = 0;
+		loop_size=fmin(token_count, total_count+data.geom.element_poses_count*6);
+		for (i = total_count; i < loop_size; i += 6)
+		  {
+		    data.geom.element_poses[count].px = static_cast<double> (atof(tokens[i]));
+		    total_count++;
+		    data.geom.element_poses[count].py = static_cast<double> (atof(tokens[i+1]));
+		    total_count++;
+		    data.geom.element_poses[count].pz = static_cast<double> (atof(tokens[i+2]));
+		    total_count++;
+		    data.geom.element_poses[count].proll = static_cast<double> (atof(tokens[i+3]));
+		    total_count++;
+		    data.geom.element_poses[count].ppitch = static_cast<double> (atof(tokens[i+4]));
+		    total_count++;
+		    data.geom.element_poses[count].pyaw = static_cast<double> (atof(tokens[i+5]));
+		    total_count++;
+		    count++;
+		  }
+
+		if (count != (int)data.geom.element_poses_count || total_count > token_count)
+		  {
+		    PLAYER_ERROR2("poses count mismatch at %s:%d",
+				  this->filename, linenum);
+		    delete [] data.data.intensities;
+		    delete [] data.geom.element_poses;
+		    return -1;
+		  }
+
+
+		data.geom.element_sizes_count = atoi(tokens[total_count]);
+		total_count++;
+		
+		data.geom.element_sizes = new player_bbox3d_t [ data.geom.element_sizes_count ];
+
+		count = 0;
+		loop_size=fmin(token_count, total_count+data.geom.element_sizes_count*3);
+		for (i = total_count; i < loop_size; i += 3)
+		  {
+		    data.geom.element_sizes[count].sw = static_cast<double> (atof(tokens[i]));
+		    total_count++;
+		    data.geom.element_sizes[count].sl = static_cast<double> (atof(tokens[i+1]));
+		    total_count++;
+		    data.geom.element_sizes[count].sh = static_cast<double> (atof(tokens[i+2]));
+		    total_count++;
+		    count++;
+		  }
+
+		if (count != (int)data.geom.element_sizes_count || total_count > token_count)
+		  {
+		    PLAYER_ERROR2("sizes count mismatch at %s:%d",
+				  this->filename, linenum);
+		    delete [] data.data.intensities;
+		    delete [] data.geom.element_poses;
+		    delete [] data.geom.element_sizes;
+		    return -1;
+		  }
+	      }
+
+            data.have_config = atoi(tokens[total_count]);
+
+	    if (data.have_config)
+	      {
+		
+		if (token_count < total_count+7)
+		  {
+		    PLAYER_ERROR2("incomplete line at %s:%d",
+				  this->filename, linenum);
+		    delete [] data.data.intensities;
+		    if (data.have_geom)
+		      {
+			delete [] data.geom.element_poses;
+			delete [] data.geom.element_sizes;
+		      }
+		    return -1;
+		  }
+
+		data.config.min_angle = static_cast<double> (atof(tokens[total_count]));
+		total_count++;
+		data.config.max_angle = static_cast<double> (atof(tokens[total_count]));
+		total_count++;
+		data.config.angular_res = static_cast<double> (atof(tokens[total_count]));
+		total_count++;
+		data.config.min_range = static_cast<double> (atof(tokens[total_count]));
+		total_count++;
+		data.config.max_range = static_cast<double> (atof(tokens[total_count]));
+		total_count++;
+		data.config.range_res = static_cast<double> (atof(tokens[total_count]));
+		total_count++;
+		data.config.frequency = static_cast<double> (atof(tokens[total_count]));
+		total_count++;		
+	      }
+	    
+	    if (total_count != token_count)
+	      {
+		PLAYER_ERROR2("invalid line at %s:%d: number of tokens does not "
+			      "match count", filename, linenum);
+		delete [] data.data.intensities;
+		if (data.have_geom)
+		  {
+		    delete [] data.geom.element_poses;
+		    delete [] data.geom.element_sizes;
+		  }		
+		return -1;
+	      }
+
+	    this->Publish(id, static_cast<uint8_t> (type), static_cast<uint8_t> (subtype),
+                          (void*)&data, sizeof(data), &time);
+	    delete [] data.data.intensities;
+	    if (data.have_geom)
+	      {
+		delete [] data.geom.element_poses;
+		delete [] data.geom.element_sizes;
+	      }	    
+            return ret;
+          }
+
+        default:
+          PLAYER_ERROR1("unknown ranger data subtype %d\n", subtype);
+          return(-1);
+      }
+      break;
+
+    case PLAYER_MSGTYPE_RESP_ACK:
+      switch(subtype)
+      {
+        case PLAYER_RANGER_REQ_GET_GEOM:
+          {
+            if(token_count < 18)
+            {
+              PLAYER_ERROR2("incomplete line at %s:%d",
+                            this->filename, linenum);
+              return -1;
+            }
+
+	    int num_poses=atoi(tokens[16]);
+
+            if(token_count < 18+num_poses*6)
+            {
+              PLAYER_ERROR2("incomplete line at %s:%d",
+                            this->filename, linenum);
+              return -1;
+            }
+
+	    int num_sizes=atoi(tokens[17+num_poses*6]);
+
+            if(token_count < 18+num_poses*6+num_sizes*3)
+            {
+              PLAYER_ERROR2("incomplete line at %s:%d",
+                            this->filename, linenum);
+              return -1;
+            }
+
+	    
+            // cache it
+            player_ranger_geom_t* geom =
+	      (player_ranger_geom_t*)calloc(1,sizeof(player_ranger_geom_t)+sizeof(player_pose3d_t)*num_poses+sizeof(player_bbox3d_t)*num_sizes);
+            assert(geom);
+
+            geom->pose.px = atof(tokens[7]);
+            geom->pose.py = atof(tokens[8]);
+	    geom->pose.pz = atof(tokens[9]);
+            geom->pose.proll = atof(tokens[10]);
+            geom->pose.ppitch = atof(tokens[11]);
+            geom->pose.pyaw = atof(tokens[12]);
+            geom->size.sw = atof(tokens[13]);
+            geom->size.sl = atof(tokens[14]);
+            geom->size.sh = atof(tokens[15]);
+	    geom->element_poses_count = num_poses;
+	    geom->element_poses = new player_pose3d_t [ num_poses ];
+	    geom->element_sizes_count = num_sizes;
+	    geom->element_sizes = new player_bbox3d_t [ num_sizes ];
+
+	    for (int i=0; i < num_poses; i++)
+	      {
+		geom->element_poses[i].px=atof(tokens[17+i*6]);
+		geom->element_poses[i].py=atof(tokens[17+i*6+1]);
+		geom->element_poses[i].pz=atof(tokens[17+i*6+2]);
+		geom->element_poses[i].proll=atof(tokens[17+i*6+3]);
+		geom->element_poses[i].ppitch=atof(tokens[17+i*6+4]);
+		geom->element_poses[i].pyaw=atof(tokens[17+i*6+5]);
+	      }
+
+	    for (int i=0; i < num_sizes; i++)
+	      {
+		geom->element_sizes[i].sw=atof(tokens[17+num_poses*6+1+i*3]);
+		geom->element_sizes[i].sl=atof(tokens[17+num_poses*6+1+i*3+1]);
+		geom->element_sizes[i].sh=atof(tokens[17+num_poses*6+1+i*3+2]);
+	      }
+
+
+            // Find the right place to put it
+            int j;
+            for(j=0;j<this->provide_count;j++)
+            {
+              if(Device::MatchDeviceAddress(this->provide_ids[j], id))
+                break;
+            }
+            assert(j<this->provide_count);
+
+	    // if something is already here, use it
+            if(this->provide_metadata[j])
+	      ((ranger_meta_t*)this->provide_metadata[j])->geom = geom;
+	    else
+	      {
+		ranger_meta_t* meta =
+		  (ranger_meta_t*)calloc(1,sizeof(ranger_meta_t));
+		meta->geom=geom;
+		this->provide_metadata[j] = (void*)meta;
+	      }
+
+            // nothing to publish
+            return(0);
+          }
+
+        case PLAYER_RANGER_REQ_GET_CONFIG:
+          {
+            if(token_count < 14)
+            {
+              PLAYER_ERROR2("incomplete line at %s:%d",
+                            this->filename, linenum);
+              return -1;
+            }
+
+            // cache it
+            player_ranger_config_t* config =
+	      (player_ranger_config_t*)calloc(1,sizeof(player_ranger_config_t));
+            assert(config);
+
+            config->min_angle = atof(tokens[7]);
+            config->max_angle = atof(tokens[8]);
+	    config->angular_res = atof(tokens[9]);
+            config->min_range = atof(tokens[10]);
+            config->max_range = atof(tokens[11]);
+            config->range_res = atof(tokens[12]);
+            config->frequency = atof(tokens[13]);
+	    
+            // Find the right place to put it
+            int j;
+            for(j=0;j<this->provide_count;j++)
+            {
+              if(Device::MatchDeviceAddress(this->provide_ids[j], id))
+                break;
+            }
+            assert(j<this->provide_count);
+
+	    // if something is already here, use it
+            if(this->provide_metadata[j]) {
+	      ((ranger_meta_t*)this->provide_metadata[j])->config = config;
+	    }
+	    else
+	      {
+		ranger_meta_t* meta =
+		  (ranger_meta_t*)calloc(1,sizeof(ranger_meta_t));
+		meta->config=config;
+		this->provide_metadata[j] = (void*)meta;
+	      }
+	    
+            // nothing to publish
+            return(0);
+          }
+
+        default:
+          PLAYER_ERROR1("unknown ranger reply subtype %d\n", subtype);
+          return(-1);
+      }
+      break;
+
+    default:
+      PLAYER_ERROR1("unknown ranger msg type %d\n", type);
       return(-1);
   }
 }
