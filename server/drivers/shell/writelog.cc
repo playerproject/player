@@ -70,6 +70,7 @@ The driver with the <b>highest data rate</b> should be placed first in the list.
 The writelog driver can will log data from the following interfaces:
 
 - @ref interface_laser
+- @ref interface_ranger
 - @ref interface_sonar
 - @ref interface_position2d
 - @ref interface_ptz
@@ -224,6 +225,9 @@ class WriteLog: public ThreadedDriver
 
   // Write laser data to file
   private: int WriteLaser(player_msghdr_t* hdr, void *data);
+
+  // Write ranger data to file
+  private: int WriteRanger(player_msghdr_t* hdr, void *data);
 
   // Write localize data to file
   private: int WriteLocalize(player_msghdr_t* hdr, void *data);
@@ -585,9 +589,42 @@ void WriteLog::WriteGeometries()
         delete msg;
       }
     }
+    else if (device->addr.interf == PLAYER_RANGER_CODE)
+    {
+      // Get the ranger geometry
+      Message* msg;
+      if(!(msg = device->device->Request(this->InQueue,
+                                         PLAYER_MSGTYPE_REQ,
+                                         PLAYER_RANGER_REQ_GET_GEOM,
+                                         NULL, 0, NULL, true)))
+      {
+        // oh well.
+        PLAYER_WARN("unable to get ranger geometry");
+      }
+      else
+      {
+        // log it
+        this->Write(device, msg->GetHeader(), msg->GetPayload());
+        delete msg;
+      }
+      if(!(msg = device->device->Request(this->InQueue,
+                                         PLAYER_MSGTYPE_REQ,
+                                         PLAYER_RANGER_REQ_GET_CONFIG,
+                                         NULL, 0, NULL, true)))
+      {
+        // oh well.
+        PLAYER_WARN("unable to get ranger config");
+      }
+      else
+      {
+        // log it
+        this->Write(device, msg->GetHeader(), msg->GetPayload());
+        delete msg;
+      }
+    }
     else if (device->addr.interf == PLAYER_POSITION2D_CODE)
     {
-      // Get the laser geometry
+      // Get the position geometry
       Message* msg;
       if(!(msg = device->device->Request(this->InQueue,
                                          PLAYER_MSGTYPE_REQ,
@@ -607,7 +644,7 @@ void WriteLog::WriteGeometries()
     /* HHAA 15-02-2007 */
     else if (device->addr.interf == PLAYER_BUMPER_CODE)
     {
-      // Get the laser geometry
+      // Get the bumper geometry
       Message* msg;
       if(!(msg = device->device->Request(this->InQueue,
                                          PLAYER_MSGTYPE_REQ,
@@ -627,7 +664,7 @@ void WriteLog::WriteGeometries()
     /* HHAA 15-02-2007 */
     else if (device->addr.interf == PLAYER_IR_CODE)
     {
-      // Get the laser geometry
+      // Get the IR geometry
       Message* msg;
       if(!(msg = device->device->Request(this->InQueue,
                                          PLAYER_MSGTYPE_REQ,
@@ -826,6 +863,9 @@ void WriteLog::Write(WriteLogDevice *device,
   {
     case PLAYER_LASER_CODE:
       retval = this->WriteLaser(hdr, data);
+      break;
+    case PLAYER_RANGER_CODE:
+      retval = this->WriteRanger(hdr, data);
       break;
     case PLAYER_LOCALIZE_CODE:
       retval = this->WriteLocalize(hdr, data);
@@ -1039,22 +1079,22 @@ WriteLog::WriteLaser(player_msghdr_t* hdr, void *data)
           }
           return(0);
 
-		case PLAYER_LASER_DATA_SCANANGLE:
-			  scanangle = (player_laser_data_scanangle_t*)data;
-			  fprintf(this->file, "%04d %+07.4f %04d ",
-					  scanangle->id, scanangle->max_range, scanangle->ranges_count);
-
-			  for (i = 0; i < scanangle->ranges_count; i++)
-			  {
-				  fprintf(this->file, "%.3f ", scanangle->ranges[i]);
-				  fprintf(this->file, "%.3f ", scanangle->angles[i]);
-				  if(i < scanangle->intensity_count)
-					  fprintf(this->file, "%2d ", scanangle->intensity[i]);
-				  else
-					  fprintf(this->file, "%2d ", 0);
-			  }
-			  return(0);
-
+        case PLAYER_LASER_DATA_SCANANGLE:
+	  scanangle = (player_laser_data_scanangle_t*)data;
+	  fprintf(this->file, "%04d %+07.4f %04d ",
+		  scanangle->id, scanangle->max_range, scanangle->ranges_count);
+	  
+	  for (i = 0; i < scanangle->ranges_count; i++)
+	    {
+	      fprintf(this->file, "%.3f ", scanangle->ranges[i]);
+	      fprintf(this->file, "%.3f ", scanangle->angles[i]);
+	      if(i < scanangle->intensity_count)
+		fprintf(this->file, "%2d ", scanangle->intensity[i]);
+	      else
+		fprintf(this->file, "%2d ", 0);
+	    }
+	  return(0);
+	  
         default:
           return(-1);
       }
@@ -1078,12 +1118,334 @@ WriteLog::WriteLaser(player_msghdr_t* hdr, void *data)
   }
 }
 
+
+/** @ingroup tutorial_datalog
+ * @defgroup player_driver_writelog_ranger ranger format
+
+@brief ranger log format
+
+The following type:subtype ranger messages can be logged:
+- 1:1 (PLAYER_RANGER_DATA_RANGE) - A range scan.  The format is:
+  - ranges_count (uint): number of ranges
+  - list of ranges_count ranges:
+    - range (double): distance 
+
+- 1:2 (PLAYER_RANGER_DATA_RANGEPOSE) - A range scan optionally with
+the (possibly estimated) geometry of the device when the scan was
+acquired and optional sensor configuration. The format is:
+  - ranges_count (uint): number of ranges
+  - list of ranges_count ranges:
+    - range (double): distance
+  - have_geom (uint8): If non-zero, the geometry data has been filled
+  - geometry of device at the time of range data:
+    - pose of device:
+      - px (float): X coordinate of the pose, in meters
+      - py (float): Y coordinate of the pose, in meters
+      - pz (float): Z coordinate of the pose, in meters
+      - proll (float): roll coordinate of the pose, in radians
+      - ppitch (float): pitch coordinate of the pose, in radians
+      - pyaw (float): yaw coordinate of the pose, in radians
+    - size of device:
+      - sw (float): width of the device, in meters
+      - sl (float): length of the device, in meters
+      - sh (float): height of the device, in meters
+    - element_poses_count (uint): pose of each individual range sensor that makes up the device
+    - list of element_poses_count poses:
+      - px (float): X coordinate of the pose, in meters
+      - py (float): Y coordinate of the pose, in meters
+      - pz (float): Z coordinate of the pose, in meters
+      - proll (float): roll coordinate of the pose, in radians
+      - ppitch (float): pitch coordinate of the pose, in radians
+      - pyaw (float): yaw coordinate of the pose, in radians
+    - element_sizes_count (uint): size of each individual range sensor that makes up the device
+    - list of element_sizes_count sizes:
+      - sw (float): width of the device, in meters
+      - sl (float): length of the device, in meters
+      - sh (float): height of the device, in meters
+  - have_config(uint8): If non-zero, the config data has been filled
+  - config of device:
+    - min_angle (float): start angle of scans, in radians
+    - max_angle (float): end angle of scans, in radians
+    - angular_res (float): scan resolution, in radians
+    - min_range (float): minimum range, in meters
+    - max_range (float): maximum range, in meters
+    - range_res (float): range resolution, in meters
+    - frequency (float): scanning frequency, in Hz
+
+- 1:3 (PLAYER_RANGER_DATA_INTNS) - An intensity scan.  The format is:
+  - intensities_count (uint): number of intensities
+  - list of intensities_count intensities:
+    - intensity (double)
+
+- 1:4 (PLAYER_RANGER_DATA_ITNSPOSE) - An intensity scan with an attached pose (estimated from the time of the scan). The format is:
+  - intensities_count (uint): number of intensities
+  - list of intensities_count intensities:
+    - intensity (double)
+  - have_geom (uint8): If non-zero, the geometry data has been filled
+  - geometry of device at the time of intensity data:
+    - pose of device:
+      - px (float): X coordinate of the pose, in meters
+      - py (float): Y coordinate of the pose, in meters
+      - pz (float): Z coordinate of the pose, in meters
+      - proll (float): roll coordinate of the pose, in radians
+      - ppitch (float): pitch coordinate of the pose, in radians
+      - pyaw (float): yaw coordinate of the pose, in radians
+    - size of device:
+      - sw (float): width of the device, in meters
+      - sl (float): length of the device, in meters
+      - sh (float): height of the device, in meters
+    - element_poses_count (uint): pose of each individual range sensor that makes up the device
+    - list of element_poses_count poses:
+      - px (float): X coordinate of the pose, in meters
+      - py (float): Y coordinate of the pose, in meters
+      - pz (float): Z coordinate of the pose, in meters
+      - proll (float): roll coordinate of the pose, in radians
+      - ppitch (float): pitch coordinate of the pose, in radians
+      - pyaw (float): yaw coordinate of the pose, in radians
+    - element_sizes_count (uint): size of each individual range sensor that makes up the device
+    - list of element_sizes_count sizes:
+      - sw (float): width of the device, in meters
+      - sl (float): length of the device, in meters
+      - sh (float): height of the device, in meters
+  - have_config(uint8): If non-zero, the config data has been filled
+  - config of device:
+
+- 4:1 (PLAYER_RANGER_REQ_GET_GEOM) - Ranger pose information. The format is:
+  - pose of device:
+    - px (float): X coordinate of the pose, in meters
+    - py (float): Y coordinate of the pose, in meters
+    - pz (float): Z coordinate of the pose, in meters
+    - proll (float): roll coordinate of the pose, in radians
+    - ppitch (float): pitch coordinate of the pose, in radians
+    - pyaw (float): yaw coordinate of the pose, in radians
+  - size of device:
+    - sw (float): width of the device, in meters
+    - sl (float): length of the device, in meters
+    - sh (float): height of the device, in meters
+  - element_poses_count (uint): pose of each individual range sensor that makes up the device
+  - list of element_poses_count poses:
+    - px (float): X coordinate of the pose, in meters
+    - py (float): Y coordinate of the pose, in meters
+    - pz (float): Z coordinate of the pose, in meters
+    - proll (float): roll coordinate of the pose, in radians
+    - ppitch (float): pitch coordinate of the pose, in radians
+    - pyaw (float): yaw coordinate of the pose, in radians
+  - element_sizes_count (uint): size of each individual range sensor that makes up the device
+  - list of element_sizes_count sizes:
+    - sw (float): width of the device, in meters
+    - sl (float): length of the device, in meters
+    - sh (float): height of the device, in meters
+*/
+int
+WriteLog::WriteRanger(player_msghdr_t* hdr, void *data)
+{
+  size_t i;
+  player_ranger_data_range_t* rscan;
+  player_ranger_data_rangestamped_t* rscanpose;
+  player_ranger_data_intns_t* iscan;
+  player_ranger_data_intnsstamped_t* iscanpose;
+  player_ranger_geom_t* geom;
+  player_ranger_config_t* config;
+
+  // Check the type
+  switch(hdr->type)
+  {
+    case PLAYER_MSGTYPE_DATA:
+      // Check the subtype
+      switch(hdr->subtype)
+      {
+        case PLAYER_RANGER_DATA_RANGE:
+          rscan = (player_ranger_data_range_t*)data;
+          // Note that, in this format, we need a lot of precision in the
+          // resolution field.
+
+          fprintf(this->file, "%04d ", rscan->ranges_count);
+
+          for (i = 0; i < rscan->ranges_count; i++)
+	    {
+	      fprintf(this->file, "%.3f ", rscan->ranges[i]);
+	    }
+          return(0);
+
+        case PLAYER_RANGER_DATA_RANGESTAMPED:
+          rscanpose = (player_ranger_data_rangestamped_t*)data;
+          // Note that, in this format, we need a lot of precision in the
+          // resolution field.
+
+          fprintf(this->file, "%04d ", rscanpose->data.ranges_count);
+
+          for (i = 0; i < rscanpose->data.ranges_count; i++)
+	    {
+	      fprintf(this->file, "%.3f ", rscanpose->data.ranges[i]);
+	    }
+
+          fprintf(this->file, "%d ", rscanpose->have_geom);
+
+	  if (rscanpose->have_geom) 
+	    {
+	      fprintf(this->file, "%+07.3f %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f ",
+		      rscanpose->geom.pose.px, rscanpose->geom.pose.py, rscanpose->geom.pose.pz,
+		      rscanpose->geom.pose.proll, rscanpose->geom.pose.ppitch, rscanpose->geom.pose.pyaw,
+		      rscanpose->geom.size.sw, rscanpose->geom.size.sl, rscanpose->geom.size.sh);
+	      
+	      fprintf(this->file, "%04d ", rscanpose->geom.element_poses_count);
+	  
+	      for (i = 0; i < rscanpose->geom.element_poses_count; i++)
+		{
+		  fprintf(this->file, "%+07.3f %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f ",
+			  rscanpose->geom.element_poses[i].px, rscanpose->geom.element_poses[i].py, rscanpose->geom.element_poses[i].pz,
+			  rscanpose->geom.element_poses[i].proll, rscanpose->geom.element_poses[i].ppitch, rscanpose->geom.element_poses[i].pyaw);
+		}
+
+	      fprintf(this->file, "%04d ", rscanpose->geom.element_sizes_count);
+	  
+	      for (i = 0; i < rscanpose->geom.element_sizes_count; i++)
+		{
+		  fprintf(this->file, "%+07.3f %+07.3f %+07.3f ",
+			  rscanpose->geom.element_sizes[i].sw, rscanpose->geom.element_sizes[i].sl, rscanpose->geom.element_sizes[i].sh);
+		}
+	    }
+	  
+	  if (rscanpose->have_config) 
+	    {
+	      fprintf(this->file, "%.4f %.4f %.4f %.4f %.4f %.4f %.4f ",
+		      rscanpose->config.min_angle, rscanpose->config.max_angle,
+		      rscanpose->config.angular_res, rscanpose->config.min_range,
+		      rscanpose->config.max_range, rscanpose->config.range_res,
+		      rscanpose->config.frequency);
+	    }
+	  
+          return(0);
+	  
+	  
+        case PLAYER_RANGER_DATA_INTNS:
+          iscan = (player_ranger_data_intns_t*)data;
+          // Note that, in this format, we need a lot of precision in the
+          // resolution field.
+
+          fprintf(this->file, "%04d ", iscan->intensities_count);
+
+          for (i = 0; i < iscan->intensities_count; i++)
+	    {
+	      fprintf(this->file, "%.3f ", iscan->intensities[i]);
+	    }
+          return(0);
+
+
+        case PLAYER_RANGER_DATA_INTNSSTAMPED:
+          iscanpose = (player_ranger_data_intnsstamped_t*)data;
+          // Note that, in this format, we need a lot of precision in the
+          // resolution field.
+
+          fprintf(this->file, "%04d ", iscanpose->data.intensities_count);
+
+          for (i = 0; i < iscanpose->data.intensities_count; i++)
+	    {
+	      fprintf(this->file, "%.3f ", iscanpose->data.intensities[i]);
+	    }
+
+          fprintf(this->file, "%d ", iscanpose->have_geom);
+
+	  if (iscanpose->have_geom) 
+	    {
+	      fprintf(this->file, "%+07.3f %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f ",
+		      iscanpose->geom.pose.px, iscanpose->geom.pose.py, iscanpose->geom.pose.pz,
+		      iscanpose->geom.pose.proll, iscanpose->geom.pose.ppitch, iscanpose->geom.pose.pyaw,
+		      iscanpose->geom.size.sw, iscanpose->geom.size.sl, iscanpose->geom.size.sh);
+	      
+	      fprintf(this->file, "%04d ", iscanpose->geom.element_poses_count);
+	  
+	      for (i = 0; i < iscanpose->geom.element_poses_count; i++)
+		{
+		  fprintf(this->file, "%+07.3f %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f ",
+			  iscanpose->geom.element_poses[i].px, iscanpose->geom.element_poses[i].py, iscanpose->geom.element_poses[i].pz,
+			  iscanpose->geom.element_poses[i].proll, iscanpose->geom.element_poses[i].ppitch, iscanpose->geom.element_poses[i].pyaw);
+		}
+
+	      fprintf(this->file, "%04d ", iscanpose->geom.element_sizes_count);
+	  
+	      for (i = 0; i < iscanpose->geom.element_sizes_count; i++)
+		{
+		  fprintf(this->file, "%+07.3f %+07.3f %+07.3f ",
+			  iscanpose->geom.element_sizes[i].sw, iscanpose->geom.element_sizes[i].sl, iscanpose->geom.element_sizes[i].sh);
+		}
+	    }
+
+	  if (iscanpose->have_config) 
+	    {
+	      fprintf(this->file, "%.4f %.4f %.4f %.4f %.4f %.4f %.4f ",
+		      iscanpose->config.min_angle, iscanpose->config.max_angle,
+		      iscanpose->config.angular_res, iscanpose->config.min_range,
+		      iscanpose->config.max_range, iscanpose->config.range_res,
+		      iscanpose->config.frequency);
+	    }
+
+          return(0);
+
+        default:
+          return(-1);
+      }
+    case PLAYER_MSGTYPE_RESP_ACK:
+      switch(hdr->subtype)
+      {
+        case PLAYER_RANGER_REQ_GET_GEOM:
+          geom = (player_ranger_geom_t*)data;
+          fprintf(this->file, "%+07.3f %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f ",
+                  geom->pose.px,
+                  geom->pose.py,
+                  geom->pose.pz,
+                  geom->pose.proll,
+                  geom->pose.ppitch,
+                  geom->pose.pyaw,
+                  geom->size.sw,
+		  geom->size.sl,
+                  geom->size.sh);
+
+	  fprintf(this->file, "%04d ", geom->element_poses_count);
+	  
+	  for (i = 0; i < geom->element_poses_count; i++)
+	    {
+	      fprintf(this->file, "%+07.3f %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f ",
+		      geom->element_poses[i].px, geom->element_poses[i].py, geom->element_poses[i].pz,
+		      geom->element_poses[i].proll, geom->element_poses[i].ppitch, geom->element_poses[i].pyaw);
+	    }
+	  
+	  fprintf(this->file, "%04d ", geom->element_sizes_count);
+	  
+	  for (i = 0; i < geom->element_sizes_count; i++)
+	    {
+	      fprintf(this->file, "%+07.3f %+07.3f %+07.3f ",
+		      geom->element_sizes[i].sw, geom->element_sizes[i].sl, geom->element_sizes[i].sh);
+	    }
+	  
+          return(0);
+
+        case PLAYER_RANGER_REQ_GET_CONFIG:
+          config = (player_ranger_config_t*)data;
+
+	  fprintf(this->file, "%lf %lf %lf %lf %lf %lf %lf ",
+		  config->min_angle, config->max_angle,
+		  config->angular_res, config->min_range,
+		  config->max_range, config->range_res,
+		  config->frequency);
+	  
+	  return(0);
+	  
+        default:
+          return(-1);
+      }
+    default:
+      return(-1);
+  }
+}
+
+
 /** @ingroup tutorial_datalog
  * @defgroup player_driver_writelog_localize localize format
 
-@brief laser log format
+@brief localize log format
 
-The following type:subtype laser messages can be logged:
+The following type:subtype localize messages can be logged:
 - 1:1 (PLAYER_LOCALIZE_DATA_HYPOTHS) - A set of pose hypotheses.  The format is:
   - pending_count (int): number of pending (unprocessed observations)
   - pending time (float): time stamp of the last observation processed
