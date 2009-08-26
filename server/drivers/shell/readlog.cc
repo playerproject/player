@@ -1909,7 +1909,9 @@ int ReadLog::ParseRanger(player_devaddr_t id,
             data.data.ranges = new double[ data.data.ranges_count ];
 	    
             count = 0;
-	    int loop_size=fmin(token_count, total_count+data.data.ranges_count);
+	    int loop_size = token_count;
+	    if (total_count + (int)data.data.ranges_count < loop_size)
+	      loop_size = total_count + (int)data.data.ranges_count;	    
             for (i = total_count; i < loop_size; i += 2)
             {
               data.data.ranges[count] = static_cast<double> (atof(tokens[i]));
@@ -1964,7 +1966,9 @@ int ReadLog::ParseRanger(player_devaddr_t id,
 		data.geom.element_poses = new player_pose3d_t [ data.geom.element_poses_count ];
 
 		count = 0;
-		loop_size=fmin(token_count, total_count+data.geom.element_poses_count*6);
+		loop_size = token_count;
+		if (total_count + (int)data.geom.element_poses_count*6 < loop_size)
+		  loop_size = total_count + (int)data.geom.element_poses_count*6;
 		for (i = total_count; i < loop_size; i += 6)
 		  {
 		    data.geom.element_poses[count].px = static_cast<double> (atof(tokens[i]));
@@ -1998,7 +2002,9 @@ int ReadLog::ParseRanger(player_devaddr_t id,
 		data.geom.element_sizes = new player_bbox3d_t [ data.geom.element_sizes_count ];
 
 		count = 0;
-		loop_size=fmin(token_count, total_count+data.geom.element_sizes_count*3);
+		loop_size = token_count;
+		if (total_count + (int)data.geom.element_sizes_count*3 < loop_size)
+		  loop_size = total_count + (int)data.geom.element_sizes_count*3;
 		for (i = total_count; i < loop_size; i += 3)
 		  {
 		    data.geom.element_sizes[count].sw = static_cast<double> (atof(tokens[i]));
@@ -2135,7 +2141,9 @@ int ReadLog::ParseRanger(player_devaddr_t id,
             data.data.intensities = new double[ data.data.intensities_count ];
 	    
             count = 0;
-	    int loop_size=fmin(token_count, total_count+data.data.intensities_count);
+	    int loop_size = token_count;
+	    if (total_count + (int)data.data.intensities_count < loop_size)
+	      loop_size = total_count + (int)data.data.intensities_count;
             for (i = total_count; i < loop_size; i += 2)
             {
               data.data.intensities[count] = static_cast<double> (atof(tokens[i]));
@@ -2190,7 +2198,9 @@ int ReadLog::ParseRanger(player_devaddr_t id,
 		data.geom.element_poses = new player_pose3d_t [ data.geom.element_poses_count ];
 
 		count = 0;
-		loop_size=fmin(token_count, total_count+data.geom.element_poses_count*6);
+		loop_size=token_count;
+		if (total_count + (int)data.geom.element_poses_count*6 < loop_size)
+		  loop_size = total_count + (int)data.geom.element_poses_count*6;
 		for (i = total_count; i < loop_size; i += 6)
 		  {
 		    data.geom.element_poses[count].px = static_cast<double> (atof(tokens[i]));
@@ -2224,7 +2234,9 @@ int ReadLog::ParseRanger(player_devaddr_t id,
 		data.geom.element_sizes = new player_bbox3d_t [ data.geom.element_sizes_count ];
 
 		count = 0;
-		loop_size=fmin(token_count, total_count+data.geom.element_sizes_count*3);
+		loop_size=token_count;
+		if (total_count + (int)data.geom.element_sizes_count*3 < loop_size)
+		  loop_size = total_count + (int)data.geom.element_sizes_count*3;
 		for (i = total_count; i < loop_size; i += 3)
 		  {
 		    data.geom.element_sizes[count].sw = static_cast<double> (atof(tokens[i]));
