@@ -75,10 +75,11 @@ driver
 
 #include <string.h>
 #include <stdlib.h>
+#ifndef WIN32
 #include <unistd.h>
+#endif
 #include <stddef.h>
 #include <stdlib.h>       // for atoi(3)
-#include <netinet/in.h>   // for htons(3)
 #include <math.h>
 
 #include <libplayercore/playercore.h>
@@ -306,7 +307,11 @@ void CameraCompress::ProcessImage(player_camera_data_t & rawdata)
 
   if (this->save)
   {
+#ifdef WIN32
+    _snprintf(filename, sizeof(filename), "click-%04d.jpeg",this->frameno++);
+#else
     snprintf(filename, sizeof(filename), "click-%04d.jpeg",this->frameno++);
+#endif
     FILE *fp = fopen(filename, "w+");
     int ret = fwrite(this->data.image, 1, this->data.image_count, fp);
     if (ret < 0)

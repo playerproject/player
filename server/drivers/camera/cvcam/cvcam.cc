@@ -87,8 +87,8 @@ driver
 #include <pthread.h>
 #include <libplayercore/playercore.h>
 
-#include <opencv/cv.h>
-#include <opencv/highgui.h>
+#include <cv.h>
+#include <highgui.h>
 
 //---------------------------------
 

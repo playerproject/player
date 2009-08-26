@@ -87,16 +87,18 @@ driver
 
 #include <string.h>
 #include <stdlib.h>
+#include <stddef.h>
+#ifndef WIN32
 #include <unistd.h>
+#endif
+#include <time.h>         // for nanosleep() and struct timespec
 #include <stdlib.h>       // for atoi(3)
-#include <netinet/in.h>   // for htons(3)
 #include <math.h>
 
-#include <opencv/cv.h>
-#include <opencv/highgui.h>
+#include <cv.h>
+#include <highgui.h>
 
 #include <libplayercore/playercore.h>
-
 
 class ImageSeq : public ThreadedDriver
 {
@@ -175,7 +177,11 @@ void ImageSeq::Main()
     pthread_testcancel();
 
     // Compose filename
+#ifdef WIN32
+    _snprintf(filename, sizeof(filename), this->pattern, this->frame);
+#else
     snprintf(filename, sizeof(filename), this->pattern, this->frame);
+#endif
 
     // Load the image
     if (this->LoadImage(filename) != 0)

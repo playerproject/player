@@ -50,8 +50,8 @@ the Player 2.0 API.
 #include <libplayercore/playercore.h>
 #include <base/imagebase.h>
 
-#include <opencv/cv.h>
-//#include <opencv/highgui.h>
+#include <cv.h>
+//#include <highgui.h>
 
 #define winName "ShapeTracker"
 
