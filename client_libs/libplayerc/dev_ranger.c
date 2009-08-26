@@ -276,6 +276,7 @@ void playerc_ranger_copy_config(playerc_ranger_t *device, player_ranger_config_t
   device->min_angle = config->min_angle;
   device->max_angle = config->max_angle;
   device->angular_res = config->angular_res;
+  device->min_range = config->min_range;
   device->max_range = config->max_range;
   device->range_res = config->range_res;
   device->frequency = config->frequency;

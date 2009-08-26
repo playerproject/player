@@ -221,10 +221,13 @@ void ranger_draw(ranger_t *ranger)
       // Assume the range is straight ahead (ignore min_angle and angular_res properties)
       points[0][0] = 0.0f;
       points[0][1] = 0.0f;
-      points[1][0] = ranger->proxy->ranges[ii] * cos(-temp);
-      points[1][1] = ranger->proxy->ranges[ii] * sin(-temp);
-      points[2][0] = ranger->proxy->ranges[ii] * cos(temp);
-      points[2][1] = ranger->proxy->ranges[ii] * sin(temp);
+      double range = ranger->proxy->ranges[ii];
+      if (range < ranger->proxy->min_range)
+        range = ranger->proxy->max_range;
+      points[1][0] = range * cos(-temp);
+      points[1][1] = range * sin(-temp);
+      points[2][0] = range * cos(temp);
+      points[2][1] = range * sin(temp);
       rtk_fig_polygon(ranger->scan_fig[ii], 0, 0, 0, 3, points, 1);
 
       // Draw the sensor itself
@@ -249,27 +252,37 @@ void ranger_draw(ranger_t *ranger)
       // Draw empty space
       points[0][0] = 0.0;
       points[0][1] = 0.0;
+      double b = ranger->proxy->min_angle;
       for (ii = 0; ii < ranger->proxy->ranges_count; ii++)
       {
-        points[ii + 1][0] = ranger->proxy->points[ii].px;
-        points[ii + 1][1] = ranger->proxy->points[ii].py;
+        double range = ranger->proxy->ranges[ii];
+        if (range < ranger->proxy->min_range) {
+          points[ii + 1][0] = ranger->proxy->max_range * cos(b);
+          points[ii + 1][1] = ranger->proxy->max_range * sin(b);
+        }
+        else {
+          points[ii + 1][0] = ranger->proxy->points[ii].px;
+          points[ii + 1][1] = ranger->proxy->points[ii].py;
+        }
+        b += ranger->proxy->angular_res;
       }
       rtk_fig_color_rgb32(ranger->scan_fig[0], COLOR_LASER_EMP);
       rtk_fig_polygon(ranger->scan_fig[0], 0, 0, 0,
                       ranger->proxy->ranges_count + 1, points, 1);
-      free(points);
-      points = NULL;
 
       // Draw occupied space
       rtk_fig_color_rgb32(ranger->scan_fig[0], COLOR_LASER_OCC);
       for (ii = 1; ii < ranger->proxy->ranges_count; ii++)
       {
-        point1[0] = ranger->proxy->points[ii - 1].px;
-        point1[1] = ranger->proxy->points[ii - 1].py;
-        point2[0] = ranger->proxy->points[ii].px;
-        point2[1] = ranger->proxy->points[ii].py;
+        point1[0] = points[ii][0];
+        point1[1] = points[ii][1];
+        point2[0] = points[ii+1][0];
+        point2[1] = points[ii+1][1];
         rtk_fig_line(ranger->scan_fig[0], point1[0], point1[1], point2[0], point2[1]);
       }
+      free(points);
+      points = NULL;
+
     }
     else
     {
@@ -278,13 +291,31 @@ void ranger_draw(ranger_t *ranger)
 
       rtk_fig_color_rgb32(ranger->scan_fig[0], COLOR_LASER_OCC);
       // Get the first point
-      point1[0] = ranger->proxy->points[0].px;
-      point1[1] = ranger->proxy->points[0].py;
+
+      double b = ranger->proxy->min_angle;
+
+      double range = ranger->proxy->ranges[0];
+      if (range < ranger->proxy->min_range) {
+        point1[0] = ranger->proxy->max_range * cos(b);
+        point1[1] = ranger->proxy->max_range * sin(b);
+      }
+      else {
+        point1[0] = ranger->proxy->points[0].px;
+        point1[1] = ranger->proxy->points[0].py;
+      }
       // Loop over the rest of the ranges
       for (ii = 1; ii < ranger->proxy->ranges_count; ii++)
       {
-        point2[0] = ranger->proxy->points[ii].px;
-        point2[1] = ranger->proxy->points[ii].py;
+        b += ranger->proxy->angular_res;
+        range = ranger->proxy->ranges[ii];
+        if (range < ranger->proxy->min_range) {
+          point2[0] = ranger->proxy->max_range * cos(b);
+          point2[1] = ranger->proxy->max_range * sin(b);
+        }
+        else {
+          point2[0] = ranger->proxy->points[ii].px;
+          point2[1] = ranger->proxy->points[ii].py;
+        }
         // Draw a line from point 1 (previous point) to point 2 (current point)
         rtk_fig_line(ranger->scan_fig[0], point1[0], point1[1], point2[0], point2[1]);
         point1[0] = point2[0];
@@ -295,16 +326,25 @@ void ranger_draw(ranger_t *ranger)
     if (rtk_menuitem_ischecked(ranger->intns_item))
     {
       // Draw an intensity scan
+      double b = ranger->proxy->min_angle;
       if (ranger->proxy->intensities_count > 0)
       {
         for (ii = 0; ii < ranger->proxy->intensities_count; ii++)
         {
           if (ranger->proxy->intensities[ii] != 0)
           {
-            point1[0] = ranger->proxy->points[ii].px;
-            point1[1] = ranger->proxy->points[ii].py;
+            double range = ranger->proxy->ranges[ii];
+            if (range < ranger->proxy->min_range) {
+              point1[0] = ranger->proxy->max_range * cos(b);
+              point1[1] = ranger->proxy->max_range * sin(b);
+            }
+            else {
+              point1[0] = ranger->proxy->points[ii].px;
+              point1[1] = ranger->proxy->points[ii].py;
+            }
             rtk_fig_rectangle(ranger->scan_fig[0], point1[0], point1[1], 0, 0.05, 0.05, 1);
           }
+          b += ranger->proxy->angular_res;
         }
       }
     }
