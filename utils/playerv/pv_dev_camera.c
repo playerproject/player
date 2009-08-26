@@ -51,6 +51,7 @@ camera_t *camera_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client
   camera->datatime = 0;
   camera->drivername = strdup(drivername);
   camera->proxy = playerc_camera_create(client, index);
+  camera->img_buffer = NULL;
 
   // Construct the menu
   snprintf(label, sizeof(label), "camera:%d (%s)", index, camera->drivername);
@@ -95,6 +96,7 @@ void camera_destroy(camera_t *camera)
   playerc_camera_destroy(camera->proxy);
 
   free(camera->drivername);
+  free(camera->img_buffer);
   free(camera);
 }
 
