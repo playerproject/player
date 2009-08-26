@@ -38,7 +38,7 @@ extern "C"
 
 #include <stdio.h>
 #include <math.h>
-#include <opencv/cv.h>
+#include <cv.h>
 
 
 //Estimate the length between two points (cvpoint)

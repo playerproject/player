@@ -108,8 +108,8 @@ driver
 
 #include "../../base/imagebase.h"
 
-#include <opencv/cv.h>
-#include <opencv/highgui.h>
+#include <cv.h>
+#include <highgui.h>
 
 // Info on potential blobs.
 struct blob_t

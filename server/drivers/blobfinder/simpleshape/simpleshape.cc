@@ -106,8 +106,8 @@ driver
 #include <string.h>
 #include "../../base/imagebase.h"
 
-#include <opencv/cv.h>
-#include <opencv/highgui.h>
+#include <cv.h>
+#include <highgui.h>
 
 // Invariant feature set for a contour
 class FeatureSet
