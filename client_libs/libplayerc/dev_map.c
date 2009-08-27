@@ -99,7 +99,7 @@ int playerc_map_unsubscribe(playerc_map_t *device)
 int playerc_map_get_map(playerc_map_t* device)
 {
   player_map_info_t *info_req;
-  player_map_data_t *data_req, *data_resp;
+  player_map_data_t *data_req, *data_resp = NULL;
 
   int i,j;
   int oi,oj;
