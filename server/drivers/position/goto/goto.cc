@@ -117,7 +117,7 @@ driver
 #define AVMAX 45.0
 #define MAXD 2.0
 #define TVMIN 0.1
-#define TVMAX 3 
+#define TVMAX 0.7
 
 #ifndef M_PI
 #define M_PI        3.14159265358979323846
