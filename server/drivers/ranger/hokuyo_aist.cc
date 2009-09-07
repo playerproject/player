@@ -305,7 +305,11 @@ int HokuyoDriver::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, 
 			}
 			catch (hokuyo_aist::HokuyoError &e)
 			{
+#if defined (WIN32)
+				if (e.Code () != HOKUYO_ERR_NOTSERIAL)
+#else
 				if (e.Code () != hokuyo_aist::HOKUYO_ERR_NOTSERIAL)
+#endif
 				{
 					PLAYER_ERROR2 ("hokuyo_aist: Error while changing baud rate: (%d) %s",
 							e.Code (), e.what ());
@@ -635,7 +639,11 @@ int HokuyoDriver::MainSetup (void)
 		}
 		catch (hokuyo_aist::HokuyoError &e)
 		{
-			if (e.Code () == hokuyo_aist::HOKUYO_ERR_NOTSERIAL)
+#if defined (WIN32)
+			if (e.Code () != HOKUYO_ERR_NOTSERIAL)
+#else
+			if (e.Code () != hokuyo_aist::HOKUYO_ERR_NOTSERIAL)
+#endif
 				PLAYER_WARN ("hokuyo_aist: Cannot change the baud rate of a non-serial connection.");
 			else
 				PLAYER_WARN2 ("hokuyo_aist: Error changing baud rate: (%d) %s", e.Code (), e.what ());
