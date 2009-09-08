@@ -54,11 +54,13 @@
 #include <errno.h>
 #include <signal.h>
 #include <assert.h>
+#include <stddef.h>
 #if defined WIN32
   // For Sleep()
   #include <windows.h>
 #else
   #include <unistd.h>
+  #include <time.h>
   #include <netinet/in.h>
 #endif
 
@@ -104,7 +106,10 @@ ThreadedDriver::~ThreadedDriver()
 #if defined WIN32
 		Sleep (100);
 #else
-		usleep(100000);
+		struct timespec ts;
+		ts.tv_sec = 0;
+		ts.tv_nsec = 100000000;
+		nanosleep(&ts, NULL);
 #endif
 	}
 
@@ -254,7 +259,10 @@ int ThreadedDriver::Terminate()
 #if defined (WIN32)
 		Sleep (100);
 #else
-		usleep(100000);
+		struct timespec ts;
+		ts.tv_sec = 0;
+		ts.tv_nsec = 100000000;
+		nanosleep(&ts, NULL);
 #endif
 	}
 	return ret;
