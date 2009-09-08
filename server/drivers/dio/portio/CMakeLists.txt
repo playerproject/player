@@ -1,0 +1,8 @@
+PLAYERDRIVER_OPTION (portio build_portio ON)
+PLAYERDRIVER_REJECT_OS (portio build_portio PLAYER_OS_WIN)
+IF (PLAYER_OS_QNX)
+    PLAYERDRIVER_REQUIRE_HEADER (portio build_portio hw/inout.h)
+ELSE (PLAYER_OS_QNX)
+    PLAYERDRIVER_REQUIRE_HEADER (portio build_portio sys/io.h)
+ENDIF (PLAYER_OS_QNX)
+PLAYERDRIVER_ADD_DRIVER (portio build_portio SOURCES portio.cc)
