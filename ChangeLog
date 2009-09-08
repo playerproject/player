@@ -1,3 +1,9 @@
+3.0.0 (2009-09-08)
+ - Stop building the C++ bindings if the C++ lib isn't being built
+ - Fixed dependencies of Python and Ruby bindings
+ - Expanded Ruby bindings
+ - New configuration options for the goto driver (min, max velocity and angular velocity)
+
 3.0.0-rc3 (2009-08-16)
  - Fix hang on unsubscribe with dummy driver
  - Fix for out of sync data for clients in PULL mode
