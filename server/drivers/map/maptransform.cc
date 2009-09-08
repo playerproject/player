@@ -226,6 +226,7 @@ int MapTransform::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, 
     PLAYER_MSG4(9,"Block Requested is: %d,%d + %d,%d",oi,oj,si,sj);
     resp_data.data_count = map_data.width * map_data.height;
     resp_data.data = new int8_t [resp_data.data_count];
+    resp_data.data_range = map_data.data_range;
 
     // Grab the pixels from the map
     for(j = 0; j < sj; j++)

@@ -180,6 +180,7 @@ AMCLLaser::SetupMap(void)
   this->map->scale = info->scale;
   this->map->size_x = info->width;
   this->map->size_y = info->height;
+  this->map->data_range = 1;
 
   delete msg;
 

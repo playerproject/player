@@ -2352,9 +2352,12 @@ typedef struct
   /** Map origin, in meters (i.e., the real-world coordinates of cell 0,0)*/
   double origin[2];
 
-  /** Occupancy for each cell (empty = -1, unknown = 0, occupied = +1) */
-  char* cells;
+  /** Value for each cell (-range <= EMPTY < 0, unknown = 0, 0 < OCCUPIED <= range) */
+  int8_t data_range;
 
+  /** Occupancy for each cell */
+  char* cells;
+ 
   /** Vector-based version of the map (call playerc_map_get_vector() to
    * fill this in). */
   double vminx, vminy, vmaxx, vmaxy;

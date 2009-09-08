@@ -184,6 +184,8 @@ int playerc_map_get_map(playerc_map_t* device)
     }
 #endif
 
+    device->data_range = data_resp->data_range;
+
     // copy the map data
     for(j=0;j<sj;j++)
     {

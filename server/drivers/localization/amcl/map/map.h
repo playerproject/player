@@ -77,6 +77,8 @@ typedef struct
   // Map dimensions (number of cells)
   int size_x, size_y;
   
+  int8_t data_range;
+
   // The map data, stored as a grid
   map_cell_t *cells;
   

@@ -61,7 +61,9 @@ typedef struct player_map_data
   uint32_t height;
   /** The number of cells */
   uint32_t data_count;
-  /** Cell occupancy value (empty = -1, unknown = 0, occupied = +1). */
+  /** Maximum value for each cell (-range <= EMPTY < 0, unknown = 0, 0 < OCCUPIED <= range) */
+  int8_t data_range;  
+  /** Cell occupancy value */
   int8_t *data;
 } player_map_data_t;
 
