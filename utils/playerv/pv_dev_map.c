@@ -145,13 +145,13 @@ void map_draw(map_t *map)
   rtk_fig_clear(map->fig);
 
   puts( "map draw" );
-
-  rtk_fig_color_rgb32(map->fig, 0xFF0000 );
-  rtk_fig_rectangle(map->fig,
-		    0,0,0,
-		    map->proxy->width * scale,
-		    map->proxy->height * scale,
-		    0 );
+  
+  rtk_fig_color(map->fig, 0.5, 0.5, 0.5 ); 
+  rtk_fig_rectangle(map->fig, 
+ 		    0,0,0, 
+ 		    map->proxy->width * scale, 
+ 		    map->proxy->height * scale, 
+ 		    1 ); 
 
   // TODO - combine contiguous cells to minimize the number of
   // rectangles we have to draw - performance is pretty nasty right
@@ -160,36 +160,18 @@ void map_draw(map_t *map)
   for( x=0; x<map->proxy->width; x++ )
     for( y=0; y<map->proxy->height; y++ )
       {
-	switch( map->proxy->cells[ x + y * map->proxy->width ] )
-	  {
-	  case -1:
-	    // empty: draw nothing
-	    break;
-
-	  case 0:
-	    // unknown: draw grey square
-	    rtk_fig_color_rgb32(map->fig, 0x808080 );
-	    rtk_fig_rectangle(map->fig,
-			      (x - map->proxy->width/2.0) * scale + scale/2.0,
-			      (y - map->proxy->height/2.0) * scale + scale/2.0,
-			      0,
-			      scale, scale, 1);
-	    break;
-
-	  case +1:
-	    // occupied: draw black square
-	    rtk_fig_color_rgb32(map->fig, 0x0 );
-	    rtk_fig_rectangle(map->fig,
-			      (x - map->proxy->width/2.0) * scale + scale/2.0,
-			      (y - map->proxy->height/2.0) * scale + scale/2.0,
-			      0,
-			      scale, scale, 1);
-	    break;
-
-	  default:
-	    puts( "Warning: invalid occupancy value." );
-	    break;
-	  }
+	int8_t val = map->proxy->cells[ x + y * map->proxy->width ];
+	if (val == 0)
+	  continue;
+	double color = (double)val/map->proxy->data_range; // scale to[-1,1]
+	color *= -1; //flip sign for coloring occupied to black
+	color = (color+1)/2.0; // scale to [0,1]
+	rtk_fig_color(map->fig, color, color, color );
+	rtk_fig_rectangle(map->fig,
+			  (x - map->proxy->width/2.0) * scale + scale/2.0,
+			  (y - map->proxy->height/2.0) * scale + scale/2.0,
+			  0,
+			  scale, scale, 1);
       }
 
   return;

@@ -1457,7 +1457,10 @@ class PLAYERCC_EXPORT MapProxy : public ClientProxy
     double GetOriginX() const { return GetVar(mDevice->origin[0]); };
     double GetOriginY() const { return GetVar(mDevice->origin[1]); };
 
-    /// Occupancy for each cell (empty = -1, unknown = 0, occupied = +1)
+    /// Range of grid data (default: empty = -1, unknown = 0, occupied = +1)
+    int8_t GetDataRange() const { return GetVar(mDevice->data_range); };
+
+    /// Occupancy for each cell 
     void GetMap(int8_t* aMap) const
     {
       return GetVarByRef(reinterpret_cast<int8_t*>(mDevice->cells),

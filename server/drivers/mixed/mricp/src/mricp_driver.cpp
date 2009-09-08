@@ -1023,6 +1023,7 @@ int MrIcp::ProcessMapDataReq(QueuePointer& resp_queue,player_msghdr * hdr,void *
 	    	}
 	  }
        	mapresp.data_count = mapresp.width * mapresp.height;
+	mapresp.data_range = 1;
     	cout<<"\n	--->>> Columns="<<oi<<" Rows="<<oj<<" width="<<si<<" height="<<sj;
        	this->Publish(this->device_addr, resp_queue,PLAYER_MSGTYPE_RESP_ACK,PLAYER_MAP_REQ_GET_DATA,(void*)(&mapresp), sizeof(mapresp), NULL);
 		free(mapresp.data);

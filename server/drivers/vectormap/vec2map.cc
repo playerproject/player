@@ -555,6 +555,7 @@ int Vec2Map::ProcessMessage(QueuePointer & resp_queue,
       }
       for (ii = 0; ii < (map_data_request.height); ii++) memcpy(map_data.data + (ii * (map_data_request.width)), cells + (ii * width) + map_data_request.col, map_data_request.width);
     }
+    map_data.data_range=1;
 
     this->Publish(this->map_addr,
                   resp_queue,

@@ -256,6 +256,7 @@ MapFile::Setup()
         occ = color_avg / 255.0;
       else
         occ = (255 - color_avg) / 255.0;
+
       if(occ > 0.95)
         this->mapdata[MAP_IDX(this,i,this->size_y - j - 1)] = +1;
       else if(occ < 0.1)
@@ -336,6 +337,7 @@ int MapFile::ProcessMessage(QueuePointer & resp_queue,
     sj = mapresp->height = mapreq->height;
     mapresp->data_count = mapresp->width * mapresp->height;
     mapresp->data = new int8_t [mapresp->data_count];
+    mapresp->data_range = 1;
     // Grab the pixels from the map
     for(j = 0; j < sj; j++)
     {

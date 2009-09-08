@@ -215,6 +215,8 @@ AMCLFiducial::SetupMap(void)
   this->map->size_x = ntohl(info.width);
   this->map->size_y = ntohl(info.height);
 
+  this->map->data_range = 1;
+
   // allocate space for map cells
   assert(this->map->cells = (map_cell_t*)malloc(sizeof(map_cell_t) *
                                                 this->map->size_x *
