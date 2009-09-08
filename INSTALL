@@ -105,4 +105,5 @@ CMAKE_INSTALL_PREFIX - The directory to install Player into.
 Player specific
 ---------------
 
-Coming soon to an INSTALL file near you.
+Run ccmake. Each option is documented.
+
