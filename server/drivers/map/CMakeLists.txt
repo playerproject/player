@@ -19,3 +19,7 @@ PLAYERDRIVER_ADD_DRIVER (mapscale build_mapscale
 
 PLAYERDRIVER_OPTION (vmapfile build_vmapfile ON)
 PLAYERDRIVER_ADD_DRIVER (vmapfile build_vmapfile SOURCES vmapfile.cc)
+
+PLAYERDRIVER_OPTION (gridmap build_gridmap ON)
+PLAYERDRIVER_ADD_DRIVER (gridmap build_gridmap SOURCES gridmap.cc)
+
