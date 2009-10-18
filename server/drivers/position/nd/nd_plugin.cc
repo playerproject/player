@@ -389,6 +389,7 @@ ND::ND( ConfigFile* cf, int section)
     this->SetError(-1);
     return;
   }
+  this->dir = 1;
 
   return;
 }
