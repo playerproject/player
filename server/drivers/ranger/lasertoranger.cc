@@ -57,7 +57,17 @@ the @ref interface_ranger interface.
 
 @par Configuration file options
 
- - None
+- buggy_geom (integer)
+  - Default: 0
+  - If set to 1, the pz, proll and ppitch fields will be set to 0.0
+  - This option is added to provide compatibility with old buggy laser drivers
+     that do not clean unused geometry structure fields
+
+- force_config (float tuple)
+  - Default: not set
+  - If set, it will override configuration values obtained from buggy laser drivers
+  - values: [min_angle max_angle angular_res max_range range_res]
+  - units: [deg deg deg m m]
 
 @par Example
 
@@ -114,6 +124,13 @@ class LaserToRanger : public ToRanger
 
 		uint8_t lastReqType;				// Last request type on the ranger interface
 		bool startupComplete;				// True once this driver is ready to go
+		int buggy_geom;
+		int force_config;
+		float force_min_angle;
+		float force_max_angle;
+		float force_angular_res;
+		float force_max_range;
+		float force_range_res;
 };
 
 // Initialisation function
@@ -140,7 +157,26 @@ LaserToRanger::LaserToRanger( ConfigFile* cf, int section)
 	// Need a laser device as input
 	if (cf->ReadDeviceAddr(&inputDeviceAddr, section, "requires", PLAYER_LASER_CODE, -1, NULL) != 0)
 	{
-		SetError (-1);
+		this->SetError(-1);
+		return;
+	}
+	this->buggy_geom = cf->ReadInt(section, "buggy_geom", 0);
+	this->force_config = 0;
+	switch (cf->GetTupleCount(section, "force_config"))
+	{
+	case 0:
+		break;
+	case 5:
+		this->force_config = !0;
+		this->force_min_angle = cf->ReadTupleAngle(section, "force_config", 0, 0.0);
+		this->force_max_angle = cf->ReadTupleAngle(section, "force_config", 1, 0.0);
+		this->force_angular_res = cf->ReadTupleAngle(section, "force_config", 2, 0.0);
+		this->force_max_range = cf->ReadTupleFloat(section, "force_config", 3, 0.0);
+		this->force_range_res = cf->ReadTupleFloat(section, "force_config", 4, 0.0);
+		break;
+	default:
+		PLAYER_ERROR("Invalid number of forced settings");
+		this->SetError(-1);
 		return;
 	}
 }
@@ -240,10 +276,19 @@ int LaserToRanger::ConvertData (player_msghdr *hdr, void *data)
 	if (data != NULL)
 	{
 		// Update the properties from the data
-		laserConfig.min_angle = scanData->min_angle;
-		laserConfig.max_angle = scanData->max_angle;
-		laserConfig.resolution = scanData->resolution;
-		laserConfig.max_range = scanData->max_range;
+		if (this->force_config)
+		{
+			laserConfig.min_angle = this->force_min_angle;
+			laserConfig.max_angle = this->force_max_angle;
+			laserConfig.resolution = this->force_angular_res;
+			laserConfig.max_range = this->force_max_range;
+		} else
+		{
+			laserConfig.min_angle = scanData->min_angle;
+			laserConfig.max_angle = scanData->max_angle;
+			laserConfig.resolution = scanData->resolution;
+			laserConfig.max_range = scanData->max_range;
+		}
 
 		// Copy out the range data
 		if (scanData->ranges_count > 0)
@@ -306,6 +351,12 @@ bool LaserToRanger::HandleGeomRequest (player_laser_geom_t *data)
 	deviceGeom.size.sw = data->size.sw;
 	deviceGeom.size.sl = data->size.sl;
 	deviceGeom.size.sh = data->size.sh;
+	if (this->buggy_geom)
+	{
+		deviceGeom.pose.pz = 0.0;
+		deviceGeom.pose.proll = 0.0;
+		deviceGeom.pose.ppitch = 0.0;
+	}
 
 	*(deviceGeom.element_poses) = deviceGeom.pose;
 	*(deviceGeom.element_sizes) = deviceGeom.size;
@@ -318,11 +369,21 @@ void LaserToRanger::HandleConfigResp (player_ranger_config_t *dest, player_laser
 	// Save a copy of the laser config, we need it to set intensity and/or config later
 	memcpy (&laserConfig, data, sizeof (player_laser_config_t));
 	// Copy it into the destination
-	dest->min_angle = data->min_angle;
-	dest->max_angle = data->max_angle;
-	dest->angular_res = data->resolution;
-	dest->max_range = data->max_range;
-	dest->range_res = data->range_res;
+	if (this->force_config)
+	{
+		dest->min_angle = this->force_min_angle;
+		dest->max_angle = this->force_max_angle;
+		dest->angular_res = this->force_angular_res;
+		dest->max_range = this->force_max_range;
+		dest->range_res = this->force_range_res;
+	} else
+	{
+		dest->min_angle = data->min_angle;
+		dest->max_angle = data->max_angle;
+		dest->angular_res = data->resolution;
+		dest->max_range = data->max_range;
+		dest->range_res = data->range_res;
+	}
 	dest->frequency = data->scanning_frequency;
 }
 

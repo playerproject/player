@@ -38,6 +38,9 @@
 ToRanger::ToRanger (ConfigFile* cf, int section)
 	: Driver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_RANGER_CODE)
 {
+	memset (&deviceGeom, 0, sizeof (deviceGeom));
+	deviceGeom.element_poses = NULL;
+	deviceGeom.element_sizes = NULL;
 	inputDevice = NULL;
 }
 
@@ -56,6 +59,8 @@ int ToRanger::Setup (void)
 {
 	// Clean output
 	memset (&deviceGeom, 0, sizeof (deviceGeom));
+	deviceGeom.element_poses = NULL;
+	deviceGeom.element_sizes = NULL;
 
 	return 0;
 }
