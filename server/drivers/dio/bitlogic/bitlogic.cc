@@ -172,7 +172,7 @@ Bitlogic::Bitlogic(ConfigFile * cf, int section) : Driver(cf, section, true, PLA
   this->init_count = strlen(_init_bits);
   if ((!((this->init_count) > 0)) || ((this->init_count) > 32))
   {
-    PLAYER_ERROR("invalit length of init_bits string");
+    PLAYER_ERROR("invalid length of init_bits string");
     this->SetError(-1);
     return;
   }
@@ -189,7 +189,7 @@ Bitlogic::Bitlogic(ConfigFile * cf, int section) : Driver(cf, section, true, PLA
       ((this->init_bits) |= 1);
       break;
     default:
-      PLAYER_ERROR("invalud init_bits string");
+      PLAYER_ERROR("invalid init_bits string");
       this->SetError(-1);
       return;
     }
