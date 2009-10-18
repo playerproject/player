@@ -427,7 +427,7 @@ private:
 	IntProperty MinFocus, MaxFocus, Focus;
 	IntProperty MinIris, MaxIris, Iris;
 	IntProperty Brightness, Exposure, Shutter, Gain;
-        StringProperty WhiteBalance;
+	StringProperty WhiteBalance;
 	/*  private: bool setFocus, setIris, setBrightness, setExposure, setWhiteBalance, setShutter, setGain;
 	 private: bool autoFocus, autoIris, autoBrightness, autoExposure, autoShutter, autoGain;
 	 private: unsigned int focus, iris, brightness, exposure, redBalance, blueBalance, shutter, gain;
@@ -455,20 +455,20 @@ const int PROPERTY_AUTO = -1;
 Camera1394::Camera1394(ConfigFile* cf, int section) :
 	ThreadedDriver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
 			PLAYER_CAMERA_CODE),
-			MinZoom("min_zoom", PROPERTY_NOT_SET, true, this, cf, section),
-			MaxZoom("max_zoom", PROPERTY_NOT_SET, true, this, cf, section),
-			Zoom("zoom", PROPERTY_NOT_SET, false, this, cf, section),
-			MinFocus("min_focus", PROPERTY_NOT_SET, true, this, cf, section),
-			MaxFocus("max_focus", PROPERTY_NOT_SET, true, this, cf, section),
-			Focus("focus", PROPERTY_NOT_SET, false, this, cf, section),
-			MinIris("min_iris", PROPERTY_NOT_SET, true, this, cf, section),
-			MaxIris("max_iris", PROPERTY_NOT_SET, true, this, cf, section),
-			Iris("iris", PROPERTY_NOT_SET, false, this, cf, section),
-			Brightness("brightness", PROPERTY_NOT_SET, false, this, cf, section),
-			Exposure("exposure", PROPERTY_NOT_SET, false, this, cf, section), 
-	                Shutter("shutter", PROPERTY_NOT_SET, false, this, cf, section), 
-                        Gain("gain", PROPERTY_NOT_SET, false, this, cf, section), 
-                        WhiteBalance("whitebalance", "None", false, this, cf, section)
+	MinZoom("min_zoom", PROPERTY_NOT_SET, true, this, cf, section),
+	MaxZoom("max_zoom", PROPERTY_NOT_SET, true, this, cf, section),
+	Zoom("zoom", PROPERTY_NOT_SET, false, this, cf, section),
+	MinFocus("min_focus", PROPERTY_NOT_SET, true, this, cf, section),
+	MaxFocus("max_focus", PROPERTY_NOT_SET, true, this, cf, section),
+	Focus("focus", PROPERTY_NOT_SET, false, this, cf, section),
+	MinIris("min_iris", PROPERTY_NOT_SET, true, this, cf, section),
+	MaxIris("max_iris", PROPERTY_NOT_SET, true, this, cf, section),
+	Iris("iris", PROPERTY_NOT_SET, false, this, cf, section),
+	Brightness("brightness", PROPERTY_NOT_SET, false, this, cf, section),
+	Exposure("exposure", PROPERTY_NOT_SET, false, this, cf, section), 
+	Shutter("shutter", PROPERTY_NOT_SET, false, this, cf, section), 
+	Gain("gain", PROPERTY_NOT_SET, false, this, cf, section), 
+	WhiteBalance("whitebalance", "None", false, this, cf, section)
 {
 	float fps;
 
@@ -1440,6 +1440,55 @@ int Camera1394::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr,
 		else if (strcmp(Iris.GetKey(),req.key)==0)
 		{
 			if (SetIris(req.value))
+			{
+				Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, hdr->subtype);
+				return 0;
+			}
+			return -1;
+		}
+		else if (strcmp(Brightness.GetKey(),req.key)==0)
+		{
+			if (SetBrightness(req.value))
+			{
+				Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, hdr->subtype);
+				return 0;
+			}
+			return -1;
+		}
+		else if (strcmp(Exposure.GetKey(),req.key)==0)
+		{
+			if (SetExposure(req.value))
+			{
+				Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, hdr->subtype);
+				return 0;
+			}
+			return -1;
+		}
+		else if (strcmp(Shutter.GetKey(),req.key)==0)
+		{
+			if (SetShutter(req.value))
+			{
+				Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, hdr->subtype);
+				return 0;
+			}
+			return -1;
+		}
+		else if (strcmp(Gain.GetKey(),req.key)==0)
+		{
+			if (SetGain(req.value))
+			{
+				Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, hdr->subtype);
+				return 0;
+			}
+			return -1;
+		}
+	}
+	else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
+			PLAYER_SET_STRPROP_REQ, device_addr)) {
+		player_strprop_req_t &req = *reinterpret_cast<player_strprop_req_t*> (data);
+		if (strcmp(WhiteBalance.GetKey(),req.key)==0)
+		{
+			if (SetWhiteBalance(req.value))
 			{
 				Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, hdr->subtype);
 				return 0;
