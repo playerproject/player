@@ -180,7 +180,8 @@ class Goto : public Driver
     int skip;
     player_msghdr_t rq_hdrs[RQ_QUEUE_LEN];
     QueuePointer rq_ptrs[RQ_QUEUE_LEN];
-    int rq;
+    void * payloads[RQ_QUEUE_LEN];
+    int last_rq;
     static double mod(double x, double y);
     static double angle_map(double d);
     static double angle_diff(double a, double b);
@@ -213,6 +214,8 @@ double Goto::angle_diff(double a, double b)
 
 Goto::Goto(ConfigFile* cf, int section) : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
 {
+  int i;
+
   srand(time(NULL));
   this->stopping_time = 0.0;
   this->stall_start_time = 0.0;
@@ -238,7 +241,11 @@ Goto::Goto(ConfigFile* cf, int section) : Driver(cf, section, true, PLAYER_MSGQU
   memset(&(this->prev_pos_data), 0, sizeof(this->prev_pos_data));
   this->prev_pos_data_valid = false;
   memset(&(this->rq_hdrs), 0, sizeof this->rq_hdrs);
-  this->rq = -1;
+  for (i = 0; i < RQ_QUEUE_LEN; i++)
+  {
+    this->payloads[i] = NULL;
+  }
+  this->last_rq = -1;
   if (cf->ReadDeviceAddr(&(this->position2d_provided_addr), section, "provides",
                          PLAYER_POSITION2D_CODE, -1, NULL))
   {
@@ -334,15 +341,30 @@ Goto::Goto(ConfigFile* cf, int section) : Driver(cf, section, true, PLAYER_MSGQU
 
 }
 
-Goto::~Goto() { }
+Goto::~Goto()
+{
+  int i;
+
+  for (i = 0; i < RQ_QUEUE_LEN; i++) if (this->payloads[i])
+  {
+    free(this->payloads[i]);
+    this->payloads[i] = NULL;
+  }
+}
 
 int Goto::Setup()
 {
+  int i;
+
   this->position2d_required_dev = NULL;
   memset(&(this->prev_pos_data), 0, sizeof(this->prev_pos_data));
   this->prev_pos_data_valid = false;
   memset(&(this->rq_hdrs), 0, sizeof this->rq_hdrs);
-  this->rq = -1;
+  for (i = 0; i < RQ_QUEUE_LEN; i++)
+  {
+    this->payloads[i] = NULL;
+  }
+  this->last_rq = -1;
   // Only for driver that provides the same interface as it requires
   if (Device::MatchDeviceAddress(this->position2d_required_addr, this->position2d_provided_addr))
   {
@@ -375,8 +397,15 @@ int Goto::Setup()
 
 int Goto::Shutdown()
 {
+  int i;
+
   if (this->position2d_required_dev) this->position2d_required_dev->Unsubscribe(this->InQueue);
   this->position2d_required_dev = NULL;
+  for (i = 0; i < RQ_QUEUE_LEN; i++) if (this->payloads[i])
+  {
+    free(this->payloads[i]);
+    this->payloads[i] = NULL;
+  }
   return 0;
 }
 
@@ -394,6 +423,7 @@ int Goto::ProcessMessage(QueuePointer &resp_queue,
   double dist;
   double ad, av, tv;
   int i;
+  int n;
 
   if (!hdr)
   {
@@ -448,31 +478,51 @@ int Goto::ProcessMessage(QueuePointer &resp_queue,
   }
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, -1, this->position2d_provided_addr))
   {
-    if ((this->rq) >= RQ_QUEUE_LEN) return -1;
-    this->rq++;
-    assert((this->rq) >= 0);
-    this->rq_hdrs[this->rq] = *hdr;
-    this->rq_ptrs[this->rq] = resp_queue;
-    if (!(this->rq))
+    for (i = 0; i < RQ_QUEUE_LEN; i++) if (!(this->payloads[i]))
     {
-      newhdr = this->rq_hdrs[this->rq];
+      this->rq_hdrs[i] = *hdr;
+      this->rq_ptrs[i] = resp_queue;
+      this->payloads[i] = malloc(hdr->size);
+      assert(this->payloads[i]);
+      memcpy(this->payloads[i], data, hdr->size);
+      break;
+    }
+    if (!(i < RQ_QUEUE_LEN)) return -1;
+    n = -1;
+    for (i = 0; i < RQ_QUEUE_LEN; i++) if (this->payloads[i]) n = i;
+    assert(n >= 0);
+    if (!n)
+    {
+      newhdr = this->rq_hdrs[n];
       newhdr.addr = this->position2d_required_addr;
-      this->position2d_required_dev->PutMsg(this->InQueue, &newhdr, data);
+      assert(this->payloads[n]);
+      this->position2d_required_dev->PutMsg(this->InQueue, &newhdr, this->payloads[n], true); // copy = true
+      this->last_rq = n;
     }
     return 0;
   }
   if ((Message::MatchMessage(hdr, PLAYER_MSGTYPE_RESP_ACK, -1, this->position2d_required_addr)) || (Message::MatchMessage(hdr, PLAYER_MSGTYPE_RESP_NACK, -1, this->position2d_required_addr)))
   {
-    assert((this->rq) >= 0);
-    assert((hdr->subtype) == (this->rq_hdrs[this->rq].subtype));
-    this->Publish(this->position2d_provided_addr, rq_ptrs[this->rq], hdr->type, hdr->subtype, data, 0, &(hdr->timestamp));
-    this->rq_ptrs[this->rq] = null;
-    this->rq--;
-    if ((this->rq) >= 0)
+    if ((this->last_rq) < 0)
     {
-      newhdr = this->rq_hdrs[this->rq];
+      PLAYER_ERROR("last_rq < 0");
+      return -1;
+    }
+    assert((hdr->subtype) == (this->rq_hdrs[this->last_rq].subtype));
+    this->Publish(this->position2d_provided_addr, this->rq_ptrs[this->last_rq], hdr->type, hdr->subtype, data, 0, &(hdr->timestamp), true); // copy = true
+    this->rq_ptrs[this->last_rq] = null;
+    assert(this->payloads[this->last_rq]);
+    free(this->payloads[this->last_rq]);
+    this->payloads[this->last_rq] = NULL;
+    this->last_rq = -1;
+    for (i = 0; i < RQ_QUEUE_LEN; i++) if (this->payloads[i])
+    {
+      newhdr = this->rq_hdrs[i];
       newhdr.addr = this->position2d_required_addr;
-      this->position2d_required_dev->PutMsg(this->InQueue, &newhdr, data);
+      assert(this->payloads[i]);
+      this->position2d_required_dev->PutMsg(this->InQueue, &newhdr, this->payloads[i], true); // copy = true;
+      this->last_rq = i;
+      break;
     }
     return 0;
   }
