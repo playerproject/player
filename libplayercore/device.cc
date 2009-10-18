@@ -238,7 +238,19 @@ Device::Request(QueuePointer &resp_queue,
                 double* timestamp,
                 bool threaded)
 {
-  // Send the request message
+  return this->TimedRequest(resp_queue, type, subtype, src, 0, timestamp, threaded);
+}
+
+Message*
+Device::TimedRequest(QueuePointer &resp_queue,
+                uint8_t type,
+                uint8_t subtype,
+                void* src,
+                double timeout,
+                double* timestamp,
+                bool threaded)
+{
+  // Send the request message 
   this->PutMsg(resp_queue,
                type, subtype,
                src, 0, timestamp);
@@ -262,13 +274,38 @@ Device::Request(QueuePointer &resp_queue,
   // non-threaded, then his ProcessMessage() would get called
   // recursively).
 
+
+  // If the timeout is larger than zero it will wait for that long before returning and it will
+  // return NULL after clearing the filter
+  
   Message* msg = NULL;
   if(threaded)
   {
     // test driver is still subscribed to prevent deadlocks on server shutdown
     while(driver->HasSubscriptions())
     {
-      resp_queue->Wait(1);
+      // No timeout
+      if (timeout <= 0)
+      	resp_queue->Wait(1);
+      // Timeout will less than a second to go
+      else if (timeout <= 1)
+      {
+        if (!resp_queue->Wait(timeout))
+        {
+          // if false is returned it means that a timeout occurred, hence we shoudl return NULL
+          PLAYER_WARN("Timed out on a request");
+          resp_queue->ClearFilter();
+          return NULL;
+        }
+      }
+      // There is over a second to go, so wait a second and then decrement timeout
+      // Need to only wait one second as must still wake to check has subscriptions
+      else
+      {
+        resp_queue->Wait(1);
+        timeout -= 1;
+      }
+      
       msg = resp_queue->Pop();
       // a message is not the only reason a thread can be woken up, so continue to loop if we didn't get a message
       if (msg)
@@ -277,6 +314,9 @@ Device::Request(QueuePointer &resp_queue,
   }
   else
   {
+    double req_time, curr_time;
+    GlobalTime->GetTimeDouble(&req_time);
+    
     for(;;)
     {
       // We don't lock here, on the assumption that the caller is also the only
@@ -295,6 +335,17 @@ Device::Request(QueuePointer &resp_queue,
 
       if((msg = resp_queue->Pop()))
         break;
+      
+      if (timeout > 0)
+      {
+        GlobalTime->GetTimeDouble(&curr_time);
+        if (curr_time > req_time + timeout)
+        {
+          PLAYER_WARN("Timed out on a non-threaded request");
+          resp_queue->ClearFilter();
+          return NULL;
+        }
+      }
     }
   }
 
