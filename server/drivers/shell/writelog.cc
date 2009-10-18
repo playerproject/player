@@ -82,15 +82,13 @@ The writelog driver can will log data from the following interfaces:
 - @ref interface_actarray
 - @ref interface_camera
 - @ref interface_fiducial
-
-The following interfaces are supported in principle but are currently
-disabled because they need to be updated:
-
 - @ref interface_blobfinder
 - @ref interface_gps
 - @ref interface_joystick
 - @ref interface_position3d
 - @ref interface_power
+- @ref interface_dio
+- @ref interface_aio
 
 @par Configuration requests
 
@@ -118,6 +116,10 @@ disabled because they need to be updated:
 - extension (string)
   - Default: ".log"
   - File extension for the log file.
+- filename (string)
+  - Default: basename+timestamp+extension
+  - Use this option to override the default basename/timestamp/extension 
+    combination and set your own arbitrary filename for the log.
 - autorecord (integer)
   - Default: 0
   - Default log state; set to 1 for continous logging.
@@ -146,7 +148,7 @@ driver
 )
 @endverbatim
 
-@author Andrew Howard, Radu Bogdan Rusu
+@author Andrew Howard, Radu Bogdan Rusu, Rich Mattes
 
 */
 /** @} */
@@ -281,23 +283,22 @@ class WriteLog: public ThreadedDriver
 
   // Write fiducial data to file
   private: int WriteFiducial(player_msghdr_t* hdr, void *data);
-#if 0
+
   // Write blobfinder data to file
-  private: void WriteBlobfinder(player_blobfinder_data_t *data);
+  private: int WriteBlobfinder(player_msghdr_t* hdr, void *data);
 
   // Write GPS data to file
-  private: void WriteGps(player_gps_data_t *data);
-
+  private: int WriteGps(player_msghdr_t* hdr, void *data);
+  
   // Write joystick data to file
-  private: void WriteJoystick(player_joystick_data_t *data);
+  private: int WriteJoystick(player_msghdr_t* hdr, void *data);
 
   // Write position3d data to file
-  private: void WritePosition3d(player_position3d_data_t *data);
+  private: int WritePosition3d(player_msghdr_t* hdr, void *data);
 
   // Write power data to file
-  private: void WritePower(player_power_data_t *data);
+  private: int WritePower(player_msghdr_t* hdr, void *data);
 
-#endif
   // Where to save files
   private: char log_directory[1024];
 
@@ -634,6 +635,27 @@ void WriteLog::WriteGeometries()
         // oh well.
         PLAYER_WARN("unable to get position geometry");
       }
+      
+      else
+      {
+        // log it
+        this->Write(device, msg->GetHeader(), msg->GetPayload());
+        delete msg;
+      }
+    }
+    else if (device->addr.interf == PLAYER_POSITION3D_CODE)
+    {
+      // Get the position geometry
+      Message* msg;
+      if(!(msg = device->device->Request(this->InQueue,
+                                         PLAYER_MSGTYPE_REQ,
+                                         PLAYER_POSITION3D_REQ_GET_GEOM,
+                                         NULL, 0, NULL, true)))
+      {
+        // oh well.
+        PLAYER_WARN("unable to get position3d geometry");
+      }
+      
       else
       {
         // log it
@@ -917,24 +939,24 @@ void WriteLog::Write(WriteLogDevice *device,
       retval = this->WriteCamera(device, hdr, data);
       break;
     case PLAYER_FIDUCIAL_CODE:
-      this->WriteFiducial(hdr, data);
-      break;
-#if 0
-    case PLAYER_BLOBFINDER_CODE:
-      this->WriteBlobfinder((player_blobfinder_data_t*) data);
+      retval = this->WriteFiducial(hdr, data);
       break;
     case PLAYER_GPS_CODE:
-      this->WriteGps((player_gps_data_t*) data);
+      retval = this->WriteGps(hdr, data);
+      break;
+    case PLAYER_BLOBFINDER_CODE:
+      retval = this->WriteBlobfinder(hdr, data);
       break;
     case PLAYER_JOYSTICK_CODE:
-      this->WriteJoystick((player_joystick_data_t*) data);
+      retval = this->WriteJoystick(hdr, data);
       break;
     case PLAYER_POSITION3D_CODE:
-      this->WritePosition3d((player_position3d_data_t*) data);
+      retval = this->WritePosition3d(hdr, data);
       break;
     case PLAYER_POWER_CODE:
-      this->WritePower((player_power_data_t*) data);
+      retval = this->WritePower(hdr, data);
       break;
+#if 0
     case PLAYER_PLAYER_CODE:
       break;
 #endif
@@ -1209,7 +1231,14 @@ acquired and optional sensor configuration. The format is:
       - sh (float): height of the device, in meters
   - have_config(uint8): If non-zero, the config data has been filled
   - config of device:
-
+    - min_angle (float): start angle of scans, in radians
+    - max_angle (float): end angle of scans, in radians
+    - angular_res (float): scan resolution, in radians
+    - min_range (float): minimum range, in meters
+    - max_range (float): maximum range, in meters
+    - range_res (float): range resolution, in meters
+    - frequency (float): scanning frequency, in Hz
+    
 - 4:1 (PLAYER_RANGER_REQ_GET_GEOM) - Ranger pose information. The format is:
   - pose of device:
     - px (float): X coordinate of the pose, in meters
@@ -1556,7 +1585,7 @@ The following type:subtype position2d messages can be logged:
   - va (float): yaw coordinate of the device's velocity, in radians/sec
   - stall (int): Motor stall flag
 
-- 4:0 (PLAYER_POSITION2D_REQ_GET_GEOM) Geometry info.  The format is:
+- 4:1 (PLAYER_POSITION2D_REQ_GET_GEOM) Geometry info.  The format is:
   - px (float): X coordinate of the offset of the device's center of rotation, in meters
   - py (float): Y coordinate of the offset of the device's center of rotation, in meters
   - pa (float): yaw coordinate of the offset of the device's center of rotation, in radians
@@ -2485,7 +2514,7 @@ WriteLog::WriteBumper(player_msghdr_t* hdr, void *data)
 }
 
 
-#if 0
+
 /** @ingroup tutorial_datalog
  * @defgroup player_driver_writelog_blobfinder Blobfinder format
 
@@ -2504,33 +2533,40 @@ The format for each @ref interface_blobfinder message is:
     - range (int): in mm, of range to blob (if supported)
 
 */
-void WriteLog::WriteBlobfinder(player_blobfinder_data_t *data)
+int WriteLog::WriteBlobfinder(player_msghdr_t* hdr, void *data)
 {
+  player_blobfinder_data_t* bdata;
+  bdata = (player_blobfinder_data_t*) data;
+  
+  switch(hdr->type){
+    case PLAYER_MSGTYPE_DATA:
 
-  fprintf(this->file, " %d %d %d",
-          HUINT16(data->width),
-          HUINT16(data->height),
-          HUINT16(data->blob_count));
+	  fprintf(this->file, "%d %d %d",
+		bdata->width,
+		bdata->height,
+		bdata->blobs_count);
 
-  for(int i=0; i < HUINT16(data->blob_count); i++)
-  {
-    fprintf(this->file, " %d %d %d %d %d %d %d %d %d %f",
-            HINT16(data->blobs[i].id),
-            HUINT32(data->blobs[i].color),
-            HUINT32(data->blobs[i].area),
-            HUINT16(data->blobs[i].x),
-            HUINT16(data->blobs[i].y),
-            HUINT16(data->blobs[i].left),
-            HUINT16(data->blobs[i].right),
-            HUINT16(data->blobs[i].top),
-            HUINT16(data->blobs[i].bottom),
-            MM_M(HUINT16(data->blobs[i].range)));
-  }
+	  for(int i=0; i < (int)bdata->blobs_count; i++)
+	  {
+	  	fprintf(this->file, " %d %d %d %d %d %d %d %d %d %f",
+		  	bdata->blobs[i].id,
+		  	bdata->blobs[i].color,
+		  	bdata->blobs[i].area,
+			bdata->blobs[i].x,
+			bdata->blobs[i].y,
+			bdata->blobs[i].left,
+			bdata->blobs[i].right,
+			bdata->blobs[i].top,
+			bdata->blobs[i].bottom,
+			bdata->blobs[i].range);
+	}
 
-  return;
+	return (0);
+    default:
+    	return (-1);
+    }
 }
 
-#endif
 
 /** @ingroup tutorial_datalog
  * @defgroup player_driver_writelog_camera Camera format
@@ -2727,7 +2763,7 @@ int WriteLog::WriteFiducial(player_msghdr_t* hdr, void *data)
     }
 }
 
-#if 0
+
 
 /** @ingroup tutorial_datalog
  * @defgroup player_driver_writelog_gps GPS format
@@ -2748,31 +2784,36 @@ The format for each @ref interface_gps message is:
   - quality (int): quality of fix (0 = invalid, 1 = GPS fix, 2 = DGPS fix)
   - num_sats (int): number of satellites in view
 */
-void WriteLog::WriteGps(player_gps_data_t *data)
+int WriteLog::WriteGps(player_msghdr_t* hdr, void *data)
 {
-  fprintf(this->file,
-          "%.3f "
-          "%.6f %.6f %.6f "
-          "%.3f %.3f "
-          "%.3f %.3f %.3f %.3f "
-          "%d %d",
-          (double) (uint32_t) HINT32(data->time_sec) +
-          (double) (uint32_t) HINT32(data->time_sec) * 1e-6,
-          (double) HINT32(data->latitude) / (1e7),
-          (double) HINT32(data->longitude) / (1e7),
-          MM_M(HINT32(data->altitude)),
-          CM_M(HINT32(data->utm_e)),
-          CM_M(HINT32(data->utm_n)),
-          (double) HINT16(data->hdop) / 10,
-          (double) HINT16(data->vdop) / 10,
-          MM_M(HINT32(data->err_horz)),
-          MM_M(HINT32(data->err_vert)),
-          (int) data->quality,
-          (int) data->num_sats);
-
-  return;
+	player_gps_data_t *gdata;
+	gdata = (player_gps_data_t*) data;
+	switch(hdr->type){
+		case PLAYER_MSGTYPE_DATA:
+			fprintf(this->file,
+				"%.3f "
+				"%.7f %.7f %.7f "
+				"%.3f %.3f "
+				"%.3f %.3f %.3f %.3f "
+				"%d %d",
+				(double)gdata->time_sec +
+				(double)gdata->time_sec * 1e-6,
+				(double)gdata->latitude / (1e7),
+				(double)gdata->longitude / (1e7),
+				(double)gdata->altitude / (1e3),
+				gdata->utm_e,
+				gdata->utm_n,
+				(double)gdata->hdop / 10.0,
+				(double)gdata->vdop / 10.0,
+				gdata->err_horz,
+				gdata->err_vert,
+				gdata->quality,
+				gdata->num_sats);
+			return (0);
+		default:
+			return (-1);
+	}
 }
-
 
 /** @ingroup tutorial_datalog
  * @defgroup player_driver_writelog_joystick Joystick format
@@ -2782,20 +2823,30 @@ void WriteLog::WriteGps(player_gps_data_t *data)
 The format for each @ref interface_joystick message is:
   - xpos (int): unscaled X position of joystick
   - ypos (int): unscaled Y position of joystick
+  - yawpos (int): unscaled Yaw position of the joystick
   - xscale (int): maximum X position
   - yscale (int): maximum Y position
+  - yawscale (int): maximum Yaw position
   - buttons (hex string): bitmask of button states
 */
-void WriteLog::WriteJoystick(player_joystick_data_t *data)
+int WriteLog::WriteJoystick(player_msghdr_t* hdr, void *data)
 {
-  fprintf(this->file, "%+d %+d %d %d %X",
-          HINT16(data->xpos),
-          HINT16(data->ypos),
-          HINT16(data->xscale),
-          HINT16(data->yscale),
-          HUINT16(data->buttons));
-
-  return;
+	player_joystick_data_t *jdata;
+	jdata = (player_joystick_data_t*) data;
+	switch (hdr->type){
+		case PLAYER_MSGTYPE_DATA:
+			fprintf(this->file, "%+d %+d %+d %d %d %d %X",
+				jdata->pos[0],
+				jdata->pos[1],
+				jdata->pos[2],
+				jdata->scale[0],
+				jdata->scale[1],
+				jdata->scale[2],
+				jdata->buttons);
+			return (0);
+		default:
+			return (-1);
+	}
 }
 
 
@@ -2806,6 +2857,7 @@ void WriteLog::WriteJoystick(player_joystick_data_t *data)
 @brief position3d format
 
 The format for each @ref interface_position3d message is:
+- 1:1 (PLAYER_POSITION3D_DATA_STATE) Odometry information.  The format is:
   - xpos (float): in meters
   - ypos (float): in meters
   - zpos (float): in meters
@@ -2819,30 +2871,104 @@ The format for each @ref interface_position3d message is:
   - pitchspeed(float): in radians / second
   - yawspeed(float): in radians / second
   - stall (int): motor stall sensor
+  
+- 1:2 (PLAYER_POSITION3D_DATA_GEOM) Geometry information.  The format is:
+  - xpos (float): in meters
+  - ypos (float): in meters
+  - zpos (float): in meters
+  - roll (float): in radians
+  - pitch (float): in radians
+  - yaw (float): in radians
+  - width (float): in meters
+  - length (float): in meters
+  - height (float): in meters
+  
+- 4:1 (PLAYER_POSITION3D_REQ_GET_GEOM) Geometry information.  The format is:
+  - xpos (float): in meters
+  - ypos (float): in meters
+  - zpos (float): in meters
+  - roll (float): in radians
+  - pitch (float): in radians
+  - yaw (float): in radians
+  - width (float): in meters
+  - length (float): in meters
+  - height (float): in meters
 */
-void WriteLog::WritePosition3d(player_position3d_data_t *data)
+int WriteLog::WritePosition3d(player_msghdr_t* hdr, void *data)
 {
-  fprintf(this->file,
-          "%+.4f %+.4f %+.4f "
-          "%+.4f %+.4f %+.4f "
-          "%+.4f %+.4f %+.4f "
-          "%+.4f %+.4f %+.4f "
-          "%d",
-          MM_M(HINT32(data->xpos)),
-          MM_M(HINT32(data->ypos)),
-          MM_M(HINT32(data->zpos)),
-          HINT32(data->roll) / 1000.0,
-          HINT32(data->pitch) / 1000.0,
-          HINT32(data->yaw) / 1000.0,
-          MM_M(HINT32(data->xspeed)),
-          MM_M(HINT32(data->yspeed)),
-          MM_M(HINT32(data->zspeed)),
-          HINT32(data->rollspeed) / 1000.0,
-          HINT32(data->pitchspeed) / 1000.0,
-          HINT32(data->yawspeed) / 1000.0,
-          data->stall);
+	switch (hdr->type){
+		case PLAYER_MSGTYPE_DATA:
+			switch(hdr->subtype){
+				case PLAYER_POSITION3D_DATA_STATE:
+					player_position3d_data_t *pdata;
+					pdata = (player_position3d_data_t*) data;
+					fprintf(this->file,
+						"%+.4f %+.4f %+.4f "
+						"%+.4f %+.4f %+.4f "
+						"%+.4f %+.4f %+.4f "
+						"%+.4f %+.4f %+.4f "
+						"%d",
+						pdata->pos.px,
+						pdata->pos.py,
+						pdata->pos.pz,
+						pdata->pos.proll,
+						pdata->pos.ppitch,
+						pdata->pos.pyaw,
+						pdata->vel.px,
+						pdata->vel.py,
+						pdata->vel.pz,
+						pdata->vel.proll,
+						pdata->vel.ppitch,
+						pdata->vel.pyaw,
+						pdata->stall);
 
-  return;
+					return(0);
+				case PLAYER_POSITION3D_DATA_GEOMETRY:
+					player_position3d_geom_t *gdata;
+					gdata = (player_position3d_geom_t*) data;
+					fprintf(this->file,
+						"%+.4f %+.4f %+.4f "
+						"%+.4f %+.4f %+.4f "
+						"%+.4f %+.4f %+.4f ",
+						gdata->pose.px,
+						gdata->pose.py,
+						gdata->pose.pz,
+						gdata->pose.proll,
+						gdata->pose.ppitch,
+						gdata->pose.pyaw,
+						gdata->size.sw,
+						gdata->size.sl,
+						gdata->size.sh);
+					return (0);
+				default:
+					return (-1);
+			}
+		case PLAYER_MSGTYPE_RESP_ACK:
+			switch (hdr->subtype){
+				case PLAYER_POSITION3D_REQ_GET_GEOM:
+					printf("w00t\n");
+					player_position3d_geom_t *gdata;
+					gdata = (player_position3d_geom_t*) data;
+					fprintf(this->file,
+						"%+.4f %+.4f %+.4f "
+						"%+.4f %+.4f %+.4f "
+						"%+.4f %+.4f %+.4f ",
+						gdata->pose.px,
+						gdata->pose.py,
+						gdata->pose.pz,
+						gdata->pose.proll,
+						gdata->pose.ppitch,
+						gdata->pose.pyaw,
+						gdata->size.sw,
+						gdata->size.sl,
+						gdata->size.sh);
+					return (0);
+				default:
+					return (-1);
+			}
+		default: 
+			return (-1);
+	}
 }
 
 
@@ -2852,15 +2978,43 @@ void WriteLog::WritePosition3d(player_position3d_data_t *data)
 @brief power log format
 
 The format for each @ref interface_power message is:
-  - charge (float): in volts
+  - battery voltage (float): in volts
+  - charge percentage (float): in percent
+  - energy stored (float): in joules
+  - estimated energy consumption (float): in watts
+  - charging status (int): 1 for charging
+  - valid (int): bitfield for valid fields
+
+This driver wil attempt to print all of the data fields,though in most cases the fields are not all used.
+If the field is invalid (unused), a 0 will be printed.  The "valid" bitfield should be used to verify which fields are active.
 */
-void WriteLog::WritePower(player_power_data_t *data)
+int WriteLog::WritePower(player_msghdr_t* hdr, void *data)
 {
-  fprintf(this->file, "%.1f ", HUINT16(data->charge) / 10.0);
-  return;
+  player_power_data_t *pdata;
+  pdata = (player_power_data_t*) data;
+  switch (hdr->type){
+  	case(PLAYER_MSGTYPE_DATA):
+  		if (!(pdata->valid & PLAYER_POWER_MASK_VOLTS))
+  			pdata->volts = 0;
+  		if (!(pdata->valid & PLAYER_POWER_MASK_WATTS))
+  			pdata->watts = 0;
+  		if (!(pdata->valid & PLAYER_POWER_MASK_JOULES))
+  			pdata->joules = 0;
+  		if (!(pdata->valid & PLAYER_POWER_MASK_PERCENT))
+  			pdata->percent = 0;
+  		if (!(pdata->valid & PLAYER_POWER_MASK_CHARGING))
+  			pdata->charging = 0;
+  		
+ 		fprintf(this->file, "%.3f %.3f %.3f %.3f %d %d", 
+ 			pdata->volts,
+ 			pdata->percent,
+ 			pdata->joules,
+ 			pdata->watts,
+ 			pdata->charging,
+ 			pdata->valid);
+  		return (0);
+  	default:
+  		return (-1);
+  }
 }
-
-
-#endif
-
 
