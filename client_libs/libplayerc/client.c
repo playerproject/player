@@ -656,7 +656,8 @@ int playerc_client_peek(playerc_client_t *client, int timeout)
     return(1);
 
   // In case we're in PULL mode, first request a round of data.
-  playerc_client_requestdata(client);
+  if (playerc_client_requestdata(client) < 0)
+    return (-1);
 
   return playerc_client_internal_peek(client, timeout);
 }
@@ -707,7 +708,14 @@ void *playerc_client_read(playerc_client_t *client)
   int ret;
 
   // In case we're in PULL mode, first request a round of data.
-  if(playerc_client_requestdata(client) < 0)
+
+  // This function call here is changed to peek() as if we have data on the internal queue this will return without requesting data
+  // but if we don't, it will request and thus will wait until a SYNC message is received, without thisthe code
+  //   if peek()
+  //       read()
+  // can be blocking if there is data on the internal queue (causing peek to return true) but read will wait until there is new data
+  // as read_non block only returns 1 on getting a synch message, or if data hasn't been requested
+  if(playerc_client_peek(client, 0) < 0)
     return NULL;
   // now wait until we get a sync, or some data if in push mode
   do
@@ -745,7 +753,19 @@ int playerc_client_read_nonblock_withproxy(playerc_client_t *client, void ** pro
     {
       // If there is no queued data, peek at the socket
       if((ret = playerc_client_internal_peek(client,0)) <= 0)
-        return ret;
+      {
+        // If we haven't requested sata there will be no SYNCH message to wait further for, thus if we have got data from the internal queue this time
+        // We need to return true
+        if (!client->data_requested && client->data_received)
+        {
+          client->data_received = 0;
+          if (proxy)
+            *proxy = client->id;
+          return 1;
+        }
+        else
+          return 0;
+      }
       // There's data on the socket, so read a packet (blocking).
       if((ret = playerc_client_readpacket (client, &header, client->data)) < 0)
         return ret;
