@@ -167,7 +167,7 @@ class PLAYERCC_EXPORT PlayerClient
     ~PlayerClient();
 
     /// Are we currently connected?
-    bool Connected() { return (mClient->connected == 1) ? true : false; }
+    bool Connected() { return (NULL!=mClient && mClient->connected == 1) ? true : false; } 
 
     /// A mutex for handling synchronization
     mutex_t mMutex;
