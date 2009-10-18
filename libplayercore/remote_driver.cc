@@ -119,7 +119,15 @@ void RemoteDriver::Disconnect(const QueuePointer &queue, const player_devaddr_t 
 {
 	if (Connected)
 	{
-		ConnectionMap[queue].first->Unsubscribe(local_addr);
+		try
+		{
+			ConnectionMap[queue].first->Unsubscribe(local_addr);
+		}
+		catch (...)
+		{
+			PLAYER_ERROR("Failed to correctly unsubscribe from remote driver, may result in driver not getting correctly cleaned up");
+			return;
+		}
 		if (ConnectionMap[queue].first->subscription_count == 0)
 		{
 			QueuePointer RemoteQueue = ConnectionMap[queue].first->Disconnect();
