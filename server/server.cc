@@ -220,6 +220,12 @@ main(int argc, char** argv)
 
   cf->WarnUnused();
 
+  if (deviceTable->Size() == 0)
+  {
+    PLAYER_ERROR("No devices read in configuration file. Is it correct?\nExiting...");
+    exit(-1);
+  }
+  
   if(deviceTable->StartAlwaysonDrivers() != 0)
   {
     PLAYER_ERROR("failed to start alwayson drivers");
