@@ -105,6 +105,8 @@ class SonarToRanger : public ToRanger
 		int ConvertGeom (player_sonar_geom_t *geom);
 		// Convert sonar data to ranger data
 		int ConvertData (player_sonar_data_t *data);
+	private:
+		int skip_rq;
 };
 
 // Initialisation function
@@ -128,6 +130,7 @@ void sonartoranger_Register (DriverTable* table)
 SonarToRanger::SonarToRanger( ConfigFile* cf, int section)
 	: ToRanger (cf, section)
 {
+	this->skip_rq = 0;
 	// Need a sonar device as input
 	if (cf->ReadDeviceAddr(&inputDeviceAddr, section, "requires", PLAYER_SONAR_CODE, -1, NULL) != 0)
 	{
@@ -158,6 +161,7 @@ int SonarToRanger::Setup (void)
 
 	// Request the sonar geometry
 	inputDevice->PutMsg (InQueue, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_REQ_GET_GEOM, NULL, 0, NULL);
+	this->skip_rq = !0;
 
 	return 0;
 }
@@ -314,12 +318,14 @@ int SonarToRanger::ProcessMessage (QueuePointer &respQueue, player_msghdr *hdr, 
 		// Geometry request - need to manage the info we just got
 		if (ConvertGeom (reinterpret_cast<player_sonar_geom_t*> (data)) == 0)
 		{
-			Publish (device_addr, PLAYER_MSGTYPE_RESP_ACK, PLAYER_RANGER_REQ_GET_GEOM, reinterpret_cast<void*> (&deviceGeom), sizeof (deviceGeom), NULL);
+			if (!(this->skip_rq)) Publish (device_addr, PLAYER_MSGTYPE_RESP_ACK, PLAYER_RANGER_REQ_GET_GEOM, reinterpret_cast<void*> (&deviceGeom), sizeof (deviceGeom), NULL);
+			this->skip_rq = 0;
 			return 0;
 		}
 		else
 		{
-			Publish (device_addr, ret_queue, PLAYER_MSGTYPE_RESP_NACK, PLAYER_RANGER_REQ_GET_GEOM, NULL, 0, NULL);
+			if (!(this->skip_rq)) Publish (device_addr, ret_queue, PLAYER_MSGTYPE_RESP_NACK, PLAYER_RANGER_REQ_GET_GEOM, NULL, 0, NULL);
+			this->skip_rq = 0;
 			return 0;
 		}
 	}
@@ -334,7 +340,8 @@ int SonarToRanger::ProcessMessage (QueuePointer &respQueue, player_msghdr *hdr, 
 	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_RESP_NACK, PLAYER_SONAR_REQ_GET_GEOM, inputDeviceAddr))
 	{
 		// Geometry request
-		Publish (device_addr, ret_queue, PLAYER_MSGTYPE_RESP_NACK, PLAYER_RANGER_REQ_GET_GEOM, NULL, 0, NULL);
+		if (!(this->skip_rq)) Publish (device_addr, ret_queue, PLAYER_MSGTYPE_RESP_NACK, PLAYER_RANGER_REQ_GET_GEOM, NULL, 0, NULL);
+		this->skip_rq = 0;
 		return 0;
 	}
 

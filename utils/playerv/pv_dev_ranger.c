@@ -19,6 +19,7 @@
  */
 
 #include <assert.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -199,6 +200,7 @@ void ranger_draw(ranger_t *ranger)
   double point1[2], point2[2]; 
   double (*points)[2];
   double temp = 0.0;
+  double b, range;
 
   // Drawing type depends on the assumed sensor type
   // Singular sensors (e.g. sonar sensors):
@@ -221,7 +223,7 @@ void ranger_draw(ranger_t *ranger)
       // Assume the range is straight ahead (ignore min_angle and angular_res properties)
       points[0][0] = 0.0f;
       points[0][1] = 0.0f;
-      double range = ranger->proxy->ranges[ii];
+      range = ranger->proxy->ranges[ii];
       if (range < ranger->proxy->min_range)
         range = ranger->proxy->max_range;
       points[1][0] = range * cos(-temp);
@@ -252,10 +254,10 @@ void ranger_draw(ranger_t *ranger)
       // Draw empty space
       points[0][0] = 0.0;
       points[0][1] = 0.0;
-      double b = ranger->proxy->min_angle;
+      b = ranger->proxy->min_angle;
       for (ii = 0; ii < ranger->proxy->ranges_count; ii++)
       {
-        double range = ranger->proxy->ranges[ii];
+        range = ranger->proxy->ranges[ii];
         if (range < ranger->proxy->min_range) {
           points[ii + 1][0] = ranger->proxy->max_range * cos(b);
           points[ii + 1][1] = ranger->proxy->max_range * sin(b);
@@ -292,9 +294,9 @@ void ranger_draw(ranger_t *ranger)
       rtk_fig_color_rgb32(ranger->scan_fig[0], COLOR_LASER_OCC);
       // Get the first point
 
-      double b = ranger->proxy->min_angle;
+      b = ranger->proxy->min_angle;
 
-      double range = ranger->proxy->ranges[0];
+      range = ranger->proxy->ranges[0];
       if (range < ranger->proxy->min_range) {
         point1[0] = ranger->proxy->max_range * cos(b);
         point1[1] = ranger->proxy->max_range * sin(b);
@@ -326,14 +328,14 @@ void ranger_draw(ranger_t *ranger)
     if (rtk_menuitem_ischecked(ranger->intns_item))
     {
       // Draw an intensity scan
-      double b = ranger->proxy->min_angle;
+      b = ranger->proxy->min_angle;
       if (ranger->proxy->intensities_count > 0)
       {
         for (ii = 0; ii < ranger->proxy->intensities_count; ii++)
         {
           if (ranger->proxy->intensities[ii] != 0)
           {
-            double range = ranger->proxy->ranges[ii];
+            range = ranger->proxy->ranges[ii];
             if (range < ranger->proxy->min_range) {
               point1[0] = ranger->proxy->max_range * cos(b);
               point1[1] = ranger->proxy->max_range * sin(b);

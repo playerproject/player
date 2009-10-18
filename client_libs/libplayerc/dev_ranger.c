@@ -122,20 +122,23 @@ void playerc_ranger_calculate_bearings(playerc_ranger_t *device)
       return;
     }
 
-    if (device->element_count == 1)
+    if (device->bearings_count >= device->element_count)
     {
-      b = device->min_angle;
-      for (ii = 0; ii < device->bearings_count; ii++)
+      if (device->element_count == 1)
       {
-        device->bearings[ii] = b + device->device_pose.pyaw;
-        b += device->angular_res;
+        b = device->min_angle;
+        for (ii = 0; ii < device->bearings_count; ii++)
+        {
+          device->bearings[ii] = b + device->device_pose.pyaw;
+          b += device->angular_res;
+        }
       }
-    }
-    else
-    {
-      for (ii = 0; ii < device->element_count; ii++)
+      else
       {
-        device->bearings[ii] = device->element_poses[ii].pyaw;
+        for (ii = 0; ii < device->element_count; ii++)
+        {
+          device->bearings[ii] = device->element_poses[ii].pyaw;
+        }
       }
     }
   }
@@ -145,7 +148,7 @@ void playerc_ranger_calculate_bearings(playerc_ranger_t *device)
 // Calculate scan points
 void playerc_ranger_calculate_points(playerc_ranger_t *device)
 {
-  double b;
+  double b, r, s;
   uint32_t ii;
 
   device->points_count = device->ranges_count;
@@ -163,27 +166,30 @@ void playerc_ranger_calculate_points(playerc_ranger_t *device)
       return;
     }
 
-    if (device->element_count == 1)
+    if (device->points_count >= device->element_count)
     {
-      b = device->min_angle;
-      for (ii = 0; ii < device->points_count; ii++)
+      if (device->element_count == 1)
       {
-        double r = device->ranges[ii];
-        device->points[ii].px = r * cos(b);
-        device->points[ii].py = r * sin(b);
-        device->points[ii].pz = 0.0;
-        b += device->angular_res;
+        b = device->min_angle;
+        for (ii = 0; ii < device->points_count; ii++)
+        {
+          r = device->ranges[ii];
+          device->points[ii].px = r * cos(b);
+          device->points[ii].py = r * sin(b);
+          device->points[ii].pz = 0.0;
+          b += device->angular_res;
+        }
       }
-    }
-    else
-    {
-      for (ii = 0; ii < device->element_count; ii++)
+      else
       {
-        double r = device->ranges[ii];
-        double s = r * cos(device->element_poses[ii].ppitch);
-        device->points[ii].px = s * cos(device->element_poses[ii].pyaw) + device->element_poses[ii].px;
-        device->points[ii].py = s * sin(device->element_poses[ii].pyaw) + device->element_poses[ii].py;
-        device->points[ii].pz = r * sin(device->element_poses[ii].ppitch) + device->element_poses[ii].pz;
+        for (ii = 0; ii < device->element_count; ii++)
+        {
+          r = device->ranges[ii];
+          s = r * cos(device->element_poses[ii].ppitch);
+          device->points[ii].px = s * cos(device->element_poses[ii].pyaw) + device->element_poses[ii].px;
+          device->points[ii].py = s * sin(device->element_poses[ii].pyaw) + device->element_poses[ii].py;
+          device->points[ii].pz = r * sin(device->element_poses[ii].ppitch) + device->element_poses[ii].pz;
+        }
       }
     }
   }
@@ -204,7 +210,7 @@ void playerc_ranger_copy_range_data(playerc_ranger_t *device, player_ranger_data
     }
   }
   // Copy the range data
-  memcpy(device->ranges, data->ranges, data->ranges_count * sizeof(data->ranges[0]));
+  if (data->ranges_count > 0) memcpy(device->ranges, data->ranges, data->ranges_count * sizeof(data->ranges[0]));
   device->ranges_count = data->ranges_count;
 }
 
@@ -223,7 +229,7 @@ void playerc_ranger_copy_intns_data(playerc_ranger_t *device, player_ranger_data
     }
   }
   // Copy the range data
-  memcpy(device->intensities, data->intensities, data->intensities_count * sizeof(data->intensities[0]));
+  if (data->intensities_count > 0) memcpy(device->intensities, data->intensities, data->intensities_count * sizeof(data->intensities[0]));
   device->intensities_count = data->intensities_count;
 }
 
