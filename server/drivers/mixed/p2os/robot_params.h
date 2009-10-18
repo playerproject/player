@@ -103,7 +103,7 @@ typedef struct
   int CollisionRange; //
   double DiffConvFactor; //
   double DiscardThreshold; //
-  int DistConvFactor; //
+  double DistConvFactor; //
   double DistanceWt; //
   int DrivingRotAccel; //
   int DrivingRotDecel; //
