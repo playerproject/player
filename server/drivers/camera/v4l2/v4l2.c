@@ -164,6 +164,7 @@ unsigned char * get_image(void * fg)
  int i, grabdepth;
  const unsigned char * buf;
  unsigned char * img;
+ int count, insize;
 
  if ((!(FG(fg)->grabbing)) || (!(FG(fg)->image))) return NULL;
  memset(&(FG(fg)->buffers[FG(fg)->grab_number].buffer), 0, sizeof FG(fg)->buffers[FG(fg)->grab_number].buffer);
@@ -189,7 +190,28 @@ unsigned char * get_image(void * fg)
   grabdepth = 3;
  }
  img = FG(fg)->image;
- for (i = 0; i < (FG(fg)->pixels); i++)
+ if ((FG(fg)->pixformat) == v4l2_fmtbyname("MJPG"))
+ { /* taken directly from v4lcapture.c (camerav4l driver code) */
+  insize = ((FG(fg)->pixels) * grabdepth) - sizeof(int);
+  count = insize - 1;
+  for (i = 1024; i < count; i++)
+  {
+   if (buf[i] == 0xff) if (buf[i + 1] == 0xd9)
+   {
+    insize = i + 10;
+    break;
+   }
+  }
+  if (insize > 1)
+  {
+    memcpy(img, &insize, sizeof(int));
+    memcpy(img + sizeof(int), buf, insize);
+  } else
+  {
+    fprintf(stderr, "Internal error\n");
+    return NULL;
+  }
+ } else for (i = 0; i < (FG(fg)->pixels); i++)
  {
   switch(FG(fg)->imgdepth)
   {
@@ -201,11 +223,11 @@ unsigned char * get_image(void * fg)
     img++; buf++;
     break;
    case 3:
-    img[0] = (unsigned char)((buf[FG(fg)->r] / 3) + (buf[FG(fg)->g] / 3) + (buf[FG(fg)->b] / 3));
+    img[0] = (unsigned char)((buf[FG(fg)->r] * 0.3) + (buf[FG(fg)->g] * 0.59) + (buf[FG(fg)->b] * 0.11));
     img++; buf += 3;
     break;
    case 4:
-    img[0] = (unsigned char)((buf[FG(fg)->r] / 3) + (buf[FG(fg)->g] / 3) + (buf[FG(fg)->b] / 3));
+    img[0] = (unsigned char)((buf[FG(fg)->r] * 0.3) + (buf[FG(fg)->g] * 0.59) + (buf[FG(fg)->b] * 0.11));
     img++; buf += 4;
     break;
    }
@@ -349,6 +371,10 @@ void * open_fg(const char * dev, const char * pixformat, int width, int height, 
    free(fg);
    return NULL;
   }
+ } else if ((fg->pixformat) == v4l2_fmtbyname("MJPG"))
+ {
+  fg->r = 0; fg->g = 0; fg->b = 0;
+  fg->depth = 3;
  } else
  {
   fprintf(stderr, "unknown pixel format %s\n", pixformat);
