@@ -67,6 +67,7 @@ driver
 /** @} */
 
 #include <stddef.h>
+#include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 #include <libplayercore/playercore.h>
@@ -91,7 +92,8 @@ class Globalize : public Driver
     player_devaddr_t p_pos_addr;
     player_msghdr_t rq_hdrs[RQ_QUEUE_LEN];
     QueuePointer rq_ptrs[RQ_QUEUE_LEN];
-    int rq;
+    void * payloads[RQ_QUEUE_LEN];
+    int last_rq;
     double cmd_interval;
     double cmd_time;
     uint8_t stall;
@@ -99,13 +101,19 @@ class Globalize : public Driver
 
 Globalize::Globalize(ConfigFile* cf, int section) : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
 {
+  int i;
+
   this->r_local_pos_dev = NULL;
   this->r_global_pos_dev = NULL;
   memset(&(this->r_local_pos_addr), 0, sizeof(player_devaddr_t));
   memset(&(this->r_global_pos_addr), 0, sizeof(player_devaddr_t));
   memset(&(this->p_pos_addr), 0, sizeof(player_devaddr_t));
   memset(this->rq_hdrs, 0, sizeof this->rq_hdrs);
-  this->rq = -1;
+  for (i = 0; i < RQ_QUEUE_LEN; i++)
+  {
+    this->payloads[i] = NULL;
+  }
+  this->last_rq = -1;
   this->cmd_interval = 0.0;
   this->cmd_time = 0.0;
   this->stall = 0;
@@ -135,16 +143,31 @@ Globalize::Globalize(ConfigFile* cf, int section) : Driver(cf, section, true, PL
   this->cmd_interval = cf->ReadFloat(section, "cmd_interval", -1.0);
 }
 
-Globalize::~Globalize() { }
+Globalize::~Globalize()
+{
+  int i;
+
+  for (i = 0; i < RQ_QUEUE_LEN; i++) if (this->payloads[i])
+  {
+    free(this->payloads[i]);
+    this->payloads[i] = NULL;
+  }
+}
 
 int Globalize::Setup()
 {
+  int i;
+
   this->r_local_pos_dev = NULL;
   this->r_global_pos_dev = NULL;
   this->cmd_time = 0.0;
   this->stall = 0;
   memset(this->rq_hdrs, 0, sizeof this->rq_hdrs);
-  this->rq = -1;
+  for (i = 0; i < RQ_QUEUE_LEN; i++)
+  {
+    this->payloads[i] = NULL;
+  }
+  this->last_rq = -1;
   if ((Device::MatchDeviceAddress(this->r_local_pos_addr, this->p_pos_addr))
       || (Device::MatchDeviceAddress(this->r_global_pos_addr, this->p_pos_addr)))
   {
@@ -184,10 +207,17 @@ int Globalize::Setup()
 
 int Globalize::Shutdown()
 {
+  int i;
+
   if (this->r_local_pos_dev) this->r_local_pos_dev->Unsubscribe(this->InQueue);
   this->r_local_pos_dev = NULL;
   if (this->r_global_pos_dev) this->r_global_pos_dev->Unsubscribe(this->InQueue);
   this->r_global_pos_dev = NULL;
+  for (i = 0; i < RQ_QUEUE_LEN; i++) if (this->payloads[i])
+  {
+    free(this->payloads[i]);
+    this->payloads[i] = NULL;
+  }
   return 0;
 }
 
@@ -199,6 +229,8 @@ int Globalize::ProcessMessage(QueuePointer &resp_queue,
   player_position2d_data_t pos_data;
   double d;
   QueuePointer null;
+  int i;
+  int n;
 
   if (!hdr)
   {
@@ -223,31 +255,51 @@ int Globalize::ProcessMessage(QueuePointer &resp_queue,
   }
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, -1, this->p_pos_addr))
   {
-    if ((this->rq) >= RQ_QUEUE_LEN) return -1;
-    this->rq++;
-    assert((this->rq) >= 0);
-    this->rq_hdrs[this->rq] = *hdr;
-    this->rq_ptrs[this->rq] = resp_queue;
-    if (!(this->rq))
+    for (i = 0; i < RQ_QUEUE_LEN; i++) if (!(this->payloads[i]))
     {
-      newhdr = this->rq_hdrs[this->rq];
+      this->rq_hdrs[i] = *hdr;
+      this->rq_ptrs[i] = resp_queue;
+      this->payloads[i] = malloc(hdr->size);
+      assert(this->payloads[i]);
+      memcpy(this->payloads[i], data, hdr->size);
+      break;
+    }
+    if (!(i < RQ_QUEUE_LEN)) return -1;
+    n = -1;
+    for (i = 0; i < RQ_QUEUE_LEN; i++) if (this->payloads[i]) n = i;
+    assert(n >= 0);
+    if (!n)
+    {
+      newhdr = this->rq_hdrs[n];
       newhdr.addr = this->r_local_pos_addr;
-      this->r_local_pos_dev->PutMsg(this->InQueue, &newhdr, data);
+      assert(this->payloads[n]);
+      this->r_local_pos_dev->PutMsg(this->InQueue, &newhdr, this->payloads[n], true); // copy = true
+      this->last_rq = n;
     }
     return 0;
   }
   if ((Message::MatchMessage(hdr, PLAYER_MSGTYPE_RESP_ACK, -1, this->r_local_pos_addr)) || (Message::MatchMessage(hdr, PLAYER_MSGTYPE_RESP_NACK, -1, this->r_local_pos_addr)))
   {
-    assert((this->rq) >= 0);
-    assert((hdr->subtype) == (this->rq_hdrs[this->rq].subtype));
-    this->Publish(this->p_pos_addr, rq_ptrs[this->rq], hdr->type, hdr->subtype, data, 0, &(hdr->timestamp));
-    this->rq_ptrs[this->rq] = null;
-    this->rq--;
-    if ((this->rq) >= 0)
+    if ((this->last_rq) < 0)
     {
-      newhdr = this->rq_hdrs[this->rq];
+      PLAYER_ERROR("last_rq < 0");
+      return -1;
+    }
+    assert((hdr->subtype) == (this->rq_hdrs[this->last_rq].subtype));
+    this->Publish(this->p_pos_addr, this->rq_ptrs[this->last_rq], hdr->type, hdr->subtype, data, 0, &(hdr->timestamp), true); // copy = true
+    this->rq_ptrs[this->last_rq] = null;
+    assert(this->payloads[this->last_rq]);
+    free(this->payloads[this->last_rq]);
+    this->payloads[this->last_rq] = NULL;
+    this->last_rq = -1;
+    for (i = 0; i < RQ_QUEUE_LEN; i++) if (this->payloads[i])
+    {
+      newhdr = this->rq_hdrs[i];
       newhdr.addr = this->r_local_pos_addr;
-      this->r_local_pos_dev->PutMsg(this->InQueue, &newhdr, data);
+      assert(this->payloads[i]);
+      this->r_local_pos_dev->PutMsg(this->InQueue, &newhdr, this->payloads[i], true); // copy = true;
+      this->last_rq = i;
+      break;
     }
     return 0;
   }
