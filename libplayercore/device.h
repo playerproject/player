@@ -156,6 +156,42 @@ class PLAYERCORE_EXPORT Device
                      size_t deprecated,
                      double* timestamp,
                      bool threaded = true);
+                     
+    /// @brief Make a request of another device with a timeout.
+    ///
+    /// This method send a request message to a device
+    /// and waits for the reply. If a timeout occurs it returns NULL.
+    ///
+    /// Note that any driver calling this here a timeout is not going to be a bad error also
+    /// needs to add into its process messages somethig to handle the ACKs if they are recieved
+    /// after the timeout. As such I would recomment that this is only called with a timeout not
+    /// 0 if a timeout occurring is an indicaion of a system ailure (and a stall is unacceptable)
+    ///
+    /// @param resp_queue : Where to push the reply (e.g., your InQueue)
+    /// @param type : Message type (usually PLAYER_MSGTYPE_REQ).
+    /// @param subtype : Message subtype (interface-specific)
+    /// @param src : Message body
+    /// @param timeout: How long to wait for a response, if zero will never timeout
+    /// @param timestamp : If non-NULL, the timestamp to attach to the
+    /// request; otherwise, the current time is filled in.
+    /// @param threaded : True if the caller is executing in its own
+    ///                   thread, false otherwise
+    /// 
+    /// @note It is is crucial that @p threaded be set correctly.  If you
+    ///       call this method from within Setup() or Shutdown(), or if
+    ///       your driver does not run in its own thread, then @p 
+    ///       threaded must be false.  Deadlocks will otherwise result.
+    ///
+    /// @returns A pointer to the reply message.  The caller is responsible
+    ///          for deleting this pointer. Will return NULL on a failure
+    Message* TimedRequest(QueuePointer &resp_queue,
+                     uint8_t type,
+                     uint8_t subtype,
+                     void* src,
+                     double timeout = 0,
+                     double* timestamp = NULL,
+                     bool threaded = true);
+                     
 
     /// @brief Compare two addresses
     ///
