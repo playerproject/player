@@ -56,12 +56,14 @@ IF(RUBY_FOUND)
             STRING(REPLACE "/usr/" "" ruby_relative_sitelib_dir ${RUBY_SITELIB_DIR})
             STRING(REPLACE "/opt/" "" ruby_relative_sitelib_dir ${ruby_relative_sitelib_dir})
             STRING(REPLACE "local/" "" ruby_relative_sitelib_dir ${ruby_relative_sitelib_dir})
+	        STRING(REPLACE "lib/" ${PLAYER_LIBRARY_INSTALL_DIR}/ ruby_relative_sitelib_dir ${ruby_relative_sitelib_dir} )
             SET (RUBY_BINDINGS_INSTALL_DIR ${ruby_relative_sitelib_dir} CACHE PATH "Ruby bindings installation directory under $RUBY_SITELIB_DIR")
             MARK_AS_ADVANCED (RUBY_BINDINGS_INSTALL_DIR)
 
             INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/playercr.so
                 DESTINATION ${RUBY_BINDINGS_INSTALL_DIR}
                 RENAME playerc.so)
+            MESSAGE (STATUS "Ruby bindings for C client will be installed to ${RUBY_BINDINGS_INSTALL_DIR}")
         ELSE (SWIG_FOUND)
             MESSAGE (STATUS "Ruby bindings for C client library will not be built - could not find Swig")
         ENDIF (SWIG_FOUND)
