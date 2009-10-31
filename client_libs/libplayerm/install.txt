@@ -1,0 +1,9 @@
+Matlab/Octave Player Client
+
+Installation
+1. Adapt the src/Makefile
+   therefor adapt the INCDIR and LINKCC flags as well as the compilor settings for Matlab and Octave in the src/Makefile
+2. just run: make
+3. On errors check the source file which made the trouble maybe you have to change the PLAYERVERSION define to your version running
+
+
