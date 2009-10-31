@@ -13,3 +13,5 @@ PLAYERDRIVER_ADD_DRIVER (ptu46 build_ptu46 SOURCES ptu46.cc)
 PLAYERDRIVER_OPTION (sonyevid30 build_sonyevid30 ON)
 PLAYERDRIVER_REJECT_OS (sonyevid30 build_sonyevid30 PLAYER_OS_WIN)
 PLAYERDRIVER_ADD_DRIVER (sonyevid30 build_sonyevid30 SOURCES sonyevid30.cc)
+
+ADD_SUBDIRECTORY (sphereptz)
