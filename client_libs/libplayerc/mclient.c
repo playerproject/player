@@ -110,6 +110,7 @@ int playerc_mclient_peek(playerc_mclient_t *mclient, int timeout)
   // Configure poll structure to wait for incoming data 
   for (i = 0; i < mclient->client_count; i++)
   {
+    playerc_client_requestdata(mclient->client[i]);
     mclient->pollfd[i].fd = mclient->client[i]->sock;
     mclient->pollfd[i].events = POLLIN;
     mclient->pollfd[i].revents = 0;
