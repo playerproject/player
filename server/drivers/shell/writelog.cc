@@ -1892,9 +1892,9 @@ WriteLog::WriteWiFi(player_msghdr_t* hdr, void *data)
 	    memset(ip,0,sizeof(ip));
 	    memset(essid,0,sizeof(essid));
 
-	    assert(wdata->links[i].mac_count < sizeof(mac));
-	    assert(wdata->links[i].ip_count < sizeof(ip));
-	    assert(wdata->links[i].essid_count < sizeof(essid));
+	    assert(wdata->links[i].mac_count <= sizeof(mac));
+	    assert(wdata->links[i].ip_count <= sizeof(ip));
+	    assert(wdata->links[i].essid_count <= sizeof(essid));
 
 	    memcpy(mac, wdata->links[i].mac, wdata->links[i].mac_count);
 	    memcpy(ip, wdata->links[i].ip, wdata->links[i].ip_count);
