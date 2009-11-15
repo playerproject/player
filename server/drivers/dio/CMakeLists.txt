@@ -1,5 +1,6 @@
 ADD_SUBDIRECTORY (bitlogic)
 ADD_SUBDIRECTORY (blobtodio)
+ADD_SUBDIRECTORY (blobtracker)
 ADD_SUBDIRECTORY (bumpertodio)
 ADD_SUBDIRECTORY (diodelay)
 ADD_SUBDIRECTORY (diolatch)
