@@ -112,6 +112,33 @@ driver
 #define RTOD(r) ((static_cast<double>(r)) * 180.0 / M_PI)
 #endif
 
+#ifndef VIDIOC_S_EXT_CTRLS
+
+struct v4l2_ext_control
+{
+  __u32 id;
+  __u32 reserved2[2];
+  union
+  {
+    __s32 value;
+    __s64 value64;
+    void * reserved;
+  };
+} __attribute__ ((packed));
+
+struct v4l2_ext_controls
+{
+  __u32 ctrl_class;
+  __u32 count;
+  __u32 error_idx;
+  __u32 reserved[2];
+  struct v4l2_ext_control * controls;
+};
+
+#define VIDIOC_S_EXT_CTRLS _IOWR('V', 72, struct v4l2_ext_controls)
+
+#endif
+
 class SpherePTZ : public ThreadedDriver
 {
   public:
