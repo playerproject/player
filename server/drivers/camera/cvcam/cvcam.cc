@@ -238,6 +238,7 @@ void CvCam::Main()
         data->image[i + 1] = frame->imageData[i + 1];
         data->image[i + 2] = frame->imageData[i];
       }
+	  break;
     case 32:
       data->format = PLAYER_CAMERA_FORMAT_RGB888;
       for (i = 0; i < static_cast<int>(data->image_count); i += (frame->nChannels))
