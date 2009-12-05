@@ -1,7 +1,9 @@
 // objects definitions
-#include <unistd.h>
+#if !defined(WIN32)
+	#include <unistd.h>
+	#include <netinet/in.h>
+#endif
 #include <string.h>
-#include <netinet/in.h>
 #include <math.h>
 #include <libplayercore/playercore.h>
 #include <iostream>
@@ -136,7 +138,7 @@ width=800;
 height=800;
 startx=0;
 starty=0;
-scale=0.028;
+scale=0.028f;
 sonar_treshold=4.5;
 }
 
