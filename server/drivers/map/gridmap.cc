@@ -246,7 +246,7 @@ gridmap::gridmap(ConfigFile* cf, int section)
   // fill the map data with free space
   // reasons for this are some good obstacle avoidance always there
   // can't bear to say all the world is unknown
-  for(uint i=0;i<this->map.width*this->map.height;i++)
+  for(unsigned int i=0;i<this->map.width*this->map.height;i++)
      this->published_map.data[i]=-1;
 
   // Open the position interface
@@ -326,7 +326,7 @@ int gridmap::Setup()
     this->sonar_geom = *(player_sonar_geom_t*) msg->GetPayload();
     // calculate the distance from the sonar to the center of the robot (in pixels).
     sonar_dist=(int *)malloc(sonar_geom.poses_count*sizeof(int));
-    for(uint s;s<this->sonar_geom.poses_count;s++)
+    for(unsigned int s=0;s<this->sonar_geom.poses_count;s++)
     this->sonar_dist[s]=(int)(sqrt(pow(this->sonar_geom.poses[s].px,2) +
 				   pow(this->sonar_geom.poses[s].py,2)) /
 				   this->map_info.scale);
@@ -387,8 +387,8 @@ int gridmap::mapTreshold()
   published_map.col = 0;
   published_map.row = 0;
   published_map.data_count = this->map.data_count;
-  for(uint i=0;i<this->map.width;i++) {
-      for (uint j=0;j<this->map.height;j++){
+  for(unsigned int i=0;i<this->map.width;i++) {
+      for (unsigned int j=0;j<this->map.height;j++){
 	MAP_POINT x(i,j);
 	if(this->map_data.find(x) != this->map_data.end()){
 	if (map_data[x].P > this->map_treshold) published_map.data[i+this->map.width*j]=1;
@@ -421,7 +421,7 @@ int gridmap::UpdateMap(player_position2d_data_t* odom, player_sonar_data_t* sona
   /// don't overwrite the map if the robot stands still
   if (odom->vel.px == 0 && odom->vel.py == 0 && odom->vel.pa == 0) return(0);
 
-  uint s,x,y;
+  unsigned int s,x,y;
   int px,py,r,o;
   float th_sonar;
   // compute r * tan(alfa/2), where alfa is the sonar angular aperture

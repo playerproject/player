@@ -1477,7 +1477,7 @@ int ReadLog::ParseBlobfinder(player_devaddr_t id,
     PLAYER_ERROR2("incomplete line at %s:%d", this->filename, linenum);
     return -1;
   }
-  player_blobfinder_blob_t blob[blob_count];
+  player_blobfinder_blob_t *blob = new player_blobfinder_blob_t[blob_count];
 
   for (i = 0; i < blob_count; i++)
   {
@@ -1496,6 +1496,7 @@ int ReadLog::ParseBlobfinder(player_devaddr_t id,
 
   size = sizeof(data) - sizeof(data.blobs) + blob_count * sizeof(data.blobs[0]);
   this->Publish(id,type,subtype, (void*) &data, size, &time);
+  delete[] blob;
 
   return 0;
 }

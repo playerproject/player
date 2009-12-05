@@ -86,6 +86,10 @@ driver
 #include <assert.h>
 #include <libplayercore/playercore.h>
 
+#if defined (WIN32)
+  #define snprintf _snprintf
+#endif
+
 class BlobToDio : public Driver
 {
   public: BlobToDio(ConfigFile * cf, int section);
