@@ -24,6 +24,16 @@ IF (NOT HAVE_GETOPT)
     INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/replace)
     SET (playerreplaceLib playerreplace)
 ENDIF (NOT HAVE_GETOPT)
+# On Windows, player.exe also needs to link to the same libs as
+# playerdrivers.dll. The libs seem to get added by CMake automatically, but
+# the directories have to be done manually.
+IF (PLAYER_OS_WIN)
+    IF (PLAYER_DRIVERSLIB_LIBDIRS)
+        FILTER_EMPTY (driverLinkDirs "${PLAYER_DRIVERSLIB_LIBDIRS}")
+        FILTER_DUPLICATES (driverLinkDirs "${driverLinkDirs}")
+        LINK_DIRECTORIES (${driverLinkDirs})
+    ENDIF (PLAYER_DRIVERSLIB_LIBDIRS)
+ENDIF (PLAYER_OS_WIN)
 
 # Source files
 SET (playerSrcs server.cc)

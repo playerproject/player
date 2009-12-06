@@ -198,8 +198,8 @@ MACRO (PLAYERDRIVER_REQUIRE_PKG _name _cumulativeVar _package _includeDirs _libD
             SET (${_includeDirs} ${${_pkgVar}_INCLUDE_DIRS})
             SET (${_libDirs} ${${_pkgVar}_LIBRARY_DIRS})
             SET (${_linkLibs} ${${_pkgVar}_LIBRARIES})
-            LIST_TO_STRING (${_cFlags} "${${_pkgVar}_CFLAGS}")
-            LIST_TO_STRING (${_linkFlags} "${${_pkgVar}_LDFLAGS}")
+            LIST_TO_STRING (${_cFlags} "${${_pkgVar}_CFLAGS_OTHER}")
+            LIST_TO_STRING (${_linkFlags} "${${_pkgVar}_LDFLAGS_OTHER}")
         ELSEIF (${_cumulativeVar})
             # Case where cumulativeVar is set but package wasn't found - don't build
             SET (${_cumulativeVar} FALSE)
