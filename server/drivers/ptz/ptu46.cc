@@ -235,6 +235,7 @@ PTU46::PTU46(char * port, int rate)
   Write("ft "); // terse feedback
   Write("ed "); // disable echo
   Write("ci "); // position mode
+  Write("i "); // immediate mode, do not await "A" command for execution 
 
   // delay here so data has arrived at serial port so we can flush it
   usleep(200000);
