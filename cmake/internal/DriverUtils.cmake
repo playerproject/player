@@ -179,9 +179,9 @@ MACRO (PLAYERDRIVER_REQUIRE_PKG _name _cumulativeVar _package _includeDirs _libD
             PLAYERDRIVER_ADD_DRIVEROPTION (${_name} OFF 1)
         ENDIF (${_cumulativeVar})
     ELSE (NOT PKG_CONFIG_FOUND)
-        IF (${ARGC} GREATER 7)
-            SET (_minVersion ${ARG7})
-        ENDIF (${ARGC} GREATER 7)
+        IF (${ARGC} GREATER 8)
+            SET (_minVersion ${ARGV8})
+        ENDIF (${ARGC} GREATER 8)
 
         # Look for the package using pkg-config
         SET (_pkgVar "${_package}_PKG")
