@@ -176,7 +176,7 @@ Driver* XSensMT_Init (ConfigFile* cf, int section)
 ////////////////////////////////////////////////////////////////////////////////
 // Registers the driver in the driver table. Called from the
 // player_driver_init function that the loader looks for
-void XSensMT_Register (DriverTable* table)
+void xsensmt_Register (DriverTable* table)
 {
     table->AddDriver ("xsensmt", XSensMT_Init);
 }
