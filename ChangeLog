@@ -1,3 +1,44 @@
+3.0.1 (2009-12-16)
+ - Fixed incorrect checking of pkg-config package versions.
+ - Fixes for compiling on Windows, including support for pykg-config (see http://wiki.github.com/gbiggs/pykg-config).
+ - Change license of ptu46 to LGPL.
+ - Reinstate the mbicp and nd drivers now we have confirmation of licensing.
+ - Fix for mclient_peek from Michael Bienia.
+ - Added matlab/octave code form Markus Bader.
+ - Fixed XSensMT compilation.
+ - New driver: blobtracker
+ - New driver: sphereptz
+ - New driver: Several AFSM drivers
+ - New driver: DIO interface drivers
+ - New driver: rangerposeinterpolator
+ - New driver: swissranger
+ - New driver: gridmap
+ - Applied patch 2901126: Fix for PTU46 in "await" mode.
+ - Applied patch 2898272: Allow Playerinterfacegen.py to accept multiple files.
+ - Applied patch 2895525: Enable 500k baud rate in serialstream.cc to support SICKS300.
+ - Applied patch 2893433: camerav4l2 RGBP mode.
+ - Applied patch 2893427: sphereptz compatibility with older 2.6 kernels.
+ - Applied patch 2891417: cvcam.c memory overrun failure.
+ - Applied patch 2891142: gripcmd win32 compatibility.
+ - Applied patch 2887954: writelog assertions for wifi data are too strict.
+ - Applied patch 2887703: Player 64 bit install path.
+ - Applied patch 2880788: Various ranger device fixes.
+ - Applied patch 2878829: Forward port of checksum fix for p2os.
+ - Applied patch 2878824: The p2os driver doesn't report any position changes.
+ - Applied patch 2875208: camera1394 additional set property message handling.
+ - Applied patch 2871554: changes to camerav4l2.
+ - Applied patch 2871074: Fixed segfault in PlayerClient::Connected().
+ - Applied patch 2865388: playerc_read working incorrectly with data already on inqueue.
+ - Applied patch 2862998: Remote driver doesn't catch errors thrown in Disconnect.
+ - Applied patch 2859930: Typos in bitlogic driver.
+ - Applied patch 2859422: goto and globalize rq forwarding issues.
+ - Applied patch 2859118: Add a timeout to a request from a driver.
+ - Applied patch 2858751: writelog, readlog and dummy improvements.
+ - Applied patch 2858511: Uninitialized variable in nd_plugin.cc.
+ - Applied patch 2854278: Exit on empty config file.
+ - Applied patch 2861887: Added checks for non-existent policies.
+ - Applied patch 2847168: core: nanosleep instead of usleep.
+
 3.0.0 (2009-09-08)
  - Stop building the C++ bindings if the C++ lib isn't being built
  - Fixed dependencies of Python and Ruby bindings
