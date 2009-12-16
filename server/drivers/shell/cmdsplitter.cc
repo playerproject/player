@@ -82,6 +82,10 @@ driver
 #define RQ_QUEUE_LEN 10
 #define MAX_DEVICES 16
 
+#if defined (WIN32)
+  #define snprintf _snprintf
+#endif
+
 class CmdSplitter : public Driver
 {
   public: CmdSplitter(ConfigFile * cf, int section);

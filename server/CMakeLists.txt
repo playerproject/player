@@ -24,6 +24,11 @@ IF (NOT HAVE_GETOPT)
     INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/replace)
     SET (playerreplaceLib playerreplace)
 ENDIF (NOT HAVE_GETOPT)
+IF (PLAYER_DRIVERSLIB_LIBDIRS)
+    FILTER_EMPTY (driverLinkDirs "${PLAYER_DRIVERSLIB_LIBDIRS}")
+    FILTER_DUPLICATES (driverLinkDirs "${driverLinkDirs}")
+    LINK_DIRECTORIES (${driverLinkDirs})
+ENDIF (PLAYER_DRIVERSLIB_LIBDIRS)
 
 # Source files
 SET (playerSrcs server.cc)

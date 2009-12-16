@@ -179,9 +179,9 @@ MACRO (PLAYERDRIVER_REQUIRE_PKG _name _cumulativeVar _package _includeDirs _libD
             PLAYERDRIVER_ADD_DRIVEROPTION (${_name} OFF 1)
         ENDIF (${_cumulativeVar})
     ELSE (NOT PKG_CONFIG_FOUND)
-        IF (${ARGC} GREATER 7)
-            SET (_minVersion ${ARG7})
-        ENDIF (${ARGC} GREATER 7)
+        IF (${ARGC} GREATER 8)
+            SET (_minVersion ${ARGV8})
+        ENDIF (${ARGC} GREATER 8)
 
         # Look for the package using pkg-config
         SET (_pkgVar "${_package}_PKG")
@@ -198,8 +198,8 @@ MACRO (PLAYERDRIVER_REQUIRE_PKG _name _cumulativeVar _package _includeDirs _libD
             SET (${_includeDirs} ${${_pkgVar}_INCLUDE_DIRS})
             SET (${_libDirs} ${${_pkgVar}_LIBRARY_DIRS})
             SET (${_linkLibs} ${${_pkgVar}_LIBRARIES})
-            LIST_TO_STRING (${_cFlags} "${${_pkgVar}_CFLAGS}")
-            LIST_TO_STRING (${_linkFlags} "${${_pkgVar}_LDFLAGS}")
+            LIST_TO_STRING (${_cFlags} "${${_pkgVar}_CFLAGS_OTHER}")
+            LIST_TO_STRING (${_linkFlags} "${${_pkgVar}_LDFLAGS_OTHER}")
         ELSEIF (${_cumulativeVar})
             # Case where cumulativeVar is set but package wasn't found - don't build
             SET (${_cumulativeVar} FALSE)
