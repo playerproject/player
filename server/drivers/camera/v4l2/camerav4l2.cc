@@ -83,6 +83,7 @@ The camerav4l2 driver captures images from V4L2-compatible cameras.
     - BGR3, RGB3 (24-bit RGB)
     - BGR4, RGB4 (32-bit RGB; will produce 24-bit color images)
     - BA81 (for sn9c1xx-based USB webcams)
+    - MJPG (for webcams producing MJPEG streams not decompressed by V4L2 driver)
   - Note that not all capture modes are supported by Player's internal image
   format; in these modes, images will be translated to the closest matching
   internal format (e.g., BGR4 -> RGB888).
@@ -202,7 +203,7 @@ driver
 
 #define MAX_CHANNELS 10
 
-extern PlayerTime * GlobalTime;
+#define IS_JPEG(ptr) ((((ptr)[0]) == 0xff) && (((ptr)[1]) == 0xd8))
 
 class CameraV4L2: public ThreadedDriver
 {
@@ -243,6 +244,7 @@ class CameraV4L2: public ThreadedDriver
     int skip_frames;
     uint32_t format;
     int failsafe;
+    int jpeg;
 };
 
 CameraV4L2::CameraV4L2(ConfigFile * cf, int section)
@@ -267,6 +269,7 @@ CameraV4L2::CameraV4L2(ConfigFile * cf, int section)
   this->skip_frames = 0;
   this->format = 0;
   this->failsafe = 0;
+  this->jpeg = 0;
   memset(this->sources, 0, sizeof this->sources);
   memset(this->camera_addrs, 0, sizeof this->camera_addrs);
   this->sources_count = cf->GetTupleCount(section, "sources");
@@ -353,6 +356,11 @@ CameraV4L2::CameraV4L2(ConfigFile * cf, int section)
   {
     this->format = PLAYER_CAMERA_FORMAT_RGB888;
     this->bpp = 24;
+  } else if (!(strcmp(this->mode, "MJPG")))
+  {
+    this->format = PLAYER_CAMERA_FORMAT_RGB888;
+    this->bpp = 24;
+    this->jpeg = !0;
   } else
   {
     PLAYER_ERROR("Unknown pixel format");
@@ -487,6 +495,7 @@ void CameraV4L2::Main()
   struct timespec tspec;
   const unsigned char * img;
   player_camera_data_t * data = NULL;
+  int i;
 
   for (;;)
   {
@@ -545,18 +554,45 @@ void CameraV4L2::Main()
     data->fdiv        = 0;
     data->image_count = 0;
     data->image       = NULL;
-    data->compression = PLAYER_CAMERA_COMPRESS_RAW;
-    data->image_count = this->width * this->height * ((this->bpp) / 8);
-    assert(data->image_count > 0);
-    data->image = reinterpret_cast<uint8_t *>(malloc(data->image_count));
-    if (!(data->image))
+    if (!(this->jpeg))
     {
-      PLAYER_ERROR("Out of memory!");
-      free(data);
-      data = NULL;
-      continue;
+      data->compression = PLAYER_CAMERA_COMPRESS_RAW;
+      data->image_count = this->width * this->height * ((this->bpp) / 8);
+      assert(data->image_count > 0);
+      data->image = reinterpret_cast<uint8_t *>(malloc(data->image_count));
+      if (!(data->image))
+      {
+        PLAYER_ERROR("Out of memory!");
+        free(data);
+        data = NULL;
+        continue;
+      }
+      memcpy(data->image, img, data->image_count);
+    } else
+    {
+      data->compression = PLAYER_CAMERA_COMPRESS_JPEG;
+      memcpy(&i, img, sizeof(int));
+      data->image_count = i;
+      assert(data->image_count > 1);
+      if (!(IS_JPEG(img + sizeof(int))))
+      {
+        PLAYER_ERROR("Not a JPEG image...");
+        free(data);
+        data = NULL;
+        continue;
+      }
+      data->image = reinterpret_cast<uint8_t *>(malloc(data->image_count));
+      if (!(data->image))
+      {
+        PLAYER_ERROR("Out of memory!");
+        free(data);
+        data = NULL;
+        continue;
+      }
+      memcpy(data->image, img + sizeof(int), data->image_count);
     }
-    memcpy(data->image, img, data->image_count);
+    assert(data->image_count > 0);
+    assert(data->image);
     Publish(this->camera_addrs[this->current_source],
             PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
             reinterpret_cast<void *>(data), 0, NULL, false);

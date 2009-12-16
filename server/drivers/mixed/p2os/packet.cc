@@ -56,8 +56,8 @@ void P2OSPacket::PrintHex() {
 
 
 bool P2OSPacket::Check( bool ignore_checksum ) {
-  short chksum;
-  chksum = CalcChkSum();
+  unsigned short recv_chksum = static_cast<unsigned short>(CalcChkSum() & 0xffff);
+  unsigned short pkg_chksum = (static_cast<unsigned short>(packet[size-2]) << 8) | packet[size-1];
 
   if ( ignore_checksum )
   {
@@ -65,11 +65,8 @@ bool P2OSPacket::Check( bool ignore_checksum ) {
   }
   else
   {
-    if ( chksum == (packet[size-2] << 8 | packet[size-1]))
-      return(true);
+    return recv_chksum == pkg_chksum;
   }
-
-  return(false);
 }
 
 int P2OSPacket::CalcChkSum() {
@@ -142,7 +139,7 @@ int P2OSPacket::Receive( int fd, bool ignore_checksum )
 }
 
 int P2OSPacket::Build( unsigned char *data, unsigned char datasize ) {
-  short chksum;
+  unsigned short chksum;
 
   size = datasize + 5;
 
@@ -158,7 +155,7 @@ int P2OSPacket::Build( unsigned char *data, unsigned char datasize ) {
 
   memcpy( &packet[3], data, datasize );
 
-  chksum = CalcChkSum();
+  chksum = static_cast<unsigned short> (CalcChkSum() & 0xffff);
   packet[3+datasize] = chksum >> 8;
   packet[3+datasize+1] = chksum & 0xFF;
 
