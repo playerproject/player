@@ -25,3 +25,5 @@ PLAYERDRIVER_ADD_DRIVER (sonartoranger build_sonartoranger SOURCES toranger.cc s
 PLAYERDRIVER_OPTION (rangertolaser build_rangertolaser ON)
 PLAYERDRIVER_ADD_DRIVER (rangertolaser build_rangertolaser SOURCES fromranger.cc rangertolaser.cc)
 
+PLAYERDRIVER_OPTION (rangerposeinterpolator build_rangerposeinterpolator ON)
+PLAYERDRIVER_ADD_DRIVER (rangerposeinterpolator build_rangerposeinterpolator SOURCES rangerposeinterpolator.cc)
