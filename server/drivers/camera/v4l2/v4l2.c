@@ -165,6 +165,8 @@ unsigned char * get_image(void * fg)
  const unsigned char * buf;
  unsigned char * img;
  int count, insize;
+ unsigned char table5[] = { 0, 8, 16, 25, 33, 41, 49,  58, 66, 74, 82, 90, 99, 107, 115, 123, 132, 140, 148, 156, 165, 173, 181, 189,  197, 206, 214, 222, 230, 239, 247, 255 };
+ unsigned char table6[] = { 0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 45, 49, 53, 57, 61, 65, 69, 73, 77, 81, 85, 89, 93, 97, 101,  105, 109, 113, 117, 121, 125, 130, 134, 138, 142, 146, 150, 154, 158, 162, 166, 170, 174, 178, 182, 186, 190, 194, 198, 202, 206, 210, 215, 219, 223, 227, 231, 235, 239, 243, 247, 251, 255 };
 
  if ((!(FG(fg)->grabbing)) || (!(FG(fg)->image))) return NULL;
  memset(&(FG(fg)->buffers[FG(fg)->grab_number].buffer), 0, sizeof FG(fg)->buffers[FG(fg)->grab_number].buffer);
@@ -186,6 +188,19 @@ unsigned char * get_image(void * fg)
  {
   if (!(FG(fg)->bayerbuf)) return NULL;
   bayer2rgb24(FG(fg)->bayerbuf, FG(fg)->buffers[FG(fg)->grab_number].video_map, FG(fg)->width, FG(fg)->height);
+  buf = FG(fg)->bayerbuf;
+  grabdepth = 3;
+ } else if ((FG(fg)->pixformat) == v4l2_fmtbyname("RGBP"))
+ {
+  if (!(FG(fg)->bayerbuf)) return NULL;
+  img = FG(fg)->bayerbuf;
+  for (i = 0; i < (FG(fg)->pixels); i++)
+  {
+    img[0] = table5[(buf[1]) >> 3];
+    img[1] = table6[(((buf[1]) & 7) << 3) | ((buf[0]) >> 5)];
+    img[2] = table5[(buf[0]) & 0xe0];
+    img += 3; buf += 2;
+  }
   buf = FG(fg)->bayerbuf;
   grabdepth = 3;
  }
@@ -342,6 +357,19 @@ void * open_fg(const char * dev, const char * pixformat, int width, int height, 
  {
   fg->r = 0; fg->g = 0; fg->b = 0;
   fg->depth = 1;
+ } else if ((fg->pixformat) == v4l2_fmtbyname("RGBP"))
+ {
+  fg->depth = 2;
+  fg->r = 0; fg->g = 1; fg->b = 2;
+  fg->bayerbuf_size = width * height * 3;
+  fg->bayerbuf = malloc(fg->bayerbuf_size);
+  if (!(fg->bayerbuf))
+  {
+   fprintf(stderr, "out of memory\n");
+   fg->bayerbuf_size = 0;
+   free(fg);
+   return NULL;
+  }
  } else if ((fg->pixformat) == v4l2_fmtbyname("BGR3"))
  {
   fg->r = 2; fg->g = 1; fg->b = 0;

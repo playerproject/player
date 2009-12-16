@@ -65,7 +65,7 @@ The camerav4l2 driver captures images from V4L2-compatible cameras.
 
 - norm (string)
   - Default: "NTSC"
-  - Capture format; "NTSC" or "PAL"
+  - Capture format; "NTSC", "PAL" or "UNKNOWN"
   - Case sensitive!
 
 - size (integer tuple)
@@ -80,6 +80,7 @@ The camerav4l2 driver captures images from V4L2-compatible cameras.
   - Default: "BGR3"
   - Desired capture mode.  Can be one of:
     - GREY (8-bit monochrome)
+    - RGBP (16-bit packed; will produce 24-bit color images)
     - BGR3, RGB3 (24-bit RGB)
     - BGR4, RGB4 (32-bit RGB; will produce 24-bit color images)
     - BA81 (for sn9c1xx-based USB webcams)
@@ -336,6 +337,10 @@ CameraV4L2::CameraV4L2(ConfigFile * cf, int section)
   {
     this->format = PLAYER_CAMERA_FORMAT_MONO8;
     this->bpp = 8;
+  } else if (!(strcmp(this->mode, "RGBP")))
+  {
+    this->format = PLAYER_CAMERA_FORMAT_RGB888;
+    this->bpp = 24;
   } else if (!(strcmp(this->mode, "BGR3")))
   {
     this->format = PLAYER_CAMERA_FORMAT_RGB888;

@@ -466,6 +466,11 @@ int SerialStream::ChangeTermSpeed(int speed)
 	case 115200:
 		term_speed = B115200;
 		break;
+#ifdef B500000
+	case 500000:
+		term_speed = B500000;
+		break;
+#endif
 	default:
 		term_speed = speed;
   }
@@ -476,6 +481,9 @@ int SerialStream::ChangeTermSpeed(int speed)
     case B19200:
     case B38400:
     case B115200:
+#ifdef B500000
+    case B500000:
+#endif
       if( tcgetattr( this->opaque_fd, &term ) < 0 )
         RETURN_ERROR(1, "unable to get device attributes");
 

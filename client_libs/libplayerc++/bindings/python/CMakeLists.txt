@@ -36,7 +36,7 @@ IF(BUILD_PLAYERCC)
                                     ERROR_VARIABLE pythonVersionString
                                     ERROR_STRIP_TRAILING_WHITESPACE)
                     STRING (REGEX REPLACE "^Python ([0-9]+\\.[0-9]+).*" "\\1" pythonVersion ${pythonVersionString})
-                    SET (playercpppyInstallDir lib/python${pythonVersion}/site-packages)
+                    SET (playercpppyInstallDir ${PLAYER_LIBRARY_INSTALL_DIR}/python${pythonVersion}/site-packages)
                 ENDIF (PYTHON_OS_WIN)
                 SET (PYTHON_BINDINGS_INSTALL_DIR ${playercpppyInstallDir} CACHE PATH "Python bindings installation directory under $prefix")
                 MARK_AS_ADVANCED (PYTHON_BINDINGS_INSTALL_DIR)

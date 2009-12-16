@@ -77,6 +77,9 @@ driver
 
 #include <stddef.h> // for NULL and size_t
 #include <string.h> // for memset()
+#if !defined (WIN32)
+#include <strings.h> // for strcasecmp()
+#endif
 #include <pthread.h>
 #include <libplayercore/playercore.h>
 
@@ -145,16 +148,24 @@ GripCmd::GripCmd(ConfigFile * cf, int section) : ThreadedDriver(cf, section, tru
     return;
   }
   this->cmd = 0;
+#if defined (WIN32)
+  if (!(_strnicmp(_cmd, "open", strlen(_cmd)))) this->cmd = PLAYER_GRIPPER_CMD_OPEN;
+  else if (!(_strnicmp(_cmd, "close", strlen(_cmd)))) this->cmd = PLAYER_GRIPPER_CMD_CLOSE;
+  else if (!(_strnicmp(_cmd, "stop", strlen(_cmd)))) this->cmd = PLAYER_GRIPPER_CMD_STOP;
+  else if (!(_strnicmp(_cmd, "store", strlen(_cmd)))) this->cmd = PLAYER_GRIPPER_CMD_STORE;
+  else if (!(_strnicmp(_cmd, "retrieve", strlen(_cmd)))) this->cmd = PLAYER_GRIPPER_CMD_RETRIEVE;
+#else
   if (!(strcasecmp(_cmd, "open"))) this->cmd = PLAYER_GRIPPER_CMD_OPEN;
   else if (!(strcasecmp(_cmd, "close"))) this->cmd = PLAYER_GRIPPER_CMD_CLOSE;
   else if (!(strcasecmp(_cmd, "stop"))) this->cmd = PLAYER_GRIPPER_CMD_STOP;
   else if (!(strcasecmp(_cmd, "store"))) this->cmd = PLAYER_GRIPPER_CMD_STORE;
   else if (!(strcasecmp(_cmd, "retrieve"))) this->cmd = PLAYER_GRIPPER_CMD_RETRIEVE;
+#endif
   else
   {
     PLAYER_ERROR("Invalid command");
     this->SetError(-1);
-    return;    
+    return;
   }
   this->sleep_nsec = cf->ReadInt(section, "sleep_nsec", 100000000);
   if ((this->sleep_nsec) <= 0)
