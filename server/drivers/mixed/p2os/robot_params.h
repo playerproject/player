@@ -27,9 +27,6 @@
  * Saphira parameter files:
  *    /Users/gerkey/Desktop/params/params/amigo-sh.p
  *    /Users/gerkey/Desktop/params/params/amigo.p
- *    /Users/gerkey/Desktop/params/params/arnl.p
- *    /Users/gerkey/Desktop/params/params/default-arnl.p
- *    /Users/gerkey/Desktop/params/params/default-sonarnl.p
  *    /Users/gerkey/Desktop/params/params/p2at.p
  *    /Users/gerkey/Desktop/params/params/p2at8+.p
  *    /Users/gerkey/Desktop/params/params/p2at8.p
@@ -59,7 +56,6 @@
  *    /Users/gerkey/Desktop/params/params/psos1m.p
  *    /Users/gerkey/Desktop/params/params/psos1x.p
  *    /Users/gerkey/Desktop/params/params/psos43m.p
- *    /Users/gerkey/Desktop/params/params/sonarnl.p
  *    /Users/gerkey/Desktop/params/params/wheelchair-sh.p
 */
 
@@ -69,7 +65,7 @@
 
 void initialize_robot_params(void);
 
-#define PLAYER_NUM_ROBOT_TYPES 36
+#define PLAYER_NUM_ROBOT_TYPES 32
 
 
 typedef struct
