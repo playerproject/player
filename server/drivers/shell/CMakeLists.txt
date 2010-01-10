@@ -41,3 +41,6 @@ PLAYERDRIVER_ADD_DRIVER (suppressor build_suppressor SOURCES suppressor.cc)
 
 PLAYERDRIVER_OPTION (velcmd build_velcmd ON)
 PLAYERDRIVER_ADD_DRIVER (velcmd build_velcmd SOURCES velcmd.cc)
+
+PLAYERDRIVER_OPTION (opaquecmd build_opaquecmd ON)
+PLAYERDRIVER_ADD_DRIVER (opaquecmd build_opaquecmd SOURCES opaquecmd.cc)
