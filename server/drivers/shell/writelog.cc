@@ -2621,38 +2621,47 @@ int WriteLog::WriteCamera(WriteLogDevice *device, player_msghdr_t* hdr, void *da
                         FILE *file;
                         char filename[1024];
 
-                        if (camera_data->compression != PLAYER_CAMERA_COMPRESS_RAW)
-                        {
-                            PLAYER_WARN("unsupported compression method");
-                            return -1;
-                        }
+			
+			if (camera_data->compression == PLAYER_CAMERA_COMPRESS_RAW) {
+			  snprintf(filename, sizeof(filename), "%s/%s_camera_%02d_%06d.pnm",
+				   this->log_directory, this->filestem, device->addr.index, device->cameraFrame++);
+			} else if (camera_data->compression == PLAYER_CAMERA_COMPRESS_JPEG) {
+			  snprintf(filename, sizeof(filename), "%s/%s_camera_%02d_%06d.jpg",
+				   this->log_directory, this->filestem, device->addr.index, device->cameraFrame++);
+			} else {
+                          PLAYER_WARN("unsupported compression method");
+                          return -1;
+			}
 
-                        snprintf(filename, sizeof(filename), "%s/%s_camera_%02d_%06d.pnm",
-                                 this->log_directory, this->filestem, device->addr.index, device->cameraFrame++);
+			file = fopen(filename, "w+");
+			if (file == NULL)
+			  return -1;
+			
+			if (camera_data->compression == PLAYER_CAMERA_COMPRESS_RAW) {
+			  
+			  if (camera_data->format == PLAYER_CAMERA_FORMAT_RGB888)
+			    {
+			      // Write ppm header
+			      fprintf(file, "P6\n%d %d\n%d\n", camera_data->width, camera_data->height, 255);
+			      fwrite(camera_data->image, 1, camera_data->image_count, file);
+			    }
+			  else if (camera_data->format == PLAYER_CAMERA_FORMAT_MONO8)
+			    {
+			      // Write pgm header
+			      fprintf(file, "P5\n%d %d\n%d\n", camera_data->width, camera_data->height, 255);
+			      fwrite(camera_data->image, 1, camera_data->image_count, file);
+			    }
+			  else
+			    {
+			      PLAYER_WARN("unsupported image format");
+			    }
+			  
+			} else if (camera_data->compression == PLAYER_CAMERA_COMPRESS_JPEG) {
+			  fwrite(camera_data->image, 1, camera_data->image_count, file);
+			}
 
-                        file = fopen(filename, "w+");
-                        if (file == NULL)
-                            return -1;
-
-                        if (camera_data->format == PLAYER_CAMERA_FORMAT_RGB888)
-                        {
-                            // Write ppm header
-                            fprintf(file, "P6\n%d %d\n%d\n", camera_data->width, camera_data->height, 255);
-                            fwrite(camera_data->image, 1, camera_data->image_count, file);
-                        }
-                        else if (camera_data->format == PLAYER_CAMERA_FORMAT_MONO8)
-                        {
-                            // Write pgm header
-                            fprintf(file, "P5\n%d %d\n%d\n", camera_data->width, camera_data->height, 255);
-                            fwrite(camera_data->image, 1, camera_data->image_count, file);
-                        }
-                        else
-                        {
-                            PLAYER_WARN("unsupported image format");
-                        }
-
-                        fclose(file);
-                    }
+			fclose(file);
+		    }
                     return 0;
                 default:
                     return -1;
