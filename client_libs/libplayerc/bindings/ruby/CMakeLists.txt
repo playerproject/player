@@ -53,11 +53,11 @@ IF(RUBY_FOUND)
             ENDIF (HAVE_JPEG)
 
             #TODO: find ruby in windows, check install dir is correct  
-            STRING(REPLACE "/usr/" "" ruby_relative_sitelib_dir ${RUBY_SITELIB_DIR})
-            STRING(REPLACE "/opt/" "" ruby_relative_sitelib_dir ${ruby_relative_sitelib_dir})
-            STRING(REPLACE "local/" "" ruby_relative_sitelib_dir ${ruby_relative_sitelib_dir})
-	        STRING(REPLACE "lib/" ${PLAYER_LIBRARY_INSTALL_DIR}/ ruby_relative_sitelib_dir ${ruby_relative_sitelib_dir} )
-            SET (RUBY_BINDINGS_INSTALL_DIR ${ruby_relative_sitelib_dir} CACHE PATH "Ruby bindings installation directory under $RUBY_SITELIB_DIR")
+            STRING(REPLACE "/usr/" "" ruby_relative_sitearch_dir ${RUBY_SITEARCH_DIR})
+            STRING(REPLACE "/opt/" "" ruby_relative_sitearch_dir ${ruby_relative_sitearch_dir})
+            STRING(REPLACE "local/" "" ruby_relative_sitearch_dir ${ruby_relative_sitearch_dir})
+	        STRING(REPLACE "lib/" ${PLAYER_LIBRARY_INSTALL_DIR}/ ruby_relative_sitearch_dir ${ruby_relative_sitearch_dir} )
+            SET (RUBY_BINDINGS_INSTALL_DIR ${ruby_relative_sitearch_dir} CACHE PATH "Ruby bindings installation directory under $RUBY_sitearch_DIR")
             MARK_AS_ADVANCED (RUBY_BINDINGS_INSTALL_DIR)
 
             INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/playercr.so
