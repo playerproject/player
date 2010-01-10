@@ -566,7 +566,7 @@ void PhidgetIFK::Main() {
             } else if (errno == EINVAL) {
                 std::cout << "EINVAL" ;
             }
-            std::cout << endl;
+            std::cout << std::endl;
         }
 
 
