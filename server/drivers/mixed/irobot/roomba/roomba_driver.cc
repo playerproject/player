@@ -333,7 +333,7 @@ Roomba::Main()
 
      this->Publish(this->position_addr,
                    PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE,
-                   (void*)&posdata, sizeof(posdata), NULL);
+                   reinterpret_cast<void *>(&posdata), sizeof posdata, NULL);
 
      ////////////////////////////
      // Update power data
@@ -355,7 +355,7 @@ Roomba::Main()
 
      this->Publish(this->power_addr,
                    PLAYER_MSGTYPE_DATA, PLAYER_POWER_DATA_STATE,
-                   (void*)&powerdata, sizeof(powerdata), NULL);
+                   reinterpret_cast<void *>(&powerdata), sizeof powerdata, NULL);
 
      ////////////////////////////
      // Update bumper data
@@ -374,7 +374,7 @@ Roomba::Main()
 
        this->Publish(this->bumper_addr,
                      PLAYER_MSGTYPE_DATA, PLAYER_BUMPER_DATA_STATE,
-                     (void*)&bumperdata);
+                     reinterpret_cast<void *>(&bumperdata));
        delete [] bumperdata.bumpers;
      }
 
@@ -404,7 +404,7 @@ Roomba::Main()
 
        this->Publish(this->ir_addr,
            PLAYER_MSGTYPE_DATA, PLAYER_IR_DATA_RANGES,
-           (void*)&irdata);
+           reinterpret_cast<void *>(&irdata));
        delete [] irdata.ranges;
      }
 
@@ -421,7 +421,7 @@ Roomba::Main()
      this->Publish(this->gripper_addr,
          PLAYER_MSGTYPE_DATA,
          PLAYER_GRIPPER_DATA_STATE,
-         (void*) &gripperdata, sizeof(gripperdata), NULL);
+         reinterpret_cast<void *>(&gripperdata), sizeof gripperdata, NULL);
 
      ////////////////////////////
      // Update Opaque-Control data
@@ -443,7 +443,7 @@ Roomba::Main()
 
        this->Publish(this->opaque_addr,
            PLAYER_MSGTYPE_DATA,PLAYER_OPAQUE_DATA_STATE,
-           (void*)&cpdata);
+           reinterpret_cast<void *>(&cpdata));
        delete [] cpdata.data;
      }
 
@@ -509,7 +509,7 @@ Roomba::ProcessMessage(QueuePointer & resp_queue,
     this->Publish(this->position_addr, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_POSITION2D_REQ_GET_GEOM,
-                  (void*)&pos_geom, sizeof pos_geom, NULL);
+                  reinterpret_cast<void *>(&pos_geom), sizeof pos_geom, NULL);
     return 0;
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
@@ -541,7 +541,7 @@ Roomba::ProcessMessage(QueuePointer & resp_queue,
     this->Publish(this->bumper_addr, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_BUMPER_REQ_GET_GEOM,
-                  (void*)&bump_geom);
+                  reinterpret_cast<void *>(&bump_geom));
     delete []bump_geom.bumper_def;
     bump_geom.bumper_def = NULL;
 
@@ -572,14 +572,18 @@ Roomba::ProcessMessage(QueuePointer & resp_queue,
     this->Publish(this->ir_addr, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_IR_REQ_POSE,
-                  (void*)&poses);
+                  reinterpret_cast<void *>(&poses));
     delete []poses.poses;
     poses.poses = NULL;
     return 0;
   }
-  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,
-                                    PLAYER_OPAQUE_CMD,
-                                    this->opaque_addr))
+  else if ((Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,
+                                      PLAYER_OPAQUE_CMD,
+                                      this->opaque_addr))
+           ||
+           (Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+                                      PLAYER_OPAQUE_REQ,
+                                      this->opaque_addr)))
   {
     if (!data)
     {
@@ -650,7 +654,15 @@ Roomba::ProcessMessage(QueuePointer & resp_queue,
         return -1;
       }
     }
-
+    if (Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+                                  PLAYER_OPAQUE_REQ,
+                                  this->opaque_addr))
+    {
+      this->Publish(this->opaque_addr, resp_queue,
+                    PLAYER_MSGTYPE_RESP_ACK,
+                    PLAYER_OPAQUE_REQ,
+                    reinterpret_cast<void *>(&opaque_data));
+    }
     return 0;
   }
   else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD,
