@@ -151,7 +151,8 @@ int OpaqueCmd::hexfromstring(const char * s, player_opaque_data_t * data)
     memset(data, 0, sizeof(player_opaque_data_t));
     return -1;
   }
-  for (hex = s; *hex; hex += 2)
+  len = 0;
+  for (hex = s; *hex; hex += 2, ++len)
   {
     if (!(hex[1]))
     {
