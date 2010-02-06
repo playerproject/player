@@ -126,6 +126,7 @@ std::string g_hostname= PlayerCc::PLAYER_HOSTNAME;
 int32_t g_port        = PlayerCc::PLAYER_PORTNUM;
 int16_t g_index       = 0;
 double g_rate        = 0;
+int16_t g_count       = -1;
 uint32_t g_transport  = PLAYERC_TRANSPORT_TCP;
 
 std::string g_device("");
@@ -134,18 +135,19 @@ void
 print_usage()
 {
   using namespace std;
-  cout << "USAGE: playerprint [-r <rate>] [-h <host>] [-p <port>] [-i <index>] <device>" << endl;
+  cout << "USAGE: playerprint [-r <rate>] [-h <host>] [-p <port>] [-i <index>] [-c <count>] <device>" << endl;
   cout << "       -h <host>:  connect to Player on this host" << endl;
   cout << "       -p <port>:  connect to Player on this TCP port" << endl;
   cout << "       -r <rate>:  request data update at <rate> in Hz" << endl;
   cout << "       -i <index>: the index of the device" << endl;
+  cout << "       -c <count>: the number of updates to print" << endl;
 }
 
 int
 get_options(int argc, char **argv)
 {
   int ch=0;
-  const char* optflags = "i:h:p:r:t:";
+  const char* optflags = "i:h:p:r:t:c:";
 
   while((ch=getopt(argc, argv, optflags))!=-1)
   {
@@ -163,6 +165,9 @@ get_options(int argc, char **argv)
           break;
       case 'r':
           g_rate = strtod(optarg,NULL);
+          break;
+      case 'c':
+          g_count = atoi(optarg);
           break;
       case 't':
           g_transport = atoi(optarg);
@@ -325,7 +330,9 @@ main(int argc, char **argv)
     gettimeofday(&then,NULL);
   }
 
-  for(;;)
+  int16_t g_count_loop = 0;
+  // Loop for g_count or forever if g_count hasn't been set
+  for(;g_count == -1 || g_count_loop < g_count; g_count_loop++)
   {
     /* this blocks until new data comes; */
     client.Read();
