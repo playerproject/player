@@ -37,6 +37,8 @@ http://www.roboteq.com/ax2850-folder.html
 
 - @ref interface_position2d
   @ref interface_power
+  @ref interface_position1d
+  @ref interface_dio
 
 @par Requires
 
@@ -55,6 +57,11 @@ http://www.roboteq.com/ax2850-folder.html
 - baud (integer)
   - Default: 9600
   - The baud rate to be used.
+
+- motor_control_mode (integer)
+  - Default: ( 1 - open loop separate speed if no encoder, 197 - A&B mixed speed closed loop if encoders)
+  - options (0-255 see Roboteq Motor Control Mode documentation)
+    - 3 (A&B position analog feedback type)
 
 - encoder_ppr
   - Default: 500
@@ -96,6 +103,33 @@ http://www.roboteq.com/ax2850-folder.html
   - Default: true (on)
   - Set the motor controller to RC mode when the driver shuts down.
 
+@par Properties
+
+- ch1_min_pos
+  - Default -0.1
+  - Minimum position in rad/m limit for channel 1 mootor when using position1d interface
+
+- ch2_min_pos
+  - Default -0.1
+  - Minimum position in rad/m limit for channel 2 mootor when using position1d interface
+
+- ch1_max_pos
+  - Default 0.1
+  - Maximum position in rad/m limit for channel 1 mootor when using position1d interface
+
+- ch2_max_pos
+  - Default 0.1
+  - Maximum position in rad/m limit for channel 2 mootor when using position1d interface
+
+- ch1_dpos_per_tick (float)
+  - Default: 0.01
+  - change in channel 1 position in rad/m per roboteq tick when using position1d interface
+
+- ch2_dpos_per_tick (float)
+  - Default: 0.01
+  - change in channel 2 position per roboteq tick when using position1d interface
+
+- 
 @par Example
 
 @verbatim
@@ -106,6 +140,21 @@ driver
   devicepath "/dev/ttyS0"
 )
 @endverbatim
+
+@verbatim
+# Position1d interfaces
+driver
+(
+  name "roboteq"
+  provides ["position1d:0" "position1d:1"]
+  devicepath "/dev/ttyS0"
+  motor_control_mode "3"
+  ch1_min_pos "-1.0"
+  ch1_max_pos "1.0"
+  ch2_min_pos "-10.0"
+  ch2_max_pos "10.0"
+)  
+
 
 @author Pablo Rivera rivera@cse.unr.edu
 @author Mike Roddewig mrroddew@mtu.edu
@@ -232,7 +281,19 @@ class roboteq : public ThreadedDriver
 		unsigned char motor_control_mode;
 		double max_forward_velocity;
 		double max_rotational_velocity;
+		DoubleProperty min_position_motor_0;
+		DoubleProperty min_position_motor_1;
+		DoubleProperty* min_position_motor[2];
+		DoubleProperty max_position_motor_0;
+		DoubleProperty max_position_motor_1;
+		DoubleProperty* max_position_motor[2];
+		DoubleProperty dpos_per_tick_0;
+		DoubleProperty dpos_per_tick_1;
+		DoubleProperty* dpos_per_tick[2];
 		bool motors_enabled;
+		bool motor0_enabled;
+		bool motor1_enabled;
+		bool* motor_enabled[2];
 	
 		// Config parameters.
 
@@ -254,16 +315,19 @@ class roboteq : public ThreadedDriver
 		void UpdatePowerData (player_power_data_t *);
 		void UpdatePositionData (player_position2d_data_t *);
 		int WriteMotorVelocity (double, double);
+		int ProcessPosition1dCmd(const int, player_position1d_cmd_pos_t *);
 
 		player_position2d_data_t position_data;
 		player_power_data_t power_data;
-		player_devaddr_t position_addr;
+		player_devaddr_t position_addr; //position2d interface
+		player_devaddr_t position_addr_motor1;
+		player_devaddr_t position_addr_motor2;
 		player_devaddr_t power_addr;
 		player_pose2d current_position;
 
 	public:
 		roboteq(ConfigFile *, int);
-    
+		
 		virtual int ProcessMessage(QueuePointer &, 
 			player_msghdr *, void *);
 		virtual int MainSetup();
@@ -286,16 +350,51 @@ void roboteq_Register(DriverTable* table) {
 }
 
 ///////////////////////////////////////////////////////////////////////////
-roboteq::roboteq( ConfigFile* cf, int section) : ThreadedDriver(cf, section) {  
+roboteq::roboteq( ConfigFile* cf, int section) : 
+	ThreadedDriver(cf, section),
+	min_position_motor_0("ch1_min_pos", -0.1, true, this, cf, section),
+	min_position_motor_1("ch2_min_pos", -0.1, true, this, cf, section),
+	max_position_motor_0("ch1_max_pos", 0.1, true, this, cf, section),
+	max_position_motor_1("ch2_max_pos", 0.1, true, this, cf, section),
+	dpos_per_tick_0("ch1_dpos_per_tick", 0.01, true, this, cf, section),
+	dpos_per_tick_1("ch2_dpos_per_tick", 0.01 , true, this, cf, section)
+{  
 	
 	memset (&this->position_addr, 0, sizeof (player_devaddr_t));
 	memset (&this->power_addr, 0, sizeof (player_devaddr_t));
-	
-	// Check the config file to see if we are providing a position interface.
+	min_position_motor[0] = &min_position_motor_0;	
+	min_position_motor[1] = &min_position_motor_1;	
+	max_position_motor[0] = &max_position_motor_0;	
+	max_position_motor[1] = &max_position_motor_1;	
+	dpos_per_tick[0] = &dpos_per_tick_0;	
+	dpos_per_tick[1] = &dpos_per_tick_1;
+	motor_enabled[0] = &motor0_enabled;
+	motor_enabled[1] = &motor1_enabled;
+	// Check the config file to see if we are providing a position2d interface.
 	if (cf->ReadDeviceAddr(&(this->position_addr), section, "provides",
 		PLAYER_POSITION2D_CODE, -1, NULL) == 0) {
+		PLAYER_ERROR("Adding position2d interface.");
 		if (this->AddInterface(this->position_addr) != 0) {
-			PLAYER_ERROR("Error adding position interface.");
+			PLAYER_ERROR("Error adding position2d interface.");
+			SetError(-1);
+			return;
+		}
+	}
+
+	// Check the config file to see if we are providing a position1d interface.
+	if (cf->ReadDeviceAddr(&(this->position_addr_motor1), section, "provides",
+		PLAYER_POSITION1D_CODE, 0, NULL) == 0) {
+		if (this->AddInterface(this->position_addr_motor1) != 0) {
+			PLAYER_ERROR("Error adding position1d interface 0.");
+			SetError(-1);
+			return;
+		}
+	}
+	// Check the config file to see if we are providing a position1d interface.
+	if (cf->ReadDeviceAddr(&(this->position_addr_motor2), section, "provides",
+		PLAYER_POSITION1D_CODE, 1, NULL) == 0) {
+		if (this->AddInterface(this->position_addr_motor2) != 0) {
+			PLAYER_ERROR("Error adding position1d interface 1.");
 			SetError(-1);
 			return;
 		}
@@ -321,6 +420,14 @@ roboteq::roboteq( ConfigFile* cf, int section) : ThreadedDriver(cf, section) {
 	
 	// Optional parameters.
 	
+	int modetmp = cf->ReadInt(section, "motor_control_mode", MOTOR_CONTROL_MODE_OPEN_LOOP);
+	if (modetmp < 0 || modetmp > 255) {
+		PLAYER_ERROR("ROBOTEQ: 'motor_control_mode' must be between 0 and 255. See Roboteq Motor Control Mode documentation.");
+		this->SetError(-1);
+		return;
+	}
+	motor_control_mode = (unsigned char)modetmp;
+
 	encoder_ppr = cf->ReadInt(section, "encoder_ppr", DEFAULT_ENCODER_PPR);
 	if (encoder_ppr < 0) {
 		PLAYER_ERROR("ROBOTEQ: 'encoder_ppr' must be positive.");
@@ -432,7 +539,7 @@ roboteq::roboteq( ConfigFile* cf, int section) : ThreadedDriver(cf, section) {
 	}
 	else{
 		struct termios options;
-      
+			
 		tcgetattr(roboteq_fd, &options);
 
 		// default is 9600 unless otherwise specified
@@ -492,6 +599,8 @@ roboteq::roboteq( ConfigFile* cf, int section) : ThreadedDriver(cf, section) {
 	
 	// Motors are disabled on startup.
 	motors_enabled = false;
+	motor0_enabled = false;
+	motor1_enabled = false;
 	
 	// Enable new motor commands to overwrite old ones if they have not yet been processed.
 	this->InQueue->AddReplaceRule(-1, -1, -1, -1, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_VEL, true);
@@ -536,11 +645,10 @@ int roboteq::MainSetup() {
 	write(roboteq_fd, serialout_buff, strlen(serialout_buff));
 	tcdrain(roboteq_fd);
 	usleep(25000);
-	
+
 	memset(serialin_buff, 0, SERIAL_BUFF_SIZE);
 	ret = read(roboteq_fd, serialin_buff, SERIAL_BUFF_SIZE-1);
 	serialin_buff[SERIAL_BUFF_SIZE-1] = 0x00; // Null terminate our buffer to make sure sscanf doesn't run amok.
-	
 	ret = sscanf(serialin_buff, "%*3c %2X", &returned_value);
 	if (ret != 1) {
 		PLAYER_ERROR("ROBOTEQ: Unable to communicate with the controller! Check the serial device.");
@@ -577,13 +685,17 @@ int roboteq::MainSetup() {
 		}
 	}
 	
-	if (encoder_present == 1) {
-		motor_control_mode = MOTOR_CONTROL_MODE_CLOSED_LOOP;
-	}
-	else {
+	// If motor control mode is set to default, change to closed loop if encoders are present
+	//  otherwise leave as set by motor_control_mode command in config file
+	if ( motor_control_mode == MOTOR_CONTROL_MODE_OPEN_LOOP) {
+		if (encoder_present == 1) {
+			motor_control_mode = MOTOR_CONTROL_MODE_CLOSED_LOOP;
+		}
+		else {
 		motor_control_mode = MOTOR_CONTROL_MODE_OPEN_LOOP;
+		}
 	}
-	
+
 	// Set configuration parameters
 
 	if (this->checkConfigParameter('^', MOTOR_CONTROL_MODE_ADDRESS, motor_control_mode) != 0) {
@@ -632,11 +744,11 @@ int roboteq::MainSetup() {
 	}
 	// Reboot the controller.
 	strcpy(serialout_buff, "%rrrrrr\r");
-        write(roboteq_fd, serialout_buff, strlen(serialout_buff));
-        tcdrain(roboteq_fd);
-        sleep(2); // Sleep for two seconds to give the controller sufficient time to reboot.
+				write(roboteq_fd, serialout_buff, strlen(serialout_buff));
+				tcdrain(roboteq_fd);
+				sleep(2); // Sleep for two seconds to give the controller sufficient time to reboot.
 
-        tcflush(roboteq_fd, TCIFLUSH); // Clear all the reboot crap out of the input buffer.
+				tcflush(roboteq_fd, TCIFLUSH); // Clear all the reboot crap out of the input buffer.
 
 	return 0;
 }
@@ -713,7 +825,7 @@ void roboteq::MainQuit() {
 	}
 
 	close(roboteq_fd);
-  
+	
 	return;
 }
 
@@ -721,7 +833,9 @@ void roboteq::MainQuit() {
 // Process an incoming message
 ////////////////////////////////////////////////////////////////////////////////
 int roboteq::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data) {
-	
+	PLAYER_MSG3(MESSAGE_DEBUG,"Received Message for addr.index %d type %d subtype %d",hdr->addr.index, hdr->type, hdr->subtype);
+	//////////////////////////////////////////////////////////////////////////////	
+	// Process position2d messages
 	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_VEL, position_addr)) {
 
 		assert(hdr->size == sizeof(player_position2d_cmd_vel_t));
@@ -794,9 +908,82 @@ int roboteq::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void
 			this->Publish(position_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_SPEED_PID);
 		}
 	}
+	//////////////////////////////////////////////////////////////////////////////
+
+	//////////////////////////////////////////////////////////////////////////////	
+	// Process position1d messages
+	else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION1D_REQ_MOTOR_POWER,position_addr_motor1)) {
+		assert(hdr->size == sizeof(player_position1d_power_config_t));
+		
+		PLAYER_MSG1(MESSAGE_DEBUG,"Received position1d req motor power for index %d",hdr->addr.index);
+		player_position1d_power_config_t * power_config = reinterpret_cast<player_position1d_power_config_t *> (data);
+		motors_enabled = (bool) power_config->state;
+		motor0_enabled = (bool) power_config->state;
+		
+		this->Publish(position_addr_motor1, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION1D_REQ_MOTOR_POWER);
+	}
+	else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION1D_REQ_MOTOR_POWER,position_addr_motor2)) {
+		assert(hdr->size == sizeof(player_position1d_power_config_t));
+		
+		PLAYER_MSG1(MESSAGE_DEBUG,"Received position1d req motor power for index %d",hdr->addr.index);
+		player_position1d_power_config_t * power_config = reinterpret_cast<player_position1d_power_config_t *> (data);
+		motors_enabled = (bool) power_config->state;
+		motor1_enabled = (bool) power_config->state;
+		
+		this->Publish(position_addr_motor2, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION1D_REQ_MOTOR_POWER);
+	}
+	else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION1D_CMD_POS,position_addr_motor1)) {
+		assert(hdr->size == sizeof(player_position1d_cmd_pos_t));
+		PLAYER_MSG1(MESSAGE_DEBUG,"Received position1d pos cmd for motor at index %d",hdr->addr.index);
+		ProcessPosition1dCmd(0, reinterpret_cast<player_position1d_cmd_pos_t *>(data) );
+	}
+	else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION1D_CMD_POS,position_addr_motor2)) {
+		assert(hdr->size == sizeof(player_position1d_cmd_pos_t));
+		PLAYER_MSG1(MESSAGE_DEBUG,"Received position1d pos cmd for motor at index %d",hdr->addr.index);
+		ProcessPosition1dCmd(1, reinterpret_cast<player_position1d_cmd_pos_t *>(data) );
+	}
+	else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
+			PLAYER_GET_DBLPROP_REQ, position_addr_motor1)) {
+
+		player_dblprop_req_t &req = *reinterpret_cast<player_dblprop_req_t*> (data);
+		PLAYER_MSG1(MESSAGE_DEBUG,"motor1 PLAYER_GET_DBLPROP_REQ %s",req.key);
+		if (min_position_motor_0.KeyIsEqual(req.key))
+		{
+			min_position_motor_0.GetValueToMessage (reinterpret_cast<void*> (&req));
+			Publish(position_addr_motor1, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_GET_DBLPROP_REQ, reinterpret_cast<void*> (&req), sizeof(player_dblprop_req_t), NULL);
+			return 0;
+		}
+		else if (max_position_motor_0.KeyIsEqual(req.key))
+		{
+			max_position_motor_0.GetValueToMessage (reinterpret_cast<void*> (&req));
+			Publish(position_addr_motor1, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_GET_DBLPROP_REQ, reinterpret_cast<void*> (&req), sizeof(player_dblprop_req_t), NULL);
+			return 0;
+		}
+		return -1;
+	}
+	else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
+			PLAYER_GET_DBLPROP_REQ, position_addr_motor2)) {
+
+		player_dblprop_req_t &req = *reinterpret_cast<player_dblprop_req_t*> (data);
+		PLAYER_MSG1(MESSAGE_DEBUG,"motor2 PLAYER_GET_DBLPROP_REQ %s",req.key);
+		if (min_position_motor_1.KeyIsEqual(req.key))
+		{
+			min_position_motor_1.GetValueToMessage (reinterpret_cast<void*> (&req));
+			Publish(position_addr_motor2, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_GET_DBLPROP_REQ, reinterpret_cast<void*> (&req), sizeof(player_dblprop_req_t), NULL);
+			return 0;
+		}
+		else if (max_position_motor_1.KeyIsEqual(req.key))
+		{
+			max_position_motor_1.GetValueToMessage (reinterpret_cast<void*> (&req));
+			Publish(position_addr_motor2, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_GET_DBLPROP_REQ, reinterpret_cast<void*> (&req), sizeof(player_dblprop_req_t), NULL);
+			return 0;
+		}
+		return -1;
+	}
 	else {
 		this->Publish(position_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, hdr->subtype);
 	}
+	//////////////////////////////////////////////////////////////////////////////	
 	
 	return 0;
 }
@@ -1049,6 +1236,62 @@ void roboteq::UpdatePositionData(player_position2d_data_t * position_data) {
 	position_data->pos = current_position;
 }
 
+int roboteq::ProcessPosition1dCmd(int motor_index, player_position1d_cmd_pos_t * data)
+{
+	int ret;
+	float position = data->pos;
+	unsigned char position_value;
+	char returned_value;
+	PLAYER_MSG1(MESSAGE_DEBUG,"Received position %0.2f",position);
+	if (invert_directions == true) {
+		position = -position;
+	}
+	if (position > *max_position_motor[motor_index]) {
+		PLAYER_WARN3("Position %f exceeds max position %f: limited to %f",
+			position,
+			max_position_motor[motor_index]->GetValue(),
+			max_position_motor[motor_index]->GetValue());
+		position = *max_position_motor[motor_index];
+	}
+	if (position < *min_position_motor[motor_index]) {
+		PLAYER_WARN3("Position %f exceeds min position %f: limited to %f",
+			position,
+			min_position_motor[motor_index]->GetValue(),
+			min_position_motor[motor_index]->GetValue());
+		position = *min_position_motor[motor_index];
+	}
+	position_value = (unsigned char) (fabs(position) / rad_per_tick);
+	PLAYER_MSG1(MESSAGE_DEBUG,"Setting position_value to %d",position_value);
+	if (motors_enabled == false || motor_enabled[motor_index] == false) {
+		position_value = 0;
+		PLAYER_MSG0(MESSAGE_INFO, "Warning, the motors are disabled! Enable them before use.");
+	}
+	if (position < 0) {
+		sprintf(serialout_buff, "!%c%.2X\r", (motor_index == 0 ? 'a' : 'b'), position_value);
+	}
+	else {
+		sprintf(serialout_buff, "!%c%.2X\r", (motor_index == 0 ? 'A' : 'B'), position_value);
+	}
+	PLAYER_MSG1(MESSAGE_DEBUG,"Sending Roboteq '%s'",serialout_buff);
+	write(roboteq_fd, serialout_buff, strlen(serialout_buff));
+	tcdrain(roboteq_fd);
+	usleep(25000);
+		
+	memset(serialin_buff, 0, SERIAL_BUFF_SIZE);
+	ret = read(roboteq_fd, serialin_buff, SERIAL_BUFF_SIZE-1);
+	serialin_buff[SERIAL_BUFF_SIZE-1] = 0x00; // Null terminate our buffer to make sure sscanf doesn't run amok.
+
+	ret = sscanf(serialin_buff, "%*4c %1c", &returned_value);
+		
+	if (returned_value != '+') {
+		// Some kind of error happened.
+		
+		PLAYER_ERROR("ROBOTEQ: Error writing position command.");
+		return -1;
+	}
+	return 0; 
+}
+
 ///////////////////////////////////////////////////////////////////////////
 // Main driver thread runs here.
 ///////////////////////////////////////////////////////////////////////////
@@ -1069,10 +1312,10 @@ void roboteq::Main() {
 			(unsigned char *) &position_data, sizeof(position_data), NULL);
 		this->Publish(power_addr, PLAYER_MSGTYPE_DATA, PLAYER_POWER_DATA_STATE,
 			(unsigned char *) &power_data, sizeof(power_data), NULL);
-		
+
 		usleep(25000);
 	}
-	  
+		
 	return;
 }
 
