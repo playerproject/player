@@ -1,4 +1,6 @@
-SET (sampleConfigFiles  amigobot.cfg
+SET (sampleConfigFiles  afsm.cfg
+                        afsm.eps
+                        amigobot.cfg
                         amigobot_tcp.cfg
                         amtecM5.cfg
                         b21r_rflex_lms200.cfg
