@@ -41,7 +41,6 @@ namespace Geom2D
 		{
 			index.push_back(0);
 			index.push_back(0);
-			index.push_back(0);
 		};
 	ICP::~ICP()
 		{
