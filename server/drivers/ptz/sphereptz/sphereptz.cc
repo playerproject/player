@@ -89,7 +89,7 @@ driver
   #include <linux/kernel.h>
 #endif
 #include <sys/types.h>
-#include <linux/videodev.h>
+#include <linux/videodev2.h>
 #include <sys/ioctl.h>
 #include <stddef.h>
 #include <string.h>
@@ -97,8 +97,10 @@ driver
 #include <unistd.h>
 #include <time.h>
 #include <math.h>
+#include <errno.h>
 
 #include "v4l2_controls.h"
+#include "v4l2_dyna_ctrls.h"
 
 #ifndef M_PI
 #define M_PI        3.14159265358979323846
@@ -139,6 +141,9 @@ struct v4l2_ext_controls
 
 #endif
 
+#define LENGTH_OF_XU_CTR 6
+#define LENGTH_OF_XU_MAP 10
+
 class SpherePTZ : public ThreadedDriver
 {
   public:
@@ -157,6 +162,8 @@ class SpherePTZ : public ThreadedDriver
     int currentY;
     int desiredX;
     int desiredY;
+    struct uvc_xu_control_info xu_ctrls[LENGTH_OF_XU_CTR];
+    struct uvc_xu_control_mapping xu_mappings[LENGTH_OF_XU_MAP];
 };
 
 SpherePTZ::SpherePTZ(ConfigFile * cf, int section) : ThreadedDriver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
@@ -169,6 +176,8 @@ SpherePTZ::SpherePTZ(ConfigFile * cf, int section) : ThreadedDriver(cf, section,
   this->currentY = 0;
   this->desiredX = 0;
   this->desiredY = 0;
+  memset(this->xu_ctrls, 0, sizeof this->xu_ctrls);
+  memset(this->xu_mappings, 0, sizeof this->xu_mappings);
   if (cf->ReadDeviceAddr(&(this->ptz_addr), section, "provides", PLAYER_PTZ_CODE, -1, NULL))
   {
     this->SetError(-1);
@@ -199,6 +208,29 @@ int SpherePTZ::MainSetup()
   struct v4l2_ext_control xctrls[1];
   struct v4l2_ext_controls ctrls;
   struct timespec tspec;
+  int i;
+  const struct uvc_xu_control_info _xu_ctrls[LENGTH_OF_XU_CTR] =
+  {
+    { UVC_GUID_LOGITECH_MOTOR_CONTROL, 0, XU_MOTORCONTROL_PANTILT_RELATIVE, 4, UVC_CONTROL_SET_CUR | UVC_CONTROL_GET_MIN | UVC_CONTROL_GET_MAX | UVC_CONTROL_GET_DEF },
+    { UVC_GUID_LOGITECH_MOTOR_CONTROL, 1, XU_MOTORCONTROL_PANTILT_RESET, 1, UVC_CONTROL_SET_CUR | UVC_CONTROL_GET_MIN | UVC_CONTROL_GET_MAX | UVC_CONTROL_GET_RES | UVC_CONTROL_GET_DEF },
+    { UVC_GUID_LOGITECH_MOTOR_CONTROL, 2, XU_MOTORCONTROL_FOCUS, 6, UVC_CONTROL_SET_CUR | UVC_CONTROL_GET_CUR | UVC_CONTROL_GET_MIN | UVC_CONTROL_GET_MAX |UVC_CONTROL_GET_DEF },
+    { UVC_GUID_LOGITECH_VIDEO_PIPE, 4, XU_COLOR_PROCESSING_DISABLE, 1, UVC_CONTROL_SET_CUR | UVC_CONTROL_GET_CUR |UVC_CONTROL_GET_MIN | UVC_CONTROL_GET_MAX | UVC_CONTROL_GET_RES | UVC_CONTROL_GET_DEF },
+    { UVC_GUID_LOGITECH_VIDEO_PIPE, 7, XU_RAW_DATA_BITS_PER_PIXEL, 1, UVC_CONTROL_SET_CUR | UVC_CONTROL_GET_CUR |UVC_CONTROL_GET_MIN | UVC_CONTROL_GET_MAX | UVC_CONTROL_GET_RES | UVC_CONTROL_GET_DEF },
+    { UVC_GUID_LOGITECH_USER_HW_CONTROL, 0, XU_HW_CONTROL_LED1, 3, UVC_CONTROL_SET_CUR | UVC_CONTROL_GET_CUR |UVC_CONTROL_GET_MIN | UVC_CONTROL_GET_MAX | UVC_CONTROL_GET_RES | UVC_CONTROL_GET_DEF }
+  };
+  const struct uvc_xu_control_mapping _xu_mappings[LENGTH_OF_XU_MAP] =
+  {
+    { V4L2_CID_PAN_RELATIVE_NEW, "Pan (relative)", UVC_GUID_LOGITECH_MOTOR_CONTROL, XU_MOTORCONTROL_PANTILT_RELATIVE, 16, 0, V4L2_CTRL_TYPE_INTEGER, UVC_CTRL_DATA_TYPE_SIGNED },
+    { V4L2_CID_TILT_RELATIVE_NEW, "Tilt (relative)", UVC_GUID_LOGITECH_MOTOR_CONTROL, XU_MOTORCONTROL_PANTILT_RELATIVE, 16, 16, V4L2_CTRL_TYPE_INTEGER, UVC_CTRL_DATA_TYPE_SIGNED },
+    { V4L2_CID_PAN_RESET_NEW, "Pan Reset", UVC_GUID_LOGITECH_MOTOR_CONTROL, XU_MOTORCONTROL_PANTILT_RESET, 1, 0, V4L2_CTRL_TYPE_INTEGER, UVC_CTRL_DATA_TYPE_UNSIGNED },
+    { V4L2_CID_TILT_RESET_NEW, "Tilt Reset", UVC_GUID_LOGITECH_MOTOR_CONTROL, XU_MOTORCONTROL_PANTILT_RESET, 1, 1, V4L2_CTRL_TYPE_INTEGER, UVC_CTRL_DATA_TYPE_UNSIGNED },
+    { V4L2_CID_PANTILT_RESET_LOGITECH, "Pan/tilt Reset", UVC_GUID_LOGITECH_MOTOR_CONTROL, XU_MOTORCONTROL_PANTILT_RESET, 8, 0, V4L2_CTRL_TYPE_INTEGER, UVC_CTRL_DATA_TYPE_UNSIGNED },
+    { V4L2_CID_FOCUS_LOGITECH, "Focus (absolute)", UVC_GUID_LOGITECH_MOTOR_CONTROL, XU_MOTORCONTROL_FOCUS, 8, 0, V4L2_CTRL_TYPE_INTEGER, UVC_CTRL_DATA_TYPE_UNSIGNED },
+    { V4L2_CID_LED1_MODE_LOGITECH, "LED1 Mode", UVC_GUID_LOGITECH_USER_HW_CONTROL, XU_HW_CONTROL_LED1, 8, 0, V4L2_CTRL_TYPE_INTEGER, UVC_CTRL_DATA_TYPE_UNSIGNED },
+    { V4L2_CID_LED1_FREQUENCY_LOGITECH, "LED1 Frequency", UVC_GUID_LOGITECH_USER_HW_CONTROL, XU_HW_CONTROL_LED1, 8, 16, V4L2_CTRL_TYPE_INTEGER, UVC_CTRL_DATA_TYPE_UNSIGNED },
+    { V4L2_CID_DISABLE_PROCESSING_LOGITECH, "Disable video processing", UVC_GUID_LOGITECH_VIDEO_PIPE, XU_COLOR_PROCESSING_DISABLE, 8, 0, V4L2_CTRL_TYPE_BOOLEAN, UVC_CTRL_DATA_TYPE_BOOLEAN },
+    { V4L2_CID_RAW_BITS_PER_PIXEL_LOGITECH, "Raw bits per pixel", UVC_GUID_LOGITECH_VIDEO_PIPE, XU_RAW_DATA_BITS_PER_PIXEL, 8, 0, V4L2_CTRL_TYPE_INTEGER, UVC_CTRL_DATA_TYPE_UNSIGNED }
+  };
 
   this->currentX = 0;
   this->currentY = 0;
@@ -226,6 +258,36 @@ int SpherePTZ::MainSetup()
   if (!(cap.capabilities & V4L2_CAP_READWRITE))
   {
     PLAYER_WARN("V4L2_CAP_READWRITE check failed (ignored)");
+  }
+  for (i = 0; i < LENGTH_OF_XU_CTR; i++) this->xu_ctrls[i] = _xu_ctrls[i];
+  for (i = 0; i < LENGTH_OF_XU_MAP; i++) this->xu_mappings[i] = _xu_mappings[i];
+  for (i = 0; i < LENGTH_OF_XU_CTR; i++)
+  {
+    PLAYER_WARN1("Adding control for [%s]", this->xu_mappings[i].name);
+    if (ioctl(this->fd, UVCIOC_CTRL_ADD, &(this->xu_ctrls[i])) == -1)
+    {
+      if (errno != EEXIST)
+      {
+        PLAYER_ERROR("UVCIOC_CTRL_ADD - Error");
+        close(this->fd);
+        this->fd = -1;
+        return -1;
+      } else PLAYER_WARN("Control exists");
+    }
+  }
+  for (i = 0; i < LENGTH_OF_XU_MAP; i++)
+  {
+    PLAYER_WARN1("Mapping control for [%s]", this->xu_mappings[i].name);
+    if (ioctl(this->fd, UVCIOC_CTRL_MAP, &(this->xu_mappings[i])) == -1)
+    {
+      if (errno != EEXIST)
+      {
+        PLAYER_ERROR("UVCIOC_CTRL_MAP - Error");
+        close(this->fd);
+        this->fd = -1;
+        return -1;
+      } else PLAYER_WARN("Mapping exists");
+    }
   }
   memset(&ctrls, 0, sizeof ctrls);
   memset(&xctrls, 0, sizeof xctrls);
