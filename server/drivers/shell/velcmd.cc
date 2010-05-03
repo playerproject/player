@@ -427,6 +427,16 @@ int VelCmd::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, void 
       this->mean_dist_valid = !0;
       return 0;
     }
+    // handle other ranger data
+    if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, -1, this->required_ranger_addr))
+    {
+      if (!data)
+      {
+        PLAYER_ERROR("NULL other ranger data");
+        return -1;
+      }
+      return 0;
+    }
   }
   return -1;
 }

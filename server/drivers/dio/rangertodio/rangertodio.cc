@@ -373,6 +373,16 @@ int RangerToDio::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, 
     }
     return 0;
   }
+  // handle other ranger data
+  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, -1, this->ranger_required_addr))
+  {
+    if (!data)
+    {
+      PLAYER_ERROR("NULL other ranger data");
+      return -1;
+    }
+    return 0;
+  }
   if (this->use_dio_cmd)
   {
     if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, PLAYER_DIO_DATA_VALUES, this->dio_required_addr))
