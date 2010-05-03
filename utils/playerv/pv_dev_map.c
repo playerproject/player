@@ -140,6 +140,8 @@ void map_draw(map_t *map)
 {
   int x,y;
   double scale = map->proxy->resolution;
+  double color;
+  int8_t val;
 
   rtk_fig_show(map->fig, 1);
   rtk_fig_clear(map->fig);
@@ -160,12 +162,12 @@ void map_draw(map_t *map)
   for( x=0; x<map->proxy->width; x++ )
     for( y=0; y<map->proxy->height; y++ )
       {
-	int8_t val = map->proxy->cells[ x + y * map->proxy->width ];
+	val = map->proxy->cells[ x + y * map->proxy->width ];
 	if (val == 0)
 	  continue;
-	double color = (double)val/map->proxy->data_range; // scale to[-1,1]
-	color *= -1; //flip sign for coloring occupied to black
-	color = (color+1)/2.0; // scale to [0,1]
+	color = (double)val/map->proxy->data_range; // scale to[-1,1]
+	color *= -1.0; //flip sign for coloring occupied to black
+	color = (color + 1.0)/2.0; // scale to [0,1]
 	rtk_fig_color(map->fig, color, color, color );
 	rtk_fig_rectangle(map->fig,
 			  (x - map->proxy->width/2.0) * scale + scale/2.0,

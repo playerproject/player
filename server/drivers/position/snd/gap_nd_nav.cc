@@ -20,6 +20,7 @@
  */
 
 #include <libplayercore/playercore.h>
+#include <replace/replace.h> /* for round() that is not available everywhere */
 #include <iostream>
 #include <assert.h>
 #include <time.h>

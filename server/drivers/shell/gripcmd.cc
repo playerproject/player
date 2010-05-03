@@ -75,13 +75,13 @@ driver
 */
 /** @} */
 
+#include <libplayercore/playercore.h>
 #include <stddef.h> // for NULL and size_t
 #include <string.h> // for memset()
 #if !defined (WIN32)
 #include <strings.h> // for strcasecmp()
 #endif
 #include <pthread.h>
-#include <libplayercore/playercore.h>
 
 class GripCmd : public ThreadedDriver
 {
