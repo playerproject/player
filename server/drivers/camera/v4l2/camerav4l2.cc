@@ -82,12 +82,9 @@ The camerav4l2 driver captures images from V4L2-compatible cameras.
     - GREY (8-bit monochrome)
     - RGBP (16-bit packed; will produce 24-bit color images)
     - BGR3, RGB3 (24-bit RGB)
-    - BGR4, RGB4 (32-bit RGB; will produce 24-bit color images)
-    - BA81 (for sn9c1xx-based USB webcams)
+    - BGR4, RGB4 (32-bit RGB)
+    - BA81 (for sn9c1xx-based USB webcams; will produce 24-bit color images)
     - MJPG (for webcams producing MJPEG streams not decompressed by V4L2 driver)
-  - Note that not all capture modes are supported by Player's internal image
-  format; in these modes, images will be translated to the closest matching
-  internal format (e.g., BGR4 -> RGB888).
 
 - buffers (integer)
   - Default: 2
