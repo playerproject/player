@@ -154,6 +154,7 @@ driver
   ch2_min_pos "-10.0"
   ch2_max_pos "10.0"
 )  
+@endverbatim
 
 
 @author Pablo Rivera rivera@cse.unr.edu
@@ -373,7 +374,7 @@ roboteq::roboteq( ConfigFile* cf, int section) :
 	// Check the config file to see if we are providing a position2d interface.
 	if (cf->ReadDeviceAddr(&(this->position_addr), section, "provides",
 		PLAYER_POSITION2D_CODE, -1, NULL) == 0) {
-		PLAYER_ERROR("Adding position2d interface.");
+		PLAYER_MSG0(MESSAGE_INFO, "Adding position2d interface.");
 		if (this->AddInterface(this->position_addr) != 0) {
 			PLAYER_ERROR("Error adding position2d interface.");
 			SetError(-1);
