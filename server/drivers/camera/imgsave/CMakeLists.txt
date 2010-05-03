@@ -1,0 +1,8 @@
+PLAYERDRIVER_OPTION (imgsave build_imgsave ON)
+PLAYERDRIVER_REJECT_OS (imgsave build_imgsave PLAYER_OS_WIN)
+IF (HAVE_JPEG)
+    PLAYERDRIVER_REQUIRE_HEADER (imgsave build_imgsave jpeglib.h stdio.h)
+    PLAYERDRIVER_ADD_DRIVER (imgsave build_imgsave LINKFLAGS "-ljpeg" SOURCES imgsave.cc)
+ELSE (HAVE_JPEG)
+    PLAYERDRIVER_ADD_DRIVER (imgsave build_imgsave SOURCES imgsave.cc)
+ENDIF (HAVE_JPEG)
