@@ -313,11 +313,14 @@ Roomba::Main()
      }
      if ((this->bumplock) && ((this->roomba_dev->bumper_left) || (this->roomba_dev->bumper_right)))
      {
-        this->bumplocked = true;
-	if (roomba_set_speeds(this->roomba_dev, 0.0, 0.0) < 0)
-        {
-          PLAYER_ERROR("failed to stop roomba");
-        }
+       if (!(this->bumplocked))
+       {
+         this->bumplocked = true;
+         if (roomba_set_speeds(this->roomba_dev, 0.0, 0.0) < 0)
+         {
+           PLAYER_ERROR("failed to stop roomba");
+         }
+       }
      }
      else this->bumplocked = false;
 
