@@ -25,6 +25,8 @@ SET (sampleConfigFiles  afsm.cfg
                         readlog.cfg
                         rfid.cfg
                         roomba.cfg
+                        searchpattern.cfg
+                        searchpattern_symbols.ps
                         segwayrmp.cfg
                         service_adv.cfg
                         simple.cfg

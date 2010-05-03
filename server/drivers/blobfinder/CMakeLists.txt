@@ -1,6 +1,7 @@
 ADD_SUBDIRECTORY (acts)
 ADD_SUBDIRECTORY (artoolkitplus)
 ADD_SUBDIRECTORY (cmvision)
+ADD_SUBDIRECTORY (searchpattern)
 ADD_SUBDIRECTORY (shapetracker)
 ADD_SUBDIRECTORY (simpleshape)
 ADD_SUBDIRECTORY (upcbarcode)
