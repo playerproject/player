@@ -268,7 +268,6 @@ int BlobToDio::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, vo
     assert(data);
     blobs = reinterpret_cast<player_blobfinder_data_t *>(data);
     assert(blobs);
-    if (!((blobs->blobs_count) > 0)) return 0;
     assert(this->color_count <= 32);
     for (i = 0; i < static_cast<int>(this->color_count); i++) counters[i] = 0;
     for (i = 0; i < static_cast<int>(blobs->blobs_count); i++)
