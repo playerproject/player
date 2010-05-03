@@ -33,6 +33,19 @@ PLAYERDRIVER_ADD_DRIVER (readlog build_readlog SOURCES encode.cc readlog_time.cc
 PLAYERDRIVER_OPTION (passthrough build_passthrough ON)
 PLAYERDRIVER_ADD_DRIVER (passthrough build_passthrough SOURCES passthrough.cc)
 
+PLAYERDRIVER_OPTION (postlog build_postlog ON)
+PLAYERDRIVER_REQUIRE_PKG (postlog build_postlog libpqxx
+    postlog_includeDirs postlog_libDirs postlog_linkLibs postlog_linkFlags postlog_cFlags)
+IF (PLAYER_OS_SOLARIS)
+    SET (postlogLinkFlag "-lpq")
+ELSE (PLAYER_OS_SOLARIS)
+    SET (postlogLinkFlag)
+ENDIF (PLAYER_OS_SOLARIS)
+PLAYERDRIVER_ADD_DRIVER (postlog build_postlog
+    INCLUDEDIRS ${postlog_includeDirs} LIBDIRS ${postlog_libDirs}
+    LINKLIBS ${postlog_linkLibs} LINKFLAGS ${postlog_linkFlags} ${postlogLinkFlag}
+    CFLAGS ${postlog_cFlags} SOURCES postlog.cc)
+
 PLAYERDRIVER_OPTION (relay build_relay ON)
 PLAYERDRIVER_ADD_DRIVER (relay build_relay SOURCES relay.cc)
 
