@@ -324,7 +324,7 @@ class MrIcp : public ThreadedDriver
 				 global_diff,relative_pose,P;
 			vector<Point> laser_set,laser_set_1,laser_set_2,local_map,occ_laser_set,map_points;
 			MAP *map;
-			Timer delta_t_estimation;
+			MricpTimer delta_t_estimation;
 };
 Driver* MrIcp_Init(ConfigFile* cf, int section) // Create and return a new instance of this driver
 {
@@ -625,14 +625,14 @@ void MrIcp::MainQuit()
 // this function will run in a separate thread
 void MrIcp::Main()
 {
-	Timer loop_timer,map_timer,test;
+	MricpTimer loop_timer,map_timer,test;
 	double time_elapsed;
 	// Synchronously cancelable thread.
 	//pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED,NULL);
 
-	/* To use the Timer.Synch() in a loop you will have to
+	/* To use the MricpTimer.Synch() in a loop you will have to
 	 * reset the timer at the beginning of the loop then call
-	 * the Timer.Synch(period) at the end of the loop with
+	 * the MricpTimer.Synch(period) at the end of the loop with
 	 * period representing the synchronization time in msec,
 	 * this method will check what is the total time spend in
 	 * this loop and then sleep the remaining period time

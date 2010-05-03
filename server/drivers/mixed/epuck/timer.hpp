@@ -20,7 +20,7 @@
 #include <time.h>
 
 /** \file
- * Header file of Timer class.
+ * Header file of EpuckTimer class.
  */
 
 #define TIMEB timeb
@@ -32,11 +32,11 @@
  *  \author Renato Florentino Garcia
  *  \date August 2008
  */
-class Timer
+class EpuckTimer
 {
 public:
 
-  Timer()
+  EpuckTimer()
     :intervalRunning(false)
   {}
 
@@ -115,3 +115,4 @@ private:
 
 
 #endif
+
