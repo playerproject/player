@@ -183,6 +183,7 @@ driver
 
 #include <libplayercore/playercore.h>
 #include <libplayerinterface/playerxdr.h>
+#include <replace/replace.h> /* for round() that is not available everywhere */
 
 // The SICK LMS 400 laser device class.
 class SickLMS400 : public ThreadedDriver
