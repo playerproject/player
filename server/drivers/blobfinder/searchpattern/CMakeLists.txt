@@ -1,0 +1,7 @@
+PLAYERDRIVER_OPTION (searchpattern build_searchpattern ON)
+IF (HAVE_JPEG)
+    PLAYERDRIVER_REQUIRE_HEADER (searchpattern build_searchpattern jpeglib.h stdio.h)
+    PLAYERDRIVER_ADD_DRIVER (searchpattern build_searchpattern LINKFLAGS "-ljpeg" SOURCES searchpattern.cc)
+ELSE (HAVE_JPEG)
+    PLAYERDRIVER_ADD_DRIVER (searchpattern build_searchpattern SOURCES searchpattern.cc)
+ENDIF (HAVE_JPEG)
