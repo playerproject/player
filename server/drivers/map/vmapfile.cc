@@ -56,6 +56,10 @@ The format of the text file is...
   - Default: NULL
   - The file to read.
 
+- scale (tuple [double double])
+  - Default [1.0 1.0]
+  - Multipliers for X,Y of each vector, for the final result to be in meters
+
 @par Example
 
 @verbatim
@@ -64,6 +68,7 @@ driver
   name "vmapfile"
   provides ["map:0"]
   filename "mymap.wld"
+  scale [1.0 1.0]
 )
 @endverbatim
 
@@ -72,12 +77,20 @@ driver
 */
 /** @} */
 
+#include <math.h>
 #include <sys/types.h> // required by Darwin
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 
 #include <libplayercore/playercore.h>
+
+#ifndef FMIN
+#define FMIN(a, b) (((a) < (b)) ? (a) : (b))
+#endif
+#ifndef FMAX
+#define FMAX(a, b) (((a) > (b)) ? (a) : (b))
+#endif
 
 class VMapFile : public Driver
 {
@@ -88,6 +101,11 @@ class VMapFile : public Driver
 
     // Handle map data request
     void HandleGetMapVector(void *client, void *request, int len);
+
+    // Add a vector
+    void AddVector(double x0, double y0, double x1, double y1);
+
+    float scalex_, scaley_; // scaling of input vectors
 
   public:
     VMapFile(ConfigFile* cf, int section, const char* file);
@@ -129,21 +147,54 @@ VMapFile::VMapFile(ConfigFile* cf, int section, const char* file)
 {
   this->vmap = NULL;
   this->filename = file;
+  scalex_ = cf->ReadTupleFloat(section, "scale", 0, 1.0);
+  scaley_ = cf->ReadTupleFloat(section, "scale", 1, 1.0);
 }
 
 VMapFile::~VMapFile()
 {
 }
 
+void
+VMapFile::AddVector(double x0, double y0, double x1, double y1)
+{
+      this->vmap->segments = (player_segment_t*) realloc(
+        this->vmap->segments,
+        (this->vmap->segments_count+1)*sizeof(this->vmap->segments[0])
+      );
+
+    if (this->vmap->segments_count == 0)
+    {
+        this->vmap->minx = FMIN(x0 * scalex_, x1 * scalex_);
+        this->vmap->miny = FMIN(y0 * scaley_, y1 * scaley_);
+        this->vmap->maxx = FMAX(x0 * scalex_, x1 * scalex_);
+        this->vmap->maxy = FMAX(y0 * scaley_, y1 * scaley_);
+    }
+    else
+    {
+        this->vmap->minx = FMIN(this->vmap->minx, FMIN(x0 * scalex_, x1 * scalex_));
+        this->vmap->miny = FMIN(this->vmap->minx, FMIN(y0 * scaley_, y1 * scaley_));
+        this->vmap->maxx = FMAX(this->vmap->maxx, FMAX(x0 * scalex_, x1 * scalex_));
+        this->vmap->maxy = FMAX(this->vmap->maxy, FMAX(y0 * scaley_, y1 * scaley_));
+    }
+      
+    this->vmap->segments[this->vmap->segments_count].x0 = x0 * scalex_;
+    this->vmap->segments[this->vmap->segments_count].y0 = y0 * scaley_;
+    this->vmap->segments[this->vmap->segments_count].x1 = x1 * scalex_;
+    this->vmap->segments[this->vmap->segments_count].y1 = y1 * scaley_;
+    this->vmap->segments_count++;
+}
+
 int
 VMapFile::Setup()
 {
   FILE* fp;
-  int ox, oy, w, h;
-  int x0,y0,x1,y1;
+  
+  float x0,y0,x1,y1;
+  
   char linebuf[512];
   char keyword [512];
-  int got_origin, got_width, got_height;
+  
 
   printf("VMapFile loading file: %s...", this->filename);
   fflush(stdout);
@@ -162,7 +213,6 @@ VMapFile::Setup()
 
   this->vmap->segments_count = 0;
   this->vmap->segments = NULL;
-  got_origin = got_width = got_height = 0;
   while(!feof(fp))
   {
     if(!fgets(linebuf, sizeof(linebuf), fp))
@@ -172,58 +222,36 @@ VMapFile::Setup()
 
     if(sscanf(linebuf,"%s",keyword) == 1)
     {
-      if(!strcmp(keyword, "origin"))
+      if(!strcasecmp(keyword, "origin"))
       {
-        if(sscanf(linebuf,"%s %d %d", keyword, &ox, &oy) == 3)
-          got_origin = 1;
-        else
-          PLAYER_WARN1("invalid line:%s:",linebuf);
+        PLAYER_WARN1("origin line is deprecated: %s",linebuf);
         continue;
       }
-      else if(!strcmp(keyword, "width"))
+      else if(!strcasecmp(keyword, "width"))
       {
-        if(sscanf(linebuf,"%s %d", keyword, &w) == 2)
-          got_width = 1;
-        else
-          PLAYER_WARN1("invalid line:%s:",linebuf);
+        PLAYER_WARN1("width line is deprecated: %s:",linebuf);
         continue;
       }
-      else if(!strcmp(keyword, "height"))
+      else if(!strcasecmp(keyword, "height"))
       {
-        if(sscanf(linebuf,"%s %d", keyword, &h) == 2)
-          got_height = 1;
-        else
-          PLAYER_WARN1("invalid line:%s:",linebuf);
+        PLAYER_WARN1("height line is deprecated: %s:",linebuf);
         continue;
       }
     }
 
-    if(sscanf(linebuf, "%d %d %d %d", &x0, &y0, &x1, &y1) == 4)
-    {
-      this->vmap->segments = (player_segment_t*) realloc(
-        this->vmap->segments,
-        (this->vmap->segments_count+1)*sizeof(this->vmap->segments[0])
-      );
-      this->vmap->segments[this->vmap->segments_count].x0 = x0/1e3;
-      this->vmap->segments[this->vmap->segments_count].y0 = y0/1e3;
-      this->vmap->segments[this->vmap->segments_count].x1 = x1/1e3;
-      this->vmap->segments[this->vmap->segments_count].y1 = y1/1e3;
-      this->vmap->segments_count++;
-    }
+    if(sscanf(linebuf, " %f %f %f %f", &x0, &y0, &x1, &y1) == 4)
+        AddVector(x0, y0, x1, y1);
     else
       PLAYER_WARN1("ignoring line:%s:", linebuf);
   }
 
+/*
   if(!got_origin || !got_width || !got_height)
   {
     PLAYER_ERROR("file is missing meta-data");
     return(-1);
   }
-
-  this->vmap->minx = ox/1000.0f;
-  this->vmap->miny = oy/1000.0f;
-  this->vmap->maxx = (w + ox)/1000.0f;
-  this->vmap->maxy = (h + oy)/1000.0f;
+*/
 
   assert(this->vmap);
 
