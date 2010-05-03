@@ -71,6 +71,11 @@ Roles of provided interfaces are distinguished by given key (switch or comm)
 - block_data
   - Default: 0
   - If set to 1, data flow is also blocked
+- msg_interval
+  - Default: 0.0
+  - If greater than 0.0 (seconds), commands will be passed with this interval
+    (all commands sent more frequently will be thrown away). When this interval
+    is set to 0.0, all commands are passed (as long as inhibitor state is right).
 
 @par Example
 
@@ -92,10 +97,12 @@ driver
 #include <stddef.h> // for NULL and size_t
 #include <stdlib.h> // for malloc() and free()
 #include <string.h> // for memset()
+#include <math.h> // for fabs()
 #include <assert.h>
 #include <libplayercore/playercore.h>
 
 #define RQ_QUEUE_LEN 10
+#define EPS 0.0000001
 
 class Inhibitor : public Driver
 {
@@ -115,6 +122,8 @@ class Inhibitor : public Driver
   private: uint32_t bitmask;
   private: int neg;
   private: int block_data;
+  private: double msg_interval;
+  private: double lastTime;
   private: int switch_state;
   private: int last_rq;
   private: player_msghdr_t rq_hdrs[RQ_QUEUE_LEN];
@@ -139,6 +148,8 @@ Inhibitor::Inhibitor(ConfigFile * cf, int section) : Driver(cf, section, true, P
   this->bitmask = 0;
   this->neg = 0;
   this->block_data = 0;
+  this->msg_interval = 0.0;
+  this->lastTime = 0.0;
   this->switch_state = 0;
   this->last_rq = -1;
   memset(this->rq_hdrs, 0, sizeof this->rq_hdrs);
@@ -219,6 +230,13 @@ Inhibitor::Inhibitor(ConfigFile * cf, int section) : Driver(cf, section, true, P
   }
   this->neg = cf->ReadInt(section, "neg", 0);
   this->block_data = cf->ReadInt(section, "block_data", 0);
+  this->msg_interval = cf->ReadFloat(section, "msg_interval", 0.0);
+  if ((this->msg_interval) < 0.0)
+  {
+    PLAYER_ERROR("invalid msg_interval");
+    this->SetError(-1);
+    return;
+  }
 }
 
 Inhibitor::~Inhibitor()
@@ -290,6 +308,7 @@ int Inhibitor::Setup()
       return -1;
     }
   }
+  this->lastTime = 0.0;
   return 0;
 }
 
@@ -319,6 +338,7 @@ int Inhibitor::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, vo
   QueuePointer null;
   int i;
   int n;
+  double t;
 
   assert(hdr);
   if (this->use_dio)
@@ -375,6 +395,14 @@ int Inhibitor::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, vo
   {
     pass = (this->neg) ? (!(this->switch_state)) : (this->switch_state);
     if (!pass) return 0;
+    if ((this->msg_interval) > EPS)
+    {
+      GlobalTime->GetTimeDouble(&t);
+      if ((fabs(t - (this->lastTime))) > (this->msg_interval))
+      {
+        this->lastTime = t;
+      } else return 0;
+    }
     newhdr = *hdr;
     newhdr.addr = this->comm_required_addr;
     this->comm_required_dev->PutMsg(this->InQueue, &newhdr, data, true); // copy = true

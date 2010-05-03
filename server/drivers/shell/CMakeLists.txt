@@ -57,3 +57,6 @@ PLAYERDRIVER_ADD_DRIVER (velcmd build_velcmd SOURCES velcmd.cc)
 
 PLAYERDRIVER_OPTION (opaquecmd build_opaquecmd ON)
 PLAYERDRIVER_ADD_DRIVER (opaquecmd build_opaquecmd SOURCES opaquecmd.cc)
+
+PLAYERDRIVER_OPTION (speechcmd build_speechcmd ON)
+PLAYERDRIVER_ADD_DRIVER (speechcmd build_speechcmd SOURCES speechcmd.cc)
