@@ -550,7 +550,7 @@ void CameraV4L2::Main()
       PLAYER_ERROR("Out of memory");
       continue;
     }
-    memset(data, 0, sizeof data);
+    memset(data, 0, sizeof *data);
     // Set the image properties
     data->width       = this->width;
     data->height      = this->height;
