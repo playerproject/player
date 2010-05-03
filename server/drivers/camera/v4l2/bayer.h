@@ -29,6 +29,14 @@
 #ifndef __BAYER_H
 #define __BAYER_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern void bayer2rgb24(unsigned char *dst, unsigned char *src, long int WIDTH, long int HEIGHT);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
