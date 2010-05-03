@@ -54,6 +54,9 @@ Data packets are sent back only from the first subscribed device.
 - devices
   - Default: 1
   - Number of subscriptions to be done
+- rq_first_device_only
+  - Default: 0
+  - If set to non-zero, requests will be forwarded only to the first subscribed device
 
 @par Example
 
@@ -97,10 +100,12 @@ class CmdSplitter : public Driver
   private: player_devaddr_t required_addrs[MAX_DEVICES];
   private: Device * required_devs[MAX_DEVICES];
   private: int devices;
+  private: int rq_first_device_only;
   private: int last_rq;
   private: player_msghdr_t rq_hdrs[RQ_QUEUE_LEN];
   private: QueuePointer rq_ptrs[RQ_QUEUE_LEN];
   private: void * payloads[RQ_QUEUE_LEN];
+  private: int rq[RQ_QUEUE_LEN];
 };
 
 CmdSplitter::CmdSplitter(ConfigFile * cf, int section) : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
@@ -112,11 +117,13 @@ CmdSplitter::CmdSplitter(ConfigFile * cf, int section) : Driver(cf, section, tru
   memset(this->required_addrs, 0, sizeof this->required_addrs);
   for (i = 0; i < MAX_DEVICES; i++) this->required_devs[i] = NULL;
   this->devices = 0;
+  this->rq_first_device_only = 0;
   this->last_rq = -1;
   memset(this->rq_hdrs, 0, sizeof this->rq_hdrs);
   for (i = 0; i < RQ_QUEUE_LEN; i++)
   {
     this->payloads[i] = NULL;
+    this->rq[i] = 0;
   }
   if (cf->ReadDeviceAddr(&(this->provided_addr), section, "provides", -1, -1, NULL))
   {
@@ -133,7 +140,7 @@ CmdSplitter::CmdSplitter(ConfigFile * cf, int section) : Driver(cf, section, tru
   {
     PLAYER_ERROR("Invalid number of devices to subscribe");
     this->SetError(-1);
-    return;    
+    return;
   }
   for (i = 0; i < (this->devices); i++)
   {
@@ -145,6 +152,7 @@ CmdSplitter::CmdSplitter(ConfigFile * cf, int section) : Driver(cf, section, tru
       return;
     }
   }
+  this->rq_first_device_only = cf->ReadInt(section, "rq_first_device_only", 0);
 }
 
 CmdSplitter::~CmdSplitter()
@@ -167,6 +175,7 @@ int CmdSplitter::Setup()
   for (i = 0; i < RQ_QUEUE_LEN; i++)
   {
     this->payloads[i] = NULL;
+    this->rq[i] = 0;
   }
   for (i = 0; i < (this->devices); i++)
   {
@@ -207,6 +216,7 @@ int CmdSplitter::Shutdown()
   {
     free(this->payloads[i]);
     this->payloads[i] = NULL;
+    this->rq[i] = 0;
   }
   return 0;
 }
@@ -221,33 +231,37 @@ int CmdSplitter::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, 
   assert(hdr);
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, -1, this->provided_addr))
   {
-    for (i = 0; i < RQ_QUEUE_LEN; i++) if (!(this->payloads[i]))
+    for (i = 0; i < RQ_QUEUE_LEN; i++) if (!(this->rq[i]))
     {
       this->rq_hdrs[i] = *hdr;
       this->rq_ptrs[i] = resp_queue;
-      this->payloads[i] = malloc(hdr->size);
-      assert(this->payloads[i]);
-      memcpy(this->payloads[i], data, hdr->size);
+      if ((hdr->size) > 0)
+      {
+        this->payloads[i] = malloc(hdr->size);
+        assert(this->payloads[i]);
+        memcpy(this->payloads[i], data, hdr->size);
+      } else (this->payloads[i]) = NULL;
+      this->rq[i] = !0;
       break;
     }
     if (!(i < RQ_QUEUE_LEN)) return -1;
     n = -1;
-    for (i = 0; i < RQ_QUEUE_LEN; i++) if (this->payloads[i]) n = i;
+    for (i = 0; i < RQ_QUEUE_LEN; i++) if (this->rq[i]) n = i;
     assert(n >= 0);
     if (!n)
     {
-      for (i = 0; i < (this->devices); i++)
+      for (i = 0; i < ((this->rq_first_device_only) ? 1 : (this->devices)); i++)
       {
         newhdr = this->rq_hdrs[n];
         newhdr.addr = this->required_addrs[i];
-        assert(this->payloads[n]);
+        if ((newhdr.size) > 0) assert(this->payloads[n]);
         this->required_devs[i]->PutMsg(this->InQueue, &newhdr, this->payloads[n], true); // copy = true
       }
       this->last_rq = n;
       return 0;
     }
   }
-  for (i = 0; i < (this->devices); i++)
+  for (i = 0; i < ((this->rq_first_device_only) ? 1 : (this->devices)); i++)
   {
     if ((Message::MatchMessage(hdr, PLAYER_MSGTYPE_RESP_ACK, -1, this->required_addrs[i])) || (Message::MatchMessage(hdr, PLAYER_MSGTYPE_RESP_NACK, -1, this->required_addrs[i])))
     {
@@ -264,18 +278,23 @@ int CmdSplitter::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, 
       }
       this->Publish(this->provided_addr, this->rq_ptrs[this->last_rq], hdr->type, hdr->subtype, data, 0, &(hdr->timestamp), true); // copy = true
       this->rq_ptrs[this->last_rq] = null;
-      assert(this->payloads[this->last_rq]);
-      free(this->payloads[this->last_rq]);
+      assert(this->rq[this->last_rq]);
+      if (this->payloads[this->last_rq])
+      {
+        assert(this->payloads[this->last_rq]);
+        free(this->payloads[this->last_rq]);
+      }
       this->payloads[this->last_rq] = NULL;
+      this->rq[this->last_rq] = 0;
       this->last_rq = -1;
-      for (i = 0; i < RQ_QUEUE_LEN; i++) if (this->payloads[i])
+      for (i = 0; i < RQ_QUEUE_LEN; i++) if (this->rq[i])
       {
         n = i;
-        for (i = 0; i < (this->devices); i++)
+        for (i = 0; i < ((this->rq_first_device_only) ? 1 : (this->devices)); i++)
         {
           newhdr = this->rq_hdrs[n];
           newhdr.addr = this->required_addrs[i];
-          assert(this->payloads[n]);
+          if ((newhdr.size) > 0) assert(this->payloads[n]);
           this->required_devs[i]->PutMsg(this->InQueue, &newhdr, this->payloads[n], true); // copy = true;
         }
         this->last_rq = n;
@@ -283,6 +302,9 @@ int CmdSplitter::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, 
       }
       return 0;
     }
+  }
+  for (i = 0; i < (this->devices); i++)
+  {
     if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, -1, this->required_addrs[i]))
     {
       assert(data);
