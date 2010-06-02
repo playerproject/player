@@ -27,6 +27,9 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#if defined WIN32
+  #include <replace.h>
+#endif
 #include "playerv.h"
 
 
@@ -161,7 +164,8 @@ void map_draw(map_t *map)
 
   for( x=0; x<map->proxy->width; x++ )
     for( y=0; y<map->proxy->height; y++ )
-      {
+    {
+
 	val = map->proxy->cells[ x + y * map->proxy->width ];
 	if (val == 0)
 	  continue;
@@ -174,7 +178,7 @@ void map_draw(map_t *map)
 			  (y - map->proxy->height/2.0) * scale + scale/2.0,
 			  0,
 			  scale, scale, 1);
-      }
+    }
 
   return;
 }

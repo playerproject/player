@@ -20,8 +20,16 @@
 
 #ifndef TIMER_H_
 #define TIMER_H_
-#include <sys/time.h>
+
+#if defined WIN32
+  #include <replace.h>
+  #include <Winsock2.h>  // For struct timeval
+#else
+  #include <sys/time.h>
+#endif
 #include <iostream>
+
+
 class MricpTimer
 {
 	private:

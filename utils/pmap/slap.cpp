@@ -27,6 +27,10 @@
 #include <math.h>
 #include "slap.h"
 
+#if defined WIN32
+  #include <float.h>
+  #define isnan _isnan
+#endif
 
 /* Set vector elements. */
 vector2_t vector2_set(double v0, double v1)

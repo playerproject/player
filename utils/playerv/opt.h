@@ -27,6 +27,9 @@
 #ifndef OPT_H
 #define OPT_H
 
+#if defined WIN32
+  #define snprintf _snprintf
+#endif
 
 // Structure describing a single option.
 // This structure is opaque.

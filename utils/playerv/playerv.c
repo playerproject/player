@@ -120,8 +120,12 @@ playerv provides teleoperation of the following kinds of devices:
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <time.h>
+#if defined WIN32
+  #include <replace.h>
+#else
+  #include <unistd.h>
+#endif
 #include "playerv.h"
 
 #define GUI_UPDATE_RATE 20.0
@@ -175,8 +179,12 @@ int main(int argc, char **argv)
   rtk_init(&argc, &argv);
 
   // Register signal handlers
+#ifdef SIGINT
   signal(SIGINT, sig_quit);
+#endif
+#ifdef SIGQUIT
   signal(SIGQUIT, sig_quit);
+#endif
 
   // Load program options
   opt = opt_init(argc, argv, NULL);

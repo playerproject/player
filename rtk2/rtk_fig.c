@@ -38,6 +38,10 @@
 #include "rtk.h"
 #include "rtkprivate.h"
 
+#ifndef M_PI
+	#define M_PI 3.14159265358979323846
+#endif
+
 // Draw the selection
 void rtk_fig_render_selection(rtk_fig_t *fig);
 

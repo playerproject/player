@@ -86,19 +86,19 @@ driver
 /** @} */
 
 #include <string.h>
-#include <stdlib.h>
 #include <stddef.h>
 #ifndef WIN32
-#include <unistd.h>
+  #include <unistd.h>
 #endif
 #include <time.h>         // for nanosleep() and struct timespec
 #include <stdlib.h>       // for atoi(3)
 #include <math.h>
 
+#include <libplayercore/playercore.h>
+
 #include <cv.h>
 #include <highgui.h>
 
-#include <libplayercore/playercore.h>
 
 class ImageSeq : public ThreadedDriver
 {

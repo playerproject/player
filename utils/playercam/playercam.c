@@ -78,9 +78,15 @@ value at that place will be written to standard out.
 
 #include "config.h"
 
-#include <stdint.h>
+#if defined WIN32
+  #include <replace.h>
+  #define strcasecmp _stricmp
+#else
+  #include <stdint.h>
+  #include <unistd.h>
+#endif
+
 #include <assert.h>
-#include <unistd.h>
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>

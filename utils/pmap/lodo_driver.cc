@@ -146,9 +146,11 @@ Andrew Howard
 
 */
 
-#include <unistd.h>
 #include <string.h>
-#include <netinet/in.h>
+#ifndef WIN32
+  #include <unistd.h>
+  #include <netinet/in.h>
+#endif
 
 #include <libplayercore/playercore.h>
 
