@@ -212,10 +212,13 @@ int CmdSplitter::Shutdown()
     if (this->required_devs[i]) this->required_devs[i]->Unsubscribe(this->InQueue);
     this->required_devs[i] = NULL;
   }
-  for (i = 0; i < RQ_QUEUE_LEN; i++) if (this->payloads[i])
+  for (i = 0; i < RQ_QUEUE_LEN; i++)
   {
-    free(this->payloads[i]);
-    this->payloads[i] = NULL;
+    if (this->payloads[i])
+    {
+      free(this->payloads[i]);
+      this->payloads[i] = NULL;
+    }
     this->rq[i] = 0;
   }
   return 0;
