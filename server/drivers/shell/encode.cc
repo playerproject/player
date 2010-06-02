@@ -62,6 +62,9 @@ void EncodeHex(char *dst, size_t dst_len, const void *src, size_t src_len)
     dst[i * 2 + 0] = hex_table[sh];
     dst[i * 2 + 1] = hex_table[sl];
   }
+
+  dst[src_len*2] = 0;
+
   return;
 }
 
