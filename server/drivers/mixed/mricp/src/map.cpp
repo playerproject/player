@@ -24,6 +24,9 @@
 #include <iostream>
 using namespace std;
 
+#if defined WIN32
+  #define snprintf _snprintf
+#endif
 
 MAP::MAP(char * Mapname, double pixel_size, double map_size)
 {

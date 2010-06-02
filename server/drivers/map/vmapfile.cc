@@ -92,6 +92,10 @@ driver
 #define FMAX(a, b) (((a) > (b)) ? (a) : (b))
 #endif
 
+#if defined WIN32
+  #define strcasecmp _stricmp
+#endif
+
 class VMapFile : public Driver
 {
   private:

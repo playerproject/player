@@ -21,7 +21,12 @@
  */
 
 #include <math.h>
-#include <sys/time.h>
+#if defined WIN32
+  #define PATH_MAX 260
+  #define snprintf _snprintf
+#else
+  #include <sys/time.h>
+#endif
 
 #include <gdk/gdkkeysyms.h>
 

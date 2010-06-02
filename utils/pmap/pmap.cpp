@@ -30,6 +30,7 @@
 #include <float.h>
 #if defined (WIN32)
   #define finite _finite
+  #include <gsl/gsl_math.h>
 #endif
 #include <stdlib.h>
 #include <stdio.h>

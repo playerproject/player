@@ -39,7 +39,6 @@
 #include "avcodec.h"
 #endif
 
-//#define DEBUG
 #include "rtk.h"
 #include "rtkprivate.h"
 
@@ -192,7 +191,7 @@ void rtk_app_main_term(rtk_app_t *app)
 // Event processing function.  Returns non-zero if the app should quit.
 int rtk_app_main_loop(rtk_app_t *app)
 {
-  int ret;
+  int ret = 0;
   rtk_canvas_t *canvas;
   rtk_table_t *table;
   

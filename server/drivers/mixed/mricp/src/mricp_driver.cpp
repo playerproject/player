@@ -31,11 +31,16 @@
 #include <config.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/time.h>
+#if defined WIN32
+  #define snprintf _snprintf
+#else
+  #include <unistd.h>
+  #include <sys/time.h>
+  #include <termios.h>
+  #include <netinet/in.h>
+#endif
 #include <fcntl.h>
-#include <termios.h>
 #include <cstdio>
-#include <unistd.h>
 #include <cstdlib>
 #include <cstddef>
 #include <cerrno>
@@ -47,7 +52,6 @@
 #include <iostream>
 #include <csignal>
 #include <vector>
-#include <netinet/in.h>
 // Player includes
 #include <libplayercore/playercore.h>
 
