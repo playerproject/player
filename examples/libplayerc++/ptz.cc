@@ -79,7 +79,7 @@ int main(int argc, char **argv)
       newpan = zp.GetPan() + dir * dtor(5);
       zp.SetCam(newpan, zp.GetTilt(), zp.GetZoom());
     }
-    catch (PlayerError e)
+    catch (PlayerError & e)
     {
       std::cerr << e << std::endl;
       return 1;

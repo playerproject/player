@@ -98,7 +98,7 @@ main(int argc, char **argv)
       pp.SetSpeed(newspeed, newturnrate);
     }
   }
-  catch (PlayerCc::PlayerError e)
+  catch (PlayerCc::PlayerError & e)
   {
     std::cerr << e << std::endl;
     return -1;
