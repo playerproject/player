@@ -102,6 +102,7 @@ class Suppressor : public Driver
   private: double fadeout_time;
   private: double fadeout_start;
   private: int fading_out;
+  private: int rq[RQ_QUEUE_LEN];
   private: int last_rq;
   private: player_msghdr_t rq_hdrs[RQ_QUEUE_LEN];
   private: QueuePointer rq_ptrs[RQ_QUEUE_LEN];
@@ -124,6 +125,7 @@ Suppressor::Suppressor(ConfigFile * cf, int section) : Driver(cf, section, true,
   for (i = 0; i < RQ_QUEUE_LEN; i++)
   {
     this->payloads[i] = NULL;
+    this->rq[i] = 0;
   }
   if (cf->ReadDeviceAddr(&(this->master_provided_addr), section, "provides", -1, -1, "master"))
   {
@@ -160,7 +162,7 @@ Suppressor::Suppressor(ConfigFile * cf, int section) : Driver(cf, section, true,
   {
     PLAYER_ERROR("Invalid fadeout_time value");
     this->SetError(-1);
-    return;    
+    return;
   }
 }
 
@@ -186,6 +188,7 @@ int Suppressor::Setup()
   for (i = 0; i < RQ_QUEUE_LEN; i++)
   {
     this->payloads[i] = NULL;
+    this->rq[i] = 0;
   }
   if (Device::MatchDeviceAddress(this->required_addr, this->master_provided_addr))
   {
@@ -213,10 +216,14 @@ int Suppressor::Shutdown()
 
   if (this->required_dev) this->required_dev->Unsubscribe(this->InQueue);
   this->required_dev = NULL;
-  for (i = 0; i < RQ_QUEUE_LEN; i++) if (this->payloads[i])
+  for (i = 0; i < RQ_QUEUE_LEN; i++)
   {
-    free(this->payloads[i]);
-    this->payloads[i] = NULL;
+    if (this->payloads[i])
+    {
+      free(this->payloads[i]);
+      this->payloads[i] = NULL;
+    }
+    this->rq[i] = 0;
   }
   return 0;
 }
@@ -269,24 +276,28 @@ int Suppressor::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, v
   }
   if ((Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, -1, this->master_provided_addr)) || (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, -1, this->slave_provided_addr)))
   {
-    for (i = 0; i < RQ_QUEUE_LEN; i++) if (!(this->payloads[i]))
+    for (i = 0; i < RQ_QUEUE_LEN; i++) if (!(this->rq[i]))
     {
       this->rq_hdrs[i] = *hdr;
       this->rq_ptrs[i] = resp_queue;
-      this->payloads[i] = malloc(hdr->size);
-      assert(this->payloads[i]);
-      memcpy(this->payloads[i], data, hdr->size);
+      if ((hdr->size) > 0)
+      {
+        this->payloads[i] = malloc(hdr->size);
+        assert(this->payloads[i]);
+        memcpy(this->payloads[i], data, hdr->size);
+      } else (this->payloads[i]) = NULL;
+      this->rq[i] = !0;
       break;
     }
     if (!(i < RQ_QUEUE_LEN)) return -1;
     n = -1;
-    for (i = 0; i < RQ_QUEUE_LEN; i++) if (this->payloads[i]) n = i;
+    for (i = 0; i < RQ_QUEUE_LEN; i++) if (this->rq[i]) n = i;
     assert(n >= 0);
     if (!n)
     {
       newhdr = this->rq_hdrs[n];
       newhdr.addr = this->required_addr;
-      assert(this->payloads[n]);
+      if ((newhdr.size) > 0) assert(this->payloads[n]);
       this->required_dev->PutMsg(this->InQueue, &newhdr, this->payloads[n], true); // copy = true
       this->last_rq = n;
     }
@@ -306,15 +317,20 @@ int Suppressor::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, v
     }
     this->Publish(this->rq_hdrs[this->last_rq].addr, this->rq_ptrs[this->last_rq], hdr->type, hdr->subtype, data, 0, &(hdr->timestamp), true); // copy = true
     this->rq_ptrs[this->last_rq] = null;
-    assert(this->payloads[this->last_rq]);
-    free(this->payloads[this->last_rq]);
+    assert(this->rq[this->last_rq]);
+    if (this->payloads[this->last_rq])
+    {
+      assert(this->payloads[this->last_rq]);
+      free(this->payloads[this->last_rq]);
+    }
     this->payloads[this->last_rq] = NULL;
+    this->rq[this->last_rq] = 0;
     this->last_rq = -1;
-    for (i = 0; i < RQ_QUEUE_LEN; i++) if (this->payloads[i])
+    for (i = 0; i < RQ_QUEUE_LEN; i++) if (this->rq[i])
     {
       newhdr = this->rq_hdrs[i];
       newhdr.addr = this->required_addr;
-      assert(this->payloads[i]);
+      if ((newhdr.size) > 0) assert(this->payloads[i]);
       this->required_dev->PutMsg(this->InQueue, &newhdr, this->payloads[i], true); // copy = true;
       this->last_rq = i;
       break;
