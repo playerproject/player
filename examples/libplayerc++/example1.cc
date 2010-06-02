@@ -165,7 +165,7 @@ int main(int argc, char** argv)
 
     std::cout << "finished!" << std::endl;
   }
-  catch (PlayerCc::PlayerError e)
+  catch (PlayerCc::PlayerError & e)
   {
     // let's output the error
     std::cerr << e << std::endl;
