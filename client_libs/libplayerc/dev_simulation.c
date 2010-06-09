@@ -224,8 +224,8 @@ int playerc_simulation_get_property(playerc_simulation_t *device,
   req.prop = property;
   req.prop_count = strlen(req.prop) + 1;
 
-  req.value = NULL;
-  req.value_count = 0;
+  req.value = value;
+  req.value_count = value_len;
   
   if( playerc_client_request(device->info.client, &device->info, 
                                 PLAYER_SIMULATION_REQ_GET_PROPERTY,
