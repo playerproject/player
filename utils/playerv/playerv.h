@@ -54,7 +54,8 @@
 #define COLOR_LASER              0x0000C0
 #define COLOR_LASER_EMP          0xD0D0FF
 #define COLOR_LASER_OCC          0x0000C0
-#define COLOR_LOCALIZE           0xFF0000
+#define COLOR_LOCALIZE           0xFF00FF
+#define COLOR_LOCALIZE_PARTICLES 0x0000FF
 #define COLOR_FIDUCIAL           0xF000F0
 #define COLOR_POSITION_ROBOT     0xC00000
 #define COLOR_POSITION_CONTROL   0xFF0000
@@ -734,21 +735,16 @@ typedef struct
   rtk_menu_t *menu;
   rtk_menuitem_t *subscribe_item;
   rtk_menuitem_t *reset_item;
-  rtk_menuitem_t *showmap_item;
+  rtk_menuitem_t *showparticles_item;
   rtk_menuitem_t *frame_item;
 
   // localize device proxy
   playerc_localize_t *proxy;
 
   // Figures
-  rtk_fig_t *map_fig;
   rtk_fig_t *hypoth_fig;
-
+  rtk_fig_t *particles_fig;
   // Map image
-  uint16_t *map_image;
-
-  // Map magnification factor (1 = full size, 2 = half size, etc)
-  int map_mag;
 
   // Timestamp on most recent data
   double datatime;
