@@ -193,17 +193,15 @@ void create_proxy(device_t *device, opt_t *opt, mainwnd_t *mainwnd, playerc_clie
       break;
 
 
-#if 0
+
     case PLAYER_LOCALIZE_CODE:
       device->proxy = localize_create(mainwnd, opt, client,
-                                 device->index, device->drivername, device->subscribe);
+         device->addr.index,
+         device->drivername,
+         device->subscribe);
       device->fndestroy = (fndestroy_t) localize_destroy;
       device->fnupdate = (fnupdate_t) localize_update;
       break;
-
-
-
-#endif
 
     default:
       device->proxy = NULL;

@@ -17,6 +17,7 @@ IF (BUILD_UTILS_PLAYERV)
                             pv_dev_fiducial.c
                             pv_dev_ir.c
                             pv_dev_laser.c
+			    pv_dev_localize.c
                             pv_dev_map.c
                             pv_dev_position2d.c
                             pv_dev_power.c
