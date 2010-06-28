@@ -22,25 +22,25 @@
 #include <ctime>
 #include <cstddef>
 
-Timer::Timer()
+MricpTimer::MricpTimer()
 {
 	gettimeofday(&start_time,NULL);
 }
-double Timer::TimeElapsed() // return in usec
+double MricpTimer::TimeElapsed() // return in usec
 {
 	gettimeofday(&end_time,NULL);
 	time_diff = ((double) end_time.tv_sec*1000000 + (double)end_time.tv_usec) -
 	            ((double) start_time.tv_sec*1000000 + (double)start_time.tv_usec);
 	return  time_diff;
 }
-Timer::~Timer()
+MricpTimer::~MricpTimer()
 {
 }
-void Timer::Reset()
+void MricpTimer::Reset()
 {
 	gettimeofday(&start_time,NULL);
 }
-void Timer::Synch(double period)
+void MricpTimer::Synch(double period)
 {
 	struct timespec ts;
 	int us;
@@ -54,3 +54,4 @@ void Timer::Synch(double period)
 		nanosleep(&ts, NULL);
 	}
 }
+

@@ -23,7 +23,7 @@
 
 /*
  * Private V4L2 control identifiers from UVC driver.  - this seems to change acording to driver version
- * all other User-class control IDs are defined by V4L2 (videodev.h)
+ * all other User-class control IDs are defined by V4L2 (videodev2.h)
  */
 
 /*------------------------- new camera class controls ---------------------*/

@@ -43,7 +43,7 @@
 #include <assert.h>
 #include <sys/types.h>
 #if defined WIN32
-  #include <Winsock2.h>
+  #include <winsock2.h>
   #define snprintf _snprintf
 #else
   #include <unistd.h>

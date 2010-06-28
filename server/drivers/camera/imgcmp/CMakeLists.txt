@@ -1,0 +1,7 @@
+PLAYERDRIVER_OPTION (imgcmp build_imgcmp ON)
+IF (HAVE_JPEG)
+    PLAYERDRIVER_REQUIRE_HEADER (imgcmp build_imgcmp jpeglib.h stdio.h)
+    PLAYERDRIVER_ADD_DRIVER (imgcmp build_imgcmp LINKFLAGS "-ljpeg" SOURCES imgcmp.cc)
+ELSE (HAVE_JPEG)
+    PLAYERDRIVER_ADD_DRIVER (imgcmp build_imgcmp SOURCES imgcmp.cc)
+ENDIF (HAVE_JPEG)

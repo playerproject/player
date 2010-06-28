@@ -16,16 +16,16 @@
 <a name="l00002"></a>00002 <span class="preprocessor"></span><span class="preprocessor">#define TIMER_H_</span>
 <a name="l00003"></a>00003 <span class="preprocessor"></span><span class="preprocessor">#include &lt;sys/time.h&gt;</span>
 <a name="l00004"></a>00004 <span class="preprocessor">#include &lt;iostream&gt;</span>
-<a name="l00005"></a>00005 <span class="keyword">class </span>Timer
+<a name="l00005"></a>00005 <span class="keyword">class </span>MricpTimer
 <a name="l00006"></a>00006 {
 <a name="l00007"></a>00007         <span class="keyword">private</span>:
 <a name="l00008"></a>00008                 <span class="keyword">struct </span>timeval start_time,end_time;
 <a name="l00009"></a>00009                 <span class="keywordtype">double</span> time_diff;
 <a name="l00010"></a>00010         <span class="keyword">public</span>:
-<a name="l00011"></a>00011                 Timer();
+<a name="l00011"></a>00011                 MricpTimer();
 <a name="l00012"></a>00012                 <span class="keywordtype">double</span> TimeElapsed(); <span class="comment">// time elapsed in usec since last call</span>
 <a name="l00013"></a>00013                 <span class="keywordtype">void</span> Reset();                           <span class="comment">// resets timer</span>
-<a name="l00014"></a>00014                 <span class="keyword">virtual</span> ~Timer();
+<a name="l00014"></a>00014                 <span class="keyword">virtual</span> ~MricpTimer();
 <a name="l00015"></a>00015                 <span class="comment">/* Synchronize the loop within a period</span>
 <a name="l00016"></a>00016 <span class="comment">                 * To use this u will have to initialize the timer</span>
 <a name="l00017"></a>00017 <span class="comment">                 * reset the timer at the beginning of the loop</span>

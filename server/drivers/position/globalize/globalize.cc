@@ -93,6 +93,7 @@ class Globalize : public Driver
     player_msghdr_t rq_hdrs[RQ_QUEUE_LEN];
     QueuePointer rq_ptrs[RQ_QUEUE_LEN];
     void * payloads[RQ_QUEUE_LEN];
+    int rq[RQ_QUEUE_LEN];
     int last_rq;
     double cmd_interval;
     double cmd_time;
@@ -112,6 +113,7 @@ Globalize::Globalize(ConfigFile* cf, int section) : Driver(cf, section, true, PL
   for (i = 0; i < RQ_QUEUE_LEN; i++)
   {
     this->payloads[i] = NULL;
+    this->rq[i] = 0;
   }
   this->last_rq = -1;
   this->cmd_interval = 0.0;
@@ -166,6 +168,7 @@ int Globalize::Setup()
   for (i = 0; i < RQ_QUEUE_LEN; i++)
   {
     this->payloads[i] = NULL;
+    this->rq[i] = 0;
   }
   this->last_rq = -1;
   if ((Device::MatchDeviceAddress(this->r_local_pos_addr, this->p_pos_addr))
@@ -213,10 +216,14 @@ int Globalize::Shutdown()
   this->r_local_pos_dev = NULL;
   if (this->r_global_pos_dev) this->r_global_pos_dev->Unsubscribe(this->InQueue);
   this->r_global_pos_dev = NULL;
-  for (i = 0; i < RQ_QUEUE_LEN; i++) if (this->payloads[i])
+  for (i = 0; i < RQ_QUEUE_LEN; i++)
   {
-    free(this->payloads[i]);
-    this->payloads[i] = NULL;
+    if (this->payloads[i])
+    {
+      free(this->payloads[i]);
+      this->payloads[i] = NULL;
+    }
+    this->rq[i] = 0;
   }
   return 0;
 }
@@ -255,24 +262,28 @@ int Globalize::ProcessMessage(QueuePointer &resp_queue,
   }
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, -1, this->p_pos_addr))
   {
-    for (i = 0; i < RQ_QUEUE_LEN; i++) if (!(this->payloads[i]))
+    for (i = 0; i < RQ_QUEUE_LEN; i++) if (!(this->rq[i]))
     {
       this->rq_hdrs[i] = *hdr;
       this->rq_ptrs[i] = resp_queue;
-      this->payloads[i] = malloc(hdr->size);
-      assert(this->payloads[i]);
-      memcpy(this->payloads[i], data, hdr->size);
+      if ((hdr->size) > 0)
+      {
+        this->payloads[i] = malloc(hdr->size);
+        assert(this->payloads[i]);
+        memcpy(this->payloads[i], data, hdr->size);
+      } else (this->payloads[i]) = NULL;
+      this->rq[i] = !0;
       break;
     }
     if (!(i < RQ_QUEUE_LEN)) return -1;
     n = -1;
-    for (i = 0; i < RQ_QUEUE_LEN; i++) if (this->payloads[i]) n = i;
+    for (i = 0; i < RQ_QUEUE_LEN; i++) if (this->rq[i]) n = i;
     assert(n >= 0);
     if (!n)
     {
       newhdr = this->rq_hdrs[n];
       newhdr.addr = this->r_local_pos_addr;
-      assert(this->payloads[n]);
+      if ((newhdr.size) > 0) assert(this->payloads[n]);
       this->r_local_pos_dev->PutMsg(this->InQueue, &newhdr, this->payloads[n], true); // copy = true
       this->last_rq = n;
     }
@@ -288,15 +299,20 @@ int Globalize::ProcessMessage(QueuePointer &resp_queue,
     assert((hdr->subtype) == (this->rq_hdrs[this->last_rq].subtype));
     this->Publish(this->p_pos_addr, this->rq_ptrs[this->last_rq], hdr->type, hdr->subtype, data, 0, &(hdr->timestamp), true); // copy = true
     this->rq_ptrs[this->last_rq] = null;
-    assert(this->payloads[this->last_rq]);
-    free(this->payloads[this->last_rq]);
+    assert(this->rq[this->last_rq]);
+    if (this->payloads[this->last_rq])
+    {
+      assert(this->payloads[this->last_rq]);
+      free(this->payloads[this->last_rq]);
+    }
     this->payloads[this->last_rq] = NULL;
+    this->rq[this->last_rq] = 0;
     this->last_rq = -1;
-    for (i = 0; i < RQ_QUEUE_LEN; i++) if (this->payloads[i])
+    for (i = 0; i < RQ_QUEUE_LEN; i++) if (this->rq[i])
     {
       newhdr = this->rq_hdrs[i];
       newhdr.addr = this->r_local_pos_addr;
-      assert(this->payloads[i]);
+      if ((newhdr.size) > 0) assert(this->payloads[i]);
       this->r_local_pos_dev->PutMsg(this->InQueue, &newhdr, this->payloads[i], true); // copy = true;
       this->last_rq = i;
       break;

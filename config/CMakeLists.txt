@@ -1,4 +1,6 @@
-SET (sampleConfigFiles  amigobot.cfg
+SET (sampleConfigFiles  afsm.cfg
+                        afsm.eps
+                        amigobot.cfg
                         amigobot_tcp.cfg
                         amtecM5.cfg
                         b21r_rflex_lms200.cfg
@@ -23,6 +25,8 @@ SET (sampleConfigFiles  amigobot.cfg
                         readlog.cfg
                         rfid.cfg
                         roomba.cfg
+                        searchpattern.cfg
+                        searchpattern_symbols.ps
                         segwayrmp.cfg
                         service_adv.cfg
                         simple.cfg

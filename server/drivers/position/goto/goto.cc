@@ -57,7 +57,15 @@
   - Debug
 - reactive (integer)
   - Default: 0
-  - Shall we react for stall states?
+  - Shall we react for stall states? 0 - no, 1 - yes (see 'reaction_turn_vel', 'reaction_time'), 2 - yes, with random parameters
+- reaction_turn_vel (float)
+  - Default: 0.0 (rad/sec)
+  - When 'reactive' is set to 1, this driver causes a robot to go back on stall state for a while ('reaction_time')
+    turning it with 'reaction_turn_vel' angular velocity
+- reaction_time (float)
+  - Default: 1.5 (seconds)
+  - When 'reactive' is set to 1, this driver causes a robot to go back on stall state for a while ('reaction_time')
+    turning it with 'reaction_turn_vel' angular velocity
 - forward_enabled (integer)
   - Default: 0
   - Shall we forward position2d velocity commands?
@@ -170,6 +178,8 @@ class Goto : public Driver
     double min_angular_vel;
     int debug;
     int reactive;
+    double reaction_turn_vel;
+    double reaction_time;
     int forward_enabled;
     int early_check;
     int send_everything;
@@ -181,6 +191,7 @@ class Goto : public Driver
     player_msghdr_t rq_hdrs[RQ_QUEUE_LEN];
     QueuePointer rq_ptrs[RQ_QUEUE_LEN];
     void * payloads[RQ_QUEUE_LEN];
+    int rq[RQ_QUEUE_LEN];
     int last_rq;
     static double mod(double x, double y);
     static double angle_map(double d);
@@ -226,6 +237,8 @@ Goto::Goto(ConfigFile* cf, int section) : Driver(cf, section, true, PLAYER_MSGQU
   this->max_dist = 0.0;
   this->debug = 0;
   this->reactive = 0;
+  this->reaction_turn_vel = 0.0;
+  this->reaction_time = 0.0;
   this->forward_enabled = 0;
   this->early_check = 0;
   this->send_everything = 0;
@@ -244,6 +257,7 @@ Goto::Goto(ConfigFile* cf, int section) : Driver(cf, section, true, PLAYER_MSGQU
   for (i = 0; i < RQ_QUEUE_LEN; i++)
   {
     this->payloads[i] = NULL;
+    this->rq[i] = 0;
   }
   this->last_rq = -1;
   if (cf->ReadDeviceAddr(&(this->position2d_provided_addr), section, "provides",
@@ -299,10 +313,29 @@ Goto::Goto(ConfigFile* cf, int section) : Driver(cf, section, true, PLAYER_MSGQU
   {
     PLAYER_ERROR("dist_tol should not be greater or equal to max_dist");
     this->SetError(-1);
-    return;    
+    return;
   }
   this->debug = cf->ReadInt(section, "debug", 0);
   this->reactive = cf->ReadInt(section, "reactive", 0);
+  switch (this->reactive)
+  {
+  case 0:
+  case 1:
+  case 2:
+    break;
+  default:
+    PLAYER_ERROR1("Invalid reactive value %d", this->reactive);
+    this->SetError(-1);
+    return;
+  }
+  this->reaction_turn_vel = cf->ReadFloat(section, "reaction_turn_vel", 0.0);
+  this->reaction_time = cf->ReadInt(section, "reaction_time", 1.5);
+  if ((this->reaction_time) < 0.0)
+  {
+    PLAYER_ERROR1("Invalid reaction_time %.4f", this->reaction_time);
+    this->SetError(-1);
+    return;
+  }
   this->forward_enabled = cf->ReadInt(section, "forward_enabled", 0);
   this->early_check = cf->ReadInt(section, "early_check", 1);
   this->send_everything = cf->ReadInt(section, "send_everything", 1);
@@ -338,7 +371,6 @@ Goto::Goto(ConfigFile* cf, int section) : Driver(cf, section, true, PLAYER_MSGQU
     this->SetError(-1);
     return;
   }
-
 }
 
 Goto::~Goto()
@@ -363,6 +395,7 @@ int Goto::Setup()
   for (i = 0; i < RQ_QUEUE_LEN; i++)
   {
     this->payloads[i] = NULL;
+    this->rq[i] = 0;
   }
   this->last_rq = -1;
   // Only for driver that provides the same interface as it requires
@@ -401,10 +434,14 @@ int Goto::Shutdown()
 
   if (this->position2d_required_dev) this->position2d_required_dev->Unsubscribe(this->InQueue);
   this->position2d_required_dev = NULL;
-  for (i = 0; i < RQ_QUEUE_LEN; i++) if (this->payloads[i])
+  for (i = 0; i < RQ_QUEUE_LEN; i++)
   {
-    free(this->payloads[i]);
-    this->payloads[i] = NULL;
+    if (this->payloads[i])
+    {
+      free(this->payloads[i]);
+      this->payloads[i] = NULL;
+    }
+    this->rq[i] = 0;
   }
   return 0;
 }
@@ -478,24 +515,28 @@ int Goto::ProcessMessage(QueuePointer &resp_queue,
   }
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, -1, this->position2d_provided_addr))
   {
-    for (i = 0; i < RQ_QUEUE_LEN; i++) if (!(this->payloads[i]))
+    for (i = 0; i < RQ_QUEUE_LEN; i++) if (!(this->rq[i]))
     {
       this->rq_hdrs[i] = *hdr;
       this->rq_ptrs[i] = resp_queue;
-      this->payloads[i] = malloc(hdr->size);
-      assert(this->payloads[i]);
-      memcpy(this->payloads[i], data, hdr->size);
+      if ((hdr->size) > 0)
+      {
+        this->payloads[i] = malloc(hdr->size);
+        assert(this->payloads[i]);
+        memcpy(this->payloads[i], data, hdr->size);
+      } else this->payloads[i] = NULL;
+      this->rq[i] = !0;
       break;
     }
     if (!(i < RQ_QUEUE_LEN)) return -1;
     n = -1;
-    for (i = 0; i < RQ_QUEUE_LEN; i++) if (this->payloads[i]) n = i;
+    for (i = 0; i < RQ_QUEUE_LEN; i++) if (this->rq[i]) n = i;
     assert(n >= 0);
     if (!n)
     {
       newhdr = this->rq_hdrs[n];
       newhdr.addr = this->position2d_required_addr;
-      assert(this->payloads[n]);
+      if ((newhdr.size) > 0) assert(this->payloads[n]);
       this->position2d_required_dev->PutMsg(this->InQueue, &newhdr, this->payloads[n], true); // copy = true
       this->last_rq = n;
     }
@@ -511,15 +552,16 @@ int Goto::ProcessMessage(QueuePointer &resp_queue,
     assert((hdr->subtype) == (this->rq_hdrs[this->last_rq].subtype));
     this->Publish(this->position2d_provided_addr, this->rq_ptrs[this->last_rq], hdr->type, hdr->subtype, data, 0, &(hdr->timestamp), true); // copy = true
     this->rq_ptrs[this->last_rq] = null;
-    assert(this->payloads[this->last_rq]);
-    free(this->payloads[this->last_rq]);
+    assert(this->rq[this->last_rq]);
+    if (this->payloads[this->last_rq]) free(this->payloads[this->last_rq]);
     this->payloads[this->last_rq] = NULL;
+    this->rq[this->last_rq] = 0;
     this->last_rq = -1;
-    for (i = 0; i < RQ_QUEUE_LEN; i++) if (this->payloads[i])
+    for (i = 0; i < RQ_QUEUE_LEN; i++) if (this->rq[i])
     {
       newhdr = this->rq_hdrs[i];
       newhdr.addr = this->position2d_required_addr;
-      assert(this->payloads[i]);
+      if ((newhdr.size) > 0) assert(this->payloads[i]);
       this->position2d_required_dev->PutMsg(this->InQueue, &newhdr, this->payloads[i], true); // copy = true;
       this->last_rq = i;
       break;
@@ -631,8 +673,8 @@ int Goto::ProcessMessage(QueuePointer &resp_queue,
         if (pos_data.stall)
         {
           GlobalTime->GetTimeDouble(&(this->stall_start_time));
-          this->stall_length = (static_cast<double>(rand()) / static_cast<double>(RAND_MAX)) + 0.3;
-          this->stall_turn = ((static_cast<double>(rand()) / static_cast<double>(RAND_MAX)) * 4.0) - 2.0;
+          this->stall_length = ((this->reactive) == 1) ? (this->reaction_time) : ((static_cast<double>(rand()) / static_cast<double>(RAND_MAX)) + 0.3);
+          this->stall_turn = ((this->reactive) == 1) ? (this->reaction_turn_vel) : (((static_cast<double>(rand()) / static_cast<double>(RAND_MAX)) * 4.0) - 2.0);
           vel_cmd.vel.px = -(this->max_vel);
           vel_cmd.vel.py = 0.0;
           vel_cmd.vel.pa = this->stall_turn;

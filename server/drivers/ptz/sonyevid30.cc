@@ -554,6 +554,8 @@ protected:
   int pandemand;
   int tiltdemand;
   short zoomdemand;
+  unsigned char buffer[MAX_PTZ_PACKET_LENGTH];
+  int numread;
 public:
 
   SonyEVID30( ConfigFile* cf, int section);
@@ -654,6 +656,8 @@ int SonyEVID30::MainSetup()
     perror("SonyEVID30::Setup():open():");
     return(-1);
   }
+  this->numread = 0;
+  memset(this->buffer, 0, sizeof this->buffer);
 
   read_pfd.fd = ptz_fd;
 
@@ -791,9 +795,6 @@ int SonyEVID30::Send(unsigned char *str, int len, unsigned char *reply,
 
 int SonyEVID30::Receive(unsigned char *reply)
 {
-  static unsigned char buffer[MAX_PTZ_PACKET_LENGTH];
-  static int numread = 0;
-
   unsigned char temp_reply[MAX_PTZ_PACKET_LENGTH];
   int newnumread = 0;
   int bufptr = -1;
@@ -803,12 +804,12 @@ int SonyEVID30::Receive(unsigned char *reply)
 
   memset(temp_reply,0,MAX_PTZ_PACKET_LENGTH);
   memset(reply,0,MAX_PTZ_PACKET_LENGTH);
-  if(numread > 0)
+  if ((this->numread) > 0)
   {
-    //printf("copying %d old bytes\n", numread);
-    memcpy(temp_reply,buffer,numread);
+    //printf("copying %d old bytes\n", this->numread);
+    memcpy(temp_reply, this->buffer, this->numread);
     // look for the terminator
-    for(i=0;i<numread;i++)
+    for (i = 0; i < (this->numread); i++)
     {
       if(temp_reply[i] == 0xFF)
       {
@@ -826,8 +827,8 @@ int SonyEVID30::Receive(unsigned char *reply)
       } else if (pret < 0) {
 	printf("SONY: poll returned error!\n");
       }
-    newnumread = read(ptz_fd, temp_reply+numread, MAX_PTZ_REPLY_LENGTH-numread);
-    if((numread += newnumread) < 0)
+    newnumread = read(ptz_fd, temp_reply + (this->numread), MAX_PTZ_REPLY_LENGTH - (this->numread));
+    if (((this->numread) += newnumread) < 0)
     {
       perror("SonyEVID30::Send():read():");
       return(-1);
@@ -843,11 +844,11 @@ int SonyEVID30::Receive(unsigned char *reply)
         perror("SonyEVID30::Send():tcflush():");
         return(-1);
       }
-      numread = 0;
+      this->numread = 0;
       return(0);
     }
     // look for the terminator
-    for(i=0;i<numread;i++)
+    for (i = 0; i < (this->numread); i++)
     {
       if(temp_reply[i] == 0xFF)
       {
@@ -857,15 +858,15 @@ int SonyEVID30::Receive(unsigned char *reply)
     }
   }
 
-  temp = numread;
+  temp = this->numread;
   // if we read extra bytes, keep them around
-  if(bufptr == numread-1)
-    numread = 0;
+  if (bufptr == ((this->numread) - 1))
+    this->numread = 0;
   else
   {
-    //printf("storing %d bytes\n", numread-(bufptr+1));
-    memcpy(buffer,temp_reply+bufptr+1,numread-(bufptr+1));
-    numread = numread-(bufptr+1);
+    //printf("storing %d bytes\n", (this->numread) - (bufptr + 1));
+    memcpy(this->buffer, temp_reply + bufptr + 1, (this->numread) - (bufptr + 1));
+    this->numread = ((this->numread) - (bufptr + 1));
   }
 
   //PrintPacket("Really Received", temp_reply, temp);

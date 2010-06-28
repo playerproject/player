@@ -134,7 +134,9 @@ previous plan, if any.
 #include <signal.h>
 #include <string.h>
 #include <math.h>
-#include <sys/time.h>
+#ifndef WIN32
+  #include <sys/time.h>
+#endif
 
 #include "playernav.h"
 

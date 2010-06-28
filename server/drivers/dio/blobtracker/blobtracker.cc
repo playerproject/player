@@ -321,7 +321,7 @@ int Blobtracker::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, 
     bdata = reinterpret_cast<player_blobfinder_data_t *>(data);
     idle_width = static_cast<uint32_t>(static_cast<double>(bdata->width) * (this->idle_area));
     idle_height = static_cast<uint32_t>(static_cast<double>(bdata->height) * (this->idle_area));
-    if ((idle_width > 0) && (idle_height > 0) && ((bdata->blobs_count) > 0))
+    if ((idle_width > 0) && (idle_height > 0))
     {
       idx = -1;
       for (i = 0; i < static_cast<int>(bdata->blobs_count); i++)

@@ -20,18 +20,26 @@
 
 #ifndef TIMER_H_
 #define TIMER_H_
-#include <sys/time.h>
+
+#if defined WIN32
+  #include <replace.h>
+  #include <Winsock2.h>  // For struct timeval
+#else
+  #include <sys/time.h>
+#endif
 #include <iostream>
-class Timer
+
+
+class MricpTimer
 {
 	private:
 		struct timeval start_time,end_time;
 		double time_diff;
 	public:
-		Timer();
+		MricpTimer();
 		double TimeElapsed(); // time elapsed in usec since last call
 		void Reset(); 				// resets timer
-		virtual ~Timer();
+		virtual ~MricpTimer();
 		/* Synchronize the loop within a period
 		 * To use this u will have to initialize the timer
 		 * reset the timer at the beginning of the loop
@@ -41,3 +49,4 @@ class Timer
 };
 
 #endif /*TIMER_H_*/
+

@@ -56,7 +56,11 @@ the @ref interface_ranger interface.
 
 @par Configuration file options
 
- - None
+- buggy_geom (integer)
+  - Default: 0
+  - If set to 1, the pz, proll and ppitch fields will be set to 0.0
+  - This option is added to provide compatibility with old buggy sonar drivers
+     that do not clean unused geometry structure fields
 
 @par Example
 
@@ -107,6 +111,7 @@ class SonarToRanger : public ToRanger
 		int ConvertData (player_sonar_data_t *data);
 	private:
 		int skip_rq;
+		int buggy_geom;
 };
 
 // Initialisation function
@@ -137,6 +142,7 @@ SonarToRanger::SonarToRanger( ConfigFile* cf, int section)
 		SetError (-1);
 		return;
 	}
+	this->buggy_geom = cf->ReadInt(section, "buggy_geom", 0);
 }
 
 // Setup function
@@ -228,6 +234,12 @@ int SonarToRanger::ConvertGeom (player_sonar_geom_t *geom)
 		deviceGeom.element_poses[ii].proll = geom->poses[ii].proll;
 		deviceGeom.element_poses[ii].ppitch = geom->poses[ii].ppitch;
 		deviceGeom.element_poses[ii].pyaw = geom->poses[ii].pyaw;
+		if (this->buggy_geom)
+		{
+			deviceGeom.element_poses[ii].pz = 0.0;
+			deviceGeom.element_poses[ii].proll = 0.0;
+			deviceGeom.element_poses[ii].ppitch = 0.0;
+		}
 	}
 	// Even though the sensor sizes are all zero, they're still there
 	deviceGeom.element_sizes_count = geom->poses_count;
@@ -360,4 +372,4 @@ int SonarToRanger::ProcessMessage (QueuePointer &respQueue, player_msghdr *hdr, 
 	}
 
 	return -1;
-	}
+}

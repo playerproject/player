@@ -50,7 +50,7 @@ int main(int argc, char** argv)
     sp.Say("And one man in his time plays many parts\n");
     usleep(1000000);
   }
-  catch (PlayerCc::PlayerError e)
+  catch (PlayerCc::PlayerError & e)
   {
     std::cerr << e << std::endl;
     return -1;

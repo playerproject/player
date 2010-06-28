@@ -215,16 +215,18 @@ driver
 #include <string.h>
 #include <stddef.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <assert.h>
 #include <math.h>
 
+#ifndef WIN32
+  #include <unistd.h>
+  #include <sys/time.h>
+#endif
 
 #include <libplayercore/playercore.h>
 #include <libplayerinterface/functiontable.h>
 #include "plan.h"
 
-#include <sys/time.h>
 static double get_time(void);
 //extern "C" { void draw_cspace(plan_t* plan, const char* fname); }
 

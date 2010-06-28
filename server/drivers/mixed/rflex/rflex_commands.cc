@@ -172,13 +172,14 @@ static void cmdSend( int fd, int port, int id, int opcode, int len, unsigned cha
   writeData( fd, cmd, 9+len );
 
 	// Some issues with commands not being recognised if sent too rapidly
-	// (too small a buffer on recieving end?
+	// (too small a buffer on receiving end?
 	// So we delay for a bit, specifically we wait until specified amount of
-	// time has passed without recieving a packet. This roughtly approximates
-	// to waiting till the command has finshed being executed on the robot
+	// time has passed without recieving a packet. This roughly approximates
+	// to waiting till the command has finished being executed on the robot
 	int count;
 	timeval now;
 	timeval start = {0,0};
+	gettimeofday(&start,NULL);
 	do
 	{
 		count = clear_incoming_data(fd);

@@ -71,6 +71,11 @@ Roles of provided interfaces are distinguished by given key (switch or comm)
 - block_data
   - Default: 0
   - If set to 1, data flow is also blocked
+- msg_interval
+  - Default: 0.0
+  - If greater than 0.0 (seconds), commands will be passed with this interval
+    (all commands sent more frequently will be thrown away). When this interval
+    is set to 0.0, all commands are passed (as long as inhibitor state is right).
 
 @par Example
 
@@ -92,10 +97,12 @@ driver
 #include <stddef.h> // for NULL and size_t
 #include <stdlib.h> // for malloc() and free()
 #include <string.h> // for memset()
+#include <math.h> // for fabs()
 #include <assert.h>
 #include <libplayercore/playercore.h>
 
 #define RQ_QUEUE_LEN 10
+#define EPS 0.0000001
 
 class Inhibitor : public Driver
 {
@@ -115,7 +122,10 @@ class Inhibitor : public Driver
   private: uint32_t bitmask;
   private: int neg;
   private: int block_data;
+  private: double msg_interval;
+  private: double lastTime;
   private: int switch_state;
+  private: int rq[RQ_QUEUE_LEN];
   private: int last_rq;
   private: player_msghdr_t rq_hdrs[RQ_QUEUE_LEN];
   private: QueuePointer rq_ptrs[RQ_QUEUE_LEN];
@@ -139,12 +149,15 @@ Inhibitor::Inhibitor(ConfigFile * cf, int section) : Driver(cf, section, true, P
   this->bitmask = 0;
   this->neg = 0;
   this->block_data = 0;
+  this->msg_interval = 0.0;
+  this->lastTime = 0.0;
   this->switch_state = 0;
   this->last_rq = -1;
   memset(this->rq_hdrs, 0, sizeof this->rq_hdrs);
   for (i = 0; i < RQ_QUEUE_LEN; i++)
   {
     this->payloads[i] = NULL;
+    this->rq[i] = 0;
   }
   if (cf->ReadDeviceAddr(&(this->dio_provided_addr), section, "provides", PLAYER_DIO_CODE, -1, "switch"))
   {
@@ -219,6 +232,13 @@ Inhibitor::Inhibitor(ConfigFile * cf, int section) : Driver(cf, section, true, P
   }
   this->neg = cf->ReadInt(section, "neg", 0);
   this->block_data = cf->ReadInt(section, "block_data", 0);
+  this->msg_interval = cf->ReadFloat(section, "msg_interval", 0.0);
+  if ((this->msg_interval) < 0.0)
+  {
+    PLAYER_ERROR("invalid msg_interval");
+    this->SetError(-1);
+    return;
+  }
 }
 
 Inhibitor::~Inhibitor()
@@ -242,6 +262,7 @@ int Inhibitor::Setup()
   for (i = 0; i < RQ_QUEUE_LEN; i++)
   {
     this->payloads[i] = NULL;
+    this->rq[i] = 0;
   }
   if (Device::MatchDeviceAddress(this->comm_required_addr, this->comm_provided_addr))
   {
@@ -290,6 +311,7 @@ int Inhibitor::Setup()
       return -1;
     }
   }
+  this->lastTime = 0.0;
   return 0;
 }
 
@@ -301,10 +323,14 @@ int Inhibitor::Shutdown()
   this->comm_required_dev = NULL;
   if (this->dio_required_dev) this->dio_required_dev->Unsubscribe(this->InQueue);
   this->dio_required_dev = NULL;
-  for (i = 0; i < RQ_QUEUE_LEN; i++) if (this->payloads[i])
+  for (i = 0; i < RQ_QUEUE_LEN; i++)
   {
-    free(this->payloads[i]);
-    this->payloads[i] = NULL;
+    if (this->payloads[i])
+    {
+      free(this->payloads[i]);
+      this->payloads[i] = NULL;
+    }
+    this->rq[i] = 0;
   }
   return 0;
 }
@@ -319,6 +345,7 @@ int Inhibitor::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, vo
   QueuePointer null;
   int i;
   int n;
+  double t;
 
   assert(hdr);
   if (this->use_dio)
@@ -375,6 +402,14 @@ int Inhibitor::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, vo
   {
     pass = (this->neg) ? (!(this->switch_state)) : (this->switch_state);
     if (!pass) return 0;
+    if ((this->msg_interval) > EPS)
+    {
+      GlobalTime->GetTimeDouble(&t);
+      if ((fabs(t - (this->lastTime))) > (this->msg_interval))
+      {
+        this->lastTime = t;
+      } else return 0;
+    }
     newhdr = *hdr;
     newhdr.addr = this->comm_required_addr;
     this->comm_required_dev->PutMsg(this->InQueue, &newhdr, data, true); // copy = true
@@ -382,24 +417,28 @@ int Inhibitor::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, vo
   }
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, -1, this->comm_provided_addr))
   {
-    for (i = 0; i < RQ_QUEUE_LEN; i++) if (!(this->payloads[i]))
+    for (i = 0; i < RQ_QUEUE_LEN; i++) if (!(this->rq[i]))
     {
       this->rq_hdrs[i] = *hdr;
       this->rq_ptrs[i] = resp_queue;
-      this->payloads[i] = malloc(hdr->size);
-      assert(this->payloads[i]);
-      memcpy(this->payloads[i], data, hdr->size);
+      if ((hdr->size) > 0)
+      {
+        this->payloads[i] = malloc(hdr->size);
+        assert(this->payloads[i]);
+        memcpy(this->payloads[i], data, hdr->size);
+      } else this->payloads[i] = NULL;
+      this->rq[i] = !0;
       break;
     }
     if (!(i < RQ_QUEUE_LEN)) return -1;
     n = -1;
-    for (i = 0; i < RQ_QUEUE_LEN; i++) if (this->payloads[i]) n = i;
+    for (i = 0; i < RQ_QUEUE_LEN; i++) if (this->rq[i]) n = i;
     assert(n >= 0);
     if (!n)
     {
       newhdr = this->rq_hdrs[n];
       newhdr.addr = this->comm_required_addr;
-      assert(this->payloads[n]);
+      if ((newhdr.size) > 0) assert(this->payloads[n]);
       this->comm_required_dev->PutMsg(this->InQueue, &newhdr, this->payloads[n], true); // copy = true
       this->last_rq = n;
     }
@@ -419,15 +458,20 @@ int Inhibitor::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, vo
     }
     this->Publish(this->comm_provided_addr, this->rq_ptrs[this->last_rq], hdr->type, hdr->subtype, data, 0, &(hdr->timestamp), true); // copy = true
     this->rq_ptrs[this->last_rq] = null;
-    assert(this->payloads[this->last_rq]);
-    free(this->payloads[this->last_rq]);
+    assert(this->rq[this->last_rq]);
+    if (this->payloads[this->last_rq])
+    {
+      assert(this->payloads[this->last_rq]);
+      free(this->payloads[this->last_rq]);
+    }
     this->payloads[this->last_rq] = NULL;
+    this->rq[this->last_rq] = 0;
     this->last_rq = -1;
-    for (i = 0; i < RQ_QUEUE_LEN; i++) if (this->payloads[i])
+    for (i = 0; i < RQ_QUEUE_LEN; i++) if (this->rq[i])
     {
       newhdr = this->rq_hdrs[i];
       newhdr.addr = this->comm_required_addr;
-      assert(this->payloads[i]);
+      if ((newhdr.size) > 0) assert(this->payloads[i]);
       this->comm_required_dev->PutMsg(this->InQueue, &newhdr, this->payloads[i], true); // copy = true;
       this->last_rq = i;
       break;

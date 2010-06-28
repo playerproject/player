@@ -104,7 +104,7 @@ public:
 
 private:
 
-  Timer timer;
+  EpuckTimer timer;
 
   // Holder for current position data estimated by e-puck robot odometry.
   DynamicConfiguration odometryState;
@@ -128,3 +128,4 @@ private:
 };
 
 #endif
+

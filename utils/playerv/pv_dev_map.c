@@ -27,6 +27,9 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#if defined WIN32
+  #include <replace.h>
+#endif
 #include "playerv.h"
 
 
@@ -159,7 +162,8 @@ void map_draw(map_t *map)
 
   for( x=0; x<map->proxy->width; x++ )
     for( y=0; y<map->proxy->height; y++ )
-      {
+    {
+
 	switch( map->proxy->cells[ x + y * map->proxy->width ] )
 	  {
 	  case -1:
@@ -190,7 +194,7 @@ void map_draw(map_t *map)
 	    puts( "Warning: invalid occupancy value." );
 	    break;
 	  }
-      }
+    }
 
   return;
 }

@@ -55,7 +55,18 @@ interface.
 
 @par Configuration file options
 
-- none
+- check_timestamps (int)
+  - Default: 0
+  - If non-zero, timestamps are checked so only new images are compressed
+    and published.
+
+- save (int)
+  - Default: 0
+  - If non-zero, uncompressed images are saved to disk (with a .jpeg extension)
+
+- image_quality (float)
+  - Default: 0.8
+  - Image quality for JPEG compression
 
 @par Example
 
@@ -120,6 +131,7 @@ class CameraCompress : public ThreadedDriver
     private: double quality;
 
     // Save image frames?
+    private: int check_timestamps;
     private: int save;
     private: int frameno;
 };
@@ -151,7 +163,8 @@ CameraCompress::CameraCompress( ConfigFile *cf, int section)
   }
   this->camera_time = 0.0;
 
-  this->save = cf->ReadInt(section,"save",0);
+  this->check_timestamps = cf->ReadInt(section, "check_timestamps", 0);
+  this->save = cf->ReadInt(section, "save", 0);
   this->quality = cf->ReadFloat(section, "image_quality", 0.8);
 
   return;
@@ -199,10 +212,13 @@ int CameraCompress::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hd
 
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, camera_id))
   {
-	assert(data);
+    assert(data);
     player_camera_data_t * recv = reinterpret_cast<player_camera_data_t * > (data);
-    camera_time = hdr->timestamp;
-    ProcessImage(*recv);
+    if ((!(this->check_timestamps)) || (this->camera_time != hdr->timestamp))
+    {
+      this->camera_time = hdr->timestamp;
+      ProcessImage(*recv);
+    }
     return 0;
   }
 
