@@ -1,3 +1,57 @@
+3.0.2 (2010-06-28)
+ - Various small warning fixes
+ - Fixes for documentation build process
+ - Fixes for Windows compilation
+ - Fixes for Ruby bindings installation
+ - Fixes for p2os driver (removed ARNL parameters) 
+ - Fix timestamp intialisation in rflex sleep loop (thanks Giri)
+ - Fixed bug 3013281: simulation->GetProperty bug
+ - New Driver: opaquecmd
+ - New Driver: cameragst
+ - New Driver: blobposition
+ - New Driver: postlog
+ - New Driver: searchpattern
+ - New Driver: speechcmd
+ - New Driver: imgcmp
+ - New Driver: imgsave
+ - Applied patch 2927173: Partial doxygen doc fix
+ - Applied patch 2929113: Ruby Bindings install directory
+ - Applied patch 2914674: camera_save_images for JPEG cameras
+ - Applied patch 2923028: requests on roomba opaque commands
+ - Applied patch 2925359: New shell driver: opaquecmd
+ - Applied patch 2926568: PhidgetsIFK Compilation Patch
+ - Applied patch 2933745: Opaquecmd error
+ - Applied patch 2933939: two bugs in afsm config examples
+ - Applied patch 2935385: Playerprint given number of updates
+ - Applied patch 2938899: roboteq add position1d interface and motor_control_mode conf
+ - Applied patch 2978343: memset in v4l2 driver
+ - Applied patch 2977971: add gstreamer camera driver
+ - Applied patch 2976583: blobtracker: overhead condition check removed
+ - Applied patch 2976557: sonyevid30: nasty bug fixed
+ - Applied patch 2973783: goto driver improvements
+ - Applied patch 2972780: new driver postlog
+ - Applied patch 2971895: cmdsplitter improvement
+ - Applied patch 2971619: roboteq add missing @endverbatim tag
+ - Applied patch 2966699: sphereptz: long awaited bug fix
+ - Applied patch 2965602: roomba: bumplock problem on faster onboard computers
+ - Applied patch 2964666: buggy_geom option for sonartoranger driver
+ - Applied patch 2962789: blobtodio: hard to find bug fixed
+ - Applied patch 2962513: Player SVN trunk: new searchpattern blobfinder driver
+ - Applied patch 2962489: camerav4l2: mislead comments
+ - Applied patch 2960672: camerav4l2: missing extern "C" in bayer.h
+ - Applied patch 2960594: Player SVN trunk: unhandled messages in ranger related code
+ - Applied patch 2960374: New driver (speechcmd) and new option to inhibitor
+ - Applied patch 2950833: Player SVN trunk: epuck vs mricp
+ - Applied patch 2950807: Player SVN trunk: portio driver problem with sys/io.h
+ - Applied patch 2948637: scale option for vmapfile
+ - Applied patch 2993776: WIN32 compilation issues patch
+ - Applied patch 2997935: zero sized requests once again
+ - Applied patch 3007996: Strings created by EncodeHex are not null-terminated
+ - Applied patch 3008884: Exception in C++ examples catched by value, not by reference
+ - Applied patch 2916187: Python bindings for libplayerc++ build fixup
+ - Applied patch 3010358: Player SVN trunk: small improvements for camera drivers
+ - Applied patch 3018514: Localize interface visualization in playerv
+
 3.0.1 (2009-12-16)
  - Fixed incorrect checking of pkg-config package versions.
  - Fixes for compiling on Windows, including support for pykg-config (see http://wiki.github.com/gbiggs/pykg-config).
