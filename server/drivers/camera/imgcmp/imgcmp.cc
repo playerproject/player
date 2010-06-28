@@ -65,11 +65,11 @@ Any command sent to provided dio interface forces positive compare result.
   - Allowed values: 0 - 255
   - Maximal luminance distance between two pixels in old and new images; if luminance distance
     computed for two pixels (old and new) is greater than max_lum_dist, these pixels differ.
-- max_diff_pixels (integer)
-  - Default: 0
-  - Allowed value: 0 - 100
-  - Percents of pixels that differ (see above) to consider that two images
-    (old and new) are different.
+- max_diff_pixels (double)
+  - Default: 0.0
+  - Allowed value: 0.0 - 1.0
+  - Maximal degree to which two images (old and new) differs (see above) to consider that they
+    are actually different.
 - idle_publish_interval (double)
   - Default: 0.5
   - Image publish interval (in seconds) whenever differences were not detected.
@@ -89,7 +89,7 @@ driver
   provides ["output:::camera:0" "dio:0"]
   skip_lines 16
   max_lum_dist 128
-  max_diff_pixels 50
+  max_diff_pixels 0.01
   keep_buffer 0
 )
 @endverbatim
@@ -147,7 +147,7 @@ class ImgCmp : public ThreadedDriver
   private: IntProperty skip_lines;
   private: IntProperty sleep_nsec;
   private: IntProperty max_lum_dist;
-  private: IntProperty max_diff_pixels;
+  private: DoubleProperty max_diff_pixels;
   private: DoubleProperty idle_publish_interval;
   private: IntProperty keep_buffer;
 };
@@ -167,7 +167,7 @@ ImgCmp::ImgCmp(ConfigFile * cf, int section)
   skip_lines("skip_lines", 0, false),
   sleep_nsec("sleep_nsec", 10000, false),
   max_lum_dist("max_lum_dist", 0, false),
-  max_diff_pixels("max_diff_pixels", 0, false),
+  max_diff_pixels("max_diff_pixels", 0.0, false),
   idle_publish_interval("idle_publish_interval", 0.5, false),
   keep_buffer("keep_buffer", 1, false)
 {
@@ -268,7 +268,7 @@ ImgCmp::ImgCmp(ConfigFile * cf, int section)
     this->SetError(-1);
     return;
   }
-  if ((this->max_diff_pixels.GetValue() < 0) || (this->max_diff_pixels.GetValue() > 255))
+  if ((this->max_diff_pixels.GetValue() < 0.0) || (this->max_diff_pixels.GetValue() > 1.0))
   {
     this->SetError(-1);
     return;
@@ -569,8 +569,7 @@ int ImgCmp::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, void 
             // I assume that Publish() (with copy = false) freed those output data!
             output = NULL;
           }
-          diffs = (static_cast<int>((static_cast<double>(diffs) / static_cast<double>((rawdata->width) * (rawdata->height))) * 100.0));
-          differ = (diffs > (this->max_diff_pixels.GetValue()));
+          differ = ((static_cast<double>(diffs) / static_cast<double>((rawdata->width) * (rawdata->height))) > (this->max_diff_pixels.GetValue()));
         }
         memset(&dio_data, 0, sizeof dio_data);
         dio_data.count = 1;
