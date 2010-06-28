@@ -137,49 +137,84 @@ void map_update(map_t *map)
   }
 }
 
+void map_mark_cells(char* drawn,int mapWidth,int mapHeight,int startX,int startY,int endX,int endY)
+{
+   int i,j;
+   for(i=startY;i<=endY;i++)
+      for(j=startX;j<=endX;j++)
+          drawn[j+i*mapWidth]=TRUE;
 
+}
 // Draw the map scan
 void map_draw(map_t *map)
 {
-  int x,y;
   double scale = map->proxy->resolution;
   double color;
-  int8_t val;
-
+  char val;
+  char* cellsDrawn=(char*)calloc(map->proxy->width*map->proxy->height,sizeof(char));
+  int mapWidth=map->proxy->width;
+  int mapHeight=map->proxy->height;
+  int x,y;
+  double ox,oy;
+  double rectangleWidth,rectangleHeight;
+  int startx, starty;
+  int endx,endy;
   rtk_fig_show(map->fig, 1);
   rtk_fig_clear(map->fig);
 
   puts( "map draw" );
   
   rtk_fig_color(map->fig, 0.5, 0.5, 0.5 ); 
-  rtk_fig_rectangle(map->fig, 
- 		    0,0,0, 
- 		    map->proxy->width * scale, 
- 		    map->proxy->height * scale, 
- 		    1 ); 
+  rtk_fig_rectangle(map->fig, 0,0,0, mapWidth * scale, mapHeight* scale, 1 ); 
 
-  // TODO - combine contiguous cells to minimize the number of
-  // rectangles we have to draw - performance is pretty nasty right
-  // now on big maps.
-
-  for( x=0; x<map->proxy->width; x++ )
-    for( y=0; y<map->proxy->height; y++ )
+  for( y=0; y<mapHeight; y++ )
+    for( x=0; x<mapWidth; x++)
     {
+      if(cellsDrawn[x+y*mapWidth]==TRUE)
+        continue;
+        startx=x;
+        starty=y;
+        endy=mapHeight-1;
 
-	val = map->proxy->cells[ x + y * map->proxy->width ];
-	if (val == 0)
-	  continue;
-	color = (double)val/map->proxy->data_range; // scale to[-1,1]
-	color *= -1.0; //flip sign for coloring occupied to black
-	color = (color + 1.0)/2.0; // scale to [0,1]
-	rtk_fig_color(map->fig, color, color, color );
-	rtk_fig_rectangle(map->fig,
-			  (x - map->proxy->width/2.0) * scale + scale/2.0,
-			  (y - map->proxy->height/2.0) * scale + scale/2.0,
-			  0,
-			  scale, scale, 1);
-    }
 
+        val = map->proxy->cells[ x + y * mapWidth ];
+        if(val==0)
+          continue;
+
+	while(x < mapWidth)
+        {
+          int yy  = y;
+          while(yy+1 < mapHeight)
+          {
+            if(map->proxy->cells[x+(yy+1)*mapWidth]==val)
+              yy++;
+            else
+              break;
+          }
+          if( yy < endy )
+            endy=yy;
+          if(x+1<mapWidth && 
+            map->proxy->cells[(x+1)+y*mapWidth]==val && 
+            cellsDrawn[(x+1)+y*mapWidth]==FALSE)
+            x++;
+          else
+            break;
+        }
+        endx=x;
+        map_mark_cells(cellsDrawn,mapWidth,mapHeight,startx,starty,endx,endy);
+        rectangleWidth=(endx-startx+1)*scale;
+        rectangleHeight=(endy-starty+1)*scale;
+        ox=((startx-mapWidth/2.0f)*scale+rectangleWidth/2.0f);
+        oy=((starty-mapHeight/2.0f)*scale+rectangleHeight/2.0f);
+	
+
+        color = (double)val/map->proxy->data_range; // scale to[-1,1]
+        color *= -1.0; //flip sign for coloring occupied to black
+        color = (color + 1.0)/2.0; // scale to [0,1]
+        rtk_fig_color(map->fig, color, color, color );
+        rtk_fig_rectangle(map->fig, ox, oy, 0, rectangleWidth, rectangleHeight,1);
+   }
+  free(cellsDrawn);
   return;
 }
 
