@@ -8,5 +8,5 @@ PLAYERDRIVER_ADD_DRIVER (iwspy build_iwspy SOURCES iwspy.cc)
 
 PLAYERDRIVER_OPTION (linuxwifi build_linuxwifi ON)
 PLAYERDRIVER_REJECT_OS (linuxwifi build_linuxwifi PLAYER_OS_WIN)
-PLAYERDRIVER_REQUIRE_HEADER (linuxwifi build_linuxwifi linux/wireless.h)
+PLAYERDRIVER_REQUIRE_HEADER (linuxwifi build_linuxwifi "sys/socket.h;linux/wireless.h")
 PLAYERDRIVER_ADD_DRIVER (linuxwifi build_linuxwifi SOURCES linuxwifi.cc)
