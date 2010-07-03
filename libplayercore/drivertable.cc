@@ -158,7 +158,8 @@ DriverTable::SortDrivers(void)
   int i;
   char** sortedlist;
 
-  assert(sortedlist = (char**)malloc(numdrivers*sizeof(char*)));
+  sortedlist = (char**)malloc(numdrivers*sizeof(char*));
+  assert(sortedlist);
 
   i=0;
   for(DriverEntry* entry = head; entry; entry = entry->next)
