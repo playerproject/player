@@ -1,0 +1,7 @@
+PLAYERDRIVER_OPTION (hemisson build_hemisson ON)
+PLAYERDRIVER_REJECT_OS (hemisson build_hemisson PLAYER_OS_WIN)
+PLAYERDRIVER_REQUIRE_HEADER (hemisson build_hemisson sys/ioctl.h sys/types.h)
+PLAYERDRIVER_REQUIRE_HEADER (hemisson build_hemisson sys/stat.h sys/types.h)
+PLAYERDRIVER_REQUIRE_HEADER (hemisson build_hemisson sys/time.h sys/types.h)
+PLAYERDRIVER_REQUIRE_HEADER (hemisson build_hemisson sys/select.h sys/types.h)
+PLAYERDRIVER_ADD_DRIVER (hemisson build_hemisson SOURCES hemisson.cc hemisson_serial.cc)
