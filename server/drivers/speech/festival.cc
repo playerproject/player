@@ -292,7 +292,10 @@ Festival::MainSetup()
     server.sin_port = htons(portnum);
 #if HAVE_GETADDRINFO
     struct addrinfo* addr_ptr = NULL;
-    if (getaddrinfo(host, NULL, NULL, &addr_ptr))
+    struct addrinfo addr_hint;
+    memset(&addr_hint,0,sizeof(addr_hint));
+    addr_hint.ai_family = AF_INET;
+    if (getaddrinfo(host, NULL, &addr_hint, &addr_ptr))
     {
       PLAYER_ERROR("getaddrinfo() failed with error");
       KillFestival();
@@ -560,3 +563,5 @@ QuitFestival(void* speechdevice)
   /* don't know how to tell the Festival server to exit yet, so Kill */
   sd->KillFestival();
 }
+
+ 	  	 
