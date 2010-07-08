@@ -231,14 +231,13 @@ MapFile::Setup()
   this->size_x = gdk_pixbuf_get_width(pixbuf);
   this->size_y = gdk_pixbuf_get_height(pixbuf);
 
-  assert(this->mapdata = (char*)malloc(sizeof(char) *
-                                       this->size_x * this->size_y));
+  this->mapdata = (char*)malloc(sizeof(char) *
+                                       this->size_x * this->size_y);
+  assert(this->mapdata);
 
   rowstride = gdk_pixbuf_get_rowstride(pixbuf);
   bps = gdk_pixbuf_get_bits_per_sample(pixbuf)/8;
   n_channels = gdk_pixbuf_get_n_channels(pixbuf);
-  if(gdk_pixbuf_get_has_alpha(pixbuf))
-    n_channels++;
 
   // Read data
   pixels = gdk_pixbuf_get_pixels(pixbuf);
