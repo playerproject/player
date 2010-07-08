@@ -85,6 +85,11 @@ driver
 
 #include <libplayercore/playercore.h>
 
+#include <config.h>
+#if HAVE_STRINGS_H
+#include <strings.h>
+#endif
+
 #ifndef FMIN
 #define FMIN(a, b) (((a) < (b)) ? (a) : (b))
 #endif
