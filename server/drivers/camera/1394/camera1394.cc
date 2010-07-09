@@ -419,10 +419,17 @@ private:
 	// Bayer Colour Conversion
 private:
 	bool DoBayerConversion;
+#if LIBDC1394_VERSION == 0200
 private:
 	dc1394color_filter_t BayerPattern;
 private:
 	dc1394bayer_method_t BayerMethod;
+#else
+private:
+	bayer_pattern_t BayerPattern;
+private:
+	int BayerMethod;
+#endif
 
 	// Camera settings
 private:
@@ -589,16 +596,32 @@ Camera1394::Camera1394(ConfigFile* cf, int section) :
 	if (strcmp(str, "NONE")) {
 		if (!strcmp(str, "BGGR")) {
 			this->DoBayerConversion = true;
+#if LIBDC1394_VERSION == 0200
 			this->BayerPattern = DC1394_COLOR_FILTER_BGGR;
+#else
+			this->BayerPattern = BAYER_PATTERN_BGGR;
+#endif
 		} else if (!strcmp(str, "GRBG")) {
 			this->DoBayerConversion = true;
+#if LIBDC1394_VERSION == 0200
 			this->BayerPattern = DC1394_COLOR_FILTER_GRBG;
+#else
+			this->BayerPattern = BAYER_PATTERN_GRBG;
+#endif
 		} else if (!strcmp(str, "RGGB")) {
 			this->DoBayerConversion = true;
+#if LIBDC1394_VERSION == 0200
 			this->BayerPattern = DC1394_COLOR_FILTER_RGGB;
+#else
+			this->BayerPattern = BAYER_PATTERN_RGGB;
+#endif
 		} else if (!strcmp(str, "GBRG")) {
 			this->DoBayerConversion = true;
+#if LIBDC1394_VERSION == 0200
 			this->BayerPattern = DC1394_COLOR_FILTER_GBRG;
+#else
+			this->BayerPattern = BAYER_PATTERN_GBRG;
+#endif
 		} else {
 			PLAYER_ERROR1("unknown bayer pattern [%s]", str);
 			this->SetError(-1);
@@ -607,7 +630,12 @@ Camera1394::Camera1394(ConfigFile* cf, int section) :
 	}
 
 	// Set default Bayer decoding method
+#if LIBDC1394_VERSION == 0200
 	this->BayerMethod = DC1394_BAYER_METHOD_DOWNSAMPLE;
+#else
+	if (this->DoBayerConversion) this->BayerMethod = BAYER_DECODING_DOWNSAMPLE;
+	else this->BayerMethod = NO_BAYER_DECODING;
+#endif
 	// Check for user selected method
 	str = cf->ReadString(section, "method", "NONE");
 	if (strcmp(str, "NONE")) {
@@ -618,7 +646,7 @@ Camera1394::Camera1394(ConfigFile* cf, int section) :
 			this->SetError(-1);
 			return;
 		}
-
+#if LIBDC1394_VERSION == 0200
 		if (!strcmp(str, "Nearest")) {
 			this->BayerMethod = DC1394_BAYER_METHOD_NEAREST;
 		} else if (!strcmp(str, "Simple")) {
@@ -638,6 +666,19 @@ Camera1394::Camera1394(ConfigFile* cf, int section) :
 			this->SetError(-1);
 			return;
 		}
+#else
+		if (!strcmp(str, "DownSample")) {
+			this->BayerMethod = BAYER_DECODING_DOWNSAMPLE;
+		} else if (!strcmp(str, "Nearest")) {
+			this->BayerMethod = BAYER_DECODING_NEAREST;
+		} else if (!strcmp(str, "Edge")) {
+			this->BayerMethod = BAYER_DECODING_EDGE_SENSE;
+		} else {
+		    PLAYER_ERROR1("unknown bayer method: [%s]", str);
+			this->SetError(-1);
+			return;
+		}
+#endif
 	}
 
 	// Force into raw mode
@@ -1613,36 +1654,68 @@ int Camera1394::GrabFrame() {
 			this->data->format = PLAYER_CAMERA_FORMAT_RGB888;
 
 			switch (this->BayerMethod) {
+#if LIBDC1394_VERSION == 0200
 			case DC1394_BAYER_METHOD_DOWNSAMPLE:
+#else
+			case BAYER_DECODING_DOWNSAMPLE:
+#endif
 				// quarter of the image but 3 bytes per pixel
 				this->data->image_count = (frame_width / 2)
 						* (frame_height / 2) * 3;
 				this->data->image = reinterpret_cast<uint8_t *> (malloc(
 						this->data->image_count));
 				assert(this->data->image);
+#if LIBDC1394_VERSION == 0200
 				this->data->width = frame_width / 2;
 				this->data->height = frame_height / 2;
+#else
+				BayerDownsample(
+						reinterpret_cast<unsigned char *> (capture_buffer),
+						reinterpret_cast<unsigned char *> (this->data->image),
+						frame_width / 2, frame_height / 2, this->BayerPattern);
+#endif
 				break;
-
-
+#if LIBDC1394_VERSION == 0200
 			case DC1394_BAYER_METHOD_NEAREST:
 			case DC1394_BAYER_METHOD_SIMPLE:
 			case DC1394_BAYER_METHOD_BILINEAR:
 			case DC1394_BAYER_METHOD_HQLINEAR:
 			case DC1394_BAYER_METHOD_VNG:
 			case DC1394_BAYER_METHOD_AHD:
+#else
+			case BAYER_DECODING_NEAREST:
+#endif
 				this->data->image_count = frame_width * frame_height * 3;
 				this->data->image = reinterpret_cast<uint8_t *> (malloc(
 						this->data->image_count));
 				assert(this->data->image);
+#if LIBDC1394_VERSION == 0200
 				this->data->width = frame_width;
 				this->data->height = frame_height;
+#else
+				BayerNearestNeighbor(
+						     reinterpret_cast<unsigned char *> (capture_buffer),
+						     reinterpret_cast<unsigned char *> (this->data->image),
+						     frame_width, frame_height, this->BayerPattern);
+#endif
 				break;
+#if LIBDC1394_VERSION == 0200
+#else
+			case BAYER_DECODING_EDGE_SENSE:
+				this->data->image_count = frame_width * frame_height * 3;
+				this->data->image = reinterpret_cast<uint8_t *> (malloc(this->data->image_count));
+				assert(this->data->image);
+				BayerEdgeSense(
+					       reinterpret_cast<unsigned char *> (capture_buffer),
+					       reinterpret_cast<unsigned char *> (this->data->image),
+					       frame_width, frame_height, this->BayerPattern);
+                                break;
+#endif
 			default:
 				PLAYER_ERROR("camera1394: Unknown Bayer Method");
 				return -1;
 			}
-
+#if LIBDC1394_VERSION == 0200
 			dc1394error_t decoding_error;
 			decoding_error = dc1394_bayer_decoding_8bit(
 				reinterpret_cast<unsigned char *> (capture_buffer),
@@ -1656,6 +1729,15 @@ int Camera1394::GrabFrame() {
 					  decoding_error);
 				    return -1;
 			}
+#else
+			if (this->BayerMethod != BAYER_DECODING_DOWNSAMPLE) {
+				this->data->width = frame_width;
+				this->data->height = frame_height;
+			} else { //image is half the size of grabbed frame
+				this->data->width = frame_width / 2;
+				this->data->height = frame_height / 2;
+			}
+#endif
 		}
 		break;
 	default:
