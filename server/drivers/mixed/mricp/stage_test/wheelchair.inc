@@ -9,9 +9,8 @@
 define wheelchair position
 (
   # actual size
-  size     [1.2 0.7]
-  origin  [0.3 0 0] # the wheelchairs's center of rotation is offset from its center of area / I considered it to be 30 cm from the mid Axes
-  #origin   [0 0 0]
+  size     [1.2 0.7 1]
+  origin  [0.3 0 0 0] # the wheelchairs's center of rotation is offset from its center of area / I considered it to be 30 cm from the mid Axes
   velocity [0 0 0]    # Initial Robot Velocity
   color "gray" # body colorx
   
@@ -34,13 +33,15 @@ define wheelchair position
   drive "diff"
 
   #body shape
-  polygons 1
-  polygon[0].points 4
-  polygon[0].point[0] [ 0.8 -0.35 ]
-  polygon[0].point[1] [-0.4 -0.35 ]
-  polygon[0].point[2] [-0.4  0.35 ]
-  polygon[0].point[3] [ 0.8  0.35 ]
-
+  block
+  (
+	    points 4
+	    point[0] [ 0.8 -0.35 ]
+	    point[1] [-0.4 -0.35 ]
+	    point[2] [-0.4  0.35 ]
+	    point[3] [ 0.8  0.35 ]
+	    #z[0 1] 
+  )
   #bitmap ""
   #bitmap_resolution 0	
 ) 

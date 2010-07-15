@@ -4,14 +4,11 @@
 # Date: 10 Jun 2002
 # CVS: $Id$
 
-
-# Wheelchair standard configuration
 define homer position
 (
   # actual size
-  size     [0.37 0.37]
-  origin  [-0.1 0 0] # the wheelchairs's center of rotation is offset from its center of area / I considered it to be 30 cm from the mid Axes
-  #origin   [0 0 0]
+  size    [0.37 0.37 1]
+  origin  [-0.1 0 0 0] # the wheelchairs's center of rotation is offset from its center of area / I considered it to be 30 cm from the mid Axes
   velocity [0 0 0]    # Initial Robot Velocity
   color "gray" # body colorx
   
@@ -32,12 +29,15 @@ define homer position
   drive "diff"
 
   #body shape
-  polygons 1
-  polygon[0].points 4
-  polygon[0].point[0] [ 0.185 -0.185 ]
-  polygon[0].point[1] [-0.185 -0.185 ]
-  polygon[0].point[2] [-0.185  0.185 ]
-  polygon[0].point[3] [ 0.185  0.185 ]
+  block
+  (
+	    points 4
+	    point[0] [ 0.185 -0.185 ]
+	    point[1] [-0.185 -0.185 ]
+	    point[2] [-0.185  0.185 ]
+	    point[3] [ 0.185  0.185 ]
+	    #z[0 0.3]
+  )
 
   #bitmap ""
   #bitmap_resolution 0	
