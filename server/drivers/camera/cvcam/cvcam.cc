@@ -103,9 +103,10 @@ class CvCam : public ThreadedDriver
   // This method will be invoked on each incoming message
   public: virtual int ProcessMessage(QueuePointer & resp_queue,
                                      player_msghdr * hdr,
-			             void * data);
+                                     void * data);
 
   private: virtual void Main();
+  private: int prepareData(player_camera_data_t * data);
 
   private: CvCapture * capture;
   private: int camindex;
@@ -163,12 +164,75 @@ void CvCam::MainQuit()
   this->capture = NULL;
 }
 
+int CvCam::prepareData(player_camera_data_t * data)
+{
+  IplImage * frame;
+  int i;
+
+  assert(data);
+  frame = cvQueryFrame(this->capture);
+  if (!frame)
+  {
+    PLAYER_ERROR("No frame!");
+    return -1;
+  }
+  if (frame->depth != IPL_DEPTH_8U)
+  {
+    PLAYER_ERROR1("Unsupported depth %d", frame->depth);
+    return -1;
+  }
+  assert((frame->nChannels) > 0);
+  data->image_count = frame->width * frame->height * frame->nChannels;
+  assert(data->image_count > 0);
+  data->image = reinterpret_cast<unsigned char *>(malloc(data->image_count));
+  if (!(data->image))
+  {
+    PLAYER_ERROR("Out of memory");
+    return -1;
+  }
+  data->width = frame->width;
+  data->height = frame->height;
+  data->bpp = frame->nChannels * 8;
+  data->fdiv = 0;
+  switch (data->bpp)
+  {
+  case 8:
+    data->format = PLAYER_CAMERA_FORMAT_MONO8;
+    memcpy(data->image, frame->imageData, data->image_count);
+    break;
+  case 24:
+    data->format = PLAYER_CAMERA_FORMAT_RGB888;
+    for (i = 0; i < static_cast<int>(data->image_count); i += (frame->nChannels))
+    {
+      data->image[i] = frame->imageData[i + 2];
+      data->image[i + 1] = frame->imageData[i + 1];
+      data->image[i + 2] = frame->imageData[i];
+    }
+    break;
+  case 32:
+    data->format = PLAYER_CAMERA_FORMAT_RGB888;
+    for (i = 0; i < static_cast<int>(data->image_count); i += (frame->nChannels))
+    {
+      data->image[i] = frame->imageData[i + 2];
+      data->image[i + 1] = frame->imageData[i + 1];
+      data->image[i + 2] = frame->imageData[i];
+      data->image[i + 3] = frame->imageData[i + 3];
+    }
+    break;
+  default:
+    PLAYER_ERROR1("Unsupported image depth %d", data->bpp);
+    free(data->image);
+    data->image = NULL;
+    return -1;
+  }
+  data->compression = PLAYER_CAMERA_COMPRESS_RAW;
+  return 0;
+}
+
 void CvCam::Main()
 {
   struct timespec tspec;
-  IplImage * frame;
   player_camera_data_t * data;
-  int i;
 
   if ((this->desired_width) > 0)
   {
@@ -192,77 +256,46 @@ void CvCam::Main()
     pthread_testcancel();
 
     ProcessMessages();
+
     pthread_testcancel();
 
-    frame = cvQueryFrame(this->capture);
-    if (!frame)
-    {
-      PLAYER_ERROR("No frame!");
-      continue;
-    }
-    if (frame->depth != IPL_DEPTH_8U)
-    {
-      PLAYER_ERROR1("Unsupported depth %d", frame->depth);
-      continue;
-    }
     data = reinterpret_cast<player_camera_data_t *>(malloc(sizeof(player_camera_data_t)));
     if (!data)
     {
       PLAYER_ERROR("Out of memory");
       continue;
     }
-    assert((frame->nChannels) > 0);
-    data->image_count = frame->width * frame->height * frame->nChannels;
-    assert(data->image_count > 0);
-    data->image = reinterpret_cast<unsigned char *>(malloc(data->image_count));
-    if (!(data->image))
+    if (this->prepareData(data))
     {
-      PLAYER_ERROR("Out of memory");
+      free(data);
+      data = NULL;
+      pthread_testcancel();
       continue;
     }
-    data->width = frame->width;
-    data->height = frame->height;
-    data->bpp = frame->nChannels * 8;
-    data->fdiv = 0;
-    switch (data->bpp)
-    {
-    case 8:
-      data->format = PLAYER_CAMERA_FORMAT_MONO8;
-      memcpy(data->image, frame->imageData, data->image_count);
-      break;
-    case 24:
-      data->format = PLAYER_CAMERA_FORMAT_RGB888;
-      for (i = 0; i < static_cast<int>(data->image_count); i += (frame->nChannels))
-      {
-        data->image[i] = frame->imageData[i + 2];
-        data->image[i + 1] = frame->imageData[i + 1];
-        data->image[i + 2] = frame->imageData[i];
-      }
-	  break;
-    case 32:
-      data->format = PLAYER_CAMERA_FORMAT_RGB888;
-      for (i = 0; i < static_cast<int>(data->image_count); i += (frame->nChannels))
-      {
-        data->image[i] = frame->imageData[i + 2];
-        data->image[i + 1] = frame->imageData[i + 1];
-        data->image[i + 2] = frame->imageData[i];
-        data->image[i + 3] = frame->imageData[i + 3];
-      }
-      break;
-    default:
-      PLAYER_ERROR1("Unsupported image depth %d", data->bpp);
-      data->bpp = 0;
-    }
-    assert(data->bpp > 0);
-    data->compression = PLAYER_CAMERA_COMPRESS_RAW;
     this->Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, reinterpret_cast<void *>(data), 0, NULL, false);
     // copy = false, don't dispose anything here
+    data = NULL;
     pthread_testcancel();
   }
 }
 
 int CvCam::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, void * data)
 {
+  player_camera_data_t imgData;
+
   assert(hdr);
+  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
+                                 PLAYER_CAMERA_REQ_GET_IMAGE,
+                                 this->device_addr))
+  {
+    if (this->prepareData(&imgData)) return -1;
+    this->Publish(this->device_addr,
+                  resp_queue,
+                  PLAYER_MSGTYPE_RESP_ACK,
+                  PLAYER_CAMERA_REQ_GET_IMAGE,
+                  reinterpret_cast<void *>(&imgData));
+    if (imgData.image) free(imgData.image);
+    return 0;
+  }
   return -1;
 }

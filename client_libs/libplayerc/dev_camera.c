@@ -49,6 +49,8 @@
 #endif
 
 #include <math.h>
+#include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #if !defined (WIN32)
@@ -60,6 +62,7 @@
 
 #if defined (WIN32)
   #define snprintf _snprintf
+  #define strdup _strdup
 #endif
 
 // Local declarations
@@ -123,7 +126,7 @@ void playerc_camera_putmsg(playerc_camera_t *device, player_msghdr_t *header,
     if (device->image)
       memcpy(device->image, data->image, device->image_count);
     else
-      PLAYERC_ERR1("failed to allocate memory for image, needed %ld bytes\n", sizeof(device->image[0])*device->image_count);
+      PLAYERC_ERR1("failed to allocate memory for image, needed %u bytes\n", sizeof(device->image[0])*device->image_count);
   }
   else
     PLAYERC_WARN2("skipping camera message with unknown type/subtype: %s/%d\n",
@@ -150,11 +153,11 @@ void playerc_camera_decompress(playerc_camera_t *device)
 
     // Copy uncompress image
     device->image_count = dst_size;
-    device->image = realloc(device->image, sizeof(device->image[0])*device->image_count);
+    device->image = realloc(device->image, (sizeof device->image[0]) * device->image_count);
     if (device->image)
       memcpy(device->image, dst, dst_size);
     else
-      PLAYERC_ERR1("failed to allocate memory for image, needed %ld bytes\n", sizeof(device->image[0])*device->image_count);
+      PLAYERC_ERR1("failed to allocate memory for image, needed %u bytes\n", (sizeof device->image[0]) * device->image_count);
     free(dst);
 
     // Pixels are now raw
@@ -213,4 +216,86 @@ void playerc_camera_save(playerc_camera_t *device, const char *filename)
   fclose(file);
 
   return;
+}
+
+// Set source channel.
+int
+playerc_camera_set_source(playerc_camera_t *device,
+                          int source,
+                          const char * norm)
+{
+  player_camera_source_t src;
+
+  memset(&src, 0, sizeof src);
+  src.norm_count = strlen(norm) + 1;
+  src.norm = strdup(norm);
+  if (!(src.norm)) return -1;
+  src.source = source;
+  if (playerc_client_request(device->info.client, &device->info,
+                             PLAYER_CAMERA_REQ_SET_SOURCE,
+                             (void*)(&src), NULL) < 0)
+  {
+    free(src.norm);
+    return -1;
+  }
+  // if the set suceeded copy them locally
+  snprintf(device->norm, sizeof device->norm, "%s", src.norm);
+  free(src.norm);
+  device->source = src.source;
+  return 0;
+}
+
+// Get the source channel.
+int
+playerc_camera_get_source(playerc_camera_t *device)
+{
+  player_camera_source_t * src;
+
+  if (playerc_client_request(device->info.client, &device->info,
+                             PLAYER_CAMERA_REQ_GET_SOURCE,
+                             NULL, (void**)&src) < 0)
+    return -1;
+  snprintf(device->norm, sizeof device->norm, "%s", src->norm);
+  device->source = src->source;
+  player_camera_source_t_free(src);
+  return 0;
+}
+
+// Force to get current image.
+int
+playerc_camera_get_image(playerc_camera_t *device)
+{
+  player_camera_data_t * data;
+
+  if (playerc_client_request(device->info.client, &device->info,
+                             PLAYER_CAMERA_REQ_GET_IMAGE,
+                             NULL, (void**)&data) < 0)
+    return -1;
+  device->width        = data->width;
+  device->height       = data->height;
+  device->bpp          = data->bpp;
+  device->format       = data->format;
+  device->fdiv         = data->fdiv;
+  device->compression  = data->compression;
+  device->image_count  = data->image_count;
+  device->image        = realloc(device->image, (sizeof device->image[0]) * device->image_count);
+  if (device->image)
+    memcpy(device->image, data->image, device->image_count);
+  else
+    PLAYERC_ERR1("failed to allocate memory for image, needed %u bytes\n", (sizeof device->image[0]) * device->image_count);
+  player_camera_data_t_free(data);
+  return 0;
+}
+
+// Copy image to some pre-allocated place.
+void
+playerc_camera_copy_image(playerc_camera_t * device, void * dst, size_t dst_size)
+{
+  memcpy(dst, device->image, (dst_size <= (device->image_count)) ? dst_size : (device->image_count));
+}
+// @brief Get given component of given pixel.
+unsigned
+playerc_camera_get_pixel_component(playerc_camera_t * device, unsigned int x, unsigned int y, int component)
+{
+  return (unsigned)(device->image[(y * device->width * ((device->bpp)>>3)) + (x * ((device->bpp)>>3)) + component]);
 }
