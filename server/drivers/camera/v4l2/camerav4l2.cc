@@ -59,7 +59,7 @@ The camerav4l2 driver captures images from V4L2-compatible cameras.
     select which ones are used. You should define as many provided camera
     interfaces as the number of sources is given here. Source channel
     numbers are used as keys ('ch' prefixed) in 'provides' tuple.
-  - If not given, channel 0 alone will be used by defauilt.
+  - If not given, channel 0 alone will be used by default.
   - Note that switching between channels takes time. Framerate drops
     dramatically whenever more than one channel is used.
 
@@ -89,8 +89,8 @@ The camerav4l2 driver captures images from V4L2-compatible cameras.
 - buffers (integer)
   - Default: 2
   - Number of buffers to use for grabbing. This reduces latency, but also
-  	potentially reduces throughput. Use this if you are reading slowly
-  	from the player driver and do not want to get stale frames.
+      potentially reduces throughput. Use this if you are reading slowly
+      from the player driver and do not want to get stale frames.
 
 - sleep_nsec (integer)
   - Default: 10000000 (=10ms which gives max 100 fps)
@@ -107,6 +107,10 @@ The camerav4l2 driver captures images from V4L2-compatible cameras.
   - See 'settle_time' - during this settle time frames are grabbed anyway
     and they are counted. We can decide to stop waiting for stable image
     after given number of frames was skipped.
+
+- request_only (integer)
+  - Default: 0
+  - If set to 1, data will be sent only at PLAYER_CAMEARA_REQ_GET_IMAGE response.
 
 - failsafe (integer)
   - Default: 0
@@ -200,6 +204,7 @@ driver
 #include <libplayercore/playercore.h>
 
 #define MAX_CHANNELS 10
+#define MAX_NORM_LEN 15
 
 #define IS_JPEG(ptr) ((((ptr)[0]) == 0xff) && (((ptr)[1]) == 0xd8))
 
@@ -222,7 +227,9 @@ class CameraV4L2: public ThreadedDriver
   private:
     // Main function for device thread.
     virtual void Main();
+    int useSource();
     int setSource();
+    int prepareData(player_camera_data_t * data, int sw);
 
     int started;
     const char * port;
@@ -231,9 +238,10 @@ class CameraV4L2: public ThreadedDriver
     int sources_count;
     int sources[MAX_CHANNELS];
     int current_source;
+    int next_source;
     player_devaddr_t camera_addrs[MAX_CHANNELS];
     void * fg;
-    const char * norm;
+    char norm[MAX_NORM_LEN + 1];
     int width;
     int height;
     int bpp;
@@ -241,6 +249,7 @@ class CameraV4L2: public ThreadedDriver
     double settle_time;
     int skip_frames;
     uint32_t format;
+    int request_only;
     int failsafe;
     int jpeg;
 };
@@ -250,15 +259,17 @@ CameraV4L2::CameraV4L2(ConfigFile * cf, int section)
 {
   int i;
   char key[24];
+  const char * str;
 
   this->started = 0;
   this->port = NULL;
   this->mode = NULL;
   this->buffers = 0;
   this->sources_count = 0;
+  this->next_source = 0;
   this->current_source = 0;
   this->fg = NULL;
-  this->norm = NULL;
+  this->norm[0] = 0;
   this->width = 0;
   this->height = 0;
   this->bpp = 0;
@@ -266,6 +277,7 @@ CameraV4L2::CameraV4L2(ConfigFile * cf, int section)
   this->settle_time = 0.0;
   this->skip_frames = 0;
   this->format = 0;
+  this->request_only = 0;
   this->failsafe = 0;
   this->jpeg = 0;
   memset(this->sources, 0, sizeof this->sources);
@@ -375,7 +387,14 @@ CameraV4L2::CameraV4L2(ConfigFile * cf, int section)
     return;
   }
   // NTSC, PAL or UNKNOWN
-  this->norm = cf->ReadString(section, "norm", "NTSC");
+  str = cf->ReadString(section, "norm", "NTSC");
+  if (!str)
+  {
+    PLAYER_ERROR("NULL norm");
+    this->SetError(-1);
+    return;
+  }
+  snprintf(this->norm, sizeof this->norm, "%s", str);
   if (!(strcmp(this->norm, "NTSC")))
   {
     this->width = 640;
@@ -413,6 +432,7 @@ CameraV4L2::CameraV4L2(ConfigFile * cf, int section)
   }
   this->settle_time = cf->ReadFloat(section, "settle_time", 0.5);
   this->skip_frames = cf->ReadInt(section, "skip_frames", 10);
+  this->request_only = cf->ReadInt(section, "request_only", 0);
   this->failsafe = cf->ReadInt(section, "failsafe", 0);
 }
 
@@ -432,21 +452,12 @@ int CameraV4L2::setSource()
   int dropped = 0;
   double start_time, t;
   struct timespec tspec;
-  static int next_source = 0;
 
-  if (!(this->fg)) return -1;
-  if (this->started) stop_grab(this->fg);
-  this->started = 0;
-  if ((next_source < 0) || (next_source >= (this->sources_count))) return -1;
-  if (set_channel(this->fg, this->sources[next_source], this->norm) < 0)
+  if (set_channel(this->fg, this->sources[this->current_source], this->norm) < 0)
   {
-    PLAYER_ERROR1("Cannot set channel %d", this->sources[next_source]);
+    PLAYER_ERROR1("Cannot set channel %d", this->sources[this->current_source]);
     return -1;
   }
-  this->current_source = next_source;
-  next_source++;
-  if (next_source >= (this->sources_count)) next_source = 0;
-  if (((this->current_source) < 0) || ((this->current_source) >= (this->sources_count))) return -1;
   if (start_grab(this->fg) < 0)
   {
     PLAYER_ERROR1("Cannot start grab on channel %d", this->sources[this->current_source]);
@@ -467,6 +478,23 @@ int CameraV4L2::setSource()
   return 0;
 }
 
+int CameraV4L2::useSource()
+{
+  if (!(this->fg)) return -1;
+  if (this->started) stop_grab(this->fg);
+  this->started = 0;
+  if ((this->sources_count) > 1)
+  {
+    if (((this->next_source) < 0) || ((this->next_source) >= (this->sources_count))) return -1;
+    this->current_source = this->next_source;
+    (this->next_source)++;
+    if ((this->next_source) >= (this->sources_count)) this->next_source = 0;
+  }
+  if (((this->current_source) < 0) || ((this->current_source) >= (this->sources_count))) return -1;
+  if (this->setSource() < 0) return -1;
+  return 0;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
 int CameraV4L2::MainSetup()
@@ -474,7 +502,7 @@ int CameraV4L2::MainSetup()
   assert((!(this->fg)) && (!(this->started)));
   this->fg = open_fg(this->port, this->mode, this->width, this->height, (this->bpp) / 8, this->buffers);
   if (!(this->fg)) return -1;
-  return this->setSource();
+  return this->useSource();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -495,9 +523,7 @@ void CameraV4L2::MainQuit()
 void CameraV4L2::Main()
 {
   struct timespec tspec;
-  const unsigned char * img;
   player_camera_data_t * data = NULL;
-  int i;
 
   for (;;)
   {
@@ -512,117 +538,229 @@ void CameraV4L2::Main()
     // Process any pending requests.
     ProcessMessages();
 
-    assert(this->fg);
-    assert(this->started);
-    // Grab the next frame (blocking)
-    img = get_image(this->fg);
-    if (this->failsafe)
-    {
-      if (!img)
-      {
-        PLAYER_ERROR("Cannot grab frame");
-        pthread_testcancel();
-        if (this->started) stop_grab(this->fg);
-        this->started = 0;
-        close_fg(this->fg);
-        this->fg = NULL;
-        tspec.tv_sec = 1;
-        tspec.tv_nsec = 0;
-        nanosleep(&tspec, NULL);
-        pthread_testcancel();
-        this->fg = open_fg(this->port, this->mode, this->width, this->height, (this->bpp) / 8, this->buffers);
-        assert(this->fg);
-        this->setSource();
-        assert(this->started);
-        pthread_testcancel();
-        continue;
-      }
-    } else
-    {
-      assert(img);
-    }
     data = reinterpret_cast<player_camera_data_t *>(malloc(sizeof(player_camera_data_t)));
     if (!data)
     {
       PLAYER_ERROR("Out of memory");
       continue;
     }
-    memset(data, 0, sizeof *data);
-    // Set the image properties
-    data->width       = this->width;
-    data->height      = this->height;
-    data->bpp         = this->bpp;
-    data->format      = this->format;
-    data->fdiv        = 0;
-    data->image_count = 0;
-    data->image       = NULL;
-    if (!(this->jpeg))
+    if (this->prepareData(data, !(this->request_only)))
     {
-      data->compression = PLAYER_CAMERA_COMPRESS_RAW;
-      data->image_count = this->width * this->height * ((this->bpp) / 8);
-      assert(data->image_count > 0);
-      data->image = reinterpret_cast<uint8_t *>(malloc(data->image_count));
-      if (!(data->image))
-      {
-        PLAYER_ERROR("Out of memory!");
-        free(data);
-        data = NULL;
-        continue;
-      }
-      memcpy(data->image, img, data->image_count);
+      free(data);
+      data = NULL;
+      pthread_testcancel();
+      continue;
+    }
+    if (!(this->request_only))
+    {
+      Publish(this->camera_addrs[this->current_source],
+              PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
+              reinterpret_cast<void *>(data), 0, NULL, false);
+              // copy = false, don't dispose anything here!
     } else
     {
-      data->compression = PLAYER_CAMERA_COMPRESS_JPEG;
-      memcpy(&i, img, sizeof(int));
-      data->image_count = i;
-      assert(data->image_count > 1);
-      if (!(IS_JPEG(img + sizeof(int))))
+      if (data->image)
       {
-        PLAYER_ERROR("Not a JPEG image...");
-        free(data);
-        data = NULL;
-        continue;
+        free(data->image);
+        data->image = NULL;
       }
-      data->image = reinterpret_cast<uint8_t *>(malloc(data->image_count));
-      if (!(data->image))
-      {
-        PLAYER_ERROR("Out of memory!");
-        free(data);
-        data = NULL;
-        continue;
-      }
-      memcpy(data->image, img + sizeof(int), data->image_count);
+      free(data);
     }
-    assert(data->image_count > 0);
-    assert(data->image);
-    Publish(this->camera_addrs[this->current_source],
-            PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
-            reinterpret_cast<void *>(data), 0, NULL, false);
-            // copy = false, don't dispose anything here!
     data = NULL;
-
-    if ((this->sources_count) > 1)
-    {
-      pthread_testcancel();
-      if (this->failsafe)
-      {
-        this->setSource();
-      } else
-      {
-        assert(!(this->setSource()));
-      }
-    }
 
     // Test if we are supposed to cancel this thread.
     pthread_testcancel();
   }
 }
 
+int CameraV4L2::prepareData(player_camera_data_t * data, int sw)
+{
+  const unsigned char * img;
+  struct timespec tspec;
+  int i = 0;
+
+  assert(data);
+  assert(this->fg);
+  if (!(this->started))
+  {
+    if (this->useSource()) return -1;
+  }
+  if (!(this->started)) return -1;
+  // Grab the next frame (blocking)
+  img = get_image(this->fg);
+  if (this->failsafe)
+  {
+    if (!img)
+    {
+      PLAYER_ERROR("Cannot grab frame");
+      pthread_testcancel();
+      if (this->started) stop_grab(this->fg);
+      this->started = 0;
+      close_fg(this->fg);
+      this->fg = NULL;
+      tspec.tv_sec = 1;
+      tspec.tv_nsec = 0;
+      nanosleep(&tspec, NULL);
+      pthread_testcancel();
+      this->fg = open_fg(this->port, this->mode, this->width, this->height, (this->bpp) / 8, this->buffers);
+      assert(this->fg);
+      this->useSource();
+      assert(this->started);
+      return -1;
+    }
+  } else
+  {
+    assert(img);
+  }
+  memset(data, 0, sizeof *data);
+  // Set the image properties
+  data->width       = this->width;
+  data->height      = this->height;
+  data->bpp         = this->bpp;
+  data->format      = this->format;
+  data->fdiv        = 0;
+  data->image_count = 0;
+  data->image       = NULL;
+  if (!(this->jpeg))
+  {
+    data->compression = PLAYER_CAMERA_COMPRESS_RAW;
+    data->image_count = this->width * this->height * ((this->bpp) / 8);
+    assert(data->image_count > 0);
+    data->image = reinterpret_cast<uint8_t *>(malloc(data->image_count));
+    if (!(data->image))
+    {
+      PLAYER_ERROR("Out of memory!");
+      return -1;
+    }
+    memcpy(data->image, img, data->image_count);
+  } else
+  {
+    data->compression = PLAYER_CAMERA_COMPRESS_JPEG;
+    memcpy(&i, img, sizeof(int));
+    data->image_count = i;
+    assert(data->image_count > 1);
+    if (!(IS_JPEG(img + sizeof(int))))
+    {
+      PLAYER_ERROR("Not a JPEG image...");
+      return -1;
+    }
+    data->image = reinterpret_cast<uint8_t *>(malloc(data->image_count));
+    if (!(data->image))
+    {
+      PLAYER_ERROR("Out of memory!");
+      return -1;
+    }
+    memcpy(data->image, img + sizeof(int), data->image_count);
+  }
+  assert(data->image_count > 0);
+  assert(data->image);
+  if (sw && ((this->sources_count) > 1))
+  {
+    pthread_testcancel();
+    if (this->failsafe)
+    {
+      this->useSource();
+    } else
+    {
+      assert(!(this->useSource()));
+    }
+  }
+  return 0;
+}
+
 int CameraV4L2::ProcessMessage(QueuePointer & resp_queue,
                                player_msghdr * hdr,
                                void * data)
 {
+  player_camera_source_t source;
+  player_camera_source_t * src;
+  player_camera_data_t imgData;
+  char previousNorm[MAX_NORM_LEN + 1];
+  int previousSource;
+  int i;
+
   assert(hdr);
+  if ((this->sources_count) == 1)
+  {
+    assert(!(this->current_source));
+    if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
+                                   PLAYER_CAMERA_REQ_GET_SOURCE,
+                                   this->camera_addrs[0]))
+    {
+      memset(&source, 0, sizeof source);
+      source.norm_count = strlen(this->norm) + 1;
+      source.norm = strdup(this->norm);
+      assert(source.norm);
+      source.source = this->sources[this->current_source];
+      this->Publish(this->camera_addrs[0],
+                    resp_queue,
+                    PLAYER_MSGTYPE_RESP_ACK,
+                    PLAYER_CAMERA_REQ_GET_SOURCE,
+                    reinterpret_cast<void *>(&source));
+      free(source.norm);
+      return 0;
+    } else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
+                                     PLAYER_CAMERA_REQ_SET_SOURCE,
+                                     this->camera_addrs[0]))
+    {
+      assert(data);
+      src = reinterpret_cast<player_camera_source_t *>(data);
+      assert(src);
+      snprintf(previousNorm, sizeof previousNorm, "%s", this->norm);
+      previousSource = this->sources[this->current_source];
+      if ((src->norm_count) > 0) if (strlen(src->norm) > 0) snprintf(this->norm, sizeof this->norm, "%s", src->norm);
+      this->sources[this->current_source] = src->source;
+      if (this->started) stop_grab(this->fg);
+      this->started = 0;
+      if (this->setSource())
+      {
+        this->Publish(this->camera_addrs[0],
+                      resp_queue,
+                      PLAYER_MSGTYPE_RESP_NACK,
+                      PLAYER_CAMERA_REQ_SET_SOURCE,
+                      data);
+        if (this->started) stop_grab(this->fg);
+        this->started = 0;
+      } else
+      {
+        this->Publish(this->camera_addrs[0],
+                      resp_queue,
+                      (this->started) ? PLAYER_MSGTYPE_RESP_ACK : PLAYER_MSGTYPE_RESP_NACK,
+                      PLAYER_CAMERA_REQ_SET_SOURCE,
+                      data);
+      }
+      if (!(this->started))
+      {
+        snprintf(this->norm, sizeof this->norm, "%s", previousNorm);
+        this->sources[this->current_source] = previousSource;
+        if (this->setSource()) PLAYER_ERROR("Cannot switch back to previous channel!");
+      }
+      return 0;
+    }
+  }
+  for (i = 0; i < (this->sources_count); i++)
+  {
+    if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
+                                   PLAYER_CAMERA_REQ_GET_IMAGE,
+                                   this->camera_addrs[i]))
+    {
+      if (this->current_source != i)
+      {
+        assert((this->current_source) > 1);
+        this->next_source = i;
+        if (this->useSource()) return -1;
+      }
+      assert((this->current_source) == i);
+      if (this->prepareData(&imgData, 0)) return -1;
+      this->Publish(this->camera_addrs[i],
+                    resp_queue,
+                    PLAYER_MSGTYPE_RESP_ACK,
+                    PLAYER_CAMERA_REQ_GET_IMAGE,
+                    reinterpret_cast<void *>(&imgData));
+      if (imgData.image) free(imgData.image);
+      return 0;
+    }
+  }
   return -1;
 }
 

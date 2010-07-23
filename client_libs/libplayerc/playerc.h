@@ -1423,6 +1423,10 @@ typedef struct
   */
   uint8_t *image;
 
+  /** Norm and source channel, filled by playerc_camera_get_source(). */
+  char norm[16];
+  int source;
+
 } playerc_camera_t;
 
 
@@ -1443,6 +1447,21 @@ PLAYERC_EXPORT void playerc_camera_decompress(playerc_camera_t *device);
 
 /** @brief Saves the image to disk as a .ppm */
 PLAYERC_EXPORT void playerc_camera_save(playerc_camera_t *device, const char *filename);
+
+/** @brief Set source channel. */
+PLAYERC_EXPORT int playerc_camera_set_source(playerc_camera_t *device, int source, const char *norm);
+
+/** @brief Get source channel (sets norm and source fields in the current proxy data). */
+PLAYERC_EXPORT int playerc_camera_get_source(playerc_camera_t *device);
+
+/** @brief Force to get current image. */
+PLAYERC_EXPORT int playerc_camera_get_image(playerc_camera_t *device);
+
+/** @brief Copy image to some pre-allocated place. */
+PLAYERC_EXPORT void playerc_camera_copy_image(playerc_camera_t * device, void * dst, size_t dst_size);
+
+/** @brief Get given component of given pixel. */
+PLAYERC_EXPORT unsigned playerc_camera_get_pixel_component(playerc_camera_t * device, unsigned int x, unsigned int y, int component);
 
 /** @} */
 /**************************************************************************/
