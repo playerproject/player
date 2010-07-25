@@ -89,6 +89,7 @@ driver
 /** @} */
 
 #include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
 #ifndef WIN32
 #include <unistd.h>
@@ -104,6 +105,8 @@ class CameraCompress : public ThreadedDriver
 {
   // Constructor
   public: CameraCompress( ConfigFile* cf, int section);
+  // Destructor
+  public: virtual ~CameraCompress();
 
   // Setup/shutdown routines.
   public: virtual int MainSetup();
@@ -129,7 +132,7 @@ class CameraCompress : public ThreadedDriver
     bool camera_subscribed;
 
     // Output (compressed) camera data
-    private: player_camera_data_t data;
+    private: player_camera_data_t imgdata;
 
     // Image quality for JPEG compression
     private: double quality;
@@ -141,7 +144,6 @@ class CameraCompress : public ThreadedDriver
     private: int check_timestamps;
     private: int request_only;
 };
-
 
 Driver *CameraCompress_Init(ConfigFile *cf, int section)
 {
@@ -156,7 +158,8 @@ void cameracompress_Register(DriverTable *table)
 CameraCompress::CameraCompress( ConfigFile *cf, int section)
   : ThreadedDriver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_CAMERA_CODE)
 {
-  this->data.image = NULL;
+  this->imgdata.image_count = 0;
+  this->imgdata.image = NULL;
   this->frameno = 0;
 
   this->camera = NULL;
@@ -175,6 +178,16 @@ CameraCompress::CameraCompress( ConfigFile *cf, int section)
   this->request_only = cf->ReadInt(section, "request_only", 0);
 
   return;
+}
+
+CameraCompress::~CameraCompress()
+{
+  if (this->imgdata.image)
+  {
+    delete []this->imgdata.image;
+    this->imgdata.image = NULL;
+    this->imgdata.image_count = 0;
+  }
 }
 
 int CameraCompress::MainSetup()
@@ -203,10 +216,11 @@ void CameraCompress::MainQuit()
 {
   camera->Unsubscribe(InQueue);
 
-  if (this->data.image)
+  if (this->imgdata.image)
   {
-    delete []this->data.image;
-    this->data.image = NULL;
+    delete []this->imgdata.image;
+    this->imgdata.image = NULL;
+    this->imgdata.image_count = 0;
   }
 }
 
@@ -215,45 +229,33 @@ void CameraCompress::MainQuit()
 int CameraCompress::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr,
                                void * data)
 {
-  player_camera_data_t * imgData;
+  player_msghdr_t newhdr;
   Message * msg;
 
   assert(hdr);
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, this->camera_id))
   {
     assert(data);
-    imgData = reinterpret_cast<player_camera_data_t * >(data);
     if (this->request_only) return 0;
     if ((!(this->check_timestamps)) || (this->camera_time != hdr->timestamp))
     {
       this->camera_time = hdr->timestamp;
-      if (!(this->ProcessImage(*imgData))) this->Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, reinterpret_cast<void *>(&(this->data)), 0, &this->camera_time);
-      // don't delete anything here! this->data.image is required and is deleted somewhere else
+      if (!(this->ProcessImage(*(reinterpret_cast<player_camera_data_t *>(data))))) this->Publish(this->device_addr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, reinterpret_cast<void *>(&(this->imgdata)), 0, &(this->camera_time));
+      // don't delete anything here! this->imgdata.image is required and is deleted somewhere else
     }
     return 0;
-  } else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_CAMERA_REQ_GET_IMAGE, this->device_addr))
+  } else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, -1, this->device_addr))
   {
-    msg = this->camera->Request(this->InQueue, PLAYER_MSGTYPE_REQ, PLAYER_CAMERA_REQ_GET_IMAGE, NULL, 0, NULL);
-    if (!msg) return -1;
-    if ((msg->GetDataSize()) < (sizeof(player_camera_data_t)))
+    hdr->addr = this->camera_id;
+    msg = this->camera->Request(this->InQueue, hdr->type, hdr->subtype, data, 0, NULL, true); // threaded = true
+    if (!msg)
     {
-      delete msg;
+      PLAYER_WARN("failed to forward request");
       return -1;
     }
-    imgData = reinterpret_cast<player_camera_data_t *>(msg->GetPayload());
-    if (!imgData)
-    {
-      delete msg;
-      return -1;
-    }
-    this->camera_time = hdr->timestamp;
-    if (!(this->ProcessImage(*imgData))) this->Publish(this->device_addr,
-                                                       resp_queue,
-                                                       PLAYER_MSGTYPE_RESP_ACK,
-                                                       PLAYER_CAMERA_REQ_GET_IMAGE,
-                                                       reinterpret_cast<void *>(&(this->data)),
-                                                       0, &this->camera_time);
-    // don't delete anything here! this->data.image is required and is deleted somewhere else
+    newhdr = *(msg->GetHeader());
+    newhdr.addr = this->device_addr;
+    this->Publish(resp_queue, &newhdr, msg->GetPayload(), true); // copy = true, do not dispose published data as we're disposing whole source message in the next line
     delete msg;
     return 0;
   }
@@ -284,7 +286,7 @@ int CameraCompress::ProcessImage(player_camera_data_t & rawdata)
 
   if ((rawdata.width <= 0) || (rawdata.height <= 0))
   {
-    if (!(this->data.image)) return -1;
+    if (!(this->imgdata.image)) return -1;
   } else if (rawdata.compression == PLAYER_CAMERA_COMPRESS_RAW)
   {
     switch (rawdata.bpp)
@@ -293,7 +295,7 @@ int CameraCompress::ProcessImage(player_camera_data_t & rawdata)
       l = (rawdata.width) * (rawdata.height);
       ptr = buffer = new unsigned char[(rawdata.width) * (rawdata.height) * 3];
       assert(buffer);
-      ptr1 = (unsigned char *)(rawdata.image);
+      ptr1 = reinterpret_cast<unsigned char *>(rawdata.image);
       for (i = 0; i < l; i++)
       {
         ptr[0] = *ptr1;
@@ -304,13 +306,13 @@ int CameraCompress::ProcessImage(player_camera_data_t & rawdata)
       ptr = buffer;
       break;
     case 24:
-      ptr = (unsigned char *)(rawdata.image);
+      ptr = reinterpret_cast<unsigned char *>(rawdata.image);
       break;
     case 32:
       l = (rawdata.width) * (rawdata.height);
       ptr = buffer = new unsigned char[(rawdata.width) * (rawdata.height) * 3];
       assert(buffer);
-      ptr1 = (unsigned char *)(rawdata.image);
+      ptr1 = reinterpret_cast<unsigned char *>(rawdata.image);
       for (i = 0; i < l; i++)
       {
         ptr[0] = ptr1[0];
@@ -324,35 +326,35 @@ int CameraCompress::ProcessImage(player_camera_data_t & rawdata)
       PLAYER_WARN("unsupported image depth (not good)");
       return -1;
     }
-    if (this->data.image) delete []this->data.image;
-    this->data.image = new unsigned char[(rawdata.width) * (rawdata.height) * 3];
-    assert(this->data.image);
-    this->data.image_count = jpeg_compress( (char *)(this->data.image),
-                                            (char *)ptr,
-                                            rawdata.width,
-                                            rawdata.height,
-                                            (rawdata.width) * (rawdata.height) * 3,
-                                            (int)(this->quality*100));
-    this->data.width = (rawdata.width);
-    this->data.height = (rawdata.height);
-    this->data.bpp = 24;
-    this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
-    this->data.fdiv = (rawdata.fdiv);
-    this->data.compression = PLAYER_CAMERA_COMPRESS_JPEG;
-    this->data.image_count = (this->data.image_count);
+    if (this->imgdata.image) delete []this->imgdata.image;
+    this->imgdata.image = new unsigned char[(rawdata.width) * (rawdata.height) * 3];
+    assert(this->imgdata.image);
+    this->imgdata.image_count = jpeg_compress(reinterpret_cast<char *>(this->imgdata.image),
+                                              reinterpret_cast<char *>(ptr),
+                                              rawdata.width,
+                                              rawdata.height,
+                                              (rawdata.width) * (rawdata.height) * 3,
+                                              static_cast<int>(this->quality * 100));
+    this->imgdata.width = (rawdata.width);
+    this->imgdata.height = (rawdata.height);
+    this->imgdata.bpp = 24;
+    this->imgdata.format = PLAYER_CAMERA_FORMAT_RGB888;
+    this->imgdata.fdiv = (rawdata.fdiv);
+    this->imgdata.compression = PLAYER_CAMERA_COMPRESS_JPEG;
+    this->imgdata.image_count = (this->imgdata.image_count);
   } else
   {
-    if (this->data.image) delete []this->data.image;
-    this->data.image = new unsigned char[rawdata.image_count];
-    assert(this->data.image);
-    memcpy(this->data.image, rawdata.image, rawdata.image_count);
-    this->data.width = (rawdata.width);
-    this->data.height = (rawdata.height);
-    this->data.bpp = (rawdata.bpp);
-    this->data.format = (rawdata.format);
-    this->data.fdiv = (rawdata.fdiv);
-    this->data.compression = (rawdata.compression);
-    this->data.image_count = (rawdata.image_count);
+    if (this->imgdata.image) delete []this->imgdata.image;
+    this->imgdata.image = new unsigned char[rawdata.image_count];
+    assert(this->imgdata.image);
+    memcpy(this->imgdata.image, rawdata.image, rawdata.image_count);
+    this->imgdata.width = (rawdata.width);
+    this->imgdata.height = (rawdata.height);
+    this->imgdata.bpp = (rawdata.bpp);
+    this->imgdata.format = (rawdata.format);
+    this->imgdata.fdiv = (rawdata.fdiv);
+    this->imgdata.compression = (rawdata.compression);
+    this->imgdata.image_count = (rawdata.image_count);
   }
   if (buffer) delete []buffer;
   buffer = NULL;
@@ -367,7 +369,7 @@ int CameraCompress::ProcessImage(player_camera_data_t & rawdata)
     fp = fopen(filename, "w+");
     if (fp)
     {
-      ret = fwrite(this->data.image, 1, this->data.image_count, fp);
+      ret = fwrite(this->imgdata.image, 1, this->imgdata.image_count, fp);
       if (ret < 0) PLAYER_ERROR("Failed to save frame");
       fclose(fp);
     }

@@ -121,12 +121,18 @@ void playerc_camera_putmsg(playerc_camera_t *device, player_msghdr_t *header,
     device->fdiv         = data->fdiv;
     device->compression  = data->compression;
     device->image_count  = data->image_count;
-    device->image        = realloc(device->image, sizeof(device->image[0])*device->image_count);
-
-    if (device->image)
-      memcpy(device->image, data->image, device->image_count);
-    else
-      PLAYERC_ERR1("failed to allocate memory for image, needed %u bytes\n", sizeof(device->image[0])*device->image_count);
+    if (device->image_count > 0)
+    {
+      device->image        = realloc(device->image, sizeof(device->image[0])*device->image_count);
+      if (device->image)
+        memcpy(device->image, data->image, device->image_count);
+      else
+        PLAYERC_ERR1("failed to allocate memory for image, needed %u bytes\n", sizeof(device->image[0])*device->image_count);
+    } else
+    {
+      if (device->image) free(device->image);
+      device->image = NULL;
+    }
   }
   else
     PLAYERC_WARN2("skipping camera message with unknown type/subtype: %s/%d\n",
@@ -278,11 +284,18 @@ playerc_camera_get_image(playerc_camera_t *device)
   device->fdiv         = data->fdiv;
   device->compression  = data->compression;
   device->image_count  = data->image_count;
-  device->image        = realloc(device->image, (sizeof device->image[0]) * device->image_count);
-  if (device->image)
-    memcpy(device->image, data->image, device->image_count);
-  else
-    PLAYERC_ERR1("failed to allocate memory for image, needed %u bytes\n", (sizeof device->image[0]) * device->image_count);
+  if (device->image_count > 0)
+  {
+    device->image        = realloc(device->image, (sizeof device->image[0]) * device->image_count);
+    if (device->image)
+      memcpy(device->image, data->image, device->image_count);
+    else
+      PLAYERC_ERR1("failed to allocate memory for image, needed %u bytes\n", (sizeof device->image[0]) * device->image_count);
+  } else
+  {
+    if (device->image) free(device->image);
+    device->image = NULL;
+  }
   player_camera_data_t_free(data);
   return 0;
 }
