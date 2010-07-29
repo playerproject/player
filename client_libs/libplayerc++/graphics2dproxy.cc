@@ -104,6 +104,13 @@ Graphics2dProxy::DrawPolyline( player_point_2d_t pts[], int count )
   playerc_graphics2d_draw_polyline(mDevice,pts,count); 
 }
 
+void
+Graphics2dProxy::DrawMultiline( player_point_2d_t pts[], int count )
+{
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_graphics2d_draw_multiline(mDevice,pts,count); 
+}
+
 void 
 Graphics2dProxy::DrawPolygon( player_point_2d_t pts[], int count, bool filled, player_color_t fill_color )
 {

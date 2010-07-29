@@ -112,6 +112,23 @@ int playerc_graphics2d_draw_polyline(playerc_graphics2d_t *device,
                               &cmd, NULL);
 }
 
+
+int playerc_graphics2d_draw_multiline(playerc_graphics2d_t *device, 
+				     player_point_2d_t pts[], 
+				     int count )
+{
+  player_graphics2d_cmd_polyline_t cmd;
+  
+  cmd.points_count = count;
+  cmd.points = pts;
+  cmd.color = device->color;
+   
+  return playerc_client_write(device->info.client, &device->info,
+                              PLAYER_GRAPHICS2D_CMD_MULTILINE,
+                              &cmd, NULL);
+}
+
+
 int playerc_graphics2d_draw_polygon(playerc_graphics2d_t *device, 
 				    player_point_2d_t pts[], 
 				    int count,

@@ -93,6 +93,28 @@ int test_graphics2d(playerc_client_t *client, int index)
   
   usleep(500000);
 
+
+  TEST("changing color");
+  col.red = 50;
+  col.green = 255;
+  col.blue = 123;
+  col.alpha = 0;
+
+  if(playerc_graphics2d_setcolor(device, col) < 0)
+    FAIL();
+  else
+    PASS();
+
+  TEST("drawing multiline");
+  
+  if(playerc_graphics2d_draw_polyline(device, pts, RAYS) < 0)
+    FAIL();
+  else
+    PASS();
+  
+  usleep(500000);
+
+
   TEST("changing color");      
   col.red = 0;
   col.green = 128;

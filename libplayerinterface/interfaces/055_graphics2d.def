@@ -15,6 +15,9 @@ message { CMD, POINTS, 2, player_graphics2d_cmd_points_t };
 message { CMD, POLYLINE, 3, player_graphics2d_cmd_polyline_t };
 /** Command subtype: draw a polygon */
 message { CMD, POLYGON, 4, player_graphics2d_cmd_polygon_t };
+/** Command subtype: draw a set of lines */
+message { CMD, MULTILINE, 5, player_graphics2d_cmd_multiline_t };
+
 
 /** @brief Data: This interface produces no data. */
 
@@ -62,3 +65,16 @@ typedef struct player_graphics2d_cmd_polygon
   /** If non-zero, the polygon should be drawn filled, else empty. */
   uint8_t filled;
 } player_graphics2d_cmd_polygon_t;
+
+/** @brief Command: Draw multiple lines (@ref PLAYER_GRAPHICS2D_CMD_MULTILINE)
+Draw a set of lines. End points of lines are at points[2n] and points[2n+1] where 2n+1<count 
+*/
+typedef struct player_graphics2d_cmd_multiline
+{
+  /** Number of points in this packet. */
+  uint32_t points_count;
+  /** Array of points to be joined by lines. */
+  player_point_2d_t *points;
+  /** Color in which the line should be drawn. */
+  player_color_t color;
+} player_graphics2d_cmd_multiline_t;
