@@ -170,6 +170,10 @@ class SickS3000 : public ThreadedDriver
 
     IntProperty mirror;
 
+    // Is the laser upside-down? (if so, we'll reverse the ordering of the
+    // readings)
+    int invert;
+
     bool recognisedScanner;
 
     // Opaque Driver info
@@ -245,6 +249,8 @@ SickS3000::SickS3000(ConfigFile* cf, int section)
   this->pose[2] = cf->ReadTupleLength(section, "pose", 2, 0.0);;
   this->size[0] = 0.15;
   this->size[1] = 0.15;
+
+  this->invert = cf->ReadInt(section, "invert", 0);
 
   this->opaque = NULL;
   // Must have an opaque device
@@ -480,15 +486,26 @@ int SickS3000::ProcessLaserData()
             SetScannerParams(data_count); // Set up parameters based on number of results.
           data_packet.ranges_count = data_count;
           data_packet.ranges = new float [data_count];
+          data_packet.intensity_count = data_count;
+	  data_packet.intensity = new uint8_t [data_count];
           for (int ii = 0; ii < data_count; ++ii)
           {
             unsigned short Distance_CM = (*reinterpret_cast<unsigned short *> (&data[4 + 2*ii]));
             Distance_CM &= 0x1fff; // remove status bits
             double distance_m = static_cast<double>(Distance_CM)/100.0;
-            if (mirror == 1)
+            if (mirror == 1 || this->invert) {
             	data_packet.ranges[data_count - ii - 1] = static_cast<float> (distance_m); // Reverse order.
-            else
+		if (data[(4 + 2*ii)+1] & 32)
+			data_packet.intensity[data_count - ii - 1] = 0xff; // Reflex found
+		else
+			data_packet.intensity[data_count - ii - 1] = 0x00; // Reflex not found
+            } else {
             	data_packet.ranges[ii] = static_cast<float> (distance_m);
+		if (data[(4 + 2*ii)+1] & 32)
+			data_packet.intensity[ii] = 0xff; // Reflex found
+		else
+			data_packet.intensity[ii] = 0x00; // Reflex not found
+	    }
           }
 
           this->Publish(this->device_addr,
@@ -496,6 +513,7 @@ int SickS3000::ProcessLaserData()
                         PLAYER_LASER_DATA_SCAN,
                         (void*)&data_packet);
           delete [] data_packet.ranges;
+	  delete [] data_packet.intensity;
 
         }
         else if (data[0] == 0xCC)
