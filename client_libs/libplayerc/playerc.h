@@ -1678,6 +1678,13 @@ PLAYERC_EXPORT int playerc_graphics2d_draw_polyline(playerc_graphics2d_t *device
              player_point_2d_t pts[],
              int count );
 
+/** @brief Draw a set of lines whose end points are at pts[2n] and pts[2n+1] */
+PLAYERC_EXPORT int playerc_graphics2d_draw_multiline(playerc_graphics2d_t *device,
+             player_point_2d_t pts[],
+             int count );
+
+
+
 /** @brief Draw a polygon */
 PLAYERC_EXPORT int playerc_graphics2d_draw_polygon(playerc_graphics2d_t *device,
             player_point_2d_t pts[],

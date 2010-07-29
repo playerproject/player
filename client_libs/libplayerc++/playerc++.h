@@ -771,6 +771,10 @@ class PLAYERCC_EXPORT Graphics2dProxy : public ClientProxy
 
     /// Draw a line connecting  set of points
     void DrawPolyline(player_point_2d_t pts[], int count);
+
+
+    /// Draw multiple lines. Lines ending points are at pts[2n] pts[2n+1] where 2n+1<count
+    void DrawMultiline(player_point_2d_t pts[], int count);
 };
 
 /**
