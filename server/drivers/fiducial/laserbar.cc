@@ -284,7 +284,11 @@ int LaserBar::ProcessMessage(QueuePointer &resp_queue, player_msghdr *hdr, void 
     this->ldata.resolution = laser_data->resolution;
     this->ldata.max_range = laser_data->max_range;
     this->ldata.ranges_count = laser_data->ranges_count;
+    if (this->ldata.ranges == NULL)
+	this->ldata.ranges = new float [this->ldata.ranges_count];
     this->ldata.intensity_count = laser_data->intensity_count;
+    if (this->ldata.intensity == NULL)
+	this->ldata.intensity = new uint8_t [this->ldata.intensity_count];
 
     for (unsigned int i = 0; i < laser_data->ranges_count; i++)
     {
