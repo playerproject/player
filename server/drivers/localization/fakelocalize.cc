@@ -400,8 +400,7 @@ int FakeLocalize::ProcessMessage(QueuePointer &resp_queue,
       resp.variance = 0;
 
       resp.particles_count = 1;
-	  // TODO: Potential boom! resp.particles_count hasn't been initialised yet!
-	  // Someone who understands what this driver is doing should fix this.
+      resp.particles = new player_localize_particle[resp.particles_count];
       for(uint32_t i=0;i<resp.particles_count;i++)
       {
         resp.particles[i].pose.px = ans->pose.px;
@@ -412,6 +411,8 @@ int FakeLocalize::ProcessMessage(QueuePointer &resp_queue,
 
       this->Publish(this->localize_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK,
 		            PLAYER_LOCALIZE_REQ_GET_PARTICLES, (void*)&resp, sizeof(resp), NULL);
+      delete[] resp.particles;
+      resp.particles = NULL;
       delete Reply;
       Reply = NULL;
 
