@@ -97,6 +97,7 @@ driver
 #include <stddef.h>
 #include <stdlib.h>       // for atoi(3)
 #include <math.h>
+#include <assert.h>
 
 #include <libplayercore/playercore.h>
 #include <libplayerjpeg/playerjpeg.h>
@@ -230,6 +231,7 @@ int CameraCompress::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hd
                                void * data)
 {
   player_msghdr_t newhdr;
+  player_camera_data_t camdata, * rqdata;
   Message * msg;
 
   assert(hdr);
@@ -243,6 +245,60 @@ int CameraCompress::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hd
       if (!(this->ProcessImage(*(reinterpret_cast<player_camera_data_t *>(data))))) this->Publish(this->device_addr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, reinterpret_cast<void *>(&(this->imgdata)), 0, &(this->camera_time));
       // don't delete anything here! this->imgdata.image is required and is deleted somewhere else
     }
+    return 0;
+  } else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_CAMERA_REQ_GET_IMAGE, this->device_addr))
+  {
+    hdr->addr = this->camera_id;
+    msg = this->camera->Request(this->InQueue, hdr->type, hdr->subtype, data, 0, NULL, true); // threaded = true
+    if (!msg)
+    {
+      PLAYER_WARN("failed to forward request");
+      return -1;
+    }
+    if (!(msg->GetDataSize() > 0))
+    {
+      PLAYER_WARN("Wrong size of request reply");
+      delete msg;
+      return -1;
+    }
+    rqdata = reinterpret_cast<player_camera_data_t *>(msg->GetPayload());
+    if (!rqdata)
+    {
+      PLAYER_WARN("No image data from forwarded request");
+      delete msg;
+      return -1;
+    }
+    if (!((rqdata->width > 0) && (rqdata->height > 0) && (rqdata->bpp > 0) && (rqdata->image_count > 0) && (rqdata->image)))
+    {
+      newhdr = *(msg->GetHeader());
+      newhdr.addr = this->device_addr;
+      this->Publish(resp_queue, &newhdr, reinterpret_cast<void *>(rqdata), true); // copy = true, do not dispose published data as we're disposing whole source message in the next line
+      delete msg;
+      return 0;
+    }
+    camdata = *rqdata;
+    camdata.image = NULL;
+    assert((camdata.width > 0) && (camdata.height > 0) && (camdata.bpp > 0) && (camdata.image_count > 0));
+    camdata.image = reinterpret_cast<uint8_t *>(malloc(camdata.image_count));
+    if (!(camdata.image))
+    {
+      PLAYER_ERROR("Out of memory");
+      delete msg;
+      return -1;
+    }
+    assert((camdata.image_count) == (rqdata->image_count));
+    memcpy(camdata.image, rqdata->image, camdata.image_count);
+    if (this->ProcessImage(camdata))
+    {
+      free(camdata.image);
+      delete msg;
+      return -1;
+    }
+    free(camdata.image);
+    newhdr = *(msg->GetHeader());
+    newhdr.addr = this->device_addr;
+    this->Publish(resp_queue, &newhdr, reinterpret_cast<void *>(&(this->imgdata)), true); // copy = true
+    delete msg;
     return 0;
   } else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, -1, this->device_addr))
   {
