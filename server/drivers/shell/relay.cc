@@ -36,7 +36,7 @@ The @p relay driver repeats all commands it recieves as data packets to all subs
 
 @par Provides
 
-- opaque interface
+- @ref interface_opaque
 
 @par Requires
 
@@ -44,17 +44,20 @@ The @p relay driver repeats all commands it recieves as data packets to all subs
 
 @par Configuration requests
 
+- none
 
 @par Configuration file options
 
+- none
 
-configuration file:
+@par Example
 @verbatim
 driver
 (
   name "relay"
   provides ["opaque:0"]
 )
+@endverbatim
 
 @author Toby Collett
 

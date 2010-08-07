@@ -30,11 +30,11 @@ This driver is for communicting with the Ibeo LUX laser scanner over ethernet us
 
 @par Provides
 
-- laser
+- @ref interface_laser
 
 @par Requires
 
- - opaque
+- @ref interface_opaque
 
 @par Supported commands
 
@@ -42,7 +42,7 @@ This driver is for communicting with the Ibeo LUX laser scanner over ethernet us
 
 @par Supported configuration requests
 
- - none
+- none
 
 @par Configuration file options
 
@@ -56,10 +56,10 @@ This driver is for communicting with the Ibeo LUX laser scanner over ethernet us
 	- -1(default) = all echos
 	- 0,1,2,3 = only publish laser returns which are echo x
  - intensity (0,1,2,3)
-	- 1(default) - publishes the echo width (in cm) as the intensity variable (cut at 255cm should never be exceeded?)
-    - 2 - publishes the echo number as the intensity value (0,1,2,3)
-	- 3 - publishes the scan layer as the intensity value (0,1,2,3)
-	- 0 - No intensity data
+	- 1(default): publishes the echo width (in cm) as the intensity variable (cut at 255cm should never be exceeded?)
+	- 2 = publishes the echo number as the intensity value (0,1,2,3)
+	- 3 = publishes the scan layer as the intensity value (0,1,2,3)
+	- 0 = No intensity data
 
 @par Example:
 

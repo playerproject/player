@@ -13,6 +13,78 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/*
+ Desc: EPuck Driver
+ Authors: Renato Florento Garcia
+ Updated: 2008
+*/
+
+/** @ingroup drivers */
+/** @{ */
+/** @defgroup driver_epuck epuck
+ * @brief Epuck Robot
+ 
+Driver for the Epuck robot
+
+This class implements the player driver interface, and perform
+all comunication with the player-server. It must to have a pointer
+for each class that controls a e-puck device for which there are
+a player interface, and bind them with player-server.
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+- @ref interface_position2d
+- @ref interface_ir
+- @ref interface_camera
+- @ref interface_blinkenlight
+  - Keys: ring_led0-7, front_led, body_led
+
+@par Requires
+
+- none
+
+@par Configuration requests
+ 
+
+@par Configuration File options
+- port
+  - Default: "/dev/rfcomm0"
+  - Serial port for epuck communication
+- sensor_x1
+  - Default: 240
+- sensor_y1
+  - Default: 160
+- sensor_width
+  - Default: 160
+- sensor_height
+  - Default: 160
+- zoom_fact_width
+  - Default: 4
+- zoom_fact_height
+  - Default: 4
+- color_mode
+  - Default: GREY_SCALE_MODE
+
+@par Example
+
+@verbatim
+driver
+(
+  name "epuck"
+  provides ["position2d:0" "ir:0" "camera:0" "ring_led0:::blinkenlight:0"]
+  port "/dev/rfcomm0"
+  
+)
+
+
+@endverbatim
+@author Renato Florentino Garcia
+*/
+/** @} */
 #include "epuckDriver.hpp"
 #include <string>
 #include <cstddef>

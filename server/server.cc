@@ -62,7 +62,7 @@ more output.  Default: 1.
 - -p \<port\> : Establish the default TCP port, which will be assigned to
 any devices in the configuration file without an explicit port assignment.
 Default: 6665.
-- -l <logfile>: File to log messages to (default stdout only)
+- -l \<logfile\>: File to log messages to (default stdout only)
 - \<cfgfile\> : The configuration file to read.
 
 @section Example

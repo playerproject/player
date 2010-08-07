@@ -12,9 +12,7 @@ data simple, the laser data packet contains some extra fields before
 the actual range data.  These fields tell the client the starting and
 ending angles of the scan, the angular resolution of the scan, and the
 number of range readings included.  Scans proceed counterclockwise about
-the laser (0 degrees is forward).  The laser can return a maximum of
-@ref PLAYER_LASER_MAX_SAMPLES readings; this limits the valid combinations
-of scan width and angular resolution.
+the laser (0 degrees is forward).
 
 This interface is \b deprecated. Use the @ref interface_ranger instead.
 }

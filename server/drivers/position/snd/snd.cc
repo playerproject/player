@@ -40,9 +40,9 @@
  * @brief Smooth Nearness Diagram Navigation
 
 This driver implements the Smooth Nearness Diagram Navigation algorithm,
-an improvement over the @ref nd driver that removes oscillatory patterns
+an improvement over the @ref driver_nd driver that removes oscillatory patterns
 and improves overall driver performance. 
-.
+
 This algorithm handles local collision-avoidance and goal-seeking and is
 designed for non-holonomic, non-circular robots operating in tight spaces.
 The algorithm is in the following paper:
@@ -58,12 +58,12 @@ device.  The two @ref interface_position2d devices can be the same.
 At least one device of type @ref interface_laser must
 be provided.
 
-The driver itself supports the @interface_position2d interface.  Send
+The driver itself supports the @ref interface_position2d interface.  Send
 @ref PLAYER_POSITION2D_CMD_POS commands to set the goal pose.  The driver
 also accepts @ref PLAYER_POSITION2D_CMD_VEL commands, simply passing them
 through to the underlying output device.
 
-This driver commands the underlying  @interface_position2d simply in velocity,
+This driver commands the underlying  @ref interface_position2d simply in velocity,
 so it's suitable to be used on the robots for which the GoTo() function is not
 yet implemented  (e.g.: the Erratic robot).
 
@@ -100,7 +100,6 @@ underlying "output" @ref interface_position2d device.
 - obstacle_avoid_dist(meters)
   - Default: 4*Robot radius
   - Maximum distance allowed from an obstacle
-
 
 - max_speed (meters/s)
   - Default: 0.5

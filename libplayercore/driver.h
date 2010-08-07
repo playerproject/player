@@ -133,7 +133,10 @@ class PLAYERCORE_EXPORT Driver
     This form loads the address details from the config file and then adds the interface.
 
     @param addr Pointer to Player device address, this is filled in with the address details.
-
+    @param cf Current configuration file
+    @param section Current section in configuration file
+    @param code Interface code
+    @param key Configuration file key value
     @returns 0 on success, non-zero otherwise. */
     int AddInterface(player_devaddr_t *addr, ConfigFile * cf, int section, int code, const char * key = NULL);
 
@@ -440,7 +443,10 @@ class PLAYERCORE_EXPORT Driver
     @param cf Configuration file
     @param section Configuration file section that may define the property value
     @return True if the property was registered, false otherwise */
-    virtual bool RegisterProperty(const char *key, Property *prop, ConfigFile* cf, int section);
+    virtual bool RegisterProperty(const char *key, 
+                                  Property *property, 
+                                  ConfigFile* cf, 
+                                  int section);
 
     /** @brief Property registration.
 
@@ -449,7 +455,9 @@ class PLAYERCORE_EXPORT Driver
     @param cf Configuration file
     @param section Configuration file section that may define the property value
     @return True if the property was registered, false otherwise */
-    virtual bool RegisterProperty(Property *prop, ConfigFile* cf, int section);
+    virtual bool RegisterProperty(Property *property, 
+                                  ConfigFile* cf, 
+                                  int section);
 };
 
 typedef enum player_thread_state
@@ -572,7 +580,7 @@ class PLAYERCORE_EXPORT ThreadedDriver : public Driver
     pthread_t driverthread;
 
     /** @brief TODO: insert state machine here
-    . */
+     */
     player_thread_state_t ThreadState;
     bool SetupSuccessful;
 
@@ -598,7 +606,7 @@ class PLAYERCORE_EXPORT ThreadedDriver : public Driver
 			int section,
 			bool overwrite_cmds,
 			size_t queue_maxlen,
-			int interf);
+			int interface);
 
     /** @brief Constructor for multiple-interface drivers.
 

@@ -132,7 +132,50 @@ used to control the Player server itself.
 
 Programs using libplayerc will generally have the following structure:
 
-@include simpleclient.c
+<PRE>
+\#include <stdio.h>
+\#include <libplayerc/playerc.h>
+
+int
+main(int argc, const char **argv)
+{
+  int i;
+  playerc_client_t *client;
+  playerc_position2d_t *position2d;
+
+  // Create a client and connect it to the server.
+  client = playerc_client_create(NULL, "localhost", 6665);
+  if (0 != playerc_client_connect(client))
+    return -1;
+
+  // Create and subscribe to a position2d device.
+  position2d = playerc_position2d_create(client, 0);
+  if (playerc_position2d_subscribe(position2d, PLAYER_OPEN_MODE))
+    return -1;
+
+  // Make the robot spin
+  playerc_position2d_enable(position2d, 1);
+  playerc_position2d_set_speed(position2d, 0, 0, 0.1);
+
+  for (i = 0; i < 200; i++)
+  {
+    // Wait for new data from server
+    playerc_client_read(client);
+
+    // Print current robot pose
+    printf("position2d : %f %f %f\n",
+           position2d->px, position2d->py, position2d->pa);
+  }
+
+  // Shutdown
+  playerc_position2d_unsubscribe(position2d);
+  playerc_position2d_destroy(position2d);
+  playerc_client_disconnect(client);
+  playerc_client_destroy(client);
+
+  return 0;
+}
+</PRE>
 
 This example can be built using the command:
 <PRE>
@@ -558,6 +601,7 @@ PLAYERC_EXPORT void playerc_client_destroy(playerc_client_t *client);
 
 /** @brief Set the transport type.
 
+@param client Pointer to client object.
 @param transport Either PLAYERC_TRANSPORT_UDP or PLAYERC_TRANSPORT_TCP
 */
 PLAYERC_EXPORT void playerc_client_set_transport(playerc_client_t* client,
@@ -700,7 +744,8 @@ PLAYERC_EXPORT int playerc_client_request(playerc_client_t *client,
                            struct _playerc_device_t *device, uint8_t reqtype,
                            const void *req_data, void **rep_data);
 
-/** @brief Wait for response from server (blocking).
+
+/* @brief Wait for response from server (blocking).
 
 @param client Pointer to client object.
 @param device
@@ -709,10 +754,12 @@ PLAYERC_EXPORT int playerc_client_request(playerc_client_t *client,
 
 @returns Will return data size for ack, -1 for nack and -2 for failure
 
-*/
-/*int playerc_client_getresponse(playerc_client_t *client, uint16_t device,
+
+int playerc_client_getresponse(playerc_client_t *client, uint16_t device,
     uint16_t index, uint16_t sequence, uint8_t * resptype, uint8_t * resp_data, int resp_len);
 */
+
+
 /** @brief Test to see if there is pending data. Send a data request if one has not been sent already.
  * A data request is necessary to provoke a response from the server.
 
@@ -1069,7 +1116,7 @@ PLAYERC_EXPORT int playerc_actarray_accel_config(playerc_actarray_t *device, int
 /** @ingroup playerc_proxies
  * @defgroup playerc_proxy_audio audio
 
-The audio proxy provides access to drivers supporting the @ref audio_interface.
+The audio proxy provides access to drivers supporting the @ref interface_audio .
 See the Player User Manual for a complete description of the drivers that support
 this interface.
 
@@ -3125,19 +3172,23 @@ PLAYERC_EXPORT int playerc_ranger_get_geom(playerc_ranger_t *device);
 
 /** @brief Turn device power on or off.
 
+@param device Pointer to ranger device.
 @param value Set to TRUE to turn power on, FALSE to turn power off. */
 PLAYERC_EXPORT int playerc_ranger_power_config(playerc_ranger_t *device, uint8_t value);
 
 /** @brief Turn intensity data on or off.
 
+@param device Pointer to ranger device.
 @param value Set to TRUE to turn the data on, FALSE to turn the data off. */
 PLAYERC_EXPORT int playerc_ranger_intns_config(playerc_ranger_t *device, uint8_t value);
 
 /** @brief Set the ranger device's configuration. Not all values may be used.
 
+@param device Pointer to ranger device.
 @param min_angle Start angle of scans [rad].
 @param max_angle End angle of scans [rad].
-@param resolution Scan resolution [rad].
+@param angular_res Scan resolution [rad].
+@param min_range Minimum range[m].
 @param max_range Maximum range [m].
 @param range_res Range resolution [m].
 @param frequency Scanning frequency [Hz]. */
@@ -3148,9 +3199,11 @@ PLAYERC_EXPORT int playerc_ranger_set_config(playerc_ranger_t *device, double mi
 
 /** @brief Get the ranger device's configuration. Not all values may be filled.
 
+@param device Pointer to ranger device.
 @param min_angle Start angle of scans [rad].
 @param max_angle End angle of scans [rad].
-@param resolution Scan resolution [rad].
+@param angular_res Scan resolution [rad].
+@param min_range Minimum range [m].
 @param max_range Maximum range [m].
 @param range_res Range resolution [m].
 @param frequency Scanning frequency [Hz]. */

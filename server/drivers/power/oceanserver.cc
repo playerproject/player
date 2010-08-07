@@ -43,7 +43,8 @@ Smart Battery systems supported by the GbxSmartBatteryAcfr library.
 
 @par Provides
 
-- @ref interface_power: Output power interface
+- @ref interface_power
+  - Output power interface
 
 @par Supported configuration requests
 

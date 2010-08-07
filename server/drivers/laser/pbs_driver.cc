@@ -1,4 +1,4 @@
-/*! \mainpage
+/*!
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2003
  *     Brian Gerkey
@@ -19,59 +19,65 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
+/*
+ Desc: Hokuyo PBS 03JN Driver
+ Authors: Simon Kracht and Carsten Nielsen
+ Based on: sicks3000 by Toby Collett
+ Updated: 2006
+*/
 
-/*! \class PBSDriver
- * \brief Class for Hokuyo PBS 03JN plug-in driver
- * \par Authors:
- * Simon Kracht and Carsten Nielsen (based on sicks3000 by Toby Collett)
- * Aalborg University, Section for Automation and Control
- * \par Year:
- * 2006
- *
- * Plug-in driver for the Hokuyo PBS 03JN IR range finder.
- *
- * The PBSDriver controls the PBS 03JN IR range finder and interprets its data output.
- * The driver operation defaults are:
- * - The full range (190 degree) output is continously sampled and published (121 range readings)
- * - Sample time: 300 ms
- * - Serial port: dev/ttyS01
- * - Baud rate : 57600
- * - Pose of range finder related to the body (e.g. robot) on which it is fixed: [x,y,yaw] = [0,0,0]
- *
- * For detailed description of PBS 03JN refer to http://www.senteksolutions.com/ or http://www.hokuyo-aut.jp/
- *
- * \par Compile-time dependencies:
- *
- * - none
- *
- * \par Name:
- *
- * - pbs_driver
- *
- * \par Provides:
- *
- * - interface_laser
- *
- * \par Requires:
- *
- * - none
- *
- * \par Configuration requests:
- * \par
- *  \b - PLAYER_LASER_REQ_GET_GEOM
- *
- * \par Configuration file example:
- *
- * \code
- * driver
- * (
- * name "pbs_driver"
- * provides ["laser:0"]
- * )
- * \endcode
- *
- */
 
+/** @ingroup drivers */
+/** @{ */
+/** @defgroup driver_pbs pbs
+ * @brief Hokuyo PBS 03JN driver
+
+Driver for the Hokuyo PBS 03JN IR range finder.
+
+The PBSDriver controls the PBS 03JN IR range finder and interprets its data output.
+The driver operation defaults are:
+- The full range (190 degree) output is continously sampled and published (121 range readings)
+- Sample time: 300 ms
+- Serial port: dev/ttyS01
+- Baud rate : 57600
+- Pose of range finder related to the body (e.g. robot) on which it is fixed: [x,y,yaw] = [0,0,0]
+
+Currently, these options are not configuration options
+
+For detailed description of PBS 03JN refer to http://www.senteksolutions.com/ or http://www.hokuyo-aut.jp/
+
+@par Compile-time dependencies:
+
+- none
+
+@par Provides
+
+- @ref interface_laser
+
+@par Requires
+
+- none
+
+@par Configuration requests
+- @ref interface_laser
+  - PLAYER_LASER_REQ_GET_GEOM
+
+@par Configuration file options
+
+@par Example
+
+@verbatim
+driver
+(
+ name "pbs_driver"
+ provides ["laser:0"]
+)
+@endverbatim
+
+@authors Simon Kracht and Carsten Nielsen, Aalborg University, Section for Automation and Control
+@date 2006
+*/
+/** @} */
 #include <assert.h>
 #include <math.h>
 #include <errno.h>

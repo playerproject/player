@@ -19,8 +19,7 @@ message { DATA, GEOM, 2, player_sonar_geom_t };
 
 /** @brief Data: ranges (@ref PLAYER_SONAR_DATA_RANGES)
 
-The @p sonar interface returns up to @ref PLAYER_SONAR_MAX_SAMPLES range
-readings from a robot's sonars. */
+The @p sonar interface returns readings from a robot's sonars. */
 typedef struct player_sonar_data
 {
   /** The number of valid range readings. */

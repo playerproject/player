@@ -51,6 +51,10 @@
 /* Include values from the configure script */
 #include "playerconfig.h"
 
+/** @defgroup libplayerinterface libplayerinterface
+ *
+ */
+
 /** @ingroup libplayerinterface
  * @defgroup message_basics Messaging basics
  * Interface-independent message types, sizes, units, address structures, etc.

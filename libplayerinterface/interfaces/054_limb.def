@@ -18,11 +18,11 @@ The limb interface provides access to a multi-jointed limb
 /** Data subtype: state */
 message { DATA, STATE, 1, player_limb_data_t };
 
-/** @brief Command: home (@ref PLAYER_LIMB_HOME_CMD)
+/** @brief Command: home (@ref PLAYER_LIMB_CMD_HOME)
 
 Tells the end effector to return to its home position. */
 message { CMD, HOME, 1, NULL };
-/** @brief Command: stop (@ref PLAYER_LIMB_STOP_CMD)
+/** @brief Command: stop (@ref PLAYER_LIMB_CMD_STOP)
 
 Tells the limb to stop moving immediatly. */
 message { CMD, STOP, 2, NULL };
@@ -42,7 +42,7 @@ message { REQ, GEOM, 3, player_limb_geom_req_t };
 /** Request/reply: speed */
 message { REQ, SPEED, 4, player_limb_speed_req_t };
 
-/** @brief Data: state (@ref PLAYER_LIMB_DATA)
+/** @brief Data: state (@ref PLAYER_LIMB_DATA_STATE)
 
   The limb data packet. */
 typedef struct player_limb_data

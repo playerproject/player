@@ -76,7 +76,7 @@ typedef struct player_position3d_cmd_vel
 
 /** @brief Request/reply: Query geometry.
 
-To request robot geometry, send a null @ref PLAYER_POSITION3D_GET_GEOM request. */
+To request robot geometry, send a null @ref PLAYER_POSITION3D_REQ_GET_GEOM request. */
 typedef struct player_position3d_geom
 {
   /** Pose of the robot base, in the robot cs (m, m, m, rad, rad, rad).*/
@@ -103,7 +103,7 @@ typedef struct player_position3d_power_config
 
 /** @brief Request/reply: Change position control.
 
-To change control mode, send a @ref PLAYER_POSITION3D_POSITION_MODE request.
+To change control mode, send a @ref PLAYER_POSITION3D_REQ_POSITION_MODE request.
 Null response.
 */
 typedef struct player_position3d_position_mode_req
@@ -115,7 +115,7 @@ typedef struct player_position3d_position_mode_req
 /** @brief Request/reply: Change velocity control.
 
 Some robots offer different velocity control modes.  It can be changed by
-sending a @ref PLAYER_POSITION3D_VELOCITY_MODE request with the format given
+sending a @ref PLAYER_POSITION3D_REQ_VELOCITY_MODE request with the format given
 below, including the appropriate mode.  No matter which mode is used, the
 external client interface to the @p position3d device remains the same.
 Null response. */
@@ -128,7 +128,7 @@ typedef struct player_position3d_velocity_mode_config
 /** @brief Request/reply: Set odometry.
 
 To set the robot's odometry to a particular state, send a
-@ref PLAYER_POSITION3D_SET_ODOM request.  Null response. */
+@ref PLAYER_POSITION3D_REQ_SET_ODOM request.  Null response. */
 typedef struct player_position3d_set_odom_req
 {
   /** (x, y, z, roll, pitch, yaw) position [m, m, m, rad, rad, rad] */
@@ -138,11 +138,11 @@ typedef struct player_position3d_set_odom_req
 /** @brief Request/reply: Reset odometry.
 
 To reset the robot's odometry to @f$(x,y,\theta) = (0,0,0)@f$,
-send a @ref PLAYER_POSITION3D_RESET_ODOM request.  Null response. */
+send a @ref PLAYER_POSITION3D_REQ_RESET_ODOM request.  Null response. */
 
 /** @brief Request/reply: Set velocity PID parameters.
  *
- * To set velocity PID parameters, send a @ref PLAYER_POSITION3D_SPEED_PID
+ * To set velocity PID parameters, send a @ref PLAYER_POSITION3D_REQ_SPEED_PID
  * request.  Null response. */
 typedef struct player_position3d_speed_pid_req
 {
@@ -156,7 +156,7 @@ typedef struct player_position3d_speed_pid_req
 
 /** @brief Request/reply: Set position PID parameters.
  *
- * To set position PID parameters, send a @ref PLAYER_POSITION3D_POSITION_PID
+ * To set position PID parameters, send a @ref PLAYER_POSITION3D_REQ_POSITION_PID
  * request.  Null response. */
 typedef struct player_position3d_position_pid_req
 {
@@ -170,7 +170,7 @@ typedef struct player_position3d_position_pid_req
 
 /** @brief Request/reply: Set speed profile parameters.
  *
- * To set speed profile parameters, send a @ref PLAYER_POSITION3D_SPEED_PROF
+ * To set speed profile parameters, send a @ref PLAYER_POSITION3D_REQ_SPEED_PROF
  * request.  Null response. */
 typedef struct player_position3d_speed_prof_req
 {

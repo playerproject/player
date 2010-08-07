@@ -19,14 +19,81 @@
  *
  */
 
-/*
- * A driver for the Powercube Modules from Amtec Robotics, Berlin.
- * This driver uses the official C++ driver from Amtec (Called Powercube M5api).
- * You can download it from here after obtaining a password from the company:
- * http://www.powercube.de/files/PCube_M5api_Linux/M5DLL_SUSE_10.0.tar
- *
- * For precise timing, use a recent Linux kernel (2.6.19 should have the hrtimers code inside)
- */
+/** @ingroup drivers */
+/** @{ */
+/** @defgroup driver_amtecM5 amtecM5
+ * @brief Amtec PowerCube modules
+
+A driver for the Powercube Modules from Amtec Robotics, Berlin.
+This driver uses the official C++ driver from Amtec (Called Powercube M5api).
+You can download it from here after obtaining a password from the company:
+http://www.powercube.de/files/PCube_M5api_Linux/M5DLL_SUSE_10.0.tar
+
+For precise timing, use a recent Linux kernel (2.6.19 should have the hrtimers code inside)
+
+@par Compile-time dependencies
+
+- Amtec Powercube M5api
+
+@par Provides
+
+- @ref interface_actarray
+
+@par Requires
+
+- none
+
+@par Configuration requests
+
+
+
+@par Configuration file options
+
+- highpriority (int)
+  - Default: 0
+  - Tell the scheduler we need high priority
+- connstring (string)
+  - Default: ""
+  - Connection string used by Pcube driver from Amtec
+- samplingrate (float)
+  - Default: 20
+  - Sampling rate, in milliseconds
+- alarmtime (float)
+  - Default: 25
+  - Alarm time, in milliseconds
+- module_count (int)
+  - Default: 0
+  - Number of modules that we expect on the bus
+- debug_level (int)
+  - Default: 0
+  - Display extra debug messages
+- initial_ramp_speed (float)
+  - Default: 0.1
+  - Initial speed
+- initial_ramp_accel (float)
+  - Default: 0.1
+  - Initial acceleration
+- directions (string)
+  - Default: ""
+  - Vector for the directions of the modules
+
+@par Example
+
+@verbatim
+driver
+(
+  name "amtecM5"
+  connstring "/dev/ttyS0"
+  highpriority 0
+)
+@endverbatim
+
+@author Alexis Maldonado
+@date 2006
+
+*/
+/** @} */
+
 
 #include <libplayercore/playercore.h>
 

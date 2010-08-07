@@ -53,7 +53,7 @@
 
  @par Requires
 
- - @ref opaque
+ - @ref interface_opaque
 
  @par Configuration requests
 
@@ -75,15 +75,15 @@
  @verbatim
  driver
  (
- name "sicknav200"
- provides ["position2d:0" "vectormap:0"]
- requires ["opaque:0"]
+   name "sicknav200"
+   provides ["position2d:0" "vectormap:0"]
+   requires ["opaque:0"]
  )
  driver
  (
- name "serialstream"
- provides ["opaque:0"]
- port "/dev/ttyS0"
+   name "serialstream"
+   provides ["opaque:0"]
+   port "/dev/ttyS0"
  )
 
  @endverbatim

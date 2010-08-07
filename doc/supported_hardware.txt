@@ -210,8 +210,8 @@ InertiaCube2</a> IMU</td>
 <td><a href="http://www.sickoptic.com">SICK</a></td>
 <td><a href="http://www.sickoptic.com/live/master/datasheet.asp?PN=1015850&FAM=Measurement">
 LMS 200</a> laser range-finder (and possibly other SICK lasers)</td>
-<td>@ref driver_sicklms200, @ref driver_sickpls, @ref driver_sicks3000,
-@ref driver_sicknav200</td>
+<td>@ref driver_sicklms200, @ref driver_sicklms400, @ref driver_sicks3000,
+@ref driver_sicknav200, @ref driver_gbxsickacfr</td>
 </tr>
 
 <tr>
@@ -249,7 +249,7 @@ pan-tilt blob-tracking camera</td>
 <td>@ref driver_cmucam2</td>
 </tr>
 
-
+<!--
 <tr>
 <td>Various</td>
 <td>Generic Linux sound hardware. Performs Fast Fourier Transform on incoming 
@@ -270,7 +270,7 @@ audio data and emits various tones.</td>
 receive raw audio signals.</td>
 <td>@ref driver_waveaudio</td>
 </tr>
-
+-->
 <tr>
 <td>Various</td>
 <td>Generic Linux wireless hardware. Provides access, via /proc, to info about 

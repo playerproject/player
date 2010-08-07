@@ -71,7 +71,7 @@ using namespace Geom2D;
 #define MAXRANGES 10
 /** @ingroup drivers */
 /** @{ */
-/** @defgroup ComponentNavigator MRICP
+/** @defgroup driver_mricp MRICP
  * @brief Map Reference ICP
 
 This is a Map Reference ICP plugin Driver for real time Map building and
@@ -93,25 +93,27 @@ the performance of this driver.
 The MRICP driver provides the following device interfaces, some of
 them named:
 
-- "Position" @ref player_interface_position
+- @ref interface_position2d
   - This interface returns odometry data.
-- "Opaque"   @ref player_icp_plugin_interface
-  - This is a dummy interface supporting requests and commands to the ICP / TODO
-- "Map"   @ref player_map_interface
+- @ref interface_map
   - This interface supports map data requests / TODO
 
-@par Supported configuration requests
+@par Requires
 
-- "Position" @ref player_interface_position:
-  - PLAYER_POSITION_SET_ODOM_REQ
-  - PLAYER_POSITION_RESET_ODOM_REQ
-  - PLAYER_POSITION_GET_GEOM_REQ
-  - "Map" @ref player_interface_map:
-  - PLAYER_POSITION_GET_GEOM_DATA
-- @ref player_icp_plugin_interface (not clear now, i will know it later)
-  - PLAYER_ICP_X_REQ
-  - PLAYER_ICP_Y_REQ
+-@ref interface_laser
+@ref interface_position2d
 
+@par Configuration requests
+
+- @ref interface_position2d
+  - PLAYER_POSITION2D_REQ_SET_ODOM
+  - PLAYER_POSITION2D_REQ_RESET_ODOM
+  - PLAYER_POSITION2D_REQ_GET_GEOM
+  - PLAYER_POSITION2D_REQ_MOTOR_POWER
+
+- @ref interface_map
+  - PLAYER_MAP_REQ_GET_INFO
+  - PLAYER_MAP_REQ_GET_DATA
 
 @par Configuration file options
 
