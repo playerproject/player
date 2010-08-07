@@ -53,13 +53,22 @@ The camerav4l2 driver captures images from V4L2-compatible cameras.
   - Default: "/dev/video0"
   - Device to read video data from.
 
+- geode (integer)
+  - Default: 0
+  - Set to 1 for SoC camera on AMD Geode.
+
+- i2c (string)
+  - Default: "/dev/i2c-0"
+  - i2C device for changing sources on AMD Geode (see below).
+
 - sources (integer tuple)
   - Default: NONE
   - Some capture cards have few multiple input sources; use this field to
     select which ones are used. You should define as many provided camera
-    interfaces as the number of sources is given here. Source channel
-    numbers are used as keys ('ch' prefixed) in 'provides' tuple.
-  - If not given, channel 0 alone will be used by default.
+    interfaces as the number of sources is given for this option. Source
+    channel numbers are used as keys ('ch' prefixed) in 'provides' tuple.
+  - If not given, channel 0 alone will be used by default
+    (channel 1 alone will be used by default for AMD Geode).
   - Note that switching between channels takes time. Framerate drops
     dramatically whenever more than one channel is used.
 
@@ -77,17 +86,18 @@ The camerav4l2 driver captures images from V4L2-compatible cameras.
     not support the requested size).
 
 - mode (string)
-  - Default: "BGR3"
+  - Default: "BGR3" ("YUYV" for AMD Geode)
   - Desired capture mode.  Can be one of:
     - GREY (8-bit monochrome)
     - RGBP (16-bit packed; will produce 24-bit color images)
+    - YUYV (16-bit packed, will produce 24-bit color images)
     - BGR3, RGB3 (24-bit RGB)
     - BGR4, RGB4 (32-bit RGB)
     - BA81 (for sn9c1xx-based USB webcams; will produce 24-bit color images)
     - MJPG (for webcams producing MJPEG streams not decompressed by V4L2 driver)
 
 - buffers (integer)
-  - Default: 2
+  - Default: 2 (3 for AMD Geode)
   - Number of buffers to use for grabbing. This reduces latency, but also
       potentially reduces throughput. Use this if you are reading slowly
       from the player driver and do not want to get stale frames.
@@ -194,6 +204,7 @@ driver
 /** @} */
 
 #include "v4l2.h"
+#include "geode.h"
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -228,11 +239,12 @@ class CameraV4L2: public ThreadedDriver
     // Main function for device thread.
     virtual void Main();
     int useSource();
-    int setSource();
+    int setSource(int wait);
     int prepareData(player_camera_data_t * data, int sw);
 
     int started;
     const char * port;
+    const char * i2c;
     const char * mode;
     int buffers;
     int sources_count;
@@ -252,6 +264,7 @@ class CameraV4L2: public ThreadedDriver
     int request_only;
     int failsafe;
     int jpeg;
+    int geode;
 };
 
 CameraV4L2::CameraV4L2(ConfigFile * cf, int section)
@@ -263,6 +276,7 @@ CameraV4L2::CameraV4L2(ConfigFile * cf, int section)
 
   this->started = 0;
   this->port = NULL;
+  this->i2c = NULL;
   this->mode = NULL;
   this->buffers = 0;
   this->sources_count = 0;
@@ -280,14 +294,16 @@ CameraV4L2::CameraV4L2(ConfigFile * cf, int section)
   this->request_only = 0;
   this->failsafe = 0;
   this->jpeg = 0;
+  this->geode = 0;
   memset(this->sources, 0, sizeof this->sources);
   memset(this->camera_addrs, 0, sizeof this->camera_addrs);
+  this->geode = cf->ReadInt(section, "geode", 0);
   this->sources_count = cf->GetTupleCount(section, "sources");
   if (((this->sources_count) <= 0) || ((this->sources_count) > MAX_CHANNELS))
   {
-    PLAYER_WARN("Implicitly using channel 0");
     this->sources_count = 1;
-    this->sources[0] = 0;
+    this->sources[0] = (this->geode) ? 1 : 0;
+    PLAYER_WARN1("Implicitly using channel %d", this->sources[0]);
     if (cf->ReadDeviceAddr(&(this->camera_addrs[0]), section, "provides",
                            PLAYER_CAMERA_CODE, -1, NULL))
     {
@@ -336,7 +352,13 @@ CameraV4L2::CameraV4L2(ConfigFile * cf, int section)
     this->SetError(-1);
     return;
   }
-  this->mode = cf->ReadString(section, "mode", "BGR3");
+  this->i2c = cf->ReadString(section, "i2c", "/dev/i2c-0");
+  if (!(this->i2c))
+  {
+    this->SetError(-1);
+    return;
+  }
+  this->mode = cf->ReadString(section, "mode", (this->geode) ? "YUYV" : "BGR3");
   if (!(this->mode))
   {
     this->SetError(-1);
@@ -347,6 +369,10 @@ CameraV4L2::CameraV4L2(ConfigFile * cf, int section)
     this->format = PLAYER_CAMERA_FORMAT_MONO8;
     this->bpp = 8;
   } else if (!(strcmp(this->mode, "RGBP")))
+  {
+    this->format = PLAYER_CAMERA_FORMAT_RGB888;
+    this->bpp = 24;
+  } else if (!(strcmp(this->mode, "YUYV")))
   {
     this->format = PLAYER_CAMERA_FORMAT_RGB888;
     this->bpp = 24;
@@ -408,6 +434,15 @@ CameraV4L2::CameraV4L2(ConfigFile * cf, int section)
     this->width = 320;
     this->height = 240;
   }
+  if (this->geode)
+  {
+    if (strcmp(this->norm, "NTSC"))
+    {
+      PLAYER_ERROR("Set NTSC for AMD Geode");
+      this->SetError(-1);
+      return;
+    }
+  }
   if (cf->GetTupleCount(section, "size") == 2)
   {
     this->width = cf->ReadTupleInt(section, "size", 0, this->width);
@@ -418,7 +453,7 @@ CameraV4L2::CameraV4L2(ConfigFile * cf, int section)
     this->SetError(-1);
     return;
   }
-  this->buffers = cf->ReadInt(section, "buffers", 2);
+  this->buffers = cf->ReadInt(section, "buffers", (this->geode) ? 3 : 2);
   if ((this->buffers) <= 0)
   {
     this->SetError(-1);
@@ -447,33 +482,43 @@ CameraV4L2::~CameraV4L2()
   this->fg = NULL;
 }
 
-int CameraV4L2::setSource()
+int CameraV4L2::setSource(int wait)
 {
   int dropped = 0;
   double start_time, t;
   struct timespec tspec;
+  int selected;
 
-  if (set_channel(this->fg, this->sources[this->current_source], this->norm) < 0)
+  if (this->started) return -1;
+  if (this->geode) selected = geode_select_cam(this->i2c, this->sources[this->current_source]);
+  else selected = set_channel(this->fg, this->sources[this->current_source], this->norm);
+  if (selected < 0)
   {
     PLAYER_ERROR1("Cannot set channel %d", this->sources[this->current_source]);
     return -1;
   }
-  if (start_grab(this->fg) < 0)
-  {
-    PLAYER_ERROR1("Cannot start grab on channel %d", this->sources[this->current_source]);
-    return -1;
-  }
-  this->started = !0;
-  GlobalTime->GetTimeDouble(&start_time);
-  for (;;)
+  if (wait)
   {
     tspec.tv_sec = 0;
     tspec.tv_nsec = this->sleep_nsec;
     nanosleep(&tspec, NULL);
-    GlobalTime->GetTimeDouble(&t);
-    if (((t - start_time) >= (this->settle_time)) && (dropped >= (this->skip_frames))) break;
-    if (!(get_image(this->fg))) PLAYER_WARN("No frame grabbed");
-    dropped++;
+    if (start_grab(this->fg) < 0)
+    {
+      PLAYER_ERROR1("Cannot start grab on channel %d", this->sources[this->current_source]);
+      return -1;
+    }
+    this->started = !0;
+    GlobalTime->GetTimeDouble(&start_time);
+    for (;;)
+    {
+      tspec.tv_sec = 0;
+      tspec.tv_nsec = this->sleep_nsec;
+      nanosleep(&tspec, NULL);
+      GlobalTime->GetTimeDouble(&t);
+      if (((t - start_time) >= (this->settle_time)) && (dropped >= (this->skip_frames))) break;
+      if (!(get_image(this->fg))) PLAYER_WARN("No frame grabbed");
+      dropped++;
+    }
   }
   return 0;
 }
@@ -491,7 +536,7 @@ int CameraV4L2::useSource()
     if ((this->next_source) >= (this->sources_count)) this->next_source = 0;
   }
   if (((this->current_source) < 0) || ((this->current_source) >= (this->sources_count))) return -1;
-  if (this->setSource() < 0) return -1;
+  if (this->setSource(!0) < 0) return -1;
   return 0;
 }
 
@@ -500,7 +545,8 @@ int CameraV4L2::useSource()
 int CameraV4L2::MainSetup()
 {
   assert((!(this->fg)) && (!(this->started)));
-  this->fg = open_fg(this->port, this->mode, this->width, this->height, (this->bpp) / 8, this->buffers);
+  if (this->geode) this->fg = geode_open_fg(this->port, this->mode, this->width, this->height, (this->bpp) / 8, this->buffers);
+  else this->fg = open_fg(this->port, this->mode, this->width, this->height, (this->bpp) / 8, this->buffers);
   if (!(this->fg)) return -1;
   return this->useSource();
 }
@@ -536,7 +582,7 @@ void CameraV4L2::Main()
     pthread_testcancel();
 
     // Process any pending requests.
-    ProcessMessages();
+    this->ProcessMessages();
 
     data = reinterpret_cast<player_camera_data_t *>(malloc(sizeof(player_camera_data_t)));
     if (!data)
@@ -678,6 +724,7 @@ int CameraV4L2::ProcessMessage(QueuePointer & resp_queue,
   char previousNorm[MAX_NORM_LEN + 1];
   int previousSource;
   int i;
+  struct timespec tspec;
 
   assert(hdr);
   if ((this->sources_count) == 1)
@@ -712,28 +759,34 @@ int CameraV4L2::ProcessMessage(QueuePointer & resp_queue,
       this->sources[this->current_source] = src->source;
       if (this->started) stop_grab(this->fg);
       this->started = 0;
-      if (this->setSource())
+      if (this->setSource(0))
       {
         this->Publish(this->camera_addrs[0],
                       resp_queue,
                       PLAYER_MSGTYPE_RESP_NACK,
                       PLAYER_CAMERA_REQ_SET_SOURCE,
                       data);
-        if (this->started) stop_grab(this->fg);
-        this->started = 0;
+        assert(!(this->started));
       } else
       {
         this->Publish(this->camera_addrs[0],
                       resp_queue,
-                      (this->started) ? PLAYER_MSGTYPE_RESP_ACK : PLAYER_MSGTYPE_RESP_NACK,
+                      PLAYER_MSGTYPE_RESP_ACK,
                       PLAYER_CAMERA_REQ_SET_SOURCE,
                       data);
+        assert(!(this->started));
+        // this takes too long time, so let's call it after request response:
+        tspec.tv_sec = 0;
+        tspec.tv_nsec = this->sleep_nsec;
+        nanosleep(&tspec, NULL);
+        if (start_grab(this->fg) < 0) PLAYER_ERROR1("Cannot start grab on channel %d", this->sources[this->current_source]);
+        else this->started = !0;
       }
       if (!(this->started))
       {
         snprintf(this->norm, sizeof this->norm, "%s", previousNorm);
         this->sources[this->current_source] = previousSource;
-        if (this->setSource()) PLAYER_ERROR("Cannot switch back to previous channel!");
+        if (this->setSource(!0)) PLAYER_ERROR("Cannot switch back to previous channel!");
       }
       return 0;
     }

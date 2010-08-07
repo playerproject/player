@@ -17,13 +17,51 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
+///////////////////////////////////////////////////////////////////////////
+//
+// Desc: Video4Linux2 routines for camerav4l2 driver
+// Author: Paul Osmialowski
+//
+///////////////////////////////////////////////////////////////////////////
 
 #ifndef _V4L2_H
 #define _V4L2_H
 
+#include <sys/types.h>
+#include <linux/videodev2.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#define v4l2_fmtbyname(name) v4l2_fourcc((name)[0], (name)[1], (name)[2], (name)[3])
+
+#define REQUEST_BUFFERS 4
+
+struct fg_struct
+{
+ int dev_fd;
+ int grabbing;
+ int grab_number;
+ int depth;
+ int buffers_num;
+ unsigned int pixformat;
+ int r, g, b;
+ struct buff_struct
+ {
+  struct v4l2_buffer buffer;
+  unsigned char * video_map;
+ } buffers[REQUEST_BUFFERS];
+ int width;
+ int height;
+ int pixels;
+ int imgdepth;
+ unsigned char * bayerbuf;
+ int bayerbuf_size;
+ unsigned char * image;
+};
+
+#define FG(ptr) ((struct fg_struct *)(ptr))
 
 extern void * open_fg(const char * dev, const char * pixformat, int width, int height, int imgdepth, int buffers);
 extern void close_fg(void * fg);
