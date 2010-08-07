@@ -17,6 +17,12 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
+///////////////////////////////////////////////////////////////////////////
+//
+// Desc: Video4Linux2 routines for camerav4l2 driver
+// Author: Paul Osmialowski
+//
+///////////////////////////////////////////////////////////////////////////
 
 #include "v4l2.h"
 #include "bayer.h"
@@ -31,36 +37,7 @@
 #include <sys/mman.h>
 #include <sys/ioctl.h>
 
-#define v4l2_fmtbyname(name) v4l2_fourcc((name)[0], (name)[1], (name)[2], (name)[3])
-
 #define FAIL -1
-
-#define REQUEST_BUFFERS 4
-
-struct fg_struct
-{
- int dev_fd;
- int grabbing;
- int grab_number;
- int depth;
- int buffers_num;
- unsigned int pixformat;
- int r, g, b;
- struct buff_struct
- {
-  struct v4l2_buffer buffer;
-  unsigned char * video_map;
- } buffers[REQUEST_BUFFERS];
- int width;
- int height;
- int pixels;
- int imgdepth;
- unsigned char * bayerbuf;
- int bayerbuf_size;
- unsigned char * image;
-};
-
-#define FG(ptr) ((struct fg_struct *)(ptr))
 
 int fg_width(void * fg)
 {
@@ -158,17 +135,30 @@ void stop_grab(void * fg)
  }
 }
 
+#define CLIP(c) ((unsigned char)(((c) > 0xff) ? 0xff : (((c) < 0) ? 0 : (c))))
+
 unsigned char * get_image(void * fg)
 {
  enum v4l2_buf_type type;
  int i, grabdepth;
+ int u, v, u1, rg, v1;
  const unsigned char * buf;
  unsigned char * img;
  int count, insize;
+ int fit;
  unsigned char table5[] = { 0, 8, 16, 25, 33, 41, 49,  58, 66, 74, 82, 90, 99, 107, 115, 123, 132, 140, 148, 156, 165, 173, 181, 189,  197, 206, 214, 222, 230, 239, 247, 255 };
  unsigned char table6[] = { 0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 45, 49, 53, 57, 61, 65, 69, 73, 77, 81, 85, 89, 93, 97, 101,  105, 109, 113, 117, 121, 125, 130, 134, 138, 142, 146, 150, 154, 158, 162, 166, 170, 174, 178, 182, 186, 190, 194, 198, 202, 206, 210, 215, 219, 223, 227, 231, 235, 239, 243, 247, 251, 255 };
 
- if ((!(FG(fg)->grabbing)) || (!(FG(fg)->image))) return NULL;
+ if (!(FG(fg)->grabbing))
+ {
+   fprintf(stderr, "grabbing not started\n");
+   return NULL;
+ }
+ if (!(FG(fg)->image))
+ {
+   fprintf(stderr, "image not allocated\n");
+   return NULL;
+ }
  memset(&(FG(fg)->buffers[FG(fg)->grab_number].buffer), 0, sizeof FG(fg)->buffers[FG(fg)->grab_number].buffer);
  FG(fg)->buffers[FG(fg)->grab_number].buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
  FG(fg)->buffers[FG(fg)->grab_number].buffer.memory = V4L2_MEMORY_MMAP;
@@ -184,25 +174,62 @@ unsigned char * get_image(void * fg)
   return NULL;
  }
  grabdepth = FG(fg)->depth;
+ fit = 0;
  if ((FG(fg)->pixformat) == v4l2_fmtbyname("BA81"))
  {
-  if (!(FG(fg)->bayerbuf)) return NULL;
+  if (!(FG(fg)->bayerbuf))
+  {
+    fprintf(stderr, "BA81: no buffer allocated\n");
+    return NULL;
+  }
   bayer2rgb24(FG(fg)->bayerbuf, FG(fg)->buffers[FG(fg)->grab_number].video_map, FG(fg)->width, FG(fg)->height);
   buf = FG(fg)->bayerbuf;
   grabdepth = 3;
+  if (grabdepth == (FG(fg)->imgdepth)) fit = !0;
  } else if ((FG(fg)->pixformat) == v4l2_fmtbyname("RGBP"))
  {
-  if (!(FG(fg)->bayerbuf)) return NULL;
+  if (!(FG(fg)->bayerbuf))
+  {
+    fprintf(stderr, "RGBP: no buffer allocated\n");
+    return NULL;
+  }
   img = FG(fg)->bayerbuf;
   for (i = 0; i < (FG(fg)->pixels); i++)
   {
-    img[0] = table5[(buf[1]) >> 3];
-    img[1] = table6[(((buf[1]) & 7) << 3) | ((buf[0]) >> 5)];
-    img[2] = table5[(buf[0]) & 0xe0];
-    img += 3; buf += 2;
+   img[0] = table5[(buf[1]) >> 3];
+   img[1] = table6[(((buf[1]) & 7) << 3) | ((buf[0]) >> 5)];
+   img[2] = table5[(buf[0]) & 0xe0];
+   img += 3; buf += 2;
   }
   buf = FG(fg)->bayerbuf;
   grabdepth = 3;
+  if (grabdepth == (FG(fg)->imgdepth)) fit = !0;
+ } else if ((FG(fg)->pixformat) == v4l2_fmtbyname("YUYV"))
+ {
+  if (!(FG(fg)->bayerbuf))
+  {
+    fprintf(stderr, "YUYV: no buffer allocated\n");
+    return NULL;
+  }
+  img = FG(fg)->bayerbuf;
+  for (i = 0; i < (FG(fg)->pixels); i += 2)
+  {
+   u = buf[1];
+   v = buf[3];
+   u1 = (((u - 128) << 7) + (u - 128)) >> 6;
+   rg = (((u - 128) << 1) + (u - 128) + ((v - 128) << 2) + ((v - 128) << 1)) >> 3;
+   v1 = (((v - 128) << 1) + (v - 128)) >> 1;
+   img[0] = CLIP(buf[0] + v1);
+   img[1] = CLIP(buf[0] - rg);
+   img[2] = CLIP(buf[0] + u1);
+   img[3] = CLIP(buf[2] + v1);
+   img[4] = CLIP(buf[2] - rg);
+   img[5] = CLIP(buf[2] + u1);
+   img += 6; buf += 4;
+  }
+  buf = FG(fg)->bayerbuf;
+  grabdepth = 3;
+  if (grabdepth == (FG(fg)->imgdepth)) fit = !0;
  }
  img = FG(fg)->image;
  if ((FG(fg)->pixformat) == v4l2_fmtbyname("MJPG"))
@@ -219,19 +246,19 @@ unsigned char * get_image(void * fg)
   }
   if (insize > 1)
   {
-    memcpy(img, &insize, sizeof(int));
-    memcpy(img + sizeof(int), buf, insize);
+   memcpy(img, &insize, sizeof(int));
+   memcpy(img + sizeof(int), buf, insize);
   } else
   {
-    fprintf(stderr, "Internal error\n");
-    return NULL;
+   fprintf(stderr, "Internal error\n");
+   return NULL;
   }
- } else for (i = 0; i < (FG(fg)->pixels); i++)
+ } else if (!fit) for (i = 0; i < (FG(fg)->pixels); i++)
  {
-  switch(FG(fg)->imgdepth)
+  switch (FG(fg)->imgdepth)
   {
   case 1:
-   switch(grabdepth)
+   switch (grabdepth)
    {
    case 1:
     img[0] = buf[0];
@@ -248,7 +275,7 @@ unsigned char * get_image(void * fg)
    }
    break;
   case 3:
-   switch(grabdepth)
+   switch (grabdepth)
    {
    case 1:
     img[0] = buf[0];
@@ -271,7 +298,7 @@ unsigned char * get_image(void * fg)
    }
    break;
   case 4:
-   switch(grabdepth)
+   switch (grabdepth)
    {
    case 1:
     img[0] = buf[0];
@@ -307,7 +334,9 @@ unsigned char * get_image(void * fg)
  ioctl(FG(fg)->dev_fd, VIDIOC_STREAMON, &type);
  FG(fg)->grab_number++;
  if ((FG(fg)->grab_number) >= (FG(fg)->buffers_num)) FG(fg)->grab_number = 0;
- return FG(fg)->image;
+ img = fit ? (FG(fg)->bayerbuf) : (FG(fg)->image);
+ if (!img) fprintf(stderr, "Internal error: NULL\n");
+ return img;
 }
 
 void * open_fg(const char * dev, const char * pixformat, int width, int height, int imgdepth, int buffers)
