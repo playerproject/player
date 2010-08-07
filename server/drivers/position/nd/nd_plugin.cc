@@ -48,7 +48,7 @@ device.  The two @ref interface_position2d devices can be the same.
 At least one device of type @ref interface_laser or @ref interface_sonar must
 be provided.
 
-The driver itself supports the @interface_position2d interface.  Send
+The driver itself supports the @ref interface_position2d interface.  Send
 @ref PLAYER_POSITION2D_CMD_POS commands to set the goal pose.  The driver
 also accepts @ref PLAYER_POSITION2D_CMD_VEL commands, simply passing them
 through to the underlying output device.

@@ -47,7 +47,7 @@ typedef struct player_wsn_node_data
   float battery;
 } player_wsn_node_data_t;
 
-/** @brief Data (@ref PLAYER_WSN_DATA)
+/** @brief Data (@ref PLAYER_WSN_DATA_STATE)
 
 The WSN data packet describes a wireless sensor network node.                   */
 typedef struct player_wsn_data

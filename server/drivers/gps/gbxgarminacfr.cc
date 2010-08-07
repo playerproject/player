@@ -44,7 +44,8 @@ should include most GPS devices that use NMEA to communicate.
 
 @par Provides
 
-- @ref interface_gps: Output GPS interface
+- @ref interface_gps
+  - Output GPS interface
 
 @par Supported configuration requests
 

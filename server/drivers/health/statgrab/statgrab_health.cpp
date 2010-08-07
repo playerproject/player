@@ -34,7 +34,7 @@ The @p health driver allows for a user to get general systems data concerning a 
 Allows a user to look at cpu and memory usage of the robot.
 
 @par Provides
-- @ref player_interface_health : Interface to the health
+- @ref interface_health : Interface to the health
 
 
 @par Configuration file options:
@@ -50,12 +50,23 @@ memory usage. Documentation on this library can be found at: http://www.i-scream
 @par Example: The following configuration file should demonstrate the use of this
 driver.
 
-@include health.cfg
+@verbatim
+driver
+(
+  name "statgrab"
+  provides ["health:0"]
+  frequency 10
+)
+@endverbatim
 
 @todo
 - Test this code more!
 - Allow for the driver to return the temperature of the system in multiple location of the robot.
 - Also allow for the battery voltage to be monitored.
+
+@author Raphael Sznitman
+@date 23.06.200
+
 */
 
 /** @} */

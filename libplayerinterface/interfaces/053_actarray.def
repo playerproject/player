@@ -157,7 +157,7 @@ typedef struct player_actarray_multi_speed_cmd
   float *speeds;
 } player_actarray_multi_speed_cmd_t;
 
-/** @brief Command: Joint home (@ref PLAYER_CMD_ACTARRAY_HOME)
+/** @brief Command: Joint home (@ref PLAYER_ACTARRAY_CMD_HOME)
 
 Tells a joint/actuator (or the whole array) to go to home position. */
 typedef struct player_actarray_home_cmd

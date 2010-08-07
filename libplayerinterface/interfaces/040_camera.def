@@ -59,7 +59,7 @@ typedef struct player_camera_data
 
 /** @brief Request/reply: Get/set current source.
 
-Send a @ref PLAYER_CAMEARA_REQ_SET_SOURCE request change image source
+Send a @ref PLAYER_CAMERA_REQ_SET_SOURCE request change image source
 (assuming your hardware supports it). */
 typedef struct player_camera_source
 {

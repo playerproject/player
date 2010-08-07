@@ -90,18 +90,18 @@ typedef struct player_simulation_pose3d_req
 
 /** @brief Request/reply: get/set a property of a named simulation object
 
-@par To retrieve an property of an object in a simulator, send a @ref
+To retrieve an property of an object in a simulator, send a @ref
 PLAYER_SIMULATION_REQ_GET_PROPERTY request. The server will reply with
 the value array filled in. The type of the data varies by property and
 it is up to the caller to cast the data to the correct type: see the
 warning below.
 
-@par To set a property, send a completely filled in @ref
+To set a property, send a completely filled in @ref
 PLAYER_SIMULATION_REQ_SET_PROPERTY request. The server will respond
 with an ACK if the property was successfully set to your value, else a
 NACK.
 
-@par **WARNING** Types are architecture-dependent, so this feature may
+**WARNING** Types are architecture-dependent, so this feature may
 not work correctly if the simulator is running on a different
 architecture than your client. The value bytes are transmitted as a
 raw binary object: no architecture-specific type conversions are

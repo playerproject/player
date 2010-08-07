@@ -45,7 +45,7 @@ typedef enum player_graphics3d_draw_mode
 
 /** @brief Requests: This interface accepts no requests. */
 
-/** @brief Command: Draw points (@ref PLAYER_GRAPHICS3D_CMD_POINTS)
+/** @brief Command: Draw points (@ref PLAYER_GRAPHICS3D_CMD_DRAW)
 Draw some points.
 */
 typedef struct player_graphics3d_cmd_draw

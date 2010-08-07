@@ -35,7 +35,7 @@ typedef struct player_bumper_define
 /** @brief Data AND Request/reply: bumper geometry
 
 To query the geometry of a bumper array, send a null
-@ref PLAYER_BUMPER_GET_GEOM request.  The response will be in this form.  This
+@ref PLAYER_BUMPER_REQ_GET_GEOM request.  The response will be in this form.  This
 message may also be sent as data with the subtype @ref PLAYER_BUMPER_DATA_GEOM
 (e.g., from a robot whose bumper can move with respect to its body)
 */

@@ -1,88 +1,88 @@
-/* -*- Mode: C; tab-width: 2; c-basic-offset: 2; indent-tabs: t -*- */
+/*
+ *  KartoWriter.
+ *  Copyright (C) 2007, SRI International.  All Rights Reserved.
+ *
+ *  This program is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU General Public License
+ *  as published by the Free Software Foundation; either version 2
+ *  of the License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *
+ *  Author(s): Regis Vincent (vincent@ai.sri.com)
+ */
 
-/**
-	* KartoWriter.
-	* Copyright (C) 2007, SRI International.  All Rights Reserved.
-    *
-	* This program is free software; you can redistribute it and/or
-	* modify it under the terms of the GNU General Public License
-	* as published by the Free Software Foundation; either version 2
-	* of the License, or (at your option) any later version.
-    *
-	* This program is distributed in the hope that it will be useful,
-	* but WITHOUT ANY WARRANTY; without even the implied warranty of
-	* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	* GNU General Public License for more details.
-    *
-	* You should have received a copy of the GNU General Public License
-	* along with this program; if not, write to the Free Software
-	* Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-    *
-	*  Author(s): Regis Vincent (vincent@ai.sri.com)
-	**/
 /** @ingroup drivers */
 /** @{ */
-/** @defgroup driver_logger
-	* @brief Karto logger plugin
+/** @defgroup driver_kartowriter kartowriter 
+* @brief Karto logger plugin
 
-	@par Compile-time dependencies
+@par Compile-time dependencies
 
-	- none
+- none
 
-	@par Provides
+@par Provides
 
-	- @ref log
+- @ref interface_log
 
-	@par Requires
+@par Requires
 
-	- laser sonar position2d
+- @ref interface_laser
+- @ref interface_sonar 
+- @ref interface_position2d
 
-	@par Configuration requests
+@par Configuration requests
 
-	- autorecord (boolean)
-		- default: 1 (enable)
-		- activate the logging at startup, to disable it, use 0
+- autorecord (boolean)
+  - default: 1 (enable)
+  - activate the logging at startup, to disable it, use 0
 
-	- gzip (boolean)
-		- default: 0 (disable)
-		- compress the log file
+- gzip (boolean)
+  - default: 0 (disable)
+  - compress the log file
 
-	@par Configuration file options
-	- file (string)
-	- Default: "output.xml"
-	- where to log
+@par Configuration file options
+- file (string)
+- Default: "output.xml"
+- where to log
 
-	@par Configuration requests
+@par Configuration requests
 
-	- PLAYER_LOG_SET_WRITE_STATE
-	- PLAYER_LOG_GET_STATE
-	- PLAYER_LOG_SET_FILENAME (not yet implemented)
+- PLAYER_LOG_SET_WRITE_STATE
+- PLAYER_LOG_GET_STATE
+- PLAYER_LOG_SET_FILENAME (not yet implemented)
 
-	@par Example
+@par Example
 
-	@verbatim
-	driver
-	(
-	name "readlog"
-	filename  "jwing.log"
-	speed 1
-	provides ["log:0" "laser:0" "laser:1" "position2d:0"]
-	autoplay 1
-	alwayson 1
-	)
+@verbatim
+driver
+(
+  name "readlog"
+  filename  "jwing.log"
+  speed 1
+  provides ["log:0" "laser:0" "laser:1" "position2d:0"]
+  autoplay 1
+  alwayson 1
+)
 
-	driver
-	(
-	name "kartowriter"
-	plugin "libkartowriter_plugin"
-	requires [ "laser:0" "laser:1" "position2d:0"]
-	provides ["log:1" ]
-	file "output.xml"
-	alwayson 1
-	)
+driver
+(
+  name "kartowriter"
+  requires [ "laser:0" "laser:1" "position2d:0"]
+  provides ["log:1" ]
+  file "output.xml"
+  alwayson 1
+)
 @endverbatim
 
-	@author Regis Vincent
+@author Regis Vincent
 
 */
 /** @} */

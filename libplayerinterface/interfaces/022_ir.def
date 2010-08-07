@@ -32,7 +32,7 @@ typedef struct player_ir_data
 
 /** @brief Request/reply: get pose
 
-To query the pose of the IRs, send a null @ref PLAYER_IR_POSE request.*/
+To query the pose of the IRs, send a null @ref PLAYER_IR_REQ_POSE request.*/
 typedef struct player_ir_pose
 {
   /** the number of ir samples returned by this robot */
@@ -43,7 +43,7 @@ typedef struct player_ir_pose
 
 /** @brief Request/reply: set power
 
-To turn IR power on and off, send a @ref PLAYER_IR_POWER request.
+To turn IR power on and off, send a @ref PLAYER_IR_REQ_POWER request.
 Null response. */
 typedef struct player_ir_power_req
 {

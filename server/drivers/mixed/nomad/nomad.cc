@@ -43,7 +43,7 @@ that came with it. Before running player, you should ld the module i200m
 The p2os driver provides the following device interfaces, some of them named:
 
 - @ref interface_position2d
-- @ref interface_bumber
+- @ref interface_bumper
 - @ref interface_sonar
 - @ref interface_ir
 - "turret" @ref interface_position1d

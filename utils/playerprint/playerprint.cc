@@ -88,7 +88,6 @@ playerprint can print out data for the following kinds of devices:
 - @ref interface_simulation
 - @ref interface_sonar
 - @ref interface_speech
-- @ref interface_truth
 - @ref interface_vectormap
 - @ref interface_wifi
 

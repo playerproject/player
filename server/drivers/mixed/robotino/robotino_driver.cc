@@ -1,4 +1,4 @@
-/*! \mainpage
+/*
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2003
  *     Brian Gerkey
@@ -19,84 +19,89 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
+/*
+ Desc: FESTO Robotino(R) Driver
+ Authors: Simon Kracht and Carsten Nielsen
+ Updated: 2007
+*/
 
-/*! \class RobotinoDriver
- * \brief Class for FESTO Robotino(R) plug-in driver
- * \par Authors:
- * Simon Kracht and Carsten Nielsen
- * Aalborg University, Section for Automation and Control
- * \par Year:
- * 2007
- *
- * Plug-in driver for the FESTO Robotino(R) robot
- *
- * This driver makes use of the open C++ libraries bundled with
- * the FESTO Robotino(R) robot, thus providing access to most
- * of  the robots functionalities.
- *
- * \par Compile-time dependencies:
- *
- * - none
- *
- * \par Name:
- *
- * - robotino_driver
- *
- * \par Provides:
- *
- * - position2d
- * - bumper
- * - ir
- * - power
- * - camera
- *
- * \par Requires:
- *
- * - none
- *
- * \par Configuration requests:
- * \par
- *  \b interface_position2d
- * - PLAYER_POSITION2D_REQ_GET_GEOM
- * - PLAYER_POSITION2D_REQ_SET_ODOM
- * - PLAYER_POSITION2D_REQ_MOTOR_POWER
- *  \par
- *  \b interface_bumper :
- * - PLAYER_BUMPER_REQ_GET_GEOM
- *  \par
- *  \b interface_ir :
- * - PLAYER_IR_REQ_POSE
- *  \b interface_power :
- * - PLAYER_POSITION2D_REQ_MOTOR_POWER
- *
- * \par Configuration file example:
- *
- * \code
- * driver
- * (
- * name "robotino_driver"
- * provides ["position2d:0" "power:0" "bumper:0" "ir:0"]
- *
- * # Options
- * ROBOTINO_TIMEOUT_MS 5000 #default 5000
- * CYCLE_TIME_US 100000     #default 100000
- * )
- *
- * #Camera
- * driver
- * (
- *  name "camerav4l"
- *  provides ["camera:0"]
- *  port "/dev/video0"
- *  source 0
- *  size [176 144]
- *  mode "RGB888"
- * )
- *
- *
- * \endcode
- *
- */
+/** @ingroup drivers */
+/** @{ */
+/** @defgroup driver_robotino robotino
+ * @brief FESTO Robotino(R) robot
+ 
+Driver for the FESTO Robotino(R) robot
+
+This driver makes use of the open C++ libraries bundled with
+the FESTO Robotino(R) robot, thus providing access to most
+of the robot's functionalities.
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+- @ref interface_position2d
+- @ref interface_bumper
+- @ref interface_ir
+- @ref interface_power
+
+@par Requires
+
+- none
+
+@par Configuration requests
+ 
+- @ref interface_position2d
+  - PLAYER_POSITION2D_REQ_GET_GEOM
+  - PLAYER_POSITION2D_REQ_SET_ODOM
+  - PLAYER_POSITION2D_REQ_MOTOR_POWER
+- @ref interface_bumper
+  - PLAYER_BUMPER_REQ_GET_GEOM
+- @ref interface_ir :
+  - PLAYER_IR_REQ_POSE
+- @ref interface_power :
+  - PLAYER_POSITION2D_REQ_MOTOR_POWER
+
+@par Configuration File options
+- ROBOTINO_TIMEOUT_MS
+  - Default: 5000
+  - How long to wait before a communication timeout, in milliseconds
+-CYCLE_TIME_US
+  - Default: 100000
+  - How quickly the driver cycles, in microseconds
+
+@par Example
+
+@verbatim
+driver
+ (
+ name "robotino_driver"
+ provides ["position2d:0" "power:0" "bumper:0" "ir:0"]
+
+ # Options
+ ROBOTINO_TIMEOUT_MS 5000 #default 5000
+ CYCLE_TIME_US 100000     #default 100000
+)
+
+#Camera
+driver
+(
+  name "camerav4l"
+  provides ["camera:0"]
+  port "/dev/video0"
+  source 0
+  size [176 144]
+  mode "RGB888"
+)
+
+@endverbatim
+@authors Simon Kracht and Carsten Nielsen, Aalborg University, Section for Automation and Control
+@date 2007
+
+*/
+/** @} */
 
 #include <unistd.h>
 #include <string.h>

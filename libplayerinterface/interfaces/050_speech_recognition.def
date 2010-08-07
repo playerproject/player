@@ -8,7 +8,7 @@ server.
 /** Data subtype: recognized string */
 message { DATA, STRING, 1, player_speech_recognition_data_t };
 
-/** @brief Data: recognized string (@ref PLAYER_SPEECH_MAX_STRING_LEN)
+/** @brief Data: recognized string 
 
 The speech recognition data packet.  */
 typedef struct player_speech_recognition_data

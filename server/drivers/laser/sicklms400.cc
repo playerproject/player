@@ -86,7 +86,7 @@ The sicklms400 driver controls the SICK LMS 400 scanning laser range-finder.
 - range_filter_parameters (float tuple)
   - Default: [700.0 3000.0] (BottomLimit TopLimit)
   - Define a specific range within which measured values are valid and are
-    output. Possible values: [+700.0...+3000.0 <bottom limit>...+3000.0]
+    output. Possible values: [+700.0...+3000.0 (bottom limit)...+3000.0]
 
 - mean_filter_parameter (integer)
   - Default: 2.

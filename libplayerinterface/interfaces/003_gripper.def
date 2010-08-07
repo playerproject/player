@@ -59,7 +59,7 @@ message { CMD, RETRIEVE, 5, NULL };
 The @p gripper interface returns the current state of the gripper
 and information on a potential object in the gripper.
 state may be @ref PLAYER_GRIPPER_STATE_OPEN, @ref PLAYER_GRIPPER_STATE_CLOSED,
-@ref PLAYER_GRIPPER_STAGE_MOVING or @ref PLAYER_GRIPPER_STATE_ERROR.
+@ref PLAYER_GRIPPER_STATE_MOVING or @ref PLAYER_GRIPPER_STATE_ERROR.
 beams provides information on how far into the gripper an object is. For most
 grippers, this will be a bit mask, with each bit representing whether a beam
 has been interrupted or not.

@@ -28,7 +28,7 @@ This driver implements the metric-based ICP scan-matching algorithm.
 
 J. Minguez, L. Montesano, and F. Lamiraux, "Metric-based iterative
 closest point scan matching for sensor displacement estimation," IEEE
-Transactions on Robotics, vol. 22, no. 5, pp. 1047 \u2013 1054, 2006.
+Transactions on Robotics, vol. 22, no. 5, pp. 1047-1054, 2006.
 
 @par Compile-time dependencies
 

@@ -9,7 +9,7 @@ subsystem.
 message { DATA, STATE, 1, player_power_data_t };
 
 /** Request subtype: set charging policy */
-message { REQ, SET_CHARGING_POLICY_REQ, 1, player_power_chargepolicy_config_t };
+message { REQ, SET_CHARGING_POLICY, 1, player_power_chargepolicy_config_t };
 
 /** bit masks for the  player_power_data_t mask field */
 #define PLAYER_POWER_MASK_VOLTS 1
@@ -48,14 +48,14 @@ typedef struct player_power_data
 
 /** @brief Request/reply: set charging policy
  *
- * Send a @ref PLAYER_ENERGY_SET_CHARGING_POLICY_REQ request to change the
+ * Send a @ref PLAYER_POWER_REQ_SET_CHARGING_POLICY request to change the
  * charging policy. */
 typedef struct player_power_chargepolicy_config
 {
-  /** uint8_tean controlling recharging. If FALSE, recharging is
+  /** boolean controlling recharging. If FALSE, recharging is
       disabled. Defaults to TRUE */
   uint8_t enable_input;
-  /** uint8_tean controlling whether others can recharge from this
+  /** boolean controlling whether others can recharge from this
       device. If FALSE, charging others is disabled. Defaults to TRUE.*/
   uint8_t enable_output;
 } player_power_chargepolicy_config_t;

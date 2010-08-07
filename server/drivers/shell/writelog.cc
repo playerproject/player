@@ -1007,9 +1007,9 @@ WriteLog::WriteLocalizeParticles()
 
 
 /** @ingroup tutorial_datalog
- * @defgroup player_driver_writelog_laser laser format
+ * @defgroup player_driver_writelog_laser Laser format
 
-@brief laser log format
+@brief Laser log format
 
 The following type:subtype laser messages can be logged:
 - 1:1 (PLAYER_LASER_DATA_SCAN) - A scan.  The format is:
@@ -1142,9 +1142,9 @@ WriteLog::WriteLaser(player_msghdr_t* hdr, void *data)
 
 
 /** @ingroup tutorial_datalog
- * @defgroup player_driver_writelog_ranger ranger format
+ * @defgroup player_driver_writelog_ranger Ranger format
 
-@brief ranger log format
+@brief Ranger log format
 
 The following type:subtype ranger messages can be logged:
 - 1:1 (PLAYER_RANGER_DATA_RANGE) - A range scan.  The format is:
@@ -1470,7 +1470,7 @@ WriteLog::WriteRanger(player_msghdr_t* hdr, void *data)
 
 
 /** @ingroup tutorial_datalog
- * @defgroup player_driver_writelog_localize localize format
+ * @defgroup player_driver_writelog_localize Localize format
 
 @brief localize log format
 
@@ -1571,7 +1571,7 @@ WriteLog::WriteLocalize(player_msghdr_t* hdr, void *data)
 }
 
 /** @ingroup tutorial_datalog
- * @defgroup player_driver_writelog_position position2d format
+ * @defgroup player_driver_writelog_position2d Position2d format
 
 @brief position2d log format
 
@@ -1650,7 +1650,7 @@ WriteLog::WritePosition(player_msghdr_t* hdr, void *data)
 
 
 /** @ingroup tutorial_datalog
- @defgroup player_driver_writelog_ptz ptz format
+ @defgroup player_driver_writelog_ptz PTZ format
 
 @brief PTZ log format
 The format for each @ref interface_wsn message is:
@@ -1692,9 +1692,7 @@ WriteLog::WritePTZ (player_msghdr_t* hdr, void *data)
 }
 
 /** @ingroup tutorial_datalog
- @defgroup player_driver_writelog_opaque opaque format
-
- * @defgroup player_driver_writelog_position aio format
+ @defgroup player_driver_writelog_opaque Opaque format
 
 @brief opaque log format
 
@@ -1763,7 +1761,7 @@ WriteLog::WriteOpaque (player_msghdr_t* hdr, void *data)
 }
 
 /** @ingroup tutorial_datalog
- @defgroup player_driver_writelog_sonar sonar format
+ @defgroup player_driver_writelog_sonar Sonar format
 
 @brief sonar log format
 
@@ -2159,7 +2157,7 @@ WriteLog::WriteIMU (player_msghdr_t* hdr, void *data)
 }
 
 /** @ingroup tutorial_datalog
- * @defgroup player_driver_writelog_pointcloud3d pointcloud3d format
+ * @defgroup player_driver_writelog_pointcloud3d Pointcloud3d format
 
 @brief PointCloud3D log format
 
@@ -2204,7 +2202,7 @@ WriteLog::WritePointCloud3d (player_msghdr_t* hdr, void *data)
 }
 
 /** @ingroup tutorial_datalog
- * @defgroup player_driver_writelog_actarray actarray format
+ * @defgroup player_driver_writelog_actarray Actarray format
 
 @brief Actarray log format
 
@@ -2253,7 +2251,7 @@ WriteLog::WriteActarray (player_msghdr_t* hdr, void *data)
 }
 
 /** @ingroup tutorial_datalog
- * @defgroup player_driver_writelog_aio aio format
+ * @defgroup player_driver_writelog_aio AIO format
 
 @brief AIO log format
 
@@ -2294,7 +2292,7 @@ WriteLog::WriteAIO(player_msghdr_t* hdr, void* data)
 }
 
 /** @ingroup tutorial_datalog
- * @defgroup player_driver_writelog_dio dio format
+ * @defgroup player_driver_writelog_dio DIO format
 
 @brief DIO log format
 
@@ -2341,7 +2339,7 @@ WriteLog::WriteDIO(player_msghdr_t* hdr, void* data)
 }
 
 /** @ingroup tutorial_datalog
- * @defgroup player_driver_writelog_rfid rfid format
+ * @defgroup player_driver_writelog_rfid RFID format
 
 @brief RFID log format
 
@@ -2391,6 +2389,17 @@ WriteLog::WriteRFID(player_msghdr_t* hdr, void* data)
       return -1;
   }
 }
+/** @ingroup tutorial_datalog
+ * @defgroup player_driver_writelog_ir IR format
+
+@brief IR log format
+
+The format for each @ref interface_ir message is:
+  - ranges_count (uint): the numer of IR ranges present
+  - list of inputs; for each input:
+    - range (float): Detected range from sensor
+
+ */
 
 int
 WriteLog::WriteIR(player_msghdr_t* hdr, void *data)
@@ -2445,7 +2454,17 @@ WriteLog::WriteIR(player_msghdr_t* hdr, void *data)
 }
 
 
+/** @ingroup tutorial_datalog
+ * @defgroup player_driver_writelog_bumper Bumper format
 
+@brief bumper log format
+
+The format for each @ref interface_bumper message is:
+  - bumper_count (uint): the numer of IR ranges present
+  - list of inputs; for each input:
+    - state (uint): Bumper bumped state
+
+ */
 int
 WriteLog::WriteBumper(player_msghdr_t* hdr, void *data)
 {
@@ -2673,7 +2692,7 @@ int WriteLog::WriteCamera(WriteLogDevice *device, player_msghdr_t* hdr, void *da
 }
 
 /** @ingroup tutorial_datalog
- * @defgroup player_driver_writelog_fiducial fiducial format
+ * @defgroup player_driver_writelog_fiducial Fiducial format
 
 @brief fiducial log format
 

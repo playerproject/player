@@ -20,8 +20,8 @@
 
 /** @ingroup drivers */
 /** @{ */
-/** @defgroup driver_AioToSonar AioToSonar
- * @brief Array of analogue sonar sensors connected to an aio device.
+/** @defgroup driver_aiotosonar AioToSonar
+ * @brief Array of analog sonar sensors connected to an aio device.
 
 The AioToSonar driver offers the sonar interface for a group of
 analogue sonar sensors. It accesses the sensors through an analogue IO
@@ -38,13 +38,14 @@ sensors to a Phidgets Interface Kit.)
 
 @par Requires
 
-  - @ref interface_aio: Offers the voltage values of the sensors.
+  - @ref interface_aio
+    - Offers the voltage values of the sensors.
 
 @par Configuration requests
 
 - PLAYER_SONAR_REQ_GET_GEOM
-
-- On a PLAYER_SONAR_REQ_POWER request a NACK is replied only
+- PLAYER_SONAR_REQ_POWER 
+  - a NACK is replied only
 
 @par Configuration file options
 
