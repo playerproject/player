@@ -110,29 +110,46 @@ foreach fname $argv {
 
     if {[string length $name]} {
       puts -nonewline "  "
+
       if {![string compare $name Class] || 
-          ![string compare $name Subclass] ||
+          ![string compare $name LaserType] ||
           ![string compare $name LaserPort] ||
-          ![string compare $name Map] ||
-          ![string compare $name LaserIgnore]} {
+          ![string compare $name LaserPortType] ||
+          ![string compare $name LaserUnitsChoice] ||
+          ![string compare $name CompassType] ||
+          ![string compare $name CompassPort] ||
+          ![string compare $name GPSType] ||
+          ![string compare $name GPSPort] ||
+          ![string compare $name LaserIgnore] ||
+          ![string compare $name Subclass] ||
+          ![string compare $value ""]} {
+        set isstring 1
+      } else {
+        set isstring 0
+      }
+
+      if {$isstring} {
         puts -nonewline "\""
       }
-      if {![string compare $value ";"]} {
-        set value ""
+      if {![string compare $value ";"] || ![string compare $value ""]} {
+        # no value in the .p file (; indicates we got the start of comment instead)
+        if {$isstring} {
+          puts -nonewline ""
+        } else {
+          puts -nonewline "0"
+        }
+      } else {
+        puts -nonewline "$value"
       }
-      puts -nonewline "$value"
-      if {![string compare $name Class] || 
-          ![string compare $name Subclass] ||
-          ![string compare $name LaserPort] ||
-          ![string compare $name Map] ||
-          ![string compare $name LaserIgnore]} {
+      if {$isstring} {
         puts -nonewline "\""
       }
-      puts ","
+      puts ", // $name"
       set name ""
     }
   }
 
+  puts "  // sonar_pose (from SonarUnit param):"
   puts "  \{"
   foreach name [lsort -dictionary [array names thisvars "SonarUnit*"]] {
     puts "    \{ [join [split $thisvars($name)] ", "] \},"
@@ -144,6 +161,7 @@ foreach fname $argv {
   #}
   puts "  \},"
 
+  puts "  // bumper geom:"
   puts "  \{"
   set i 0
   while {$i < $maxbumpernum} {
