@@ -74,21 +74,40 @@ puts "typedef struct\n\{"
 foreach name [lsort [array names vars]] {
 
   set value $vars($name)
+  if {[string equal [string index $value 0] ";"]} {
+    # value was missing
+    set value ""
+    set comment [lrange $line 2 end]
+  } else {
+    set comment [lrange $line 3 end]
+  }
 
   if {![string compare $name Class] || 
+      ![string compare $name LaserType] ||
       ![string compare $name LaserPort] ||
+      ![string compare $name LaserPortType] ||
+      ![string compare $name LaserUnitsChoice] ||
+      ![string compare $name CompassType] ||
+      ![string compare $name CompassPort] ||
+      ![string compare $name GPSType] ||
+      ![string compare $name GPSPort] ||
       ![string compare $name LaserIgnore] ||
-      ![string compare $name Map] ||
-      ![string compare $name Subclass]} {
-    puts "  char* ${name};"
+      ![string compare $name Subclass] ||
+      ![string compare $value ""]} {
+    set isstring 1
+  } else {
+    set isstring 0
+  }
+
+  if {$isstring} {
+    puts "  char* ${name}; // $comment"
   } elseif {![string compare $value true] ||
             ![string compare $value false] ||
             ![string compare $value [expr round($value)]] ||
             ![string compare $name SonarNum]} {
-
-    puts "  int $name; // [lrange $line 3 end]"
+    puts "  int $name; // $comment"
   } else {
-    puts "  double $name; // [lrange $line 3 end]"
+    puts "  double $name; // $comment"
   }
 }
 puts "  sonar_pose_t sonar_pose\[$maxsonarnum\];"
