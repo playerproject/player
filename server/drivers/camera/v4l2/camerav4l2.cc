@@ -570,6 +570,7 @@ void CameraV4L2::Main()
 {
   struct timespec tspec;
   player_camera_data_t * data = NULL;
+  int current;
 
   for (;;)
   {
@@ -590,7 +591,8 @@ void CameraV4L2::Main()
       PLAYER_ERROR("Out of memory");
       continue;
     }
-    if (this->prepareData(data, !(this->request_only)))
+    current = this->prepareData(data, !(this->request_only));
+    if (current < 0)
     {
       free(data);
       data = NULL;
@@ -599,10 +601,10 @@ void CameraV4L2::Main()
     }
     if (!(this->request_only))
     {
-      Publish(this->camera_addrs[this->current_source],
-              PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
-              reinterpret_cast<void *>(data), 0, NULL, false);
-              // copy = false, don't dispose anything here!
+      this->Publish(this->camera_addrs[current],
+                    PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
+                    reinterpret_cast<void *>(data), 0, NULL, false);
+                    // copy = false, don't dispose anything here!
     } else
     {
       if (data->image)
@@ -624,6 +626,7 @@ int CameraV4L2::prepareData(player_camera_data_t * data, int sw)
   const unsigned char * img;
   struct timespec tspec;
   int i = 0;
+  int current;
 
   assert(data);
   assert(this->fg);
@@ -632,6 +635,8 @@ int CameraV4L2::prepareData(player_camera_data_t * data, int sw)
     if (this->useSource()) return -1;
   }
   if (!(this->started)) return -1;
+  current = this->current_source;
+  assert(current >= 0);
   // Grab the next frame (blocking)
   img = get_image(this->fg);
   if (this->failsafe)
@@ -711,7 +716,7 @@ int CameraV4L2::prepareData(player_camera_data_t * data, int sw)
       assert(!(this->useSource()));
     }
   }
-  return 0;
+  return current;
 }
 
 int CameraV4L2::ProcessMessage(QueuePointer & resp_queue,
@@ -799,12 +804,12 @@ int CameraV4L2::ProcessMessage(QueuePointer & resp_queue,
     {
       if (this->current_source != i)
       {
-        assert((this->current_source) > 1);
+        assert((this->sources_count) > 1);
         this->next_source = i;
         if (this->useSource()) return -1;
       }
       assert((this->current_source) == i);
-      if (this->prepareData(&imgData, 0)) return -1;
+      if (this->prepareData(&imgData, 0) != i) return -1;
       this->Publish(this->camera_addrs[i],
                     resp_queue,
                     PLAYER_MSGTYPE_RESP_ACK,
