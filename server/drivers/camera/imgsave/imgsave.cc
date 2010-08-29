@@ -312,6 +312,8 @@ int ImgSave::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, void
   FILE * f;
   struct tm t;
   time_t tt = time(NULL);
+  Message * msg;
+  player_msghdr newhdr;
 
   assert(hdr);
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, this->camera_id))
@@ -528,6 +530,20 @@ int ImgSave::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, void
       // I assume that Publish() (with copy = false) freed those output data!
       output = NULL;
     }
+    return 0;
+  } else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, -1, this->camera_provided_addr))
+  {
+    hdr->addr = this->camera_id;
+    msg = this->camera->Request(this->InQueue, hdr->type, hdr->subtype, data, 0, NULL, true); // threaded = true
+    if (!msg)
+    {
+      PLAYER_WARN("failed to forward request");
+      return -1;
+    }
+    newhdr = *(msg->GetHeader());
+    newhdr.addr = this->camera_provided_addr;
+    this->Publish(resp_queue, &newhdr, msg->GetPayload(), true); // copy = true, do not dispose published data as we're disposing whole source message in the next line
+    delete msg;
     return 0;
   }
   return -1;
