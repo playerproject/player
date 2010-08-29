@@ -124,6 +124,10 @@ class GStreamerDriver : public ThreadedDriver
     virtual int MainSetup ();
     virtual void MainQuit ();
 
+    virtual int ProcessMessage(QueuePointer & resp_queue,
+                               player_msghdr * hdr,
+                               void * data);
+
   private:
 
     // Main function for device thread.
@@ -617,7 +621,30 @@ void GStreamerDriver::Main()
     tspec.tv_nsec = 1000000;
     nanosleep(&tspec, NULL);
     pthread_testcancel();
-    if (this->GrabFrame() && this->RetrieveFrame()) this->Publish(this->device_addr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, &this->data);
+    if (this->GrabFrame() && this->RetrieveFrame()) this->Publish(this->device_addr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, reinterpret_cast<void *>(&(this->data)));
+    pthread_testcancel();
+    this->ProcessMessages();
     pthread_testcancel();
   }
+}
+
+int GStreamerDriver::ProcessMessage(QueuePointer & resp_queue,
+                                    player_msghdr * hdr,
+                                    void * data)
+{
+  data = data;
+  assert(hdr);
+  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
+                                 PLAYER_CAMERA_REQ_GET_IMAGE,
+                                 this->device_addr))
+  {
+    if (!(this->GrabFrame() && this->RetrieveFrame())) return -1;
+    this->Publish(this->device_addr,
+                  resp_queue,
+                  PLAYER_MSGTYPE_RESP_ACK,
+                  PLAYER_CAMERA_REQ_GET_IMAGE,
+                  reinterpret_cast<void *>(&(this->data)));
+    return 0;
+  }
+  return -1;
 }

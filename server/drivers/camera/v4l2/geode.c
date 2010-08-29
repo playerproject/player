@@ -29,8 +29,11 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <linux/videodev2.h>
+#include <config.h>
+#if HAVE_I2C
 #include <linux/i2c-dev.h>
 #include <linux/i2c.h>
+#endif
 #include <fcntl.h>
 #include <string.h>
 #include <stdio.h>
@@ -44,6 +47,7 @@
 
 int geode_select_cam(const char * dev, int cam)
 {
+#if HAVE_I2C
   int i;
   struct i2c_smbus_ioctl_data args;
   union i2c_smbus_data data;
@@ -80,6 +84,11 @@ int geode_select_cam(const char * dev, int cam)
   }
   close(i);
   return 0;
+#else
+#warning I2C kernel headers cannot be used, geode_select_cam() function will always fail
+  dev = dev; cam = cam;
+  return -1;
+#endif
 }
 
 void * geode_open_fg(const char * dev, const char * pixformat, int width, int height, int imgdepth, int buffers)
