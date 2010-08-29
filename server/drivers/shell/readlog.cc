@@ -2554,7 +2554,7 @@ int ReadLog::ParseLocalize(player_devaddr_t id,
 	    hypoths.hypoths = new player_localize_hypoth_t[hypoths.hypoths_count];
 
             count = 0;
-            for (i = 10; i < token_count; i += 7)
+            for (i = 10; i < token_count; i += 10)
             {
               hypoths.hypoths[count].mean.px = atof(tokens[i + 0]);
               hypoths.hypoths[count].mean.py = atof(tokens[i + 1]);
@@ -2562,7 +2562,10 @@ int ReadLog::ParseLocalize(player_devaddr_t id,
               hypoths.hypoths[count].cov[0] = atof(tokens[i + 3]);
               hypoths.hypoths[count].cov[1] = atof(tokens[i + 4]);
               hypoths.hypoths[count].cov[2] = atof(tokens[i + 5]);
-              hypoths.hypoths[count].alpha = atof(tokens[i + 6]);
+              hypoths.hypoths[count].cov[3] = atof(tokens[i + 6]);
+              hypoths.hypoths[count].cov[4] = atof(tokens[i + 7]);
+              hypoths.hypoths[count].cov[5] = atof(tokens[i + 8]);
+              hypoths.hypoths[count].alpha = atof(tokens[i + 9]);
               count += 1;
             }
 

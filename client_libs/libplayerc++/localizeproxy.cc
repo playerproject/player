@@ -85,12 +85,19 @@ LocalizeProxy::Unsubscribe()
 std::ostream&
 std::operator << (std::ostream &os, const PlayerCc::LocalizeProxy &c)
 {
+  double* cov;
   os << "#Localize (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
   os << "Hypothesis Count: " << c.GetNumHypoths() << std::endl;
   for (unsigned int i = 0; i < c.GetNumHypoths(); ++i)
   {
+    cov = c.GetHypoth(i).cov;
     os << i << " (weight " << c.GetHypoth(i).alpha << "): ";
-    os << "[" << c.GetHypoth(i).mean << "]" << std::endl;
+    os << "[" << c.GetHypoth(i).mean << "]";
+    os << " [cov:";
+    os << " (" << cov[0] << "," << cov[3] << "," << cov[5] << ")";
+    os << " (" << cov[3] << "," << cov[1] << "," << cov[4] << ")";
+    os << " (" << cov[5] << "," << cov[4] << "," << cov[2] << ")";
+    os << "]" << std::endl;
   }
   return os;
 }

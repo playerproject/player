@@ -1483,9 +1483,12 @@ The following type:subtype localize messages can be logged:
     - px (float): X coordinate of the mean value of the pose estimate (in m)
     - py (float): Y coordinate of the mean value of the pose estimate (in m)
     - pa (float): yaw coordinate of the mean value of the pose estimate (in rad)
-    - cov[0] (float): X coordinate of the covariance matrix pose estimate
-    - cov[1] (float): Y coordinate of the covariance matrix pose estimate
-    - cov[2] (float): yaw coordinate of the covariance matrix pose estimate
+    - cov[0] (float): X Variance of the covariance matrix to the pose estimate
+    - cov[1] (float): Y Variance of the covariance matrix to the pose estimate
+    - cov[2] (float): yaw Variance of the covariance matrix to the pose estimate
+    - cov[3] (float): X,Y covariance of the pose estimate
+    - cov[4] (float): Y,yaw covariance of the pose estimate
+    - cov[5] (float): X,yaw covariance of the pose estimate
     - alpha (float): weight coefficient for linear combination
 
 - 4:2 (PLAYER_LOCALIZE_REQ_GET_PARTICLES) - Current particle set. The format is:
@@ -1534,6 +1537,9 @@ WriteLog::WriteLocalize(player_msghdr_t* hdr, void *data)
 		    hypoths->hypoths[i].cov[0],
 		    hypoths->hypoths[i].cov[1],
 		    hypoths->hypoths[i].cov[2],
+		    hypoths->hypoths[i].cov[3],
+		    hypoths->hypoths[i].cov[4],
+		    hypoths->hypoths[i].cov[5],
 		    hypoths->hypoths[i].alpha);
           if (write_particles)
 	    // every time we receive localize data also write localize particles
