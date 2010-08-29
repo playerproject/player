@@ -402,6 +402,8 @@ int ImgCmp::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, void 
   player_dio_cmd_t dio_cmd;
   double t;
   int d;
+  Message * msg;
+  player_msghdr newhdr;
 
   assert(hdr);
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, -1, this->dio_id))
@@ -620,6 +622,20 @@ int ImgCmp::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, void 
         this->currentbuffer = nextbuffer;
       }
     }
+    return 0;
+  } else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, -1, this->camera_provided_addr))
+  {
+    hdr->addr = this->camera_id;
+    msg = this->camera->Request(this->InQueue, hdr->type, hdr->subtype, data, 0, NULL, true); // threaded = true
+    if (!msg)
+    {
+      PLAYER_WARN("failed to forward request");
+      return -1;
+    }
+    newhdr = *(msg->GetHeader());
+    newhdr.addr = this->camera_provided_addr;
+    this->Publish(resp_queue, &newhdr, msg->GetPayload(), true); // copy = true, do not dispose published data as we're disposing whole source message in the next line
+    delete msg;
     return 0;
   }
   return -1;
