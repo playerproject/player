@@ -119,7 +119,7 @@ void playerc_localize_putmsg(playerc_localize_t *device, player_msghdr_t *header
 
 
 // Set the robot pose (mean and covariance)
-int playerc_localize_set_pose(playerc_localize_t *device, double pose[3], double cov[3])
+int playerc_localize_set_pose(playerc_localize_t *device, double pose[3], double cov[6])
 {
   player_localize_set_pose_t req;
 
@@ -130,6 +130,9 @@ int playerc_localize_set_pose(playerc_localize_t *device, double pose[3], double
   req.cov[0] = cov[0];
   req.cov[1] = cov[1];
   req.cov[2] = cov[2];
+  req.cov[3] = cov[3];
+  req.cov[4] = cov[4];
+  req.cov[5] = cov[5];
 
   if(playerc_client_request(device->info.client, 
                             &device->info,

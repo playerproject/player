@@ -2331,7 +2331,7 @@ PLAYERC_EXPORT int playerc_localize_subscribe(playerc_localize_t *device, int ac
 PLAYERC_EXPORT int playerc_localize_unsubscribe(playerc_localize_t *device);
 
 /** @brief Set the the robot pose (mean and covariance). */
-PLAYERC_EXPORT int playerc_localize_set_pose(playerc_localize_t *device, double pose[3], double cov[3]);
+PLAYERC_EXPORT int playerc_localize_set_pose(playerc_localize_t *device, double pose[3], double cov[6]);
 
 /** @brief Request the particle set.  Caller must supply sufficient storage for
    the result. */

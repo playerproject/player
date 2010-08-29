@@ -27,8 +27,10 @@ typedef struct player_localize_hypoth
 {
   /** The mean value of the pose estimate (m, m, rad). */
   player_pose2d_t mean;
-  /** The covariance matrix pose estimate (m$^2$, rad$^2$). */
-  double cov[3];
+  /** The covariance matrix pose estimate (lower half, symmetric matrix) 
+      (cov(xx) in m$^2$, cov(yy) in $^2$, cov(aa) in rad$^2$, 
+       cov(xy), cov(ya), cov(xa) ). */
+  double cov[6];
   /** The weight coefficient for linear combination (alpha) */
   double alpha;
 } player_localize_hypoth_t;
@@ -57,9 +59,11 @@ typedef struct player_localize_set_pose
 {
   /** The mean value of the pose estimate (m, m, rad). */
   player_pose2d_t mean;
-  /** The diagonal elements of the covariance matrix pose estimate
-      (m$^2$, rad$^2$). */
-  double cov[3];
+  /** The diagonal elements of the covariance matrix pose estimate (variance) and the 
+      (symmetric) covariances between the pose elements .
+      (cov(xx) in m$^2$, cov(yy) in $^2$, cov(aa) in rad$^2$, 
+       cov(xy), cov(ya), cov(xa) ). */
+  double cov[6];
 } player_localize_set_pose_t;
 
 /** @brief A particle */

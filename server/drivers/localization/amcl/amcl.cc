@@ -1037,6 +1037,9 @@ void AdaptiveMCL::PutDataLocalize(double time)
     data.hypoths[i].cov[0] = pose_cov.m[0][0];
     data.hypoths[i].cov[1] = pose_cov.m[1][1];
     data.hypoths[i].cov[2] = pose_cov.m[2][2];
+    data.hypoths[i].cov[3] = pose_cov.m[0][1];
+    data.hypoths[i].cov[4] = pose_cov.m[2][1];
+    data.hypoths[i].cov[5] = pose_cov.m[2][0];
   }
 
   // sort according to weight
@@ -1104,7 +1107,13 @@ AdaptiveMCL::ProcessMessage(QueuePointer & resp_queue,
 
     cov = pf_matrix_zero();
     cov.m[0][0] = setposereq->cov[0];
+    cov.m[0][1] = setposereq->cov[3];
+    cov.m[0][2] = setposereq->cov[5];
+    cov.m[1][0] = setposereq->cov[3];
     cov.m[1][1] = setposereq->cov[1];
+    cov.m[1][2] = setposereq->cov[4];
+    cov.m[2][0] = setposereq->cov[5];
+    cov.m[2][1] = setposereq->cov[4];
     cov.m[2][2] = setposereq->cov[2];
 
     // Re-initialize the filter
