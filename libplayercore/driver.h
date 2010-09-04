@@ -606,7 +606,7 @@ class PLAYERCORE_EXPORT ThreadedDriver : public Driver
 			int section,
 			bool overwrite_cmds,
 			size_t queue_maxlen,
-			int interface);
+			int interface_);
 
     /** @brief Constructor for multiple-interface drivers.
 

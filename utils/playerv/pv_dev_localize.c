@@ -30,6 +30,10 @@
 #include <string.h>
 #include "playerv.h"
 
+#if defined (WIN32)
+  #define M_PI_2 (M_PI/2.0)
+#endif
+
 // Compute eigen values and eigen vectors of a 2x2 covariance matrix
 static void eigen(double cm[][2], double values[], double vectors[][2]);
 
