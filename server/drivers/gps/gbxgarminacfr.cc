@@ -153,10 +153,11 @@ GbxGarminAcfr::~GbxGarminAcfr (void)
 int GbxGarminAcfr::MainSetup (void)
 {
     // Validate the configuration
-    std::string reason;
-    if (!_config.isValid (reason))
+    // std::string reason;
+    if (!_config.isValid ())
     {
-        PLAYER_ERROR1("GbxGarminAcfr: Invalid sensor configuration: %s.\n", reason.c_str());
+        //PLAYER_ERROR1("GbxGarminAcfr: Invalid sensor configuration: %s.\n", reason.c_str());
+        PLAYER_ERROR("GbxGarminAcfr: Invalid sensor configuration.\n");
         return -1;
     }
 
