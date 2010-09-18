@@ -8,8 +8,8 @@ in may formats (see below), but is always packed (i.e., pixel rows are
 byte-aligned).
 }
 
+/** Data subtype: state */
 message { DATA, STATE, 1, player_camera_data_t };
-
 /** Request/reply subtype: get current source */
 message { REQ, GET_SOURCE, 1, player_camera_source_t };
 /** Request/reply subtype: set current source */
