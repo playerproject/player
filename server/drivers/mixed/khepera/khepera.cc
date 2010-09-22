@@ -503,7 +503,7 @@ Khepera::UpdateData()
   UpdateIRData(&ir_data);
 
   // put ir data
-  Publish(position_addr,PLAYER_MSGTYPE_DATA, PLAYER_IR_DATA_RANGES, (unsigned char *) &ir_data, sizeof(ir_data),NULL);
+  Publish(ir_addr,PLAYER_MSGTYPE_DATA, PLAYER_IR_DATA_RANGES, (unsigned char *) &ir_data, sizeof(ir_data),NULL);
   player_ir_data_t_cleanup(&ir_data);
 }
 
