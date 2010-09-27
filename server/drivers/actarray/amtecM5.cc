@@ -91,7 +91,7 @@ driver
 @author Alexis Maldonado
 @date 2006
 
-*/
+ */
 /** @} */
 
 
@@ -246,7 +246,7 @@ void amtecm5_Register(DriverTable* table) {
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 AmtecM5::AmtecM5(ConfigFile* cf, int section)
-		: Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
+		: ThreadedDriver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
          PLAYER_ACTARRAY_CODE) {
 
 
@@ -548,7 +548,7 @@ int AmtecM5::MainSetup() {
 }
 
 
-void MainQuit()
+void AmtecM5::MainQuit()
 {
         if (debug_level) {
                 cout << "About to delete the pclDevice.\n";
@@ -568,7 +568,7 @@ void MainQuit()
 
 	puts("Amtec M5 Powercube driver has been shutdown");
 
-	return(0);
+	//return(0);
 }
 
 int AmtecM5::ProcessMessage(QueuePointer &resp_queue,
