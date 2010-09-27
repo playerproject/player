@@ -82,6 +82,7 @@ foreach name [lsort [array names vars]] {
     set comment [lrange $line 3 end]
   }
 
+  # These parameters are known to be strings
   if {![string compare $name Class] || 
       ![string compare $name LaserType] ||
       ![string compare $name LaserPort] ||
@@ -99,12 +100,19 @@ foreach name [lsort [array names vars]] {
     set isstring 0
   }
 
+  # If the value is a string, use char*.
+  # If the value is true, false, is an integer, or the parameter name is SonarNum,
+  # but the parameter name does not contain the substring "ConvFactor", use int.
+  # Otherwise use double.
   if {$isstring} {
     puts "  char* ${name}; // $comment"
-  } elseif {![string compare $value true] ||
-            ![string compare $value false] ||
-            ![string compare $value [expr round($value)]] ||
-            ![string compare $name SonarNum]} {
+  } elseif { [string first "ConvFactor" $name] >= 0 } {
+    puts "  double $name; // $comment"
+  } elseif {    ![string compare $value true] ||
+                ![string compare $value false] ||
+                ![string compare $value [expr round($value)]] ||
+                ![string compare $name SonarNum]
+           } {
     puts "  int $name; // $comment"
   } else {
     puts "  double $name; // $comment"
