@@ -10,21 +10,14 @@ PLAYERDRIVER_OPTION (skyetekM1 build_skyetekM1 ON)
 PLAYERDRIVER_REJECT_OS (skyetekM1 build_skyetekM1 PLAYER_OS_WIN)
 PLAYERDRIVER_ADD_DRIVER (skyetekM1 build_skyetekM1 SOURCES skyetekM1.cc)
 
-PLAYERDRIVER_OPTION (phidgetRFID build_phidgetRFID ON)
-SET (PHIDGETRFID_DIR "" CACHE STRING "Directory containing the Phidget RFID headers and libraries")
-MARK_AS_ADVANCED (PHIDGETRFID_DIR)
-IF ("${PHIDGETRFID_DIR}" STREQUAL "")
-    SET (phidgetReqHeader "phidget21.h")
-    SET (phidgetExtraFlags "")
-    SET (phidgetExtraLibs "-lphidget21")
-ELSE ("${PHIDGETRFID_DIR}" STREQUAL "")
-    SET (phidgetReqHeader "${PHIDGETRFID_DIR}/phidget21.h")
-    SET (phidgetExtraFlags "-I${PHIDGETRFID_DIR}/include")
-    SET (phidgetExtraLibs "-L${PHIDGETRFID_DIR}/lib -lphidget21")
-ENDIF ("${PHIDGETRFID_DIR}" STREQUAL "")
-PLAYERDRIVER_REQUIRE_HEADER (phidgetRFID build_phidgetRFID ${phidgetReqHeader})
+# libphidget now discovered in SearchForStuff.cmake
+IF (HAVE_PHIDGET)
+  PLAYERDRIVER_OPTION (phidgetAcc build_phidgetRFID ON)
+ELSE (HAVE_PHIDGET)
+  PLAYERDRIVER_OPTION (phidgetAcc build_phidgetRFID OFF "Could not find libphidget")
+ENDIF (HAVE_PHIDGET)
 PLAYERDRIVER_ADD_DRIVER (phidgetRFID build_phidgetRFID
-    LINKFLAGS ${phidgetExtraLibs} CFLAGS "${phidgetExtraFlags}"
+    LINKFLAGS ${phidgetLinkFlags} CFLAGS "${phidgetCFlags}"
     SOURCES phidgetRFID.cc)
 
 PLAYERDRIVER_OPTION (acr120u build_acr120u ON)

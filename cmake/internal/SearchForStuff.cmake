@@ -244,3 +244,42 @@ IF (PLAYER_OS_WIN)
         ${CMAKE_CURRENT_SOURCE_DIR}/cmake/internal/setdlldirectory.c)
 ENDIF (PLAYER_OS_WIN)
 
+# Check for libphidget, see if we have 2.1.7 or later
+SET (PHIDGET_INCLUDE_DIR "" CACHE STRING "Directory containing the Phidget headers")
+SET (PHIDGET_LIB_DIR "" CACHE STRING "Directory containing the Phidget libraries")
+MARK_AS_ADVANCED (PHIDGET_INCLUDE_DIR)
+MARK_AS_ADVANCED (PHIDGET_LIB_DIR)
+
+IF ("${PHIDGET_INCLUDE_DIR}" STREQUAL "")
+    SET (phidgetHeader "phidget21.h")
+    SET (phidgetCFlags "")
+ELSE ("${PHIDGET_INCLUDE_DIR}" STREQUAL "")
+    SET (phidgetHeader "${PHIDGET_DIR}/include/phidget21.h")
+    SET (phidgetCFlags "-I${PHIDGET_DIR}/include")
+ENDIF ("${PHIDGET_INCLUDE_DIR}" STREQUAL "")
+
+IF ("${PHIDGET_LIB_DIR}" STREQUAL "")
+    SET (phidgetLinkFlags "-lphidget21")
+ELSE ("${PHIDGET_LIB_DIR}" STREQUAL "")
+    SET (phidgetLinkFlags " -L${PHIDGET_DIR} -lphidget21")
+ENDIF ("${PHIDGET_LIB_DIR}" STREQUAL "")
+
+IF (HAVE_DNS_SD)
+   SET (phidgetLinkFlags "${phidgetLinkFlags} -ldns_sd")
+ENDIF(HAVE_DNS_SD)
+
+CHECK_INCLUDE_FILES(${phidgetHeader} HAVE_PHIDGET_H)
+IF (HAVE_PHIDGET_H)
+    INCLUDE (CheckCSourceCompiles)
+    SET(CMAKE_REQUIRED_FLAGS "${phidgetCFlags} ${phidgetLinkFlags} -lphidget21")
+    SET (CHECK_PHIDGET_SOURCE_CODE "#include <phidget21.h>\n int main () 
+    {CPhidgetInterfaceKitHandle ifk=0; int phidget_num_outputs=0;
+    CPhidgetInterfaceKit_create(&ifk);
+    CPhidgetInterfaceKit_getOutputCount(ifk, &phidget_num_outputs); return 0; }\n")
+    CHECK_C_SOURCE_COMPILES ("${CHECK_PHIDGET_SOURCE_CODE}" HAVE_PHIDGET_2_1_7)
+ENDIF (HAVE_PHIDGET_H)
+
+IF (HAVE_PHIDGET_H AND HAVE_DNS_SD)
+   SET(HAVE_PHIDGET true)
+ENDIF (HAVE_PHIDGET_H AND HAVE_DNS_SD)
+ 

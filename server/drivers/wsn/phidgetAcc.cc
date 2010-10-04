@@ -79,10 +79,9 @@ driver
  */
 /** @} */
 
-
-
 #include "phidget21.h"
 #include <libplayercore/playercore.h>
+#include "config.h"
 
 #include <unistd.h>
 #include <string.h>
@@ -273,7 +272,11 @@ void PhidgetAcc::Main() {
     	data.data_packet.temperature = -1;
     	data.data_packet.battery     = -1;
 	int n_axis;
+#ifdef HAVE_PHIDGET_2_1_7
+	if(CPhidgetAccelerometer_getAxisCount(accel,&n_axis)) return;
+#else
 	if(CPhidgetAccelerometer_getNumAxis(accel,&n_axis)) return;
+#endif
 	double *p_accel;
 	p_accel= new double[n_axis];
 	for (int i=0;i<n_axis;++i) {

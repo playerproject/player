@@ -16,4 +16,5 @@
 #cmakedefine HAVE_IEEEFP_H 1
 #cmakedefine WORDS_BIGENDIAN 1
 #cmakedefine HAVE_SETDLLDIRECTORY 1
+#cmakedefine HAVE_PHIDGET_2_1_7 1
 

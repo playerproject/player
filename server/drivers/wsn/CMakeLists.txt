@@ -21,19 +21,12 @@ ELSE (HAVE_STL)
 ENDIF (HAVE_STL)
 PLAYERDRIVER_ADD_DRIVER (accel_calib build_accel_calib SOURCES accel_calib.cc)
 
-PLAYERDRIVER_OPTION (phidgetAcc build_phidgetAcc ON)
-SET (PHIDGETACC_DIR "" CACHE STRING "Directory containing the Phidget Acc headers and libraries")
-MARK_AS_ADVANCED (PHIDGETACC_DIR)
-IF ("${PHIDGETACC_DIR}" STREQUAL "")
-    SET (phidgetReqHeader "phidget21.h")
-    SET (phidgetExtraFlags "")
-    SET (phidgetExtraLibs "-lphidget21")
-ELSE ("${PHIDGETACC_DIR}" STREQUAL "")
-    SET (phidgetReqHeader "${PHIDGETACC_DIR}/phidget21.h")
-    SET (phidgetExtraFlags "-I${PHIDGETACC_DIR}/include")
-    SET (phidgetExtraLibs "-L${PHIDGETACC_DIR}/lib -lphidget21")
-ENDIF ("${PHIDGETACC_DIR}" STREQUAL "")
-PLAYERDRIVER_REQUIRE_HEADER (phidgetAcc build_phidgetAcc ${phidgetReqHeader})
+# libphidget now discovered in SearchForStuff.cmake
+IF (HAVE_PHIDGET)
+  PLAYERDRIVER_OPTION (phidgetAcc build_phidgetAcc ON)
+ELSE (HAVE_PHIDGET)
+  PLAYERDRIVER_OPTION (phidgetAcc build_phidgetAcc OFF "Could not find libphidget")
+ENDIF (HAVE_PHIDGET)
 PLAYERDRIVER_ADD_DRIVER (phidgetAcc build_phidgetAcc
-    LINKFLAGS ${phidgetExtraLibs} CFLAGS ${phidgetExtraFlags}
+    LINKFLAGS ${phidgetLinkFlags} CFLAGS ${phidgetCFlags}
     SOURCES phidgetAcc.cc)
