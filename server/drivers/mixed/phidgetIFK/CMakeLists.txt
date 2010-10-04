@@ -1,16 +1,10 @@
-PLAYERDRIVER_OPTION (phidgetifk build_phidgetifk ON)
-SET (PHIDGETIFK_DIR "" CACHE STRING "Directory containing the Phidget IFK headers and libraries")
-MARK_AS_ADVANCED (PHIDGETIFK_DIR)
-IF ("${PHIDGETIFK_DIR}" STREQUAL "")
-    SET (phidgetReqHeader "phidget21.h")
-    SET (phidgetExtraFlags "")
-    SET (phidgetExtraLibs "-lphidget21")
-ELSE ("${PHIDGETIFK_DIR}" STREQUAL "")
-    SET (phidgetReqHeader "${PHIDGETIFK_DIR}/phidget21.h")
-    SET (phidgetExtraFlags "-I${PHIDGETIFK_DIR}/include")
-    SET (phidgetExtraLibs "-L${PHIDGETIFK_DIR}/lib -lphidget21")
-ENDIF ("${PHIDGETIFK_DIR}" STREQUAL "")
-PLAYERDRIVER_REQUIRE_HEADER (phidgetifk build_phidgetifk ${phidgetReqHeader})
+# libphidget now discovered in SearchForStuff.cmake
+IF (HAVE_PHIDGET)
+  PLAYERDRIVER_OPTION (phidgetifk build_phidgetifk ON)
+ELSE (HAVE_PHIDGET)
+  PLAYERDRIVER_OPTION (phidgetifk build_phidgetifk OFF "Could not find libphidget")
+ENDIF (HAVE_PHIDGET)
+  
 PLAYERDRIVER_ADD_DRIVER (phidgetifk build_phidgetifk
-    LINKFLAGS ${phidgetExtraLibs} CFLAGS ${phidgetExtraFlags}
+    LINKFLAGS ${phidgetLinkFlags} CFLAGS ${phidgetCFlags}
     SOURCES phidgetIFK.cc)

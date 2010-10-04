@@ -83,9 +83,9 @@ driver
 /** @} */
 
 
-
 #include "phidget21.h"
 #include <libplayercore/playercore.h>
+#include "config.h"
 
 #include <unistd.h>
 #include <string.h>
@@ -261,7 +261,11 @@ int Phidgetrfid::ProcessMessage(QueuePointer &resp_queue,
 
         //the actual ammount of digital outputs of the widget
         int phidget_num_outputs(0);
+#ifdef HAVE_PHIDGET_2_1_7
+        CPhidgetRFID_getOutputCount(rfid, &phidget_num_outputs);
+#else
         CPhidgetRFID_getNumOutputs(rfid, &phidget_num_outputs);
+#endif
         printf("Num of outputs: %d\n", phidget_num_outputs);
 
         if (count > static_cast<int>(max_do)) {

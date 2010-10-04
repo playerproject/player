@@ -87,7 +87,6 @@ driver
 /** @} */
 
 
-
 #include <unistd.h>
 #include <string.h>
 #include <iostream>
@@ -97,7 +96,7 @@ driver
 #include "phidget21.h"
 
 #include <libplayercore/playercore.h>
-
+#include "config.h"
 
 //For nanosleep:
 #include <time.h>
@@ -326,8 +325,11 @@ int PhidgetIFK::ProcessMessage(QueuePointer &resp_queue,
 
         //the actual ammount of digital outputs of the widget
         int phidget_num_outputs(0);
+#ifdef HAVE_PHIDGET_2_1_7
+        CPhidgetInterfaceKit_getOutputCount(ifk, &phidget_num_outputs);
+#else
         CPhidgetInterfaceKit_getNumOutputs(ifk, &phidget_num_outputs);
-
+#endif
         if (count > static_cast<int>(max_do)) {
             PLAYER_WARN("PhidgetIFK: Received a command with a huge ammount of digital outputs. Check the value of count.\n");
             PLAYER_WARN1("PhidgetIFK: Limiting to the maximum possible value: %d\n",max_do);
@@ -379,10 +381,14 @@ int PhidgetIFK::ProcessMessage(QueuePointer &resp_queue,
 
         //Get the size of the LCD screen
         int numcolumns(0);
-        CPhidgetTextLCD_getNumColumns(lcd,&numcolumns);
         int numrows(0);
+#ifdef HAVE_PHIDGET_2_1_7
+        CPhidgetTextLCD_getColumnCount(lcd,&numcolumns);
+        CPhidgetTextLCD_getRowCount(lcd,&numrows);
+#else
+        CPhidgetTextLCD_getNumColumns(lcd,&numcolumns);
         CPhidgetTextLCD_getNumRows(lcd,&numrows);
-
+#endif
         //Copy the text to a string for easier manipulation
         string completemessage;
         completemessage = const_cast<const char *>(cmd->string);
@@ -472,8 +478,11 @@ void PhidgetIFK::Main() {
 
         //Read from the device.
         int numsensors(0);
+#ifdef HAVE_PHIDGET_2_1_7
+        CPhidgetInterfaceKit_getSensorCount(ifk, &numsensors);
+#else
         CPhidgetInterfaceKit_getNumSensors(ifk, &numsensors);
-
+#endif
         std::vector<float> values;
         for (int i = 0 ; i != numsensors ; ++i) {
             values.push_back(0.0);
@@ -502,8 +511,11 @@ void PhidgetIFK::Main() {
         player_dio_data_t data_di;
         //need the digital inputs as a bitfield
         int num_di(0);
+#ifdef HAVE_PHIDGET_2_1_7
+        CPhidgetInterfaceKit_getInputCount(ifk, &num_di);
+#else
         CPhidgetInterfaceKit_getNumInputs(ifk, &num_di);
-
+#endif
         data_di.count=num_di;
 
         std::vector<bool> divalues;
