@@ -9,3 +9,6 @@ PLAYERDRIVER_ADD_DRIVER (laservisualbarcode build_laservisualbarcode SOURCES las
 
 PLAYERDRIVER_OPTION (laservisualbw build_laservisualbw OFF "Has not been updated to use dynamic message structures; will segfault.")
 PLAYERDRIVER_ADD_DRIVER (laservisualbw build_laservisualbw SOURCES laservisualbw.cc)
+
+PLAYERDRIVER_OPTION (laserfeature build_laserfeature ON)
+PLAYERDRIVER_ADD_DRIVER (laserfeature build_laserfeature SOURCES laserfeature.cc)
