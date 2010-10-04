@@ -26,7 +26,7 @@
 // CVS: $Id$
 //
 // Theory of operation - Uses an EKF to segment the scan into line
-// segments, the does a best-fit for each segment.  The EKF is based
+// segments, then does a best-fit for each segment.  The EKF is based
 // on the approach by Stergios Romelioutis.
 //
 // Requires - Laser device.
@@ -37,14 +37,84 @@
 /** @{ */
 /** @defgroup driver_laserfeature laserfeature
  * @brief Extract line/corner features from a laser scan.
- 
-@todo This driver is currently disabled because it needs to be updated to
-the Player 2.0 API.
 
-@todo Document this driver.
+The laserfeature driver extracts lines and corners from a laser data scan,
+and returns the 2-d positions of each line segment through the Fiducial
+interface.
 
-@author Andrew Howard
-*/
+laserfeature uses an EKF to segment the scan into line
+segments, then does a best-fit for each segment.  The EKF is based
+on the approach by Stergios Romelioutis.
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+- @ref interface_fiducal
+  - This interface returns a list of features extracted from the laser scan.
+
+@par Configuration requests
+
+- fiducial interface
+  - PLAYER_POSITION2D_REQ_FIDUCAL_GEOM
+
+@par Requires
+
+- @ref interface_laser
+  - Laser scan to find lines in
+
+@par Configuration file options
+
+- model_range_noise (length)
+  - Default: 0.02 m
+  - Expected range noise in laser measurements
+
+- model_angle_noise (angle)
+  - Default: 10 degrees
+  - Expected angular noise in laser measurements
+
+- sensor_range_noise (length)
+  - Default: 0.05 m
+  - Expected range noise in laser sensor.
+
+- segment_range (length)
+  - Default: 0.05m
+
+- merge_angle (angle)
+  - Default: 10 degrees
+
+- discard_length (length)
+  - Default: 1.00 m
+  - Threshold for segment length (smaller segments are discarded)
+
+- min_segment_count (int)
+  - Default: 4
+  - Minimum amount of segments needed to publish Fiducial data
+
+@par Example
+
+@verbatim
+driver
+(
+  name "laserfeature"
+  provides ["fiducial:0"]
+  requires ["laser:0"]
+
+  model_range_noise 0.05
+  angle_range_noise 10
+  sensor_range_noise 0.05
+  segment_range 0.05
+  merge_angle 10
+  discard_length 1.00
+  min_segment_count 4
+
+)
+@endverbatim
+
+@author Andrew Howard, Rich Mattes
+ */
 /** @} */
 
 #include <errno.h>
@@ -57,399 +127,334 @@ the Player 2.0 API.
 #include <libplayercore/playercore.h>
 
 // Driver for detecting features in laser scan.
-class LaserFeature : public Driver
+class LaserFeature : public ThreadedDriver
 {
-  // Constructor
-  public: LaserFeature( ConfigFile* cf, int section);
+public:
+	// Constructor
+	LaserFeature( ConfigFile* cf, int section);
 
-  // Setup/shutdown routines.
-  public: virtual int Setup();
-  public: virtual int Shutdown();
+	// Setup/shutdown routines.
+	virtual int MainSetup();
+	virtual void MainQuit();
 
-  // Client interface (this device has no thread).
-  public: virtual size_t GetData(void* client,unsigned char *dest, 
-                                 size_t maxsize, uint32_t* timestamp_sec, 
-                                 uint32_t* timestamp_usec);
+	virtual void Main();
 
-  // Client interface (this device has no thread).
-  public: virtual int PutConfig(player_device_id_t* device, void *client, 
-                                void *data, size_t len);
+	// Message Handling routine
+	virtual int ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data);
 
-  // Process laser data.  Returns non-zero if the laser data has been
-  // updated.
-  private: int UpdateLaser();
+private:
+	// Process laser data.  Returns non-zero if the laser data has been
+	// updated.
+	int UpdateLaser();
 
-  // Write laser data to a file (testing).
-  private: int WriteLaser();
+	// Write laser data to a file (testing).
+	int WriteLaser();
 
-  // Read laser data from a file (testing).
-  private: int ReadLaser();
+	// Read laser data from a file (testing).
+	int ReadLaser();
 
-  // Segment the scan into straight-line segments.
-  private: void SegmentLaser();
+	// Segment the scan into straight-line segments.
+	void SegmentLaser();
 
-  // Update the line filter.  Returns an error signal.
-  private: double UpdateFilter(double x[2], double P[2][2], double Q[2][2],
-                               double R, double z, double res);
+	// Update the line filter.  Returns an error signal.
+	double UpdateFilter(double x[2], double P[2][2], double Q[2][2],
+			double R, double z, double res);
 
-  // Fit lines to the segments.
-  private: void FitSegments();
+	// Fit lines to the segments.
+	void FitSegments();
 
-  // Merge overlapping segments with similar properties.
-  private: void MergeSegments();
+	// Merge overlapping segments with similar properties.
+	void MergeSegments();
 
-  // Update the device data (the data going back to the client).
-  private: void UpdateData();
+	// Update the device data (the data going back to the client).
+	void PublishFiducial();
 
-  // Process requests.  Returns 1 if the configuration has changed.
-  private: int HandleRequests();
+	// Process requests.  Returns 1 if the configuration has changed.
+	int HandleRequests();
 
-  // Handle geometry requests.
-  private: void HandleGetGeom(void *client, void *req, int reqlen);
+	// Handle geometry requests.
+	void HandleGetGeom(void *client, void *req, int reqlen);
 
-  // Device pose relative to robot.
-  private: double pose[3];
-  
-  // Laser stuff.
-  private: int laser_index;
-  private: Driver *laser_device;
-  private: player_laser_data_t laser_data;
-  private: uint32_t laser_timesec, laser_timeusec;
+	// Device pose relative to robot.
+	double pose[3];
 
-  // Line filter settings.
-  private: double model_range_noise;
-  private: double model_angle_noise;
-  private: double sensor_range_noise;
+	// Laser stuff (the laser we require)
+	Device *laser_device;
+	player_laser_data_t laser_data;
+	player_devaddr laser_id;
+	bool have_new_scan;
 
-  // Threshold for segmentation
-  private: double segment_range;
+	// Fiducial stuff (the data we generate).
+	player_fiducial_data_t data;
+	player_devaddr_t fiducial_id;
+	uint32_t timesec, timeusec;
 
-  // Thresholds for merging.
-  private: double merge_angle;
+	// Line filter settings.
+	double model_range_noise;
+	double model_angle_noise;
+	double sensor_range_noise;
 
-  // Thresholds for discarding.
-  private: double discard_length;
+	// Threshold for segmentation
+	double segment_range;
 
-  // Segment mask.
-  private: int mask[PLAYER_LASER_MAX_SAMPLES];
+	// Thresholds for merging.
+	double merge_angle;
 
-  // Description for each extracted line segment.
-  private: struct segment_t
-  {
-    int first, last, count;
-    double pose[3];
-    double length;
-  };
+	// Thresholds for discarding.
+	double discard_length;
 
-  // List of extracted line segments.
-  private: int segment_count;
-  private: segment_t segments[PLAYER_LASER_MAX_SAMPLES];
+	// How many segments need to be found before any are reported
+	int min_segment_count;
 
-  // TESTING
-  private: FILE *laser_file;
+	// Segment mask.
+	int mask[4096];
 
-  // Fiducila stuff (the data we generate).
-  private: player_fiducial_data_t data;
-  private: uint32_t timesec, timeusec;
+	// Description for each extracted line segment.
+	struct segment_t
+	{
+		int first, last, count;
+		double pose[3];
+		double length;
+	};
+
+	// List of extracted line segments.
+	int segment_count;
+	segment_t segments[4096];
+
 };
 
 
 // Initialization function
 Driver* LaserFeature_Init( ConfigFile* cf, int section)
 {
-  if (strcmp( PLAYER_FIDUCIAL_STRING) != 0)
-  {
-    PLAYER_ERROR1("driver \"laserfeature\" does not support interface \"%s\"\n",
-                  interface);
-    return (NULL);
-  }
-  return ((Driver*) (new LaserFeature( cf, section)));
+	return reinterpret_cast <Driver*> (new LaserFeature (cf, section));
 }
 
-
-// a driver registration function
-void LaserFeature_Register(DriverTable* table)
+// Driver registration function
+void laserfeature_Register(DriverTable* table)
 {
-  table->AddDriver("laserfeature", LaserFeature_Init);
+	table->AddDriver("laserfeature", LaserFeature_Init);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 LaserFeature::LaserFeature( ConfigFile* cf, int section)
-    : Driver(cf, section, 0, 0, 0, 1)
+: ThreadedDriver(cf, section)
 {
-  // Device pose relative to robot.
-  this->pose[0] = 0;
-  this->pose[1] = 0;
-  this->pose[2] = 0;
 
-  // If laser_index is not overridden by an argument here, then we'll
-  // use the device's own index, which we can get in Setup() below.
-  this->laser_index = cf->ReadInt(section, "laser", -1);
-  this->laser_driver = NULL;
-  this->laser_timesec = 0;
-  this->laser_timeusec = 0;
+	// Find the fiducial interface to provide
+	if(cf->ReadDeviceAddr(&(this->fiducial_id), section, "provides",
+			PLAYER_FIDUCIAL_CODE, -1, NULL) == 0)
+	{
+		if(this->AddInterface(this->fiducial_id) != 0)
+		{
+			PLAYER_ERROR("laserfeature: Error adding fidicual interface, please check config file.");
+			this->SetError(-1);
+			return;
+		}
+	}
+	else
+	{
+		PLAYER_ERROR("laserfeature: Must provide a fiducial interface, please check config file");
+	}
 
-  // Line filter settings.
-  this->model_range_noise = cf->ReadLength(section, "model_range_noise", 0.02);
-  this->model_angle_noise = cf->ReadAngle(section, "model_angle_noise", 10 * M_PI / 180);
-  this->sensor_range_noise = cf->ReadLength(section, "sensor_range_noise", 0.05);
+	//Find a laser interface to subscribe to
+	if(cf->ReadDeviceAddr(&(this->laser_id), section, "requires",
+			PLAYER_LASER_CODE, -1, NULL) != 0)
+	{
+		PLAYER_ERROR("laserfeature: Must require a laser interface, please check config file");
+		this->SetError(-1);
+	}
 
-  // Segmentation settings
-  this->segment_range = cf->ReadLength(section, "segment_range", 0.05);
+	// Device pose relative to robot.
+	this->pose[0] = 0;
+	this->pose[1] = 0;
+	this->pose[2] = 0;
 
-  // Segment merging settings.
-  this->merge_angle = cf->ReadAngle(section, "merge_angle", 10 * M_PI / 180);
 
-  // Post-processing
-  this->discard_length = cf->ReadLength(section, "discard_length", 1.00);
+	// Line filter settings.
+	this->model_range_noise = cf->ReadLength(section, "model_range_noise", 0.02);
+	this->model_angle_noise = cf->ReadAngle(section, "model_angle_noise", 10 * M_PI / 180);
+	this->sensor_range_noise = cf->ReadLength(section, "sensor_range_noise", 0.05);
 
-  // Initialise segment list.
-  this->segment_count = 0;
-  
-  // Fiducial data.
-  this->timesec = 0;
-  this->timeusec = 0;
-  memset(&this->data, 0, sizeof(this->data));
+	// Segmentation settings
+	this->segment_range = cf->ReadLength(section, "segment_range", 0.05);
 
-  return;
+	// Segment merging settings.
+	this->merge_angle = cf->ReadAngle(section, "merge_angle", 10 * M_PI / 180);
+
+	// Post-processing
+	this->discard_length = cf->ReadLength(section, "discard_length", 1.00);
+
+	// Min Segments
+	this->min_segment_count = cf->ReadInt(section, "min_segment_count", 4);
+
+	// Initialise segment list.
+	this->segment_count = 0;
+
+	// Fiducial data.
+	this->timesec = 0;
+	this->timeusec = 0;
+	memset(&this->data, 0, sizeof(this->data));
+	data.fiducials = NULL;
+
+	// Initialize new data flag
+	have_new_scan = false;
+
+	return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device (called by server thread).
-int LaserFeature::Setup()
+int LaserFeature::MainSetup()
 {
-  /*
-  player_device_id_t id;
+	if(!(this->laser_device = deviceTable->GetDevice(this->laser_id)))
+	{
+		PLAYER_ERROR("laserfeature: Unable to get laser device");
+		return(-1);
+	}
+	if(this->laser_device->Subscribe(this->InQueue) != 0 )
+	{
+		PLAYER_ERROR("laserfeature: Unable to subscribe to laser device");
+		return(-1);
+	}
 
-  // Subscribe to the laser.
-  id.code = PLAYER_LASER_CODE;
-  id.index = (this->laser_index >= 0 ? this->laser_index : this->device_id.index);
-  id.port = this->device_id.port;
-  this->laser_driver = deviceTable->GetDriver(id);
-  if (!this->laser_device)
-  {
-    PLAYER_ERROR("unable to locate suitable laser device");
-    return(-1);
-  }
-  if (this->laser_device->Subscribe(this) != 0)
-  {
-    PLAYER_ERROR("unable to subscribe to laser device");
-    return(-1);
-  }
-  */
+	// Get the laser geometry.
+	// TODO: no support for this at the moment.
+	//this->pose[0] = 0.10;
+	//this->pose[1] = 0;
+	//this->pose[2] = 0;
 
-  // Get the laser geometry.
-  // TODO: no support for this at the moment.
-  //this->pose[0] = 0.10;
-  //this->pose[1] = 0;
-  //this->pose[2] = 0;
+	// TESTING
+	//this->laser_file = fopen("laser02.log", "r");
+	//assert(this->laser_file);
 
-  // TESTING
-  this->laser_file = fopen("laser02.log", "r");
-  assert(this->laser_file);
-  
-  while (this->ReadLaser() == 0)
-    this->SegmentLaser();
-
-  return 0;
+	return 0;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device (called by server thread).
-int LaserFeature::Shutdown()
+void LaserFeature::MainQuit()
 {
-  // Unsubscribe from devices.
-  this->laser_device->Unsubscribe(this);
+	// Unsubscribe from devices.
+	this->laser_device->Unsubscribe(this->InQueue);
 
-  // TESTING
-  fclose(this->laser_file);
-  
-  return 0;
+	// TESTING
+	//fclose(this->laser_file);
+
+	return;
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////
-// Get data from buffer (called by client thread)
-size_t LaserFeature::GetData(void* client,unsigned char *dest, size_t maxsize,
-                             uint32_t* timesec, uint32_t* timeusec)
+// MAIN DRIVER LOOP
+void LaserFeature::Main()
 {
-  // Get the current laser data.
-  this->laser_device->GetData((uint8_t*) &this->laser_data, sizeof(this->laser_data),
-                              &this->laser_timesec, &this->laser_timeusec);
-  
-  // If there is new laser data, update our data.  Otherwise, we will
-  // just reuse the existing data.
-  if (this->laser_timesec != this->timesec || this->laser_timeusec != this->timeusec)
-  {
-    this->UpdateLaser();
-    this->UpdateData();
-  }
-  
-  // Copy results
-  assert(maxsize >= sizeof(this->data));
-  memcpy(dest, &this->data, sizeof(this->data));
+	for(;;)
+	{
+		pthread_testcancel();
 
-  // Copy the laser timestamp
-  this->timesec = this->laser_timesec;
-  this->timeusec = this->laser_timeusec;
-  *timesec = this->timesec;
-  *timeusec = this->timeusec;
+		ProcessMessages();
 
-  return (sizeof(this->data));
+		if (this->have_new_scan)
+		{
+			// Segment the scan into straight-line segments.
+			this->SegmentLaser();
+
+			// Fit lines to the segments.
+			this->FitSegments();
+
+			// Merge similar segments.
+			this->MergeSegments();
+
+			// Re-do the fit for the merged segments.
+			this->FitSegments();
+
+			// Publish Fiducial data
+			this->PublishFiducial();
+
+			// Don't process again until we get new data
+			this->have_new_scan = false;
+		}
+
+		// Sleep for a while
+		usleep(100000);
+
+	}
 }
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Process laser data.
-int LaserFeature::UpdateLaser()
-{
-  int i;
-  
-  // Do some byte swapping on the laser data.
-  this->laser_data.resolution = ntohs(this->laser_data.resolution);
-  this->laser_data.min_angle = ntohs(this->laser_data.min_angle);
-  this->laser_data.max_angle = ntohs(this->laser_data.max_angle);
-  this->laser_data.range_count = ntohs(this->laser_data.range_count);
-  for (i = 0; i < this->laser_data.range_count; i++)
-    this->laser_data.ranges[i] = ntohs(this->laser_data.ranges[i]);
-
-  // TESTING
-  //this->WriteLaser();
-    
-  // Segment the scan into straight-line segments.
-  this->SegmentLaser();
-
-  // Fit lines to the segments.
-  this->FitSegments();
-
-  // Merge similar segments.
-  this->MergeSegments();
-
-  // Re-do the fit for the merged segments.
-  this->FitSegments();
-
-  return 1;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Write laser data to a file (testing).
-int LaserFeature::WriteLaser()
-{
-  int i;
-  
-  fprintf(this->laser_file, "%d %d %d %d ",
-          this->laser_data.resolution,
-          this->laser_data.min_angle,
-          this->laser_data.max_angle,
-          this->laser_data.range_count);
-    
-  for (i = 0; i < this->laser_data.range_count; i++)
-    fprintf(this->laser_file, "%d ", this->laser_data.ranges[i]);
-
-  fprintf(this->laser_file, "\n");
-  
-  return 0;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Read laser data from a file (testing).
-int LaserFeature::ReadLaser()
-{
-  int i, n;
-
-  n = fscanf(this->laser_file, "%hd %hd %hd %hd ",
-         &this->laser_data.resolution,
-         &this->laser_data.min_angle,
-         &this->laser_data.max_angle,
-         &this->laser_data.range_count);
-  if (n < 0 || n == EOF)
-    return -1;
-    
-  for (i = 0; i < this->laser_data.range_count; i++)
-    fscanf(this->laser_file, "%hd ", &this->laser_data.ranges[i]);
-
-  fscanf(this->laser_file, "\n");
-
-  return 0;
-}
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // Segment the scan into straight-line segments.
 void LaserFeature::SegmentLaser()
 {
-  int i;
-  double r, b;
-  double res;
-  double x[2], P[2][2];
-  double Q[2][2], R;
-  double err;
-  int mask;
-  
-  // Angle between successive laser readings.
-  res = (double) (this->laser_data.resolution) / 100.0 * M_PI / 180;
+	int i;
+	double r, b;
+	double res;
+	double x[2], P[2][2];
+	double Q[2][2], R;
+	double err;
+	int mask;
 
-  // System noise.
-  Q[0][0] = this->model_range_noise * this->model_range_noise;
-  Q[0][1] = 0;
-  Q[1][0] = 0;
-  Q[1][1] = this->model_angle_noise * this->model_angle_noise;
+	// Angle between successive laser readings.
+	res = (double) (this->laser_data.resolution) / 100.0 * M_PI / 180;
 
-  // Sensor noise.
-  R = this->sensor_range_noise * this->sensor_range_noise;
+	// System noise.
+	Q[0][0] = this->model_range_noise * this->model_range_noise;
+	Q[0][1] = 0;
+	Q[1][0] = 0;
+	Q[1][1] = this->model_angle_noise * this->model_angle_noise;
 
-  // Initial estimate and covariance.
-  x[0] = 1.0;
-  x[1] = M_PI / 2;
-  P[0][0] = 100;
-  P[0][1] = 0.0;
-  P[1][0] = 0.0;
-  P[1][1] = 100;
+	// Sensor noise.
+	R = this->sensor_range_noise * this->sensor_range_noise;
 
-  // Initialise the segments.
-  this->segment_count = 0;
-  
-  // Apply filter anti-clockwise.
-  mask = 0;
-  for (i = 0; i < this->laser_data.range_count; i++)
-  {
-    r = (double) (this->laser_data.ranges[i]) / 1000;
-    b = (double) (this->laser_data.min_angle) / 100.0 * M_PI / 180 + i * res;
-    
-    err = this->UpdateFilter(x, P, Q, R, r, res);
+	// Initial estimate and covariance.
+	x[0] = 1.0;
+	x[1] = M_PI / 2;
+	P[0][0] = 100;
+	P[0][1] = 0.0;
+	P[1][0] = 0.0;
+	P[1][1] = 100;
 
-    if (err < this->segment_range)
-    {
-      if (mask == 0)
-        this->segments[this->segment_count++].first = i;        
-      this->segments[this->segment_count - 1].last = i;
-      mask = 1;
-    }
-    else
-      mask = 0;
-      
-    //fprintf(stderr, "%f %f ", r, b);
-    //fprintf(stderr, "%f %f %f ", x[0], x[1], err);
+	// Initialise the segments.
+	this->segment_count = 0;
 
-    /*
+	// Apply filter anti-clockwise.
+	mask = 0;
+	for (i = 0; i < this->laser_data.ranges_count; i++)
+	{
+		r = (double) (this->laser_data.ranges[i]);
+		b = (double) (this->laser_data.min_angle) * M_PI / 180 + i * res;
+
+		err = this->UpdateFilter(x, P, Q, R, r, res);
+
+		if (err < this->segment_range)
+		{
+			if (mask == 0)
+				this->segments[this->segment_count++].first = i;
+			this->segments[this->segment_count - 1].last = i;
+			mask = 1;
+		}
+		else
+			mask = 0;
+
+		//fprintf(stderr, "%f %f ", r, b);
+		//fprintf(stderr, "%f %f %f ", x[0], x[1], err);
+
+		/*
     double psi = M_PI / 2 + b + x[1];
-    
+
     double px = x[0] * cos(b);
     double py = x[0] * sin(b);
-    
+
     double qx = px + 0.2 * cos(psi);
     double qy = py + 0.2 * sin(psi);
 
     fprintf(stderr, "%f %f\n%f %f\n\n", px, py, qx, qy);
-    */
+		 */
 
-    /*
+		/*
     // TESTING
     double psi, px, py;
     px = r * cos(b);
@@ -458,92 +463,92 @@ void LaserFeature::SegmentLaser()
     px += 0.5 * cos(psi);
     py += 0.5 * sin(psi);
     fprintf(stderr, "%f %f\n", sqrt(px * px + py * py), atan2(py, px));
-    */
-  }
-  //fprintf(stderr, "\n\n");
-  
-  // Apply filter clockwise.
-  mask = 0;
-  for (i = this->laser_data.range_count - 1; i >= 0; i--)
-  {
-    r = (double) (this->laser_data.ranges[i]) / 1000;
-    b = (double) (this->laser_data.min_angle) / 100.0 * M_PI / 180 + i * res;
-        
-    err = this->UpdateFilter(x, P, Q, R, r, -res);
+		 */
+	}
+	//fprintf(stderr, "\n\n");
 
-    if (err < this->segment_range)
-    {
-      if (mask == 0)
-        this->segments[this->segment_count++].last = i;        
-      this->segments[this->segment_count - 1].first = i;
-      mask = 1;
-    }
-    else
-      mask = 0;
+	// Apply filter clockwise.
+	mask = 0;
+	for (i = this->laser_data.ranges_count - 1; i >= 0; i--)
+	{
+		r = (double) (this->laser_data.ranges[i]);
+		b = (double) (this->laser_data.min_angle) * M_PI / 180 + i * res;
 
-    //fprintf(stderr, "%f %f ", r, b);
-    //fprintf(stderr, "%f %f %f\n", x[0], x[1], err);
-  }
-  //fprintf(stderr, "\n\n");
+		err = this->UpdateFilter(x, P, Q, R, r, -res);
 
-  return;
+		if (err < this->segment_range)
+		{
+			if (mask == 0)
+				this->segments[this->segment_count++].last = i;
+			this->segments[this->segment_count - 1].first = i;
+			mask = 1;
+		}
+		else
+			mask = 0;
+
+		//fprintf(stderr, "%f %f ", r, b);
+		//fprintf(stderr, "%f %f %f\n", x[0], x[1], err);
+	}
+	//fprintf(stderr, "\n\n");
+
+	return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Update the line filter.  Returns an error signal.
 double LaserFeature::UpdateFilter(double x[2], double P[2][2], double Q[2][2],
-                                  double R, double z, double res)
+		double R, double z, double res)
 {
-  int i, j, k, l;
-  double x_[2], P_[2][2];
-  double F[2][2];
-  double r, S;
-  double K[2];
+	int i, j, k, l;
+	double x_[2], P_[2][2];
+	double F[2][2];
+	double r, S;
+	double K[2];
 
-  // A priori state estimate.
-  x_[0] = sin(x[1]) / sin(x[1] - res) * x[0];
-  x_[1] = x[1] - res;
+	// A priori state estimate.
+	x_[0] = sin(x[1]) / sin(x[1] - res) * x[0];
+	x_[1] = x[1] - res;
 
-  // Jacobian for the system function.
-  F[0][0] = sin(x[1]) / sin(x[1] - res);
-  F[0][1] = -sin(res) / (sin(x[1] - res) * sin(x[1] - res)) * x[0];
-  F[1][0] = 0;
-  F[1][1] = 1;
-  
-  // Covariance of a priori state estimate.
-  for (i = 0; i < 2; i++)
-  {
-    for (j = 0; j < 2; j++)
-    {
-      P_[i][j] = 0.0;
-      for (k = 0; k < 2; k++)
-        for (l = 0; l < 2; l++)
-          P_[i][j] += F[i][k] * P[k][l] * F[j][l];
-      P_[i][j] += Q[i][j];
-    }
-  }
+	// Jacobian for the system function.
+	F[0][0] = sin(x[1]) / sin(x[1] - res);
+	F[0][1] = -sin(res) / (sin(x[1] - res) * sin(x[1] - res)) * x[0];
+	F[1][0] = 0;
+	F[1][1] = 1;
 
-  // Residual (difference between prediction and measurement).
-  r = z - x_[0];
+	// Covariance of a priori state estimate.
+	for (i = 0; i < 2; i++)
+	{
+		for (j = 0; j < 2; j++)
+		{
+			P_[i][j] = 0.0;
+			for (k = 0; k < 2; k++)
+				for (l = 0; l < 2; l++)
+					P_[i][j] += F[i][k] * P[k][l] * F[j][l];
+			P_[i][j] += Q[i][j];
+		}
+	}
 
-  // Covariance of the residual.
-  S = P_[0][0] + R;
+	// Residual (difference between prediction and measurement).
+	r = z - x_[0];
 
-  // Kalman gain.
-  K[0] = P_[0][0] / S;
-  K[1] = P_[1][0] / S;
+	// Covariance of the residual.
+	S = P_[0][0] + R;
 
-  // Posterior state estimate.
-  x[0] = x_[0] + K[0] * r;
-  x[1] = x_[1] + K[1] * r;    
+	// Kalman gain.
+	K[0] = P_[0][0] / S;
+	K[1] = P_[1][0] / S;
 
-  // Posterior state covariance.
-  for (i = 0; i < 2; i++)
-    for (j = 0; j < 2; j++)
-      P[i][j] = P_[i][j] - K[i] * S * K[j];
+	// Posterior state estimate.
+	x[0] = x_[0] + K[0] * r;
+	x[1] = x_[1] + K[1] * r;
 
-  return fabs(r); //r * r / S;
+	// Posterior state covariance.
+	for (i = 0; i < 2; i++)
+		for (j = 0; j < 2; j++)
+			P[i][j] = P_[i][j] - K[i] * S * K[j];
+
+	return fabs(r); //r * r / S;
 }
 
 
@@ -551,67 +556,67 @@ double LaserFeature::UpdateFilter(double x[2], double P[2][2], double Q[2][2],
 // Fit lines to the extracted segments.
 void LaserFeature::FitSegments()
 {
-  int i, j;
-  segment_t *segment;
-  double r, b, x, y;
-  double n, sx, sy, sxx, sxy, syy;
-  double px, py, pa;
-  double ax, ay, bx, by, cx, cy;
-  
-  for (j = 0; j < this->segment_count; j++)
-  {
-    segment = this->segments + j;
+	int i, j;
+	segment_t *segment;
+	double r, b, x, y;
+	double n, sx, sy, sxx, sxy, syy;
+	double px, py, pa;
+	double ax, ay, bx, by, cx, cy;
 
-    n = sx = sy = sxx = syy = sxy = 0.0;
-    ax = ay = bx = by = 0.0;
-    
-    for (i = segment->first; i <= segment->last; i++)
-    {
-      r = (double) (this->laser_data.ranges[i]) / 1000;
-      b = (double) (this->laser_data.min_angle + i * this->laser_data.resolution)
-        / 100.0 * M_PI / 180;
-      x = r * cos(b);
-      y = r * sin(b);
+	for (j = 0; j < this->segment_count; j++)
+	{
+		segment = this->segments + j;
 
-      if (i == segment->first)
-      {
-        ax = x;
-        ay = y;
-      }
-      else if (i == segment->last)
-      {
-        bx = x;
-        by = y;
-      }
-      
-      n += 1;
-      sx += x;
-      sy += y;
-      sxx += x * x;
-      syy += y * y;
-      sxy += x * y;
-    }
+		n = sx = sy = sxx = syy = sxy = 0.0;
+		ax = ay = bx = by = 0.0;
 
-    px = sx / n;
-    py = sy / n;
-    pa = atan2((n * sxy  - sy * sx), (n * sxx - sx * sx));
+		for (i = segment->first; i <= segment->last; i++)
+		{
+			r = (double) (this->laser_data.ranges[i]);
+			b = (double) (this->laser_data.min_angle + i * this->laser_data.resolution)
+        								 * M_PI / 180;
+			x = r * cos(b);
+			y = r * sin(b);
 
-    // Make sure the orientation is normal to surface.
-    pa += M_PI / 2;
-    if (fabs(NORMALIZE(pa - atan2(py, px))) < M_PI / 2)
-      pa += M_PI;
+			if (i == segment->first)
+			{
+				ax = x;
+				ay = y;
+			}
+			else if (i == segment->last)
+			{
+				bx = x;
+				by = y;
+			}
 
-    segment->count = (int) n;
-    segment->pose[0] = px;
-    segment->pose[1] = py;
-    segment->pose[2] = pa;
+			n += 1;
+			sx += x;
+			sy += y;
+			sxx += x * x;
+			syy += y * y;
+			sxy += x * y;
+		}
 
-    cx = bx - ax;
-    cy = by - ay;
-    segment->length = sqrt(cx * cx + cy * cy);
-  }
-                 
-  return;
+		px = sx / n;
+		py = sy / n;
+		pa = atan2((n * sxy  - sy * sx), (n * sxx - sx * sx));
+
+		// Make sure the orientation is normal to surface.
+		pa += M_PI / 2;
+		if (fabs(NORMALIZE(pa - atan2(py, px))) < M_PI / 2)
+			pa += M_PI;
+
+		segment->count = (int) n;
+		segment->pose[0] = px;
+		segment->pose[1] = py;
+		segment->pose[2] = pa;
+
+		cx = bx - ax;
+		cy = by - ay;
+		segment->length = sqrt(cx * cx + cy * cy);
+	}
+
+	return;
 }
 
 
@@ -619,119 +624,112 @@ void LaserFeature::FitSegments()
 // Merge overlapping segments with similar properties.
 void LaserFeature::MergeSegments()
 {
-  int i, j;
-  segment_t *sa, *sb;
-  double da;
-  
-  for (i = 0; i < this->segment_count; i++)
-  {
-    for (j = i + 1; j < this->segment_count; j++)
-    {
-      sa = this->segments + i;
-      sb = this->segments + j;
+	int i, j;
+	segment_t *sa, *sb;
+	double da;
 
-      // See if segments overlap...
-      if (sb->first <= sa->last && sa->first <= sb->last)
-      {
-        // See if the segments have the same orientation...
-        da = NORMALIZE(sb->pose[2] - sa->pose[2]);
-        if (fabs(da) < this->merge_angle)
-        {
-          sa->first = min(sa->first, sb->first);
-          sa->last = max(sa->last, sb->last);
-          sb->first = 0;
-          sb->last = -1;
-        }
-      }
-    }
-  }
-  return;
+	for (i = 0; i < this->segment_count; i++)
+	{
+		for (j = i + 1; j < this->segment_count; j++)
+		{
+			sa = this->segments + i;
+			sb = this->segments + j;
+
+			// See if segments overlap...
+			if (sb->first <= sa->last && sa->first <= sb->last)
+			{
+				// See if the segments have the same orientation...
+				da = NORMALIZE(sb->pose[2] - sa->pose[2]);
+				if (fabs(da) < this->merge_angle)
+				{
+					sa->first = MIN(sa->first, sb->first);
+					sa->last = MAX(sa->last, sb->last);
+					sb->first = 0;
+					sb->last = -1;
+				}
+			}
+		}
+	}
+	return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Update the device data (the data going back to the client).
-void LaserFeature::UpdateData()
+void LaserFeature::PublishFiducial()
 {
-  int i;
-  double px, py, pa;
-  double r, b, o;
-  segment_t *segment;
-  
-  this->data.count = 0;
+	int i;
+	double px, py, pa;
+	double r, b, o;
+	segment_t *segment;
 
-  for (i = 0; i < this->segment_count; i++)
-  {
-    segment = this->segments + i;
+	this->data.fiducials_count = 0;
 
-    if (segment->count >= 4 && segment->length >= this->discard_length)
-    {
-      px = segment->pose[0];
-      py = segment->pose[1];
-      pa = segment->pose[2];
-      
-      r = sqrt(px * px + py * py);
-      b = atan2(py, px);
-      o = pa;
+	if (this->data.fiducials)
+	{
+		delete[] this->data.fiducials;
+	}
+	this->data.fiducials = new player_fiducial_item_t[this->segment_count];
 
-      this->data.fiducials[this->data.count].id = 0;
-      this->data.fiducials[this->data.count].pose[0] = htons(((int16_t) (1000 * r)));
-      this->data.fiducials[this->data.count].pose[1] = htons(((int16_t) (180 * b / M_PI)));
-      this->data.fiducials[this->data.count].pose[2] = htons(((int16_t) (180 * o / M_PI)));
-      this->data.count++;
-    }
-  }
-  
-  this->data.count = htons(this->data.count);
-  
-  return;
+
+	for (i = 0; i < this->segment_count; i++)
+	{
+		segment = this->segments + i;
+
+		if (segment->count >= this->min_segment_count && segment->length >= this->discard_length)
+		{
+			px = segment->pose[0];
+			py = segment->pose[1];
+			pa = segment->pose[2];
+
+			r = sqrt(px * px + py * py);
+			b = atan2(py, px);
+			o = pa;
+
+			this->data.fiducials[this->data.fiducials_count].id = 0;
+			this->data.fiducials[this->data.fiducials_count].pose.px = r;
+			this->data.fiducials[this->data.fiducials_count].pose.py = b;
+			this->data.fiducials[this->data.fiducials_count].pose.pz = 0;
+			this->data.fiducials[this->data.fiducials_count].pose.proll = 0;
+			this->data.fiducials[this->data.fiducials_count].pose.ppitch = 0;
+			this->data.fiducials[this->data.fiducials_count].pose.pyaw = o;
+
+			this->data.fiducials_count++;
+		}
+	}
+	Publish(this->fiducial_id, PLAYER_MSGTYPE_DATA, PLAYER_FIDUCIAL_DATA_SCAN, (void*)&this->data, sizeof(this->data), NULL);
+
+	return;
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////
-// Put configuration in buffer (called by client thread)
-int LaserFeature::PutConfig(player_device_id_t* device, void *client, void *data, size_t len) 
+// Handle all incoming messages
+int LaserFeature::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data)
 {
-  uint8_t subtype;
+	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_FIDUCIAL_REQ_GET_GEOM, this->fiducial_id))
+	{
+		player_fiducial_geom_t geom;
+		memset(&geom, 0, sizeof(player_fiducial_geom_t));
 
-  subtype = ((uint8_t*) data)[0];
-  
-  switch (subtype)
-  {
-    case PLAYER_FIDUCIAL_REQ_GET_GEOM:
-      HandleGetGeom(client, data, len);
-      break;
-    default:
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-        PLAYER_ERROR("PutReply() failed");
-      break;
-  }
-  return 0;
+		geom.pose.px = this->pose[0];
+		geom.pose.py = this->pose[1];
+		geom.pose.pyaw = this->pose[2];
+
+		Publish(this->fiducial_id, PLAYER_MSGTYPE_RESP_ACK, PLAYER_FIDUCIAL_REQ_GET_GEOM, &geom, sizeof(geom), NULL);
+
+		return 0;
+
+	}
+	else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN, this->laser_id))
+	{
+		this->laser_data = *(player_laser_data_t*) data;
+
+		have_new_scan = true;
+		return 0;
+	}
+	else
+	{
+		return -1;
+	}
 }
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Handle geometry requests.
-void LaserFeature::HandleGetGeom(void *client, void *request, int len)
-{
-  player_fiducial_geom_t geom;
-
-  if (len != 1)
-  {
-    PLAYER_ERROR2("geometry request len is invalid (%d != %d)", len, 1);
-    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-      PLAYER_ERROR("PutReply() failed");
-    return;
-  }
-
-  geom.pose[0] = htons((short) (this->pose[0] * 1000));
-  geom.pose[1] = htons((short) (this->pose[1] * 1000));
-  geom.pose[2] = htons((short) (this->pose[2] * 180/M_PI));
-
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, sizeof(geom)) != 0)
-    PLAYER_ERROR("PutReply() failed");
-
-  return;
-}
-
 
