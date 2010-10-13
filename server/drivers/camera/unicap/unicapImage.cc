@@ -92,7 +92,7 @@ driver
 
 ////////////////////////////////////////////////////////////////////////////////
 // The UniCap_Image device class.
-class UniCap_Image : public Driver
+class UniCap_Image : public ThreadedDriver
 {
   public:
     // Constructor
@@ -102,17 +102,21 @@ class UniCap_Image : public Driver
     ~UniCap_Image ();
 
     // Implementations of virtual functions
-    virtual int Setup ();
-    virtual int Shutdown ();
+    virtual int MainSetup ();
+    virtual void MainQuit ();
+    virtual int ProcessMessage(QueuePointer & resp_queue,
+                                     player_msghdr * hdr,
+                                     void * data);
 
     // Camera interface (provides)
     player_devaddr_t         cam_id;
     player_camera_data_t     cam_data;
+
   private:
 
     // Main function for device thread.
     virtual void Main ();
-    virtual void RefreshData  ();
+    void PublishCamera  ();
 
     int color_space, video_format, device_id;
     
@@ -145,7 +149,7 @@ void unicapimage_Register (DriverTable* table)
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 UniCap_Image::UniCap_Image (ConfigFile* cf, int section)
-    : Driver (cf, section)
+    : ThreadedDriver (cf, section)
 {
   memset (&this->cam_id, 0, sizeof (player_devaddr_t));
 
@@ -189,7 +193,7 @@ UniCap_Image::~UniCap_Image()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
-int UniCap_Image::Setup ()
+int UniCap_Image::MainSetup ()
 {
   PLAYER_MSG0 (1, "> UniCap_Image starting up... [done]");
 
@@ -226,6 +230,9 @@ int UniCap_Image::Setup ()
    }
    PLAYER_MSG3 (2, "Selected video format %d: [%dx%d]", this->video_format, format.size.width, format.size.height);
 
+   // Set Unicap to use a user buffer
+   format.buffer_type = UNICAP_BUFFER_TYPE_USER;
+
    if (!SUCCESS (unicap_set_format (handle, &format) ) )
    {
      PLAYER_ERROR1 ("Failed to set video format to %d!", this->video_format);
@@ -246,20 +253,14 @@ int UniCap_Image::Setup ()
   // Allocate buffer data
   buffer.data = (unsigned char*)(malloc (format.size.width * format.size.height * format.bpp / 8));
   buffer.buffer_size = format.size.width * format.size.height * format.bpp / 8;
-  
-  // Start the device thread
-  StartThread ();
 
   return (0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-int UniCap_Image::Shutdown ()
+void UniCap_Image::MainQuit ()
 {
-  // Stop the driver thread
-  StopThread ();
-
   // Stop the device
   if ( !SUCCESS (unicap_stop_capture (handle) ) )
     PLAYER_ERROR1 ("Failed to stop capture on device: %s\n", device.identifier);
@@ -270,29 +271,33 @@ int UniCap_Image::Shutdown ()
 
   free (buffer.data);
   PLAYER_MSG0 (1, "> UniCap_Image driver shutting down... [done]");
-  return (0);
+  return;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
 void UniCap_Image::Main ()
 {
-  timespec sleepTime = {0, 1000};
 
   // The main loop; interact with the device here
   while (true)
   {
-      nanosleep (&sleepTime, NULL);
-
       // test if we are supposed to cancel
       pthread_testcancel ();
 
       // Refresh data
-      this->RefreshData ();
+      this->PublishCamera ();
+
+      // Sleep the thread
+      usleep(1000);
+
+      printf("Loop\n");
   }
 }
 
-void UniCap_Image::RefreshData ()
+/////////////////////////////////////////////////////////////////////////////////
+// Grab and publish a frame
+void UniCap_Image::PublishCamera ()
 {
   // Queue the buffer
   // The buffer now gets filled with image data by the capture device
@@ -305,14 +310,26 @@ void UniCap_Image::RefreshData ()
 
   cam_data.width  = buffer.format.size.width;
   cam_data.height = buffer.format.size.height;
+  cam_data.compression = PLAYER_CAMERA_COMPRESS_RAW;
+  cam_data.fdiv = 1;
+  cam_data.bpp = format.bpp;
   
   // To do: implement the code for different formats later
-  cam_data.format = PLAYER_CAMERA_FORMAT_MONO8;
+  cam_data.format = PLAYER_CAMERA_FORMAT_RGB888;
   cam_data.image_count = buffer.buffer_size;
   cam_data.image = new unsigned char [cam_data.image_count];
-  for (int i = 0; i < cam_data.image_count; i++)
+  for (unsigned int i = 0; i < cam_data.image_count; i++)
     cam_data.image[i] = buffer.data[i];
   
   Publish (this->cam_id, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, &cam_data);
   delete [] cam_data.image;
+}
+
+///////////////////////////////////////////////////////////////////////////////////
+// Message handling
+int UniCap_Image::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr,
+                                     void * data)
+{
+  // No messages to process
+  return -1;
 }

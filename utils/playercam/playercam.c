@@ -467,7 +467,7 @@ player_update()
     {
       // Decompress the image if necessary
       playerc_camera_decompress(g_camera);
-      assert(allocated_size > g_camera->image_count*3);
+      assert(allocated_size >= g_camera->image_count);
       // figure out the colorspace
       switch (g_camera->format)
       {
