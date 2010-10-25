@@ -657,10 +657,10 @@ SickLMS200::ProcessMessage(QueuePointer & resp_queue,
             reinterpret_cast<player_laser_config_t *> (data);
 
     this->intensity = config->intensity;
-    this->scan_res = (int) rint(RTOD(config->resolution)*100);
+    this->scan_res = (int) rint((config->resolution)*1);
     this->min_angle = (int)rint(RTOD(config->min_angle)*100);
     this->max_angle = (int)rint(RTOD(config->max_angle)*100);
-    this->range_res = (int) (config->range_res*1000);
+    this->range_res = (int) (config->range_res*1);
     printf("range_res: %f %d\n", config->range_res, this->range_res);
 
     if(this->CheckScanConfig() != 0)
@@ -710,7 +710,7 @@ SickLMS200::ProcessMessage(QueuePointer & resp_queue,
       config.max_range = 150.0;
     else
     {
-      PLAYER_WARN("Invalid range_res!");
+      PLAYER_WARN1("Invalid range_res (%d) in ProcessMessage.", this->range_res);
       config.max_range = 8.0;
     }
     config.range_res = ((double)this->range_res)/1000.0;
@@ -796,7 +796,7 @@ void SickLMS200::Main()
         data.max_range = 150.0;
       else
       {
-        PLAYER_WARN("Invalid range_res!");
+        PLAYER_WARN1("Invalid range_res (%d) in Main().", this->range_res);
         data.max_range = 8.0;
       }
       data.resolution = DTOR(this->scan_res / 1e2);
@@ -1535,7 +1535,7 @@ int SickLMS200::SetLaserRes(int width, int res)
     return 0;
   }
 
-  PLAYER_MSG0(2,"Sending new resolution to device.");
+  PLAYER_MSG1(2,"Sending new resolution %d to device.", res);
 
   for (tries = 0; tries < DEFAULT_LASER_RETRIES; tries++)
   {
