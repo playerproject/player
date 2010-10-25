@@ -165,6 +165,8 @@ class PLAYERCC_EXPORT ActArrayProxy : public ClientProxy
     void SetBrakesConfig(bool aVal);
     /// Speed control
     void SetSpeedConfig(uint32_t aJoint, float aSpeed);
+    /// Acceleration control
+    void SetAccelerationConfig(uint32_t aJoint, float aAcc);
 
     /// Send an actuator to a position
     void MoveTo(uint32_t aJoint, float aPos);

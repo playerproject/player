@@ -174,6 +174,20 @@ void ActArrayProxy::SetSpeedConfig (uint32_t aJoint, float aSpeed)
                       ret);
 }
 
+// Acceleration config
+void ActArrayProxy::SetAccelerationConfig (uint32_t aJoint, float aAcc)
+{
+  scoped_lock_t lock(mPc->mMutex);
+  int ret = playerc_actarray_accel_config(mDevice, aJoint, aAcc);
+
+  if (ret == -2)
+    throw PlayerError("ActArrayProxy::SetAccelerationConfig", "NACK", ret);
+  else if (ret != 0)
+    throw PlayerError("ActArrayProxy::SetAccelerationConfig",
+                      playerc_error_str(),
+                      ret);
+}
+
 // Send an actuator to a position
 void ActArrayProxy::MoveTo(uint32_t aJoint, float aPosition)
 {
