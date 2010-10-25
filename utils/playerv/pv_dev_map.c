@@ -64,7 +64,7 @@ map_t *map_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
   rtk_menuitem_check(map->subscribe_item, subscribe);
 
   // Construct figures
-  map->fig = rtk_fig_create(mainwnd->canvas, NULL, 1);
+  map->fig = rtk_fig_create(mainwnd->canvas, NULL, -10);
 
   return map;
 }
