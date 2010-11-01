@@ -186,7 +186,7 @@ Driver* InertiaCube2_Init( ConfigFile* cf, int section)
 
 
 // a driver registration function
-void inertiacube2_Register(DriverTable* table)
+void isense_Register(DriverTable* table)
 {
   table->AddDriver("inertiacube2", InertiaCube2_Init);
 }
