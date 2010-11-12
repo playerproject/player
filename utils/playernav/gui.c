@@ -31,6 +31,7 @@
 #include <gdk/gdkkeysyms.h>
 
 #include <libplayercommon/playercommon.h>
+#include <libplayerutil/localization.h>
 #include "playernav.h"
 
 // flag and index for robot currently being moved by user (if any)
@@ -53,6 +54,7 @@ static gboolean setting_goal=FALSE;
 
 extern int dumpp;
 extern int showparticlesp;
+extern int showuncertaintyp;
 int show_robot_names;
 
 /*
@@ -159,6 +161,55 @@ _show_particles(GtkWidget *widget,
   return(TRUE);
 }
 
+static gboolean
+_show_uncertainty(GtkWidget *widget,
+		  GdkEvent *event,
+		  gpointer data)
+{
+  int rob_i, hyp_i;
+  gui_data_t* gui_data = (gui_data_t*)widget;
+  gboolean onmap;
+  player_pose2d_t hyp_pose;
+
+  showuncertaintyp = !showuncertaintyp;
+  if(showuncertaintyp) 
+  {
+    for(rob_i = 0; rob_i<gui_data->num_robots;++rob_i)
+    {
+      onmap = false;
+      if(!gui_data->localizes[rob_i] || 
+	 (gui_data->localizes[rob_i]->hypoth_count <= 0) )
+	continue;
+
+      // Check if at least one hypotheses is on the map
+      for(hyp_i = 0; hyp_i<gui_data->localizes[rob_i]->hypoth_count; ++hyp_i)
+      {
+	hyp_pose = gui_data->localizes[rob_i]->hypoths[hyp_i].mean;
+
+	onmap |= ((fabs(hyp_pose.px) <
+                (gui_data->mapdev->width *
+                 gui_data->mapdev->resolution / 2.0)) &&
+               (fabs(hyp_pose.py) <
+                (gui_data->mapdev->height *
+                 gui_data->mapdev->resolution / 2.0)));
+      }
+
+      if(onmap)
+      {
+	draw_uncertainty(gui_data,rob_i);
+      }
+    }
+  }
+  else
+  {
+    for(rob_i=0; rob_i<gui_data->num_robots; ++rob_i)
+    {
+      if(gui_data->robot_uncertainty[rob_i])
+	gnome_canvas_item_hide(gui_data->robot_uncertainty[rob_i]);
+    }
+  }
+  return(TRUE);
+}
 
 static gboolean
 _stop_all_robots(GtkWidget *widget,
@@ -470,6 +521,7 @@ make_menu(gui_data_t* gui_data)
   GtkMenuItem* view_item;
   GtkCheckMenuItem* show_names_item;
   GtkCheckMenuItem* show_particles_item;
+  GtkCheckMenuItem* show_uncertainty_item;
   GtkCheckMenuItem* refresh_map_item;
 
   GtkMenu* stop_menu;
@@ -492,6 +544,7 @@ make_menu(gui_data_t* gui_data)
   dump_item = (GtkCheckMenuItem*)gtk_check_menu_item_new_with_label("Capture stills");
   show_names_item = (GtkCheckMenuItem*)gtk_check_menu_item_new_with_label("Show robot names");
   show_particles_item = (GtkCheckMenuItem*)gtk_check_menu_item_new_with_label("Show particles");
+  show_uncertainty_item = (GtkCheckMenuItem*)gtk_check_menu_item_new_with_label("Show uncertainty");
   refresh_map_item = (GtkCheckMenuItem*)gtk_menu_item_new_with_label("Refresh map");
   stop_all_item = (GtkMenuItem*)gtk_menu_item_new_with_label("Stop all robots");
   go_all_item = (GtkMenuItem*)gtk_menu_item_new_with_label("Go all robots");
@@ -530,6 +583,7 @@ make_menu(gui_data_t* gui_data)
   gtk_menu_shell_append (GTK_MENU_SHELL(file_menu), (GtkWidget*)quit_item);
   gtk_menu_shell_append (GTK_MENU_SHELL(view_menu), (GtkWidget*)show_names_item);
   gtk_menu_shell_append (GTK_MENU_SHELL(view_menu), (GtkWidget*)show_particles_item);
+  gtk_menu_shell_append (GTK_MENU_SHELL(view_menu), (GtkWidget*)show_uncertainty_item);
   gtk_menu_shell_append (GTK_MENU_SHELL(view_menu), (GtkWidget*)refresh_map_item);
   gtk_menu_shell_append (GTK_MENU_SHELL(stop_menu), (GtkWidget*)stop_all_item);
   gtk_menu_shell_append (GTK_MENU_SHELL(stop_menu), (GtkWidget*)go_all_item);
@@ -548,6 +602,9 @@ make_menu(gui_data_t* gui_data)
   g_signal_connect_swapped(G_OBJECT (show_particles_item), "activate",
                            G_CALLBACK(_show_particles),
                            (gpointer) gui_data);
+  g_signal_connect_swapped(G_OBJECT (show_uncertainty_item), "activate",
+                           G_CALLBACK(_show_uncertainty),
+                           (gpointer) gui_data);
   g_signal_connect_swapped(G_OBJECT (refresh_map_item), "activate",
                            G_CALLBACK(_refresh_map),
                            (gpointer) gui_data);
@@ -563,6 +620,7 @@ make_menu(gui_data_t* gui_data)
   gtk_widget_show((GtkWidget*)quit_item);
   gtk_widget_show((GtkWidget*)show_names_item);
   gtk_widget_show((GtkWidget*)show_particles_item);
+  gtk_widget_show((GtkWidget*)show_uncertainty_item);
   gtk_widget_show((GtkWidget*)refresh_map_item);
   gtk_widget_show((GtkWidget*)stop_all_item);
   gtk_widget_show((GtkWidget*)go_all_item);
@@ -1015,6 +1073,52 @@ draw_particles(gui_data_t* gui_data, int idx)
     ellipse_pose.py = gui_data->localizes[idx]->mean[1];
     ellipse_pose.pa = gui_data->localizes[idx]->mean[2];
     move_item(ellipse,ellipse_pose,0);
+  }
+}
+
+void
+draw_uncertainty(gui_data_t* gui_data, int idx) {
+  int hyp_i;
+  player_pose2d_t ellipse_pose;
+  pose_t ep;
+  player_localize_hypoth_t* hypo;
+  double radius_x,radius_y;
+  GnomeCanvasItem* ellipse;
+
+
+  if(gui_data->robot_uncertainty[idx])
+  {
+    gtk_object_destroy(GTK_OBJECT(gui_data->robot_uncertainty[idx]));
+    gui_data->robot_uncertainty[idx] = NULL;
+  }
+
+  if(gui_data->localizes[idx]->hypoth_count)
+  {  
+    g_assert((gui_data->robot_uncertainty[idx] = 
+	      gnome_canvas_item_new(gnome_canvas_root(gui_data->map_canvas),
+				    gnome_canvas_group_get_type(),
+				    "x", 0.0, "y", 0.0,
+				    NULL)));
+    for(hyp_i = 0; hyp_i<gui_data->localizes[idx]->hypoth_count; ++hyp_i)
+    {
+      hypo = &(gui_data->localizes[idx]->hypoths[hyp_i]);
+      derive_uncertainty_ellipsis2d(&ellipse_pose, &radius_x, &radius_y,
+				    hypo, 0.68);
+      g_assert((ellipse =
+		gnome_canvas_item_new((GnomeCanvasGroup*)gui_data->robot_uncertainty[idx],
+				      gnome_canvas_ellipse_get_type(),
+				      "x1", -radius_x,
+				      "y1", -radius_y,
+				      "x2", radius_x,
+				      "y2", radius_y,
+				      "fill-color-rgba",
+				      robot_colors[idx % num_robot_colors],
+				      NULL)));
+      ep.px = ellipse_pose.px;
+      ep.py = ellipse_pose.py;
+      ep.pa = ellipse_pose.pa;
+      move_item(ellipse,ep,0);
+    }
   }
 }
 

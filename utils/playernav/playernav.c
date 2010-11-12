@@ -41,7 +41,8 @@ It allows you to set your robots' localization hypotheses by dragging
 and dropping them in the map.  You can set global goals the same way,
 and see the planned paths and the robots' progress toward the goals.
 playernav can also display (a subset of) the localization system's current
-particle set, which may help in debugging localization.  You can think
+particle set, which may help in debugging localization. Furthermore is is able
+to visualize the uncertainty of the estimated postition. You can think
 of playernav as an Operator Control Unit (OCU).  playernav can also be
 used just to view a map.
 
@@ -58,7 +59,7 @@ Where the options are:
 - -fps &lt;dumprate&gt; : when requested, dump screenshots at this rate in Hz (default: 5Hz)
 - -zoom &lt;zoom&gt; : initial level of zoom in the display (default: 1)
 - -aa {0|1} : whether to use anti-aliased canvas for display; the anti-aliased canvas looks nicer but may require more processor cycles (default: 1)
-- -map  &lt;map_idx&gt; : the index of the map to be requested and displayed (default: 0)
+- -mapidx  &lt;map_idx&gt; : the index of the map to be requested and displayed (default: 0)
 
 playernav will connect to Player at each host:port combination given on
 the command line.  For each one, playernav will attempt to subscribe to
@@ -149,6 +150,7 @@ int robot_moving_idx;
 double dumpfreq;
 int dumpp;
 int showparticlesp;
+int showuncertaintyp;
 double mapupdatefreq=0.0;
 int get_waypoints=1;
 
@@ -275,6 +277,12 @@ player_read_func(gpointer* arg)
             playerc_localize_get_particles(gui_data->localizes[i]);
             draw_particles(gui_data,i);
           }
+	  
+	  // If we have a localizer retrive and draw uncertainty ellipsis
+	  if(showuncertaintyp && gui_data->localizes[i])
+	  {
+	    draw_uncertainty(gui_data,i);
+	  }
         }
       }
 
