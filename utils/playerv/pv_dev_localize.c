@@ -28,6 +28,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include <libplayerutil/localization.h>
 #include "playerv.h"
 
 #if defined (WIN32)
@@ -208,14 +209,10 @@ void localize_reset_pose(localize_t *self)
 void localize_draw_hypoth(localize_t *self)
 {
   int i;
-  double ox, oy, oa;
+  player_pose2d_t epose;
   double sx, sy;
-  double cov[2][2], eval[2], evec[2][2];
-  double max_weight;
   player_localize_hypoth_t *hypoth;
 
-  max_weight = 0.0;
-  
   rtk_fig_clear(self->hypoth_fig);
   rtk_fig_color_rgb32(self->hypoth_fig, COLOR_LOCALIZE);
 
@@ -223,20 +220,8 @@ void localize_draw_hypoth(localize_t *self)
   {
     hypoth = self->proxy->hypoths + i;
 
-    // Get eigen values/vectors
-    cov[0][0] = hypoth->cov[0];
-    cov[0][1] = 0;
-    cov[1][0] = 0;
-    cov[1][1] = hypoth->cov[1];
-    eigen(cov, eval, evec);
-        
-    ox = hypoth->mean.px ;
-    oy = hypoth->mean.py ;
-
-    oa = atan2(evec[0][1], evec[0][0]);
-    
-    sx = 6 * sqrt(eval[0]);
-    sy = 6 * sqrt(eval[1]);
+    derive_uncertainty_ellipsis2d(&epose, &sx, &sy,
+				  hypoth, 0.68);
 
     if (sx < 0.10)
       sx = 0.10;
@@ -245,9 +230,10 @@ void localize_draw_hypoth(localize_t *self)
     
     if (sx > 1e-3 && sy > 1e-3)
     {
-      rtk_fig_line_ex(self->hypoth_fig, ox, oy, oa, sx);
-      rtk_fig_line_ex(self->hypoth_fig, ox, oy, oa + M_PI / 2, sy);
-      rtk_fig_ellipse(self->hypoth_fig, ox, oy, oa, sx, sy, 0);
+      rtk_fig_line_ex(self->hypoth_fig, epose.px, epose.py, epose.pa, sx);
+      rtk_fig_line_ex(self->hypoth_fig, epose.px, epose.py, 
+		      epose.pa + M_PI / 2, sy);
+      rtk_fig_ellipse(self->hypoth_fig, epose.px, epose.py, epose.pa, sx,sy, 0);
     }
   }
   
