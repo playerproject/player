@@ -75,6 +75,10 @@
  - max_angle (float, radians)
    - Default: 4.0 rad (Will use laser default)
    - Maximum scan angle to return. Will be adjusted if outside the laser's scannable range.
+ - invert (boolean)
+   - Default: false
+   - If true, the reading will be inverted (i.e. read backwards). Useful if the laser scanner is
+     mounted upside down.
  - power (boolean)
    - Default: true
    - If true, the sensor power will be switched on upon driver activation (i.e. when the first
@@ -158,7 +162,7 @@ class HokuyoDriver : public ThreadedDriver
 		bool AllocateDataSpace (void);
 
 		// Configuration parameters
-		bool _verbose, _powerOnStartup, _getIntensities, _ignoreUnknowns;
+		bool _verbose, _invert, _powerOnStartup, _getIntensities, _ignoreUnknowns;
 		double _minAngle, _maxAngle;
 		IntProperty _baudRate, _speedLevel, _highSensitivity;
 		DoubleProperty _minDist;
@@ -201,6 +205,7 @@ HokuyoDriver::HokuyoDriver (ConfigFile* cf, int section) :
 	_getIntensities = cf->ReadBool (section, "get_intensities", false);
 	_minAngle = cf->ReadFloat (section, "min_angle", -4.0);
 	_maxAngle = cf->ReadFloat (section, "max_angle", 4.0);
+	_invert = cf->ReadBool (section, "invert", false);
 	_portOpts = cf->ReadString (section, "portopts", "type=serial,device=/dev/ttyACM0,timeout=1");
 	_verbose = cf->ReadBool (section, "verbose", false);
 	_ignoreUnknowns = cf->ReadBool (section, "ignoreunknowns", false);
@@ -436,8 +441,17 @@ int HokuyoDriver::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, 
 		hokuyo_aist::HokuyoSensorInfo info;
 		_device.GetSensorInfo (&info);
 
-		rangerConfig.min_angle = _minAngle; // These two are user-configurable
-		rangerConfig.max_angle = _maxAngle;
+		if (!_invert)
+		{
+			rangerConfig.min_angle = _minAngle; // These two are user-configurable
+			rangerConfig.max_angle = _maxAngle;
+		}
+		else
+		{
+			rangerConfig.min_angle = -_maxAngle;
+			rangerConfig.max_angle = -_minAngle;
+		}
+
 		rangerConfig.angular_res = info.resolution;
 		rangerConfig.min_range = info.minRange / 1000.0;
 		rangerConfig.max_range = info.maxRange / 1000.0;
@@ -452,8 +466,17 @@ int HokuyoDriver::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, 
 	{
 		player_ranger_config_t *newParams = reinterpret_cast<player_ranger_config_t*> (data);
 
-		_minAngle = newParams->min_angle;
-		_maxAngle = newParams->max_angle;
+		if (!_invert)
+		{
+			_minAngle = newParams->min_angle;
+			_maxAngle = newParams->max_angle;
+		}
+		else
+		{
+			_minAngle = -newParams->max_angle;
+			_maxAngle = -newParams->min_angle;
+		}
+
 		if (!AllocateDataSpace ())
 		{
 			PLAYER_ERROR ("hokuyo_aist: Failed to allocate space for storing range data.");
@@ -518,16 +541,35 @@ bool HokuyoDriver::ReadLaser (void)
 		}
 
 		double lastValidValue = _minDist;
-		for (unsigned int ii = 0; ii < _data.Length (); ii++)
+		if (!_invert)
 		{
-			_ranges[ii] = _data[ii] / 1000.0f;
-			_intensities[ii] = _data.Intensities ()[ii];
-			if (_minDist > 0)
+			for (unsigned int ii = 0; ii < _data.Length (); ii++)
 			{
-				if (_ranges[ii] < _minDist)
-					_ranges[ii] = lastValidValue;
-				else
-					lastValidValue = _ranges[ii];
+				_ranges[ii] = _data[ii] / 1000.0f;
+				_intensities[ii] = _data.Intensities ()[ii];
+				if (_minDist > 0)
+				{
+					if (_ranges[ii] < _minDist)
+						_ranges[ii] = lastValidValue;
+					else
+						lastValidValue = _ranges[ii];
+				}
+			}
+		}
+		else  // invert
+		{
+			for (unsigned int ii = 0; ii < _data.Length (); ii++)
+			{
+				unsigned int jj = _data.Length () - 1 - ii;
+				_ranges[ii] = _data[jj] / 1000.0f;
+				_intensities[ii] = _data.Intensities ()[jj];
+				if (_minDist > 0)
+				{
+					if (_ranges[ii] < _minDist)
+						_ranges[ii] = lastValidValue;
+					else
+						lastValidValue = _ranges[ii];
+				}
 			}
 		}
 
@@ -578,15 +620,31 @@ bool HokuyoDriver::ReadLaser (void)
 		}
 
 		double lastValidValue = _minDist;
-		for (unsigned int ii = 0; ii < _data.Length (); ii++)
-		{
-			_ranges[ii] = _data[ii] / 1000.0f;
-			if (_minDist > 0)
+		if (!_invert) {
+			for (unsigned int ii = 0; ii < _data.Length (); ii++)
 			{
-				if (_ranges[ii] < _minDist)
-					_ranges[ii] = lastValidValue;
-				else
-					lastValidValue = _ranges[ii];
+				_ranges[ii] = _data[ii] / 1000.0f;
+				if (_minDist > 0)
+				{
+					if (_ranges[ii] < _minDist)
+						_ranges[ii] = lastValidValue;
+					else
+						lastValidValue = _ranges[ii];
+				}
+			}
+		}
+		else  // invert
+		{
+			for (unsigned int ii = 0; ii < _data.Length (); ii++)
+			{
+				_ranges[ii] = _data[_data.Length () - 1 - ii] / 1000.0f;
+				if (_minDist > 0)
+				{
+					if (_ranges[ii] < _minDist)
+						_ranges[ii] = lastValidValue;
+					else
+						lastValidValue = _ranges[ii];
+				}
 			}
 		}
 		rangeData.ranges = _ranges;
