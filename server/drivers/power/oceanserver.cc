@@ -185,13 +185,13 @@ bool OceanServer::ReadSensor (void)
         player_power_data_t powerData;
         memset (&powerData, 0, sizeof (powerData));
 
-        powerData.percent = data.percentCharge;
+        powerData.percent = data.percentCharge();
         powerData.valid |= PLAYER_POWER_MASK_PERCENT;
 
         float lowVoltage = -1;
         for (unsigned int ii = 0; ii < 8; ii++)
         {
-            if (!data.availableBatteries[ii])
+            if (!data.availableBatteries()[ii])
                 continue;
             powerData.valid |= PLAYER_POWER_MASK_VOLTS;
             if (data.battery (ii).has (gbxsmartbatteryacfr::Voltage))
@@ -207,10 +207,10 @@ bool OceanServer::ReadSensor (void)
         // First check if any batteries are charging
         for (unsigned int ii = 0; ii < 8; ii++)
         {
-            if (!data.availableBatteries[ii])
+            if (!data.availableBatteries()[ii])
                 continue;
             powerData.valid |= PLAYER_POWER_MASK_CHARGING;
-            if (data.chargingStates[ii])
+            if (data.chargingStates()[ii])
                 powerData.charging = 1;
         }
         // Next check if any are discharing - because we have to squeeze
@@ -218,10 +218,10 @@ bool OceanServer::ReadSensor (void)
         // charging.
         for (unsigned int ii = 0; ii < 8; ii++)
         {
-            if (!data.availableBatteries[ii])
+            if (!data.availableBatteries()[ii])
                 continue;
             powerData.valid |= PLAYER_POWER_MASK_CHARGING;
-            if (data.supplyingPowerStates[ii])
+            if (data.supplyingPowerStates()[ii])
                 powerData.charging = -1;
         }
 
