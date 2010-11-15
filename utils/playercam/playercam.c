@@ -413,17 +413,20 @@ player_init(int argc, char *argv[])
       // Decompress the image
       csize = g_camera->image_count;
       playerc_camera_decompress(g_camera);
-      usize = g_camera->image_count;
+      usize =  g_camera->image_count;
+
 
       g_print("camera: [w %d h %d d %d] [%d/%d bytes]\n",
               g_camera->width, g_camera->height, g_camera->bpp, csize, usize);
 
       g_width  = g_camera->width;
       g_height = g_camera->height;
-      if (allocated_size != usize)
+
+      int buffsize = g_camera->width * g_camera->height * 3;
+      if (allocated_size != buffsize)
       {
-    	  g_img = realloc(g_img, usize);
-        allocated_size = usize;
+    	g_img = realloc(g_img, buffsize);
+        allocated_size = buffsize;
       }
     }
     else // try the blobfinder
@@ -485,11 +488,11 @@ player_update()
     	{
           int j = 0;
           // Transform to MONO8
-          for (i = 0; i < g_camera->image_count; i++, j+=2)
+          for (i = 0; i < g_camera->image_count/2; i++, j+=2)
           {
-            g_img[i*3+1] = g_img[i*3+2] = g_img[i*3+3] =
-          	  ((unsigned char)(g_camera->image[j]) << 8) +
-          	  (unsigned char)(g_camera->image[j+1]);
+            g_img[i*3] = g_img[i*3+1] = g_img[i*3+2] =
+          	  ((unsigned char)(g_camera->image[j]));// << 8) +
+//          	  (unsigned char)(g_camera->image[j+1]);
           }
           break;
         }
