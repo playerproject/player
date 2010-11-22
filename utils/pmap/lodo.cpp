@@ -387,6 +387,17 @@ void lodo_project_map_free(lodo_t *self, lodo_scan_t *scan_m,
     // Walk the line
     for (j = 0; j < step_count; j++)
     {
+      if (self->num_map_points == self->max_map_points) {
+        // resize the array
+        int new_size = self->max_map_points + 10 * self->num_ranges * self->max_map_scans;
+        lodo_map_point_t *tmp = new lodo_map_point_t[new_size];
+        memset(tmp,0,new_size*sizeof(tmp[0]));
+        memcpy(tmp,self->map_points,self->max_map_points*sizeof(self->map_points[0]));
+        delete [] self->map_points;
+        self->map_points = tmp;
+        fprintf(stderr,"resized from %d to %d\n\n", self->max_map_points, new_size);
+        self->max_map_points = new_size;
+      }
       assert(self->num_map_points < self->max_map_points);
       free = self->map_points + self->num_map_points++;
 
