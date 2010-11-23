@@ -1530,17 +1530,17 @@ WriteLog::WriteLocalize(player_msghdr_t* hdr, void *data)
                   hypoths->hypoths_count);
 
           for (i = 0; i < hypoths->hypoths_count; i++)
-            fprintf(this->file, "%+7.3f %+7.3f %7.3f %7.3f %7.3f %7.3f %7.3f ",
+            fprintf(this->file, "%+7.3f %+7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f ",
                     hypoths->hypoths[i].mean.px,
-		    hypoths->hypoths[i].mean.py,
-		    hypoths->hypoths[i].mean.pa,
-		    hypoths->hypoths[i].cov[0],
-		    hypoths->hypoths[i].cov[1],
-		    hypoths->hypoths[i].cov[2],
-		    hypoths->hypoths[i].cov[3],
-		    hypoths->hypoths[i].cov[4],
-		    hypoths->hypoths[i].cov[5],
-		    hypoths->hypoths[i].alpha);
+										hypoths->hypoths[i].mean.py,
+										hypoths->hypoths[i].mean.pa,
+										hypoths->hypoths[i].cov[0],
+										hypoths->hypoths[i].cov[1],
+										hypoths->hypoths[i].cov[2],
+										hypoths->hypoths[i].cov[3],
+										hypoths->hypoths[i].cov[4],
+										hypoths->hypoths[i].cov[5],
+										hypoths->hypoths[i].alpha);
           if (write_particles)
 	    // every time we receive localize data also write localize particles
 	    write_particles_now = true;
