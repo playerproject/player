@@ -148,18 +148,18 @@ const bool DEFAULT_TIMESTAMPS = false;
 
 class HokuyoDriver : public ThreadedDriver
 {
-	public:
-		HokuyoDriver (ConfigFile* cf, int section);
-		~HokuyoDriver (void);
+    public:
+        HokuyoDriver (ConfigFile* cf, int section);
+        ~HokuyoDriver (void);
 
-		virtual int MainSetup (void);
-		virtual void MainQuit (void);
-		virtual int ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, void *data);
+        virtual int MainSetup (void);
+        virtual void MainQuit (void);
+        virtual int ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, void *data);
 
-	private:
-		virtual void Main (void);
-		bool ReadLaser (void);
-		bool AllocateDataSpace (void);
+    private:
+        virtual void Main (void);
+        bool ReadLaser (void);
+        bool AllocateDataSpace (void);
 
 		// Configuration parameters
 		bool _verbose, _invert, _powerOnStartup, _getIntensities, _ignoreUnknowns;
@@ -186,20 +186,20 @@ class HokuyoDriver : public ThreadedDriver
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 HokuyoDriver::HokuyoDriver (ConfigFile* cf, int section) :
-	ThreadedDriver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_RANGER_CODE),
-	_baudRate ("baud_rate", DEFAULT_BAUDRATE, false),
-	_speedLevel ("speed_level", DEFAULT_SPEED_LEVEL, false),
-	_highSensitivity ("high_sensitivity", DEFAULT_SENSITIVITY, false),
-	_minDist ("min_dist", DEFAULT_MIN_DIST, false),
-	_hwTimeStamps ("hw_timestamps", DEFAULT_TIMESTAMPS, false),
-	_ranges (NULL), _intensities (NULL)
+    ThreadedDriver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_RANGER_CODE),
+    _baudRate ("baud_rate", DEFAULT_BAUDRATE, false),
+    _speedLevel ("speed_level", DEFAULT_SPEED_LEVEL, false),
+    _highSensitivity ("high_sensitivity", DEFAULT_SENSITIVITY, false),
+    _minDist ("min_dist", DEFAULT_MIN_DIST, false),
+    _hwTimeStamps ("hw_timestamps", DEFAULT_TIMESTAMPS, false),
+    _ranges (NULL), _intensities (NULL)
 {
-	// Get the baudrate, speed and sensitivity
-	RegisterProperty ("baud_rate", &_baudRate, cf, section);
-	RegisterProperty ("speed_level", &_speedLevel, cf, section);
-	RegisterProperty ("high_sensitivity", &_highSensitivity, cf, section);
-	RegisterProperty ("min_dist", &_minDist, cf, section);
-	RegisterProperty ("hw_timestamps", &_hwTimeStamps, cf, section);
+    // Get the baudrate, speed and sensitivity
+    RegisterProperty ("baud_rate", &_baudRate, cf, section);
+    RegisterProperty ("speed_level", &_speedLevel, cf, section);
+    RegisterProperty ("high_sensitivity", &_highSensitivity, cf, section);
+    RegisterProperty ("min_dist", &_minDist, cf, section);
+    RegisterProperty ("hw_timestamps", &_hwTimeStamps, cf, section);
 
 	// Get config
 	_getIntensities = cf->ReadBool (section, "get_intensities", false);
@@ -211,33 +211,33 @@ HokuyoDriver::HokuyoDriver (ConfigFile* cf, int section) :
 	_ignoreUnknowns = cf->ReadBool (section, "ignoreunknowns", false);
 	_powerOnStartup = cf->ReadBool (section, "power", true);
 
-	// Set up geometry information
-	_geom.pose.px = cf->ReadTupleLength (section, "pose", 0, 0.0);
-	_geom.pose.py = cf->ReadTupleLength (section, "pose", 1, 0.0);
-	_geom.pose.pz = cf->ReadTupleLength (section, "pose", 2, 0.0);
-	_geom.pose.proll = cf->ReadTupleAngle (section, "pose", 3, 0.0);
-	_geom.pose.ppitch = cf->ReadTupleAngle (section, "pose", 4, 0.0);
-	_geom.pose.pyaw = cf->ReadTupleAngle (section, "pose", 5, 0.0);
-	_geom.size.sw = cf->ReadTupleLength (section, "size", 0, 0.0);
-	_geom.size.sl = cf->ReadTupleLength (section, "size", 1, 0.0);
-	_geom.size.sh = cf->ReadTupleLength (section, "size", 2, 0.0);
-	_geom.element_poses_count = 1;
-	_geom.element_poses = &_sensorPose;
-	memcpy(_geom.element_poses, &_geom.pose, sizeof (_geom.pose));
-	_geom.element_sizes_count = 1;
-	_geom.element_sizes = &_sensorSize;
-	memcpy(_geom.element_sizes, &_geom.size, sizeof (_geom.size));
+    // Set up geometry information
+    _geom.pose.px = cf->ReadTupleLength (section, "pose", 0, 0.0);
+    _geom.pose.py = cf->ReadTupleLength (section, "pose", 1, 0.0);
+    _geom.pose.pz = cf->ReadTupleLength (section, "pose", 2, 0.0);
+    _geom.pose.proll = cf->ReadTupleAngle (section, "pose", 3, 0.0);
+    _geom.pose.ppitch = cf->ReadTupleAngle (section, "pose", 4, 0.0);
+    _geom.pose.pyaw = cf->ReadTupleAngle (section, "pose", 5, 0.0);
+    _geom.size.sw = cf->ReadTupleLength (section, "size", 0, 0.0);
+    _geom.size.sl = cf->ReadTupleLength (section, "size", 1, 0.0);
+    _geom.size.sh = cf->ReadTupleLength (section, "size", 2, 0.0);
+    _geom.element_poses_count = 1;
+    _geom.element_poses = &_sensorPose;
+    memcpy(_geom.element_poses, &_geom.pose, sizeof (_geom.pose));
+    _geom.element_sizes_count = 1;
+    _geom.element_sizes = &_sensorSize;
+    memcpy(_geom.element_sizes, &_geom.size, sizeof (_geom.size));
 
-	// Turn on/off verbose mode
-	_device.SetVerbose (_verbose);
+    // Turn on/off verbose mode
+    _device.set_verbose (_verbose);
 }
 
 HokuyoDriver::~HokuyoDriver (void)
 {
-	if (_ranges != NULL)
-		delete[] _ranges;
-	if (_intensities != NULL)
-		delete[] _intensities;
+    if (_ranges != NULL)
+        delete[] _ranges;
+    if (_intensities != NULL)
+        delete[] _intensities;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -246,200 +246,130 @@ HokuyoDriver::~HokuyoDriver (void)
 
 bool HokuyoDriver::AllocateDataSpace (void)
 {
-	if (_ranges != NULL)
-		delete _ranges;
+    if (_ranges != NULL)
+        delete _ranges;
 
-	_numRanges = _device.AngleToStep (_maxAngle) - _device.AngleToStep (_minAngle) + 1;
-	if ((_ranges = new double[_numRanges]) == NULL)
-	{
-		PLAYER_ERROR1 ("hokuyo_aist: Failed to allocate space for %d range readings.", _numRanges);
-		return false;
-	}
+    _numRanges = _device.angle_to_step (_maxAngle) - _device.angle_to_step (_minAngle) + 1;
+    if ((_ranges = new double[_numRanges]) == NULL)
+    {
+        PLAYER_ERROR1 ("hokuyo_aist: Failed to allocate space for %d range readings.", _numRanges);
+        return false;
+    }
 
-	if (_getIntensities)
-	{
-		if ((_intensities = new double[_numRanges]) == NULL)
-		{
-			PLAYER_ERROR1 ("hokuyo_aist: Failed to allocate space for %d intensity readings.",
-						_numRanges);
-			return false;
-		}
-	}
+    if (_getIntensities)
+    {
+        if ((_intensities = new double[_numRanges]) == NULL)
+        {
+            PLAYER_ERROR1 ("hokuyo_aist: Failed to allocate space for %d intensity readings.",
+                        _numRanges);
+            return false;
+        }
+    }
 
-	return true;
+    return true;
 }
 
 void HokuyoDriver::Main (void)
 {
-	while (true)
-	{
-		ProcessMessages ();
+    while (true)
+    {
+        ProcessMessages ();
 
-		if (!ReadLaser ())
-			break;
-	}
+        if (!ReadLaser ())
+            break;
+    }
 }
 
 int HokuyoDriver::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, void *data)
 {
-	// Check for capability requests
-	HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data,
-			PLAYER_MSGTYPE_REQ, PLAYER_CAPABILTIES_REQ);
-	HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data,
-			PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_GET_GEOM);
-	HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data,
-			PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_GET_CONFIG);
-	HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data,
-			PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_SET_CONFIG);
-	HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data,
-			PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_POWER);
-	HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data,
-			PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_INTNS);
+    // Check for capability requests
+    HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data,
+            PLAYER_MSGTYPE_REQ, PLAYER_CAPABILTIES_REQ);
+    HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data,
+            PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_GET_GEOM);
+    HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data,
+            PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_GET_CONFIG);
+    HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data,
+            PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_SET_CONFIG);
+    HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data,
+            PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_POWER);
+    HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data,
+            PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_INTNS);
 
-	// Property handlers that need to be done manually due to calling into the hokuyo_aist library.
-	if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_SET_INTPROP_REQ, this->device_addr))
-	{
-		player_intprop_req_t *req = reinterpret_cast<player_intprop_req_t*> (data);
-		// Change in the baud rate
-		if (strncmp (req->key, "baud_rate", 9) == 0)
-		{
-			try
-			{
-				// Change the baud rate
-				_device.SetBaud (req->value);
-			}
-			catch (hokuyo_aist::HokuyoError &e)
-			{
-#if defined (WIN32)
-				if (e.Code () != HOKUYO_ERR_NOTSERIAL)
-#else
-				if (e.Code () != hokuyo_aist::HOKUYO_ERR_NOTSERIAL)
-#endif
-				{
-					PLAYER_ERROR2 ("hokuyo_aist: Error while changing baud rate: (%d) %s",
-							e.Code (), e.what ());
-					SetError (e.Code ());
-				}
-				else
-				{
-					PLAYER_WARN (
-						"hokuyo_aist: Cannot change the baud rate of a non-serial connection.");
-				}
+    // Property handlers that need to be done manually due to calling into the hokuyo_aist library.
+    if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_SET_INTPROP_REQ, this->device_addr))
+    {
+        player_intprop_req_t *req = reinterpret_cast<player_intprop_req_t*> (data);
+        // Change in the baud rate
+        if (strncmp (req->key, "baud_rate", 9) == 0)
+        {
+            try
+            {
+                // Change the baud rate
+                _device.set_baud (req->value);
+            }
+            catch (hokuyo_aist::NotSerialError)
+            {
+                PLAYER_WARN (
+                    "hokuyo_aist: Cannot change the baud rate of a non-serial connection.");
 
-				Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, PLAYER_SET_INTPROP_REQ,
-						NULL, 0, NULL);
-				return 0;
-			}
-			_baudRate.SetValueFromMessage (data);
-			Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_SET_INTPROP_REQ, NULL,
-					0, NULL);
-			return 0;
-		}
-		else if (strncmp (req->key, "speed_level", 11) == 0)
-		{
-			try
-			{
-				_device.SetMotorSpeed (req->value);
-			}
-			catch (hokuyo_aist::HokuyoError &e)
-			{
-				PLAYER_ERROR2 ("hokuyo_aist: Error while changing motor speed: (%d) %s",
-						e.Code (), e.what ());
-				SetError (e.Code ());
-				Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, PLAYER_SET_INTPROP_REQ,
-						NULL, 0, NULL);
-				return 0;
-			}
-			_speedLevel.SetValueFromMessage (data);
-			Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_SET_INTPROP_REQ, NULL,
-					0, NULL);
-			return 0;
-		}
-		else if (strncmp (req->key, "high_sensitivity", 16) == 0)
-		{
-			try
-			{
-				_device.SetHighSensitivity (req->value != 0);
-			}
-			catch (hokuyo_aist::HokuyoError &e)
-			{
-				PLAYER_ERROR2 ("hokuyo_aist: Error while changing sensitivity: (%d) %s",
-						e.Code (), e.what ());
-				SetError (e.Code ());
-				Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, PLAYER_SET_INTPROP_REQ,
-						NULL, 0, NULL);
-				return 0;
-			}
-			_highSensitivity.SetValueFromMessage (data);
-			Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_SET_INTPROP_REQ, NULL,
-					0, NULL);
-			return 0;
-		}
-	}
+                Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, PLAYER_SET_INTPROP_REQ,
+                        NULL, 0, NULL);
+                return 0;
+            }
+            catch (hokuyo_aist::BaseError &e)
+            {
+                PLAYER_ERROR1 ("hokuyo_aist: Error while changing baud rate: %s", e.what ());
+                SetError (-1);
 
-	// Standard ranger messages
-	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_POWER, device_addr))
-	{
-		player_ranger_power_config_t *config =
-			reinterpret_cast<player_ranger_power_config_t*> (data);
-		try
-		{
-			if (config->state)
-				_device.SetPower (true);
-			else
-				_device.SetPower (false);
-		}
-		catch (hokuyo_aist::HokuyoError &e)
-		{
-			PLAYER_ERROR2 ("hokuyo_aist: Error while setting power state: (%d) %s",
-					e.Code (), e.what ());
-			SetError (e.Code ());
-			Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, PLAYER_RANGER_REQ_POWER,
-					NULL, 0, NULL);
-		}
-		Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_RANGER_REQ_POWER, NULL,
-				0, NULL);
-		return 0;
-	}
-	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_INTNS, device_addr))
-	{
-		bool newValue = (reinterpret_cast<player_ranger_intns_config_t*> (data)->state != 0);
-		if (newValue && !_getIntensities)
-		{
-			// State change, allocate space for intensity data
-			if ((_intensities = new double[_numRanges]) == NULL)
-			{
-				PLAYER_ERROR1 ("hokuyo_aist: Failed to allocate space for %d intensity readings.",
-							_numRanges);
-				Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, PLAYER_RANGER_REQ_INTNS,
-						NULL, 0, NULL);
-				return 0;
-			}
-		}
-		else if (!newValue && _getIntensities)
-		{
-			// State change, remove allocated space
-			delete[] _intensities;
-			_intensities = NULL;
-		}
-		_getIntensities = newValue;
-		Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_RANGER_REQ_INTNS, NULL,
-				0, NULL);
-		return 0;
-	}
-	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_GET_GEOM,
-			device_addr))
-	{
-		Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_RANGER_REQ_GET_GEOM,
-				&_geom, sizeof (_geom), NULL);
-		return 0;
-	}
-	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_GET_CONFIG,
-			device_addr))
-	{
-		player_ranger_config_t rangerConfig;
-		hokuyo_aist::HokuyoSensorInfo info;
-		_device.GetSensorInfo (&info);
+                Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, PLAYER_SET_INTPROP_REQ,
+                        NULL, 0, NULL);
+                return 0;
+            }
+            _baudRate.SetValueFromMessage (data);
+            Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_SET_INTPROP_REQ, NULL,
+                    0, NULL);
+            return 0;
+        }
+        else if (strncmp (req->key, "speed_level", 11) == 0)
+        {
+            try
+            {
+                _device.set_motor_speed (req->value);
+            }
+            catch (hokuyo_aist::BaseError &e)
+            {
+                PLAYER_ERROR1 ("hokuyo_aist: Error while changing motor speed: %s", e.what ());
+                SetError (-1);
+                Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, PLAYER_SET_INTPROP_REQ,
+                        NULL, 0, NULL);
+                return 0;
+            }
+            _speedLevel.SetValueFromMessage (data);
+            Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_SET_INTPROP_REQ, NULL,
+                    0, NULL);
+            return 0;
+        }
+        else if (strncmp (req->key, "high_sensitivity", 16) == 0)
+        {
+            try
+            {
+                _device.set_high_sensitivity (req->value != 0);
+            }
+            catch (hokuyo_aist::BaseError &e)
+            {
+                PLAYER_ERROR1 ("hokuyo_aist: Error while changing sensitivity: %s", e.what ());
+                SetError (-1);
+                Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, PLAYER_SET_INTPROP_REQ,
+                        NULL, 0, NULL);
+                return 0;
+            }
+            _highSensitivity.SetValueFromMessage (data);
+            Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_SET_INTPROP_REQ, NULL,
+                    0, NULL);
+            return 0;
+        }
+    }
 
 		if (!_invert)
 		{
@@ -485,60 +415,69 @@ int HokuyoDriver::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, 
 			return 0;
 		}
 
-		try
-		{
-			hokuyo_aist::HokuyoSensorInfo info;
-			_device.GetSensorInfo (&info);
-			if (_minAngle < info.minAngle)
-			{
-				_minAngle = info.minAngle;
-				PLAYER_WARN1 ("hokuyo_aist: Adjusted min_angle to %lf", _minAngle);
-			}
-			if (_maxAngle> info.maxAngle)
-			{
-				_maxAngle = info.maxAngle;
-				PLAYER_WARN1 ("hokuyo_aist: Adjusted max_angle to %lf", _maxAngle);
-			}
-		}
-		catch (hokuyo_aist::HokuyoError &e)
-		{
-			PLAYER_ERROR2 ("hokuyo_aist: Library error while changing settings: (%d) %s", e.Code (),
-					e.what ());
-			SetError (e.Code ());
-			Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, PLAYER_RANGER_REQ_GET_CONFIG,
-					NULL, 0, NULL);
-			return 0;
-		}
+        _minAngle = newParams->min_angle;
+        _maxAngle = newParams->max_angle;
+        if (!AllocateDataSpace ())
+        {
+            PLAYER_ERROR ("hokuyo_aist: Failed to allocate space for storing range data.");
+            Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, PLAYER_RANGER_REQ_GET_CONFIG,
+                    NULL, 0, NULL);
+            return 0;
+        }
 
-		Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_RANGER_REQ_GET_CONFIG,
-				newParams, sizeof (*newParams), NULL);
-		return 0;
-	}
+        try
+        {
+            hokuyo_aist::SensorInfo info;
+            _device.get_sensor_info (info);
+            if (_minAngle < info.min_angle)
+            {
+                _minAngle = info.min_angle;
+                PLAYER_WARN1 ("hokuyo_aist: Adjusted min_angle to %lf", _minAngle);
+            }
+            if (_maxAngle> info.max_angle)
+            {
+                _maxAngle = info.max_angle;
+                PLAYER_WARN1 ("hokuyo_aist: Adjusted max_angle to %lf", _maxAngle);
+            }
+        }
+        catch (hokuyo_aist::BaseError &e)
+        {
+            PLAYER_ERROR1 ("hokuyo_aist: Library error while changing settings: %s", e.what ());
+            SetError (-1);
+            Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, PLAYER_RANGER_REQ_GET_CONFIG,
+                    NULL, 0, NULL);
+            return 0;
+        }
 
-	return -1;
+        Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_RANGER_REQ_GET_CONFIG,
+                newParams, sizeof (*newParams), NULL);
+        return 0;
+    }
+
+    return -1;
 }
 
 bool HokuyoDriver::ReadLaser (void)
 {
-	double time1, time2;
-	if (_getIntensities)
-	{
-		player_ranger_data_range_t rangeData;
-		player_ranger_data_intns_t intensityData;
+    double time1, time2;
+    if (_getIntensities)
+    {
+        player_ranger_data_range_t rangeData;
+        player_ranger_data_intns_t intensityData;
 
-		try
-		{
-			GlobalTime->GetTimeDouble (&time1);
-			_device.GetNewRangesAndIntensitiesByAngle (&_data, _minAngle, _maxAngle);
-			GlobalTime->GetTimeDouble (&time2);
-			time1 = (time1 + time2) / 2.0;
-		}
-		catch (hokuyo_aist::HokuyoError &e)
-		{
-			PLAYER_ERROR2 ("hokuyo_aist: Failed to read scan: (%d) %s", e.Code (), e.what ());
-			SetError (e.Code ());
-			return false;
-		}
+        try
+        {
+            GlobalTime->GetTimeDouble (&time1);
+            _device.get_new_ranges_intensities_by_angle (_data, _minAngle, _maxAngle);
+            GlobalTime->GetTimeDouble (&time2);
+            time1 = (time1 + time2) / 2.0;
+        }
+        catch (hokuyo_aist::BaseError &e)
+        {
+            PLAYER_ERROR1 ("hokuyo_aist: Failed to read scan: %s", e.what ());
+            SetError (-1);
+            return false;
+        }
 
 		double lastValidValue = _minDist;
 		if (!_invert)
@@ -573,51 +512,51 @@ bool HokuyoDriver::ReadLaser (void)
 			}
 		}
 
-		rangeData.ranges = _ranges;
-		rangeData.ranges_count = _data.Length ();
-		if (_hwTimeStamps.GetValue ())
-		{
-			double ts = _data.TimeStamp () / 1000.0;
-			Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_RANGE,
-					reinterpret_cast<void*> (&rangeData), sizeof (rangeData), &ts);
-		}
-		else
-		{
-			Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_RANGE,
-					reinterpret_cast<void*> (&rangeData), sizeof (rangeData), &time1);
-		}
+        rangeData.ranges = _ranges;
+        rangeData.ranges_count = _data.ranges_length ();
+        if (_hwTimeStamps.GetValue ())
+        {
+            double ts = _data.system_time_stamp () / 1e9;
+            Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_RANGE,
+                    reinterpret_cast<void*> (&rangeData), sizeof (rangeData), &ts);
+        }
+        else
+        {
+            Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_RANGE,
+                    reinterpret_cast<void*> (&rangeData), sizeof (rangeData), &time1);
+        }
 
-		intensityData.intensities = _intensities;
-		intensityData.intensities_count = _data.Length ();
-		if (_hwTimeStamps.GetValue ())
-		{
-			double ts = _data.TimeStamp () / 1000.0;
-			Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_INTNS,
-					reinterpret_cast<void*> (&intensityData), sizeof (intensityData), &ts);
-		}
-		else
-		{
-			Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_INTNS,
-					reinterpret_cast<void*> (&intensityData), sizeof (intensityData), &time1);
-		}
-	}
-	else
-	{
-		player_ranger_data_range_t rangeData;
+        intensityData.intensities = _intensities;
+        intensityData.intensities_count = _data.intensities_length ();
+        if (_hwTimeStamps.GetValue ())
+        {
+            double ts = _data.system_time_stamp () / 1e9;
+            Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_INTNS,
+                    reinterpret_cast<void*> (&intensityData), sizeof (intensityData), &ts);
+        }
+        else
+        {
+            Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_INTNS,
+                    reinterpret_cast<void*> (&intensityData), sizeof (intensityData), &time1);
+        }
+    }
+    else
+    {
+        player_ranger_data_range_t rangeData;
 
-		try
-		{
-			GlobalTime->GetTimeDouble (&time1);
-			_device.GetRangesByAngle (&_data, _minAngle, _maxAngle);
-			GlobalTime->GetTimeDouble (&time2);
-			time1 = (time1 + time2) / 2.0;
-		}
-		catch (hokuyo_aist::HokuyoError &e)
-		{
-			PLAYER_ERROR2 ("hokuyo_aist: Failed to read scan: (%d) %s", e.Code (), e.what ());
-			SetError (e.Code ());
-			return false;
-		}
+        try
+        {
+            GlobalTime->GetTimeDouble (&time1);
+            _device.get_ranges_by_angle (_data, _minAngle, _maxAngle);
+            GlobalTime->GetTimeDouble (&time2);
+            time1 = (time1 + time2) / 2.0;
+        }
+        catch (hokuyo_aist::BaseError &e)
+        {
+            PLAYER_ERROR1 ("hokuyo_aist: Failed to read scan: %s", e.what ());
+            SetError (-1);
+            return false;
+        }
 
 		double lastValidValue = _minDist;
 		if (!_invert) {
@@ -662,87 +601,84 @@ bool HokuyoDriver::ReadLaser (void)
 		}
 	}
 
-	return true;
+    return true;
 }
 
 int HokuyoDriver::MainSetup (void)
 {
-	try
-	{
-		_device.IgnoreUnknowns (_ignoreUnknowns);
-		// Open the laser
-		_device.OpenWithProbing (_portOpts);
-		// Get the sensor information and check _minAngle and _maxAngle are OK
-		hokuyo_aist::HokuyoSensorInfo info;
-		_device.GetSensorInfo (&info);
-		if (_minAngle < info.minAngle)
-		{
-			_minAngle = info.minAngle;
-			PLAYER_WARN1 ("hokuyo_aist: Adjusted min_angle to %lf", _minAngle);
-		}
-		if (_maxAngle> info.maxAngle)
-		{
-			_maxAngle = info.maxAngle;
-			PLAYER_WARN1 ("hokuyo_aist: Adjusted max_angle to %lf", _maxAngle);
-		}
-		if (!AllocateDataSpace ())
-			return -1;
+    try
+    {
+        _device.ignore_unknowns (_ignoreUnknowns);
+        // Open the laser
+        _device.open_with_probing (_portOpts);
+        // Get the sensor information and check _minAngle and _maxAngle are OK
+        hokuyo_aist::SensorInfo info;
+        _device.get_sensor_info (info);
+        if (_minAngle < info.min_angle)
+        {
+            _minAngle = info.min_angle;
+            PLAYER_WARN1 ("hokuyo_aist: Adjusted min_angle to %lf", _minAngle);
+        }
+        if (_maxAngle> info.max_angle)
+        {
+            _maxAngle = info.max_angle;
+            PLAYER_WARN1 ("hokuyo_aist: Adjusted max_angle to %lf", _maxAngle);
+        }
+        if (!AllocateDataSpace ())
+            return -1;
 
-		if (_powerOnStartup)
-			_device.SetPower (true);
+        if (_powerOnStartup)
+            _device.set_power (true);
 
-		try
-		{
-			_device.SetBaud (_baudRate.GetValue ());
-		}
-		catch (hokuyo_aist::HokuyoError &e)
-		{
-#if defined (WIN32)
-			if (e.Code () != HOKUYO_ERR_NOTSERIAL)
-#else
-			if (e.Code () != hokuyo_aist::HOKUYO_ERR_NOTSERIAL)
-#endif
-				PLAYER_WARN ("hokuyo_aist: Cannot change the baud rate of a non-serial connection.");
-			else
-				PLAYER_WARN2 ("hokuyo_aist: Error changing baud rate: (%d) %s", e.Code (), e.what ());
-		}
-		try
-		{
-			// Catch any errors here as this is an optional setting not supported by all models
-			_device.SetMotorSpeed (_speedLevel.GetValue ());
-		}
-		catch (hokuyo_aist::HokuyoError &e)
-		{
-			PLAYER_WARN2 ("hokuyo_aist: Unable to set motor speed: (%d) %s", e.Code (), e.what ());
-		}
-		try
-		{
-			// Optional setting
-			_device.SetHighSensitivity (_highSensitivity.GetValue () != 0);
-		}
-		catch (hokuyo_aist::HokuyoError &e)
-		{
-			PLAYER_WARN2 ("hokuyo_aist: Unable to set sensitivity: (%d) %s", e.Code (), e.what ());
-		}
-	}
-	catch (hokuyo_aist::HokuyoError &e)
-	{
-		PLAYER_ERROR2 ("hokuyo_aist: Failed to setup laser driver: (%d) %s", e.Code (), e.what ());
-		SetError (e.Code ());
-		return -1;
-	}
-	return 0;
+        try
+        {
+            _device.set_baud (_baudRate.GetValue ());
+        }
+        catch (hokuyo_aist::NotSerialError)
+        {
+            PLAYER_WARN ("hokuyo_aist: Cannot change the baud rate of a non-serial connection.");
+        }
+        catch (hokuyo_aist::BaseError &e)
+        {
+            PLAYER_WARN1 ("hokuyo_aist: Error changing baud rate: %s", e.what ());
+        }
+        try
+        {
+            // Catch any errors here as this is an optional setting not supported by all models
+            _device.set_motor_speed (_speedLevel.GetValue ());
+        }
+        catch (hokuyo_aist::BaseError &e)
+        {
+            PLAYER_WARN1 ("hokuyo_aist: Unable to set motor speed: %s", e.what ());
+        }
+        try
+        {
+            // Optional setting
+            _device.set_high_sensitivity (_highSensitivity.GetValue () != 0);
+        }
+        catch (hokuyo_aist::BaseError &e)
+        {
+            PLAYER_WARN1 ("hokuyo_aist: Unable to set sensitivity: %s", e.what ());
+        }
+    }
+    catch (hokuyo_aist::BaseError &e)
+    {
+        PLAYER_ERROR1 ("hokuyo_aist: Failed to setup laser driver: %s", e.what ());
+        SetError (-1);
+        return -1;
+    }
+    return 0;
 }
 
 void HokuyoDriver::MainQuit (void)
 {
-	_device.Close ();
-	_data.CleanUp ();
-	if (_ranges != NULL)
-	{
-		delete[] _ranges;
-		_ranges = NULL;
-	}
+    _device.close ();
+    _data.clean_up ();
+    if (_ranges != NULL)
+    {
+        delete[] _ranges;
+        _ranges = NULL;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -751,10 +687,10 @@ void HokuyoDriver::MainQuit (void)
 
 Driver* HokuyoDriver_Init (ConfigFile* cf, int section)
 {
-	return reinterpret_cast <Driver*> (new HokuyoDriver (cf, section));
+    return reinterpret_cast <Driver*> (new HokuyoDriver (cf, section));
 }
 
 void hokuyo_aist_Register (DriverTable* table)
 {
-	table->AddDriver ("hokuyo_aist", HokuyoDriver_Init);
+    table->AddDriver ("hokuyo_aist", HokuyoDriver_Init);
 }
