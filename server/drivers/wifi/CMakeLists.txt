@@ -1,3 +1,5 @@
+ADD_SUBDIRECTORY (wlanscan)
+
 PLAYERDRIVER_OPTION (aodv build_aodv ON)
 PLAYERDRIVER_REJECT_OS (aodv build_aodv PLAYER_OS_WIN)
 PLAYERDRIVER_ADD_DRIVER (aodv build_aodv SOURCES aodv.cc)
