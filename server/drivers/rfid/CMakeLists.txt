@@ -16,6 +16,7 @@ IF (HAVE_PHIDGET)
 ELSE (HAVE_PHIDGET)
   PLAYERDRIVER_OPTION (phidgetAcc build_phidgetRFID OFF "Could not find libphidget")
 ENDIF (HAVE_PHIDGET)
+
 PLAYERDRIVER_ADD_DRIVER (phidgetRFID build_phidgetRFID
     LINKFLAGS ${phidgetLinkFlags} CFLAGS "${phidgetCFlags}"
     SOURCES phidgetRFID.cc)
