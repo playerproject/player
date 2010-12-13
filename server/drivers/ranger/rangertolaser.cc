@@ -112,7 +112,10 @@ class RangerToLaser : public FromRanger
 
 		bool receivedCfgResp, receivedIntnsResp, setConfigFailed;
 		player_laser_config_t config;
+		player_laser_data_scanpose_t scanData;
+
 		bool startup;
+
 };
 
 // Initialisation function
@@ -171,12 +174,27 @@ int RangerToLaser::Setup (void)
 	// Request the ranger device's configuration
 	inputDevice->PutMsg (InQueue, PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_GET_CONFIG, NULL, 0, NULL);
 
+
+	memset (&scanData, 0, sizeof (scanData));
+	scanData.scan.ranges = NULL;
+	scanData.scan.intensity = NULL;
+
 	return 0;
 }
 
 // Shutdown function
 int RangerToLaser::Shutdown (void)
 {
+	if (scanData.scan.ranges)
+	{
+		delete[] scanData.scan.ranges;
+		scanData.scan.ranges = NULL;
+	}
+	if (scanData.scan.intensity)
+	{
+		delete[] scanData.scan.intensity;
+		scanData.scan.intensity = NULL;
+	}
 	// Unsubscribe from the ranger device
 	inputDevice->Unsubscribe (InQueue);
 
@@ -190,12 +208,9 @@ int RangerToLaser::Shutdown (void)
 
 int RangerToLaser::ConvertData (player_msghdr *hdr, void *data)
 {
-	player_laser_data_scanpose_t scanData;
 	double *rangeData = NULL, *intensityData = NULL;
 	int rangeCount = 0, intensityCount = 0;
 	player_ranger_geom_t *pose = NULL;
-
-	memset (&scanData, 0, sizeof (scanData));
 
 	switch (hdr->subtype)
 	{
@@ -237,6 +252,11 @@ int RangerToLaser::ConvertData (player_msghdr *hdr, void *data)
 	// Copy the data into the laser message format
 	if (rangeData != NULL)
 	{
+		if (scanData.scan.ranges != NULL)
+		{
+			delete[] scanData.scan.ranges;
+			scanData.scan.ranges = NULL;
+		}
 		scanData.scan.ranges_count = rangeCount;
 		if ((scanData.scan.ranges = new float[rangeCount]) == NULL)
 		{
@@ -248,6 +268,11 @@ int RangerToLaser::ConvertData (player_msghdr *hdr, void *data)
 	}
 	if (intensityData != NULL)
 	{
+		if (scanData.scan.intensity != NULL)
+		{
+			delete[] scanData.scan.intensity;
+			scanData.scan.intensity = NULL;
+		}
 		scanData.scan.intensity_count = intensityCount;
 		if ((scanData.scan.intensity = new uint8_t[intensityCount]) == NULL)
 		{
@@ -275,12 +300,9 @@ int RangerToLaser::ConvertData (player_msghdr *hdr, void *data)
 	if (pose != NULL)
 		Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCANPOSE, reinterpret_cast<void*> (&scanData), sizeof (scanData), NULL);
 	else
+	{
 		Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN, reinterpret_cast<void*> (&scanData.scan), sizeof (scanData.scan), NULL);
-
-	if (scanData.scan.ranges != NULL)
-		delete[] scanData.scan.ranges;
-	if (scanData.scan.intensity != NULL)
-		delete[] scanData.scan.intensity;
+	}
 
 	return 0;
 }
