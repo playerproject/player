@@ -128,7 +128,7 @@ def accessorize(match):
     body=match.group('body');
     # 'arrayMember' is a regex designed to match certain member definitions,
     # e.g. 'double *ranges;' (playerc_laser_t)
-    arrayMember=re.compile(r"\b(?P<type>int|double|float)\s*[*]\s*(?P<name>\w+);",re.MULTILINE)
+    arrayMember=re.compile(r"\b(?P<type>int|double|float|uint8_t)\s*[*]\s*(?P<name>\w+);",re.MULTILINE)
     
     # performs a substitution on the member definitions described above,
     # e.g. 'double *ranges;' becomes 'doubleArray ranges;',
@@ -215,7 +215,7 @@ if __name__ == '__main__':
     # see comments on the 'accessorize' function above.  
     file=open("%s.h" % outfilename,"w")
     # write accessor structure definitions for arrays of ints, doubles and floats.
-    for type in ["int","double","float"]:
+    for type in ["int","double","float","uint8_t"]:
         file.write(accessor_header.replace("TYPE",type))
     # write the modified header file.
     file.write(ifaceStream)
@@ -264,7 +264,7 @@ if __name__ == '__main__':
     # write the SWIG interface definition file.
     file=open("%s.i" % outfilename,"w")
     # write interfaces for the accessor structs including subscripting functions.
-    for type in ["int","double","float"]:
+    for type in ["int","double","float","uint8_t"]:
         file.write(accessor_interface.replace("TYPE",type))
     file.write(ifaceStream)
     file.close()
