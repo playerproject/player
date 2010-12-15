@@ -24,6 +24,7 @@
 
 %{
 #include "playerc_wrap.h"
+#include "stdint.h"
 
 %}
 
