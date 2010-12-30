@@ -339,8 +339,8 @@ void Eigenv(Matrix M, Matrix *vectors, Matrix *values)
 
     gsl_matrix *m = gsl_matrix_alloc(M.RowNo(), M.ColNo());
 
-    for (uint r = 0; r < M.RowNo(); r++)
-        for (uint c = 0; c < M.ColNo(); c++)
+    for (uint32_t r = 0; r < M.RowNo(); r++)
+        for (uint32_t c = 0; c < M.ColNo(); c++)
             gsl_matrix_set(m, r, c, M(r, c));
 
     gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc(M.RowNo());
@@ -353,12 +353,12 @@ void Eigenv(Matrix M, Matrix *vectors, Matrix *values)
     {
         *values = Matrix(M.RowNo(), M.ColNo());
         (*values) *= 0;
-        for (uint r = 0; r < M.RowNo(); r++)
+        for (uint32_t r = 0; r < M.RowNo(); r++)
             (*values)(r, r) = gsl_vector_get(d, r);
 
         *vectors = Matrix(M.RowNo(), M.ColNo());
-        for (uint r = 0; r < M.RowNo(); r++)
-            for (uint c = 0; c < M.ColNo(); c++)
+        for (uint32_t r = 0; r < M.RowNo(); r++)
+            for (uint32_t c = 0; c < M.ColNo(); c++)
                 (*vectors)(r, c) = gsl_matrix_get(v, r, c);
     }
 
