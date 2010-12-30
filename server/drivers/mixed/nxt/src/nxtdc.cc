@@ -22,7 +22,15 @@
 #include <cassert>
 #include <cstdio>
 #include <cstring>
+#if defined(__APPLE__)
+#include <libkern/OSByteOrder.h>
+#define le32toh OSSwapLittleToHostInt32
+#define le16toh OSSwapLittleToHostInt16
+#define htole16 OSSwapHostToLittleInt16
+#define htole32 OSSwapHostToLittleInt32
+#else
 #include <endian.h>
+#endif
 #include "nxtdc.hh"
 #include <sstream>
 #include <sys/time.h>
