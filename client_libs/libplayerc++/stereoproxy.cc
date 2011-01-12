@@ -54,13 +54,16 @@ using namespace PlayerCc;
 StereoProxy::StereoProxy(PlayerClient *aPc, uint32_t aIndex)
   : ClientProxy(aPc, aIndex),
   mDevice(NULL),
-  mPrefix("image"),
-  mFrameNo({0, 0, 0})
+  mPrefix("image")
 {
   Subscribe(aIndex);
   // how can I get this into the clientproxy.cc?
   // right now, we're dependent on knowing its device type
   mInfo = &(mDevice->info);
+  for (int i=0; i < 3; i++)
+  {
+    this->mFrameNo[i] = 0;
+  }
 }
 
 StereoProxy::~StereoProxy()
