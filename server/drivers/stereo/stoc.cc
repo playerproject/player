@@ -193,15 +193,15 @@ driver
 
 #define CUTOFF_DIST 5
 
-class STOC:public Driver
+class STOC : public ThreadedDriver
 {
   public:
     // constructor
     STOC (ConfigFile* cf, int section);
     ~STOC ();
 
-    int Setup ();
-    int Shutdown ();
+    virtual int MainSetup ();
+    virtual void MainQuit ();
 
     // MessageHandler
     virtual int ProcessMessage (QueuePointer &resp_queue,
@@ -261,7 +261,7 @@ void
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 STOC::STOC (ConfigFile* cf, int section)
-	: Driver (cf, section),
+	: ThreadedDriver (cf, section),
 	exposure ("exposure", 0, 0),
 	balance ("balance", 0, 0),
 	gamma ("gamma", 0, 0),
@@ -332,7 +332,7 @@ STOC::~STOC ()
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
 int
-  STOC::Setup ()
+  STOC::MainSetup ()
 {
   int res;
   
@@ -499,22 +499,20 @@ int
   // Start video streaming
   res = video->Start ();
     
-  StartThread ();
   return (0);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
-int
-  STOC::Shutdown ()
+void
+  STOC::MainQuit ()
 {
-  StopThread ();
 
   int res = video->Stop ();   // Stop video streaming
   res = video->Close ();  // Close camera
   PLAYER_MSG0 (1, "> Closed camera connection.");
-  return (0);
+  return;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
