@@ -24,6 +24,7 @@
 
 #include "string.h" // Somehow this is needed by matrix.h
 #include "matrix.h"
+#include "replace/replace.h"
 
 typedef math::matrix<double> Matrix;
 

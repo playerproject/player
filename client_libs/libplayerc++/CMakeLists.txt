@@ -205,6 +205,7 @@ IF (BUILD_PLAYERCC)
                         sonarproxy.cc
                         speechproxy.cc
                         speechrecognitionproxy.cc
+                        stereoproxy.cc
                         vectormapproxy.cc
                         wifiproxy.cc
                         wsnproxy.cc)
