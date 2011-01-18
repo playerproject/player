@@ -121,8 +121,12 @@ driver
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>       // for atoi(3)
-#include <netinet/in.h>   // for htons(3)
+// needed for usleep, no unistd.h on windows.
+#if WIN32
+#include <replace/replace.h>
+#else
 #include <unistd.h>
+#endif
 
 #include <libplayercore/playercore.h>
 
