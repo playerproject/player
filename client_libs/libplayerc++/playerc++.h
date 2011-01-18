@@ -2509,46 +2509,55 @@ class PLAYERCC_EXPORT StereoProxy : public ClientProxy
     /// Default image prefix
     std::string mPrefix;
 
+    /// Frame counter for image saving methods
     uint32_t mFrameNo[3];
 
   public:
+    /// Constructor
     StereoProxy(PlayerClient *aPc, uint32_t aIndex=0);
 
+    /// Destructor
     ~StereoProxy();
 
-    /// Save the Left frame
+    /// Save the left frame
     /// @arg aPrefix is the string prefix to name the image.
     /// @arg aWidth is the number of 0s to pad the image numbering with.
     void SaveLeftFrame(const std::string aPrefix, uint32_t aWidth=4) {return SaveFrame(aPrefix, aWidth, mDevice->left_channel, 0); };
-    /// Save the Right frame
+    /// Save the right frame
     /// @arg aPrefix is the string prefix to name the image.
     /// @arg aWidth is the number of 0s to pad the image numbering with.
     void SaveRightFrame(const std::string aPrefix, uint32_t aWidth=4) {return SaveFrame(aPrefix, aWidth, mDevice->right_channel, 1); };
-    /// Save the Left frame
+    /// Save the disparity frame
     /// @arg aPrefix is the string prefix to name the image.
     /// @arg aWidth is the number of 0s to pad the image numbering with.
     void SaveDisparityFrame(const std::string aPrefix, uint32_t aWidth=4) {return SaveFrame(aPrefix, aWidth, mDevice->disparity, 2); };
 
     /// decompress the left image
     void DecompressLeft(){ return Decompress(mDevice->left_channel); };
-    /// decompress the left image
+    /// decompress the right image
     void DecompressRight(){ return Decompress(mDevice->right_channel); };
-    /// decompress the left image
+    /// decompress the disparity image
     void DecompressDisparity(){ return Decompress(mDevice->disparity); };
 
-    /// Image color depth
+    /// Left image color depth
     uint32_t GetLeftDepth() const { return GetVar(mDevice->left_channel.bpp); };
+    /// Right image color depth
     uint32_t GetRightDepth() const { return GetVar(mDevice->right_channel.bpp); };
+    /// Disparity image color depth
     uint32_t GetDisparityDepth() const { return GetVar(mDevice->disparity.bpp); };
 
-    /// Image dimensions (pixels)
+    /// Left image width (pixels)
     uint32_t GetLeftWidth() const { return GetVar(mDevice->left_channel.width); };
+    /// Right image width (pixels)
     uint32_t GetRightWidth() const { return GetVar(mDevice->right_channel.width); };
+    /// Disparity image width (pixels)
     uint32_t GetDisparityWidth() const { return GetVar(mDevice->disparity.width); };
 
-    /// Image dimensions (pixels)
+    /// Left image height (pixels)
     uint32_t GetLeftHeight() const { return GetVar(mDevice->left_channel.height); };
+    /// Right image height (pixels)
     uint32_t GetRightHeight() const { return GetVar(mDevice->right_channel.height); };
+    /// Disparity image height (pixels)
     uint32_t GetDisparityHeight() const { return GetVar(mDevice->disparity.height); };
 
     /// @brief Image format
@@ -2558,16 +2567,29 @@ class PLAYERCC_EXPORT StereoProxy : public ClientProxy
     /// - @ref PLAYER_CAMERA_FORMAT_RGB565
     /// - @ref PLAYER_CAMERA_FORMAT_RGB888
     uint32_t GetLeftFormat() const { return GetVar(mDevice->left_channel.format); };
+    /// @brief Image format
+    /// Possible values include
+    /// - @ref PLAYER_CAMERA_FORMAT_MONO8
+    /// - @ref PLAYER_CAMERA_FORMAT_MONO16
+    /// - @ref PLAYER_CAMERA_FORMAT_RGB565
+    /// - @ref PLAYER_CAMERA_FORMAT_RGB888
     uint32_t GetRightFormat() const { return GetVar(mDevice->right_channel.format); };
+    /// @brief Image format
+    /// Possible values include
+    /// - @ref PLAYER_CAMERA_FORMAT_MONO8
+    /// - @ref PLAYER_CAMERA_FORMAT_MONO16
+    /// - @ref PLAYER_CAMERA_FORMAT_RGB565
+    /// - @ref PLAYER_CAMERA_FORMAT_RGB888
     uint32_t GetDisparityFormat() const { return GetVar(mDevice->disparity.format); };
 
-    /// Size of the image (bytes)
+    /// Size of the left image (bytes)
     uint32_t GetLeftImageSize() const { return GetVar(mDevice->left_channel.image_count); };
+    /// Size of the right image (bytes)
     uint32_t GetRightImageSize() const { return GetVar(mDevice->right_channel.image_count); };
+    /// Size of the disparity image (bytes)
     uint32_t GetDisparityImageSize() const { return GetVar(mDevice->disparity.image_count); };
 
-
-    /// @brief Left Image data
+    /// @brief Left image data
     /// This function copies the image data into the data buffer aImage.
     /// The buffer should be allocated according to the width, height, and
     /// depth of the image.  The size can be found by calling @ref GetImageSize().
@@ -2577,7 +2599,7 @@ class PLAYERCC_EXPORT StereoProxy : public ClientProxy
                            mDevice->left_channel.image+GetVar(mDevice->left_channel.image_count),
                            aImage);
       };
-    /// @brief Right Image data
+    /// @brief Right image data
     /// This function copies the image data into the data buffer aImage.
     /// The buffer should be allocated according to the width, height, and
     /// depth of the image.  The size can be found by calling @ref GetImageSize().
@@ -2587,8 +2609,7 @@ class PLAYERCC_EXPORT StereoProxy : public ClientProxy
                            mDevice->right_channel.image+GetVar(mDevice->right_channel.image_count),
                            aImage);
       };
-
-    /// @brief Disparity Image data
+    /// @brief Disparity image data
     /// This function copies the image data into the data buffer aImage.
     /// The buffer should be allocated according to the width, height, and
     /// depth of the image.  The size can be found by calling @ref GetImageSize().
@@ -2599,13 +2620,20 @@ class PLAYERCC_EXPORT StereoProxy : public ClientProxy
                            aImage);
       };
 
-
-    /// @brief What is the compression type?
+    /// @brief Get the left image's compression type
     /// Currently supported compression types are:
     /// - @ref PLAYER_CAMERA_COMPRESS_RAW
     /// - @ref PLAYER_CAMERA_COMPRESS_JPEG
     uint32_t GetLeftCompression() const { return GetVar(mDevice->left_channel.compression); };
+    /// @brief Get the right image's compression type
+    /// Currently supported compression types are:
+    /// - @ref PLAYER_CAMERA_COMPRESS_RAW
+    /// - @ref PLAYER_CAMERA_COMPRESS_JPEG
     uint32_t GetRightCompression() const { return GetVar(mDevice->right_channel.compression); };
+    /// @brief Get the disparity image's compression type
+    /// Currently supported compression types are:
+    /// - @ref PLAYER_CAMERA_COMPRESS_RAW
+    /// - @ref PLAYER_CAMERA_COMPRESS_JPEG
     uint32_t GetDisparityCompression() const { return GetVar(mDevice->disparity.compression); };
 
     /// return the point count
@@ -2618,8 +2646,6 @@ class PLAYERCC_EXPORT StereoProxy : public ClientProxy
     /// This operator provides an alternate way of access the point data.
     /// For example, StereoProxy[0] == StereoProxy.GetPoint(0)
     player_pointcloud3d_stereo_element_t operator [] (uint32_t aIndex) const { return GetPoint(aIndex); }
-
-    
 
 };
 

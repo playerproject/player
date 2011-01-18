@@ -23,7 +23,12 @@
 #include "chronos.hh"
 #include <cstring>
 #include <stdexcept>
+// needed for gettimeofday, no sys/time.h on windows
+#if WIN32
+#include "replace/replace.h"
+#else
 #include <sys/time.h>
+#endif
 
 using namespace driver_differential;
 
