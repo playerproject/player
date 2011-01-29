@@ -1659,6 +1659,7 @@ WriteLog::WritePosition(player_msghdr_t* hdr, void *data)
  @defgroup player_driver_writelog_ptz PTZ format
 
 @brief PTZ log format
+
 The format for each @ref interface_wsn message is:
   - pan       (float): The pan angle/value
   - tilt      (float): The tilt angle/value

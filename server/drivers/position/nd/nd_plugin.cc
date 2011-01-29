@@ -124,7 +124,7 @@ underlying "output" @ref interface_position2d device.
 - wait_on_stall (integer)
   - Default: 0
   - Should local navigation be paused if the stall flag is set on the
-    input:::position2d device? This option is useful if the robot's pose
+    input position2d device? This option is useful if the robot's pose
     is being read from a SLAM system that sets the stall flag when it
     is performing intensive computation and can no longer guarantee the
     validity of pose estimates.

@@ -23,12 +23,22 @@ developers' mailing list</a>.
 <li><a href="#player_hardware_sim">Simulators</a>
 </ul>
 <h4><a name="player_hardware_robots">Robots</a></h4>
-<table border=2>
+<table border=2 width=100%>
 <tr>
 <td><b>Manufacturer</b></td>
 <td><b>Device(s)</b></td>
 <td><b>%Driver</b></td>
 </tr>
+
+<!-- 
+
+<tr>
+<td><a href="">Company</a></td>
+<td><a href="">Name</a></td>
+<td>@ref driver_</td>
+</tr>
+
+-->
 
 <tr>
 <td><a href="http://www.acroname.com">Acroname</a></td>
@@ -42,6 +52,13 @@ developers' mailing list</a>.
 <td>@ref driver_obot</td>
 </tr>
 
+
+<tr>
+<td><a href="http://www.e-puck.org/">e-puck</a></td>
+<td><a href="http://www.e-puck.org/index.php?option=com_content&view=article&id=2&Itemid=8">epuck</a></td>
+<td>@ref driver_epuck</td>
+</tr>
+
 <tr>
 <td><a href="http://www.evolution.com">Evolution Robotics</a></td>
 <td>ER1 and ERSDK robots</td>
@@ -50,9 +67,16 @@ developers' mailing list</a>.
 
 <tr>
 <td><a href="http://www.irobot.com">iRobot</a></td>
-<td><a href="http://www.irobot.com/sp.cfm?pageid=122">Roomba vaccuming 
-robot</a></td>
+<td><a href="http://store.irobot.com/category/index.jsp?categoryId=3334619&cp=2804605">
+Roomba vaccuming robot</a></td>
 <td>@ref driver_roomba</td>
+</tr>
+
+<tr>
+<td><a href="http://www.irobot.com">iRobot</a></td>
+<td><a href="http://store.irobot.com/shop/index.jsp?categoryId=3311368">
+Create research robot</a></td>
+<td>@ref driver_create</td>
 </tr>
 
 <tr>
@@ -68,6 +92,18 @@ robot</a></td>
 </tr>
 
 <tr>
+<td><a href="http://www.k-team.com">K-Team</a></td>
+<td>Hemisson</td>
+<td>@ref driver_hemisson</td>
+</tr>
+
+<tr>
+<td><a href="http://www.lego.com">LEGO</a></td>
+<td><a href="http://mindstorms.lego.com/en-us/Default.aspx">Mindstorms NXT</a></td>
+<td>@ref driver_nxt</td>
+</tr>
+
+<tr>
 <td><a href="http://www.mobilerobots.com">MobileRobots</a> (formerly
 ActivMedia)</td>
 <td>PSOS/P2OS/AROS-based robots (e.g., 
@@ -77,6 +113,12 @@ integrated accessories, including a
 <a href="http://www-2.cs.cmu.edu/~cmucam">CMUcam</a> connected to the AUX
 port.</td>
 <td>@ref driver_p2os</td>
+</tr>
+
+<tr>
+<td><a href="http://movirobotics.com/ENindex.php">MoviRobotics</a></td>
+<td><a href="http://movirobotics.com/SPmbase.php">mBase robot platform</a></td>
+<td>@ref driver_mbasedriver</td>
 </tr>
 
 <tr>
@@ -123,7 +165,7 @@ PC-BOT</a></td>
 </table>
 
 <h4><a name="player_hardware_mischw">Miscellaneous hardware</a></h4>
-<table border=2>
+<table border=2 width=100%>
 <tr>
 <td><b>Manufacturer</b></td>
 <td><b>Device(s)</b></td>
@@ -142,6 +184,13 @@ pan-tilt unit</td>
 <td><a href="http://www.ascension-tech.com/products/flockofbirds.php">Flock
 of Birds</a> position tracker</td>
 <td>@ref driver_flockofbirds</td>
+</tr>
+
+
+<tr>
+<td><a href="http://botrics.com/">Botrics</a></td>
+<td><a href="http://botrics.com/products/obot/">oBot</a></td>
+<td>@ref driver_obot</td>
 </tr>
 
 <tr>
@@ -170,14 +219,14 @@ PTU-D46</a> pan-tilt unit</td>
 <td><a href="http://www.garmin.com/products/geko201/">
 Geko 201</a> handheld GPS receiver (and most other NMEA-compliant GPS
 units)</td>
-<td>@ref driver_garminnmea</td>
+<td>@ref driver_garminnmea, @ref driver_gbxgarminacfr</td>
 </tr>
 
 <tr>
 <td><a href="http://www.hokuyo-aut.jp/">Hokuyo</a></td>
 <td><a href="http://www.hokuyo-aut.jp/products/urg/urg.htm">URG</a> laser 
 range finder</td>
-<td>@ref driver_urglaser</td>
+<td>@ref driver_hokuyo_aist</td>
 </tr>
 
 <tr>
@@ -194,6 +243,12 @@ InertiaCube2</a> IMU</td>
 </tr>
 
 <tr>
+<td><a href="http://www.logitech.com">Logitech</a></td>
+<td><a href="http://www.logitech.com/en-us/webcam-communications/webcams/devices/3480">QuickCam Sphere</a> pan-tilt-zoom camera</td>
+<td>@ref driver_sphere</td>
+</tr>
+
+<tr>
 <td><a href="http://www.microstrain.com/">MicroStrain</a></td>
 <td><a href="http://www.microstrain.com/3DM-G.htm">
 3DM-G</a> IMU</td>
@@ -201,9 +256,21 @@ InertiaCube2</a> IMU</td>
 </tr>
 
 <tr>
-<td><a href="http://www.logitech.com">Logitech</a></td>
-<td>QuickCam Sphere pan-tilt-zoom camera</td>
-<td>@ref driver_sphere</td>
+<td><a href="http://www.phidgets.com">Phidgets</a></td>
+<td><a href="http://www.phidgets.com/products.php?product_id=1018">Phidgets InterfaceKit (IFK)</a></td>
+<td>@ref driver_phidgetIFK</td>
+</tr>
+
+<tr>
+<td><a href="http://www.phidgets.com">Phidgets</a></td>
+<td><a href="http://www.phidgets.com/products.php?product_id=1023">Phidgets RFID reader</a></td>
+<td>@ref driver_phidgetRFID</td>
+</tr>
+
+<tr>
+<td><a href="http://www.phidgets.com">Phidgets</a></td>
+<td><a href="http://www.phidgets.com/products.php?product_id=1059">Phidgets Accelerometer (ACC) </a></td>
+<td>@ref driver_phidgetACC</td>
 </tr>
 
 <tr>
@@ -299,6 +366,18 @@ about the wireless hardware (e.g., signal quality).</td>
 
 <tr>
 <td>Various</td>
+<td>Cameras supported by Video4Linux2</td>
+<td>@ref driver_camerav4l2</td>
+</tr>
+
+<tr>
+<td>Various</td>
+<td>Cameras supported by OpenCV</td>
+<td>@ref driver_cvcam</td>
+</tr>
+
+<tr>
+<td>Various</td>
 <td>Generic Linux joystick. Allows access to axis and button state.
 <td>@ref driver_linuxjoystick</td>
 </tr>
@@ -306,7 +385,7 @@ about the wireless hardware (e.g., signal quality).</td>
 </table>
 
 <h4><a name="player_hardware_miscsw">Miscellaneous software</a></h4>
-<table border=2>
+<table border=2 width=100%>
 <tr>
 <td>Manufacturer</td>
 <td>Device(s)</td>
@@ -360,7 +439,7 @@ Zeroconf networking library</td>
 </table>
 
 <h4><a name="player_hardware_alg">Algorithms</a></h4>
-<table border=2>
+<table border=2 width=100%>
 <tr>
 <td>Algorithm(s)</td>
 <td>Description</td>
@@ -373,21 +452,36 @@ Zeroconf networking library</td>
 <td>goal-seeking obstacle-avoidance, especially suited for non-holonomic,
 non-circular robots in tight spaces</td>
 <td>Minguez & Montano (2004),
-<a href="http://webdiis.unizar.es/~jminguez/TRAND.pdf">Nearness Diagram
-Navigation (ND): Collision Avoidance in Troublesome Scenarios</a><br>
+<a href="http://webdiis.unizar.es/~jminguez/TRAND.pdf">"Nearness Diagram
+Navigation (ND): Collision Avoidance in Troublesome Scenarios"</a><br>
 Minguez, Osuna, & Montano (2004), 
-<a href="http://webdiis.unizar.es/~jminguez/810.pdf">A Divide and Conquer
+<a href="http://webdiis.unizar.es/~jminguez/810.pdf">"A Divide and Conquer
 Strategy based on Situations to Achieve Reactive Collision Avoidance in
-Troublesome Scenarios</a>.</td>
+Troublesome Scenarios"</a>.</td>
 <td>@ref driver_nd</td>
 </tr>
 
 <tr>
-<td>configuration space</td>
+<td>Smooth Nearness Diagram (SND) Navigation</td>
+<td>An improvement over the nd driver that removes oscillatory patterns and improves overall driver performance.</td>
+<td>Durham & Bullo (2008),
+<a href="http://motion.mee.ucsb.edu/pdf/2008a-db.pdf">"Smooth Nearness-Diagram Navigation"</a></td>
+<td>@ref driver_snd</td>
+</tr>
+
+<tr>
+<td>Configuration space</td>
 <td>Modulates raw laser data according to the robot's dimensions in order
 to represent the empty area in the robot's configuration space.</td>
 <td></td>
 <td>@ref driver_lasercspace</td>
+</tr>
+
+<tr>
+<td>Laser Feature</td>
+<td>Uses an Extended Kalman Filter to extract lines and corners from a laser data scan</td>
+<td></td>
+<td>@ref driver_laserfeature</td>
 </tr>
 
 <tr>
@@ -423,7 +517,7 @@ Latombe (1991),
 </table>
 
 <h4><a name="player_hardware_sim">Simulators</a></h4>
-<table border=2>
+<table border=2 width=100%>
 <tr>
 <td>Manufacturer</td>
 <td>Name</td>
@@ -432,17 +526,18 @@ Latombe (1991),
 </tr>
 
 <tr>
-<td><a href="http://playerstage.sf.net">The Player/Stage/Gazebo project</a></td>
+<td><a href="http://playerstage.sf.net">The Player project</a></td>
 <td><a href="http://playerstage.sf.net/index.php?src=gazebo">Gazebo</a></td>
 <td>A 3-dimensional multi-robot simulator</td>
-<td>gazebo</td>
+<td><a href="http://playerstage.sourceforge.net/doc/Gazebo-manual-svn-html/tutorial_player.html">
+gazebo</a></td>
 </tr>
 
 <tr>
-<td><a href="http://playerstage.sf.net">The Player/Stage/Gazebo project</a></td>
+<td><a href="http://playerstage.sf.net">The Player project</a></td>
 <td><a href="http://playerstage.sf.net/index.php?src=stage">Stage</a></td>
 <td>A 2-dimensional multi-robot simulator</td>
-<td><a href="http://playerstage.sourceforge.net/doc/stage-2.0.0a/group__player.html">stage</a></td>
+<td><a href="http://rtv.github.com/Stage/group__player.html">stage</a></td>
 </tr>
 
 

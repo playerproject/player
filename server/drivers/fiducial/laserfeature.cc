@@ -52,7 +52,7 @@ on the approach by Stergios Romelioutis.
 
 @par Provides
 
-- @ref interface_fiducal
+- @ref interface_fiducial
   - This interface returns a list of features extracted from the laser scan.
 
 @par Configuration requests
