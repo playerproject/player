@@ -218,21 +218,23 @@ class PLAYERCC_EXPORT AioProxy : public ClientProxy
 
   public:
 
+    /// Constructor
     AioProxy (PlayerClient *aPc, uint32_t aIndex=0);
+    /// Destructor
     ~AioProxy();
 
-    /// Accessor function
+    /// Get number of voltages
     uint32_t GetCount() const { return(GetVar(mDevice->voltages_count)); };
 
-    /// Accessor function
+    /// Get an input voltage 
     double GetVoltage(uint32_t aIndex)  const
       { return(GetVar(mDevice->voltages[aIndex])); };
 
-    /// Set the output voltage
+    /// Set an output voltage
     void SetVoltage(uint32_t aIndex, double aVoltage);
 
     /// AioProxy data access operator.
-    ///    This operator provides an alternate way of access the actuator data.
+    ///    This operator provides an alternate way of access the voltage data.
     ///    For example, given a @p AioProxy named @p bp, the following
     ///    expressions are equivalent: @p ap.GetVoltage(0) and @p ap[0].
     double operator [](uint32_t aIndex) const
@@ -257,7 +259,9 @@ class PLAYERCC_EXPORT AudioProxy : public ClientProxy
 
   public:
 
+    /// Constructor
     AudioProxy(PlayerClient *aPc, uint32_t aIndex=0);
+    /// Destructor
     ~AudioProxy();
 
     /** @brief Get Mixer Details Count */
@@ -429,9 +433,9 @@ class PLAYERCC_EXPORT BlobfinderProxy : public ClientProxy
     playerc_blobfinder_t *mDevice;
 
   public:
-    /// default contsructor
+    /// Constructor
     BlobfinderProxy(PlayerClient *aPc, uint32_t aIndex=0);
-    /// destructor
+    /// Destructor
     ~BlobfinderProxy();
 
     /// returns the number of blobs
@@ -453,7 +457,7 @@ class PLAYERCC_EXPORT BlobfinderProxy : public ClientProxy
       { return(GetBlob(aIndex)); }
 
 /*
-    /// Set the color to be tracked
+    // Set the color to be tracked
     void SetTrackingColor(uint32_t aReMin=0,   uint32_t aReMax=255, uint32_t aGrMin=0,
                           uint32_t aGrMax=255, uint32_t aBlMin=0,   uint32_t aBlMax=255);
     void SetImagerParams(int aContrast, int aBrightness,
@@ -482,9 +486,12 @@ class PLAYERCC_EXPORT BumperProxy : public ClientProxy
 
   public:
 
+    /// Constructor
     BumperProxy(PlayerClient *aPc, uint32_t aIndex=0);
+    /// Destructor
     ~BumperProxy();
 
+    /// Returns how many bumpers are in underlying device
     uint32_t GetCount() const { return GetVar(mDevice->bumper_count); };
 
     /// Returns true if the specified bumper has been bumped, false otherwise.
@@ -535,6 +542,7 @@ class PLAYERCC_EXPORT CameraProxy : public ClientProxy
     /// Constructor
     CameraProxy (PlayerClient *aPc, uint32_t aIndex=0);
 
+    /// Destructor
     virtual ~CameraProxy();
 
     /// Save the frame
@@ -600,9 +608,9 @@ class PLAYERCC_EXPORT DioProxy : public ClientProxy
     playerc_dio_t *mDevice;
 
   public:
-    /// constructor
+    /// Constructor
     DioProxy(PlayerClient *aPc, uint32_t aIndex=0);
-    /// destructor
+    /// Destructor
     ~DioProxy();
 
     /// The number of valid digital inputs.
@@ -640,9 +648,9 @@ class PLAYERCC_EXPORT FiducialProxy : public ClientProxy
     playerc_fiducial_t *mDevice;
 
   public:
-    /// constructor
+    /// Constructor
     FiducialProxy(PlayerClient *aPc, uint32_t aIndex=0);
-    /// destructor
+    /// Destructor
     ~FiducialProxy();
 
     /// The number of beacons detected
@@ -691,9 +699,9 @@ class PLAYERCC_EXPORT GpsProxy : public ClientProxy
 
   public:
 
-    // Constructor
+    /// Constructor
     GpsProxy(PlayerClient *aPc, uint32_t aIndex=0);
-
+    /// Destructor
     ~GpsProxy();
 
     /// Latitude and longitude, in degrees.
@@ -748,9 +756,9 @@ class PLAYERCC_EXPORT Graphics2dProxy : public ClientProxy
     playerc_graphics2d_t *mDevice;
 
   public:
-    // Constructor
+    /// Constructor
     Graphics2dProxy(PlayerClient *aPc, uint32_t aIndex=0);
-    // Destructor
+    /// Destructor
     ~Graphics2dProxy();
 
     /// Set the current pen color
@@ -798,9 +806,9 @@ class PLAYERCC_EXPORT Graphics3dProxy : public ClientProxy
     playerc_graphics3d_t *mDevice;
 
   public:
-    // Constructor
+    /// Constructor
     Graphics3dProxy(PlayerClient *aPc, uint32_t aIndex=0);
-    // Destructor
+    /// Destructor
     ~Graphics3dProxy();
 
     /// Set the current pen color
@@ -834,9 +842,9 @@ class PLAYERCC_EXPORT GripperProxy : public ClientProxy
 
   public:
 
-    /// constructor
+    /// Constructor
     GripperProxy(PlayerClient *aPc, uint32_t aIndex=0);
-    /// destructor
+    /// Destructor
     ~GripperProxy();
 
     /// Geometry request - call before getting the
@@ -886,9 +894,9 @@ class PLAYERCC_EXPORT HealthProxy : public ClientProxy
     playerc_health_t *mDevice;
 
   public:
-    /// constructor
+    /// Constructor
     HealthProxy(PlayerClient *aPc, uint32_t aIndex=0);
-    /// destructor
+    /// Destructor
     ~HealthProxy();
 
     /// Get idle CPU load in percents
@@ -947,22 +955,32 @@ class PLAYERCC_EXPORT ImuProxy : public ClientProxy
 
     /// Constructor
     ImuProxy(PlayerClient *aPc, uint32_t aIndex=0);
-    /// destructor
+    /// Destructor
     ~ImuProxy();
 
-    /// get the processed pos of the imu
+    /// Get the processed pose of the imu
     player_pose3d_t GetPose() const { return GetVar(mDevice->pose); };
-    /// get the raw values
+    
+    /// Get X Acceleration
     float GetXAccel();
+    /// Get Y Acceleration
     float GetYAccel();
+    /// Get Z Acceleration
     float GetZAccel();
+    /// Get X Gyro Rate
     float GetXGyro();
+    /// Get Y Gyro Rate
     float GetYGyro();
+    /// Get Z Gyro Rate
     float GetZGyro();
+    /// Get X Magnetism
     float GetXMagn();
+    /// Get Y Magnetism
     float GetYMagn();
+    /// Get Z Magnetism
     float GetZMagn();
 
+    /// Get all calibrated values
     player_imu_data_calib_t GetRawValues() const
     { return GetVar(mDevice->calib_data); };
 
@@ -995,7 +1013,7 @@ class PLAYERCC_EXPORT IrProxy : public ClientProxy
 
     /// Constructor
     IrProxy(PlayerClient *aPc, uint32_t aIndex=0);
-    /// destructor
+    /// Destructor
     ~IrProxy();
 
     /// get the number of IR rangers
@@ -1045,9 +1063,9 @@ class PLAYERCC_EXPORT LaserProxy : public ClientProxy
 
   public:
 
-    /// constructor
+    /// Constructor
     LaserProxy(PlayerClient *aPc, uint32_t aIndex=0);
-    /// destructor
+    /// Destructor
     ~LaserProxy();
 
     /// Number of points in scan
@@ -1080,9 +1098,9 @@ class PLAYERCC_EXPORT LaserProxy : public ClientProxy
     double GetConfMaxAngle() const { return max_angle; };
 
     /// Whether or not reflectance (i.e., intensity) values are being returned.
-	bool IntensityOn() const { return GetVar(mDevice->intensity_on) != 0 ? true : false; };
+    bool IntensityOn() const { return GetVar(mDevice->intensity_on) != 0 ? true : false; };
 
-//    /// Scan data (polar): range (m) and bearing (radians)
+//    // Scan data (polar): range (m) and bearing (radians)
 //    double GetScan(uint32_t aIndex) const
 //      { return GetVar(mDevice->scan[aIndex]); };
 
@@ -1214,7 +1232,9 @@ class PLAYERCC_EXPORT LimbProxy : public ClientProxy
 
   public:
 
+    /// Constructor
     LimbProxy(PlayerClient *aPc, uint32_t aIndex=0);
+    /// Destructor
     ~LimbProxy();
 
     /// Geometry request - call before getting the
@@ -1265,9 +1285,9 @@ class PLAYERCC_EXPORT LinuxjoystickProxy : public ClientProxy
     playerc_joystick_t *mDevice;
 
   public:
-    /// constructor
+    // Constructor
     LinuxjoystickProxy(PlayerClient *aPc, uint32_t aIndex=0);
-    /// destructor
+    // Destructor
     ~LinuxjoystickProxy();
 
     /// return the sensor count
@@ -1317,18 +1337,21 @@ class PLAYERCC_EXPORT LocalizeProxy : public ClientProxy
 
   public:
 
-    /// constructor
+    /// Constructor
     LocalizeProxy(PlayerClient *aPc, uint32_t aIndex=0);
-    /// destructor
+    /// Destructor
     ~LocalizeProxy();
 
-    /// Map dimensions (cells)
+    /// Map X dimension (cells)
     // @todo should these be in a player_pose_t?
     uint32_t GetMapSizeX() const { return GetVar(mDevice->map_size_x); };
+    /// Map Y dimension (cells)
     uint32_t GetMapSizeY() const { return GetVar(mDevice->map_size_y); };
 
     // @todo should these be in a player_pose_t?
+    /// Map tile X dimension (cells)
     uint32_t GetMapTileX() const { return GetVar(mDevice->map_tile_x); };
+    /// Map tile Y dimension (cells)
     uint32_t GetMapTileY() const { return GetVar(mDevice->map_tile_y); };
 
     /// Map scale (m/cell)
@@ -1433,10 +1456,10 @@ class PLAYERCC_EXPORT MapProxy : public ClientProxy
     playerc_map_t *mDevice;
 
   public:
-    /// constructor
+    /// Constructor
     MapProxy(PlayerClient *aPc, uint32_t aIndex=0);
 
-    /// destructor
+    /// Destructor
     ~MapProxy();
 
     /// Get the map and store it in the proxy
@@ -1454,10 +1477,10 @@ class PLAYERCC_EXPORT MapProxy : public ClientProxy
     double GetResolution() const { return GetVar(mDevice->resolution); };
 
     /// Map size, in cells
-    ///    @todo should this be returned as a player_size_t?
+    //    @todo should this be returned as a player_size_t?
     uint32_t GetWidth() const { return GetVar(mDevice->width); };
     /// Map size, in cells
-    /// @todo should this be returned as a player_size_t?
+    // @todo should this be returned as a player_size_t?
     uint32_t GetHeight() const { return GetVar(mDevice->height); };
 
     double GetOriginX() const { return GetVar(mDevice->origin[0]); };
@@ -1493,9 +1516,9 @@ class PLAYERCC_EXPORT OpaqueProxy : public ClientProxy
 
   public:
 
-    /// constructor
+    /// Constructor
     OpaqueProxy(PlayerClient *aPc, uint32_t aIndex=0);
-    /// destructor
+    /// Destructor
     ~OpaqueProxy();
 
     /// How long is the data?
@@ -1533,9 +1556,9 @@ class PLAYERCC_EXPORT PlannerProxy : public ClientProxy
 
   public:
 
-    /// constructor
+    /// Constructor
     PlannerProxy(PlayerClient *aPc, uint32_t aIndex=0);
-    /// destructor
+    /// Destructor
     ~PlannerProxy();
 
     /// Set the goal pose (gx, gy, ga)
@@ -1673,10 +1696,10 @@ class PLAYERCC_EXPORT Pointcloud3dProxy : public ClientProxy
     playerc_pointcloud3d_t *mDevice;
 
   public:
-    /// constructor
+    /// Constructor
     Pointcloud3dProxy(PlayerClient *aPc, uint32_t aIndex=0);
 
-    /// destructor
+    /// Destructor
     ~Pointcloud3dProxy();
 
     /// return the point count
@@ -1710,9 +1733,9 @@ class PLAYERCC_EXPORT Position1dProxy : public ClientProxy
 
   public:
 
-    /// constructor
+    /// Constructor
     Position1dProxy(PlayerClient *aPc, uint32_t aIndex=0);
-    /// destructor
+    /// Destructor
     ~Position1dProxy();
 
     /// Send a motor command for velocity control mode.
@@ -1763,54 +1786,54 @@ class PLAYERCC_EXPORT Position1dProxy : public ClientProxy
     /// Reset odometry to 0.
     void ResetOdometry() { SetOdometry(0); };
 
-    /// Set PID terms
+    // Set PID terms
     //void SetSpeedPID(double kp, double ki, double kd);
 
-    /// Set PID terms
+    // Set PID terms
     //void SetPositionPID(double kp, double ki, double kd);
 
-    /// Set speed ramping profile
-    /// spd rad/s, acc rad/s/s
+    // Set speed ramping profile
+    // spd rad/s, acc rad/s/s
     //void SetPositionSpeedProfile(double spd, double acc);
 
-    /// Accessor method
+    /// Get current position
     double  GetPos() const { return GetVar(mDevice->pos); };
 
-    /// Accessor method
+    /// Get current velocity
     double  GetVel() const { return GetVar(mDevice->vel); };
 
-    /// Accessor method
-	bool GetStall() const { return GetVar(mDevice->stall) != 0 ? true : false; };
+    /// Get whether or not the device is stalled
+    bool GetStall() const { return GetVar(mDevice->stall) != 0 ? true : false; };
 
-    /// Accessor method
+    /// Get device status
     uint8_t GetStatus() const { return GetVar(mDevice->status); };
 
-    /// Accessor method
+    /// Is the device at the min limit?
     bool IsLimitMin() const
       { return (GetVar(mDevice->status) &
                (1 << PLAYER_POSITION1D_STATUS_LIMIT_MIN)) > 0; };
 
-    /// Accessor method
+    /// Is the device at the center limit?
     bool IsLimitCen() const
       { return (GetVar(mDevice->status) &
                (1 << PLAYER_POSITION1D_STATUS_LIMIT_CEN)) > 0; };
 
-    /// Accessor method
+    /// Is the device at the max limit?
     bool IsLimitMax() const
       { return (GetVar(mDevice->status) &
                (1 << PLAYER_POSITION1D_STATUS_LIMIT_MAX)) > 0; };
 
-    /// Accessor method
+    /// Is the device over current limits?
     bool IsOverCurrent() const
       { return (GetVar(mDevice->status) &
                (1 << PLAYER_POSITION1D_STATUS_OC)) > 0; };
 
-    /// Accessor method
+    /// Is the device finished moving?
     bool IsTrajComplete() const
       { return (GetVar(mDevice->status) &
                (1 << PLAYER_POSITION1D_STATUS_TRAJ_COMPLETE)) > 0; };
 
-    /// Accessor method
+    /// Is the device enabled?
     bool IsEnabled() const
       { return (GetVar(mDevice->status) &
                (1 << PLAYER_POSITION1D_STATUS_ENABLED)) > 0; };
@@ -1834,9 +1857,9 @@ class PLAYERCC_EXPORT Position2dProxy : public ClientProxy
 
   public:
 
-    /// constructor
+    /// Constructor
     Position2dProxy(PlayerClient *aPc, uint32_t aIndex=0);
-    /// destructor
+    /// Destructor
     ~Position2dProxy();
 
     /// Send a motor command for velocity control mode.
@@ -1926,22 +1949,22 @@ class PLAYERCC_EXPORT Position2dProxy : public ClientProxy
     /// Reset odometry to (0,0,0).
     void ResetOdometry();
 
-    /// Select position mode
-    /// Set @p mode for 0 for velocity mode, 1 for position mode.
+    // Select position mode
+    // Set @p mode for 0 for velocity mode, 1 for position mode.
     //void SelectPositionMode(unsigned char mode);
 
     /// Sets the odometry to the pose @p (x, y, yaw).
     /// Note that @p x and @p y are in m and @p yaw is in radians.
     void SetOdometry(double aX, double aY, double aYaw);
 
-    /// Set PID terms
+    // Set PID terms
     //void SetSpeedPID(double kp, double ki, double kd);
 
-    /// Set PID terms
+    // Set PID terms
     //void SetPositionPID(double kp, double ki, double kd);
 
-    /// Set speed ramping profile
-    /// spd rad/s, acc rad/s/s
+    // Set speed ramping profile
+    // spd rad/s, acc rad/s/s
     //void SetPositionSpeedProfile(double spd, double acc);
 
     //
@@ -1959,26 +1982,26 @@ class PLAYERCC_EXPORT Position2dProxy : public ClientProxy
     //
     //void PlatformShutdown();
 
-    /// Accessor method
+    /// Get the device's X position
     double  GetXPos() const { return GetVar(mDevice->px); };
 
-    /// Accessor method
+    /// Get the device's Y position
     double  GetYPos() const { return GetVar(mDevice->py); };
 
-    /// Accessor method
+    /// Get the device's Yaw position (angle)
     double GetYaw() const { return GetVar(mDevice->pa); };
 
-    /// Accessor method
+    /// Get the device's X speed
     double  GetXSpeed() const { return GetVar(mDevice->vx); };
 
-    /// Accessor method
+    /// Get the device's Y speed
     double  GetYSpeed() const { return GetVar(mDevice->vy); };
 
-    /// Accessor method
+    /// Get the device's angular (yaw) speed
     double  GetYawSpeed() const { return GetVar(mDevice->va); };
 
-    /// Accessor method
-	bool GetStall() const { return GetVar(mDevice->stall) != 0 ? true : false; };
+    /// Is the device stalled?
+    bool GetStall() const { return GetVar(mDevice->stall) != 0 ? true : false; };
 
 };
 
@@ -2001,9 +2024,9 @@ class PLAYERCC_EXPORT Position3dProxy : public ClientProxy
 
   public:
 
-    /// constructor
+    /// Constructor
     Position3dProxy(PlayerClient *aPc, uint32_t aIndex=0);
-    /// destructor
+    /// Destructor
     ~Position3dProxy();
 
     /// Send a motor command for a planar robot.
@@ -2088,44 +2111,44 @@ class PLAYERCC_EXPORT Position3dProxy : public ClientProxy
     // spd rad/s, acc rad/s/s
     //void SetPositionSpeedProfile(double spd, double acc);
 
-    /// Accessor method
+    /// Get device X position
     double  GetXPos() const { return GetVar(mDevice->pos_x); };
 
-    /// Accessor method
+    /// Get device Y position
     double  GetYPos() const { return GetVar(mDevice->pos_y); };
 
-    /// Accessor method
+    /// Get device Z position
     double  GetZPos() const { return GetVar(mDevice->pos_z); };
 
-    /// Accessor method
+    /// Get device Roll angle
     double  GetRoll() const { return GetVar(mDevice->pos_roll); };
 
-    /// Accessor method
+    /// Get device Pitch angle
     double  GetPitch() const { return GetVar(mDevice->pos_pitch); };
 
-    /// Accessor method
+    /// Get device Yaw angle
     double  GetYaw() const { return GetVar(mDevice->pos_yaw); };
 
-    /// Accessor method
+    /// Get device X speed
     double  GetXSpeed() const { return GetVar(mDevice->vel_x); };
 
-    /// Accessor method
+    /// Get device Y speed
     double  GetYSpeed() const { return GetVar(mDevice->vel_y); };
 
-    /// Accessor method
+    /// Get device Z speed
     double  GetZSpeed() const { return GetVar(mDevice->vel_z); };
 
-    /// Accessor method
+    /// Get device Roll speed
     double  GetRollSpeed() const { return GetVar(mDevice->vel_roll); };
 
-    /// Accessor method
+    /// Get device Pitch speed
     double  GetPitchSpeed() const { return GetVar(mDevice->vel_pitch); };
 
-    /// Accessor method
+    /// Get device Yaw speed
     double  GetYawSpeed() const { return GetVar(mDevice->vel_yaw); };
 
-    /// Accessor method
-	bool GetStall () const { return GetVar(mDevice->stall) != 0 ? true : false; };
+    /// Is the device stalled?
+    bool GetStall () const { return GetVar(mDevice->stall) != 0 ? true : false; };
 };
 /**
 The @p PowerProxy class controls a @ref interface_power device. */
@@ -2140,9 +2163,9 @@ class PLAYERCC_EXPORT PowerProxy : public ClientProxy
     playerc_power_t *mDevice;
 
   public:
-    /// constructor
+    /// Constructor
     PowerProxy(PlayerClient *aPc, uint32_t aIndex=0);
-    /// destructor
+    /// Destructor
     ~PowerProxy();
 
     /// Returns the current charge.
@@ -2182,9 +2205,9 @@ class PLAYERCC_EXPORT PtzProxy : public ClientProxy
     playerc_ptz_t *mDevice;
 
   public:
-    /// constructor
+    // Constructor
     PtzProxy(PlayerClient *aPc, uint32_t aIndex=0);
-    // destructor
+    // Destructor
     ~PtzProxy();
 
   public:
@@ -2227,9 +2250,9 @@ class PLAYERCC_EXPORT RangerProxy : public ClientProxy
     playerc_ranger_t *mDevice;
 
   public:
-    /// constructor
+    /// Constructor
     RangerProxy(PlayerClient *aPc, uint32_t aIndex=0);
-    /// destructor
+    /// Destructor
     ~RangerProxy();
 
     /// Return the individual range sensor count
@@ -2320,9 +2343,9 @@ class PLAYERCC_EXPORT RFIDProxy : public ClientProxy
     playerc_rfid_t *mDevice;
 
   public:
-    /// constructor
+    /// Constructor
     RFIDProxy(PlayerClient *aPc, uint32_t aIndex=0);
-    /// destructor
+    /// Destructor
     ~RFIDProxy();
 
     /// returns the number of RFID tags
@@ -2354,9 +2377,9 @@ class PLAYERCC_EXPORT SimulationProxy : public ClientProxy
     playerc_simulation_t *mDevice;
 
   public:
-    /// constructor
+    /// Constructor
     SimulationProxy(PlayerClient *aPc, uint32_t aIndex=0);
-    /// destructor
+    /// Destructor
     ~SimulationProxy();
 
     /// set the 2D pose of an object in the simulator, identified by the
@@ -2401,9 +2424,9 @@ class PLAYERCC_EXPORT SonarProxy : public ClientProxy
     playerc_sonar_t *mDevice;
 
   public:
-    /// constructor
+    /// Constructor
     SonarProxy(PlayerClient *aPc, uint32_t aIndex=0);
-    /// destructor
+    /// Destructor
     ~SonarProxy();
 
     /// return the sensor count
@@ -2450,9 +2473,9 @@ class PLAYERCC_EXPORT SpeechProxy : public ClientProxy
     playerc_speech_t *mDevice;
 
   public:
-    /// constructor
+    /// Constructor
     SpeechProxy(PlayerClient *aPc, uint32_t aIndex=0);
-    /// constructor
+    /// Destructor
     ~SpeechProxy();
 
     /// Send a phrase to say.
@@ -2471,8 +2494,9 @@ class PLAYERCC_EXPORT SpeechRecognitionProxy : public ClientProxy
    ///libplayerc data structure
    playerc_speechrecognition_t *mDevice;
   public:
-   ///Constructor
+   /// Constructor
    SpeechRecognitionProxy(PlayerClient *aPc, uint32_t aIndex=0);
+   /// Destructor
    ~SpeechRecognitionProxy();
    /// Accessor method for getting speech recognition data i.e. words.
    std::string GetWord(uint32_t aWord) const{
@@ -2592,7 +2616,7 @@ class PLAYERCC_EXPORT StereoProxy : public ClientProxy
     /// @brief Left image data
     /// This function copies the image data into the data buffer aImage.
     /// The buffer should be allocated according to the width, height, and
-    /// depth of the image.  The size can be found by calling @ref GetImageSize().
+    /// depth of the image.  The size can be found by calling @ref GetLeftImageSize().
     void GetLeftImage(uint8_t* aImage) const
       {
         return GetVarByRef(mDevice->left_channel.image,
@@ -2602,7 +2626,7 @@ class PLAYERCC_EXPORT StereoProxy : public ClientProxy
     /// @brief Right image data
     /// This function copies the image data into the data buffer aImage.
     /// The buffer should be allocated according to the width, height, and
-    /// depth of the image.  The size can be found by calling @ref GetImageSize().
+    /// depth of the image.  The size can be found by calling @ref GetRightImageSize().
     void GetRightImage(uint8_t* aImage) const
       {
         return GetVarByRef(mDevice->right_channel.image,
@@ -2612,7 +2636,7 @@ class PLAYERCC_EXPORT StereoProxy : public ClientProxy
     /// @brief Disparity image data
     /// This function copies the image data into the data buffer aImage.
     /// The buffer should be allocated according to the width, height, and
-    /// depth of the image.  The size can be found by calling @ref GetImageSize().
+    /// depth of the image.  The size can be found by calling @ref GetDisparityImageSize().
     void GetDisparityImage(uint8_t* aImage) const
       {
         return GetVarByRef(mDevice->disparity.image,
@@ -2667,18 +2691,30 @@ class PLAYERCC_EXPORT VectorMapProxy : public ClientProxy
 
     bool map_info_cached;
   public:
-    // Constructor
+    /// Constructor
     VectorMapProxy(PlayerClient *aPc, uint32_t aIndex=0);
-    // Destructor
+    /// Destructor
     ~VectorMapProxy();
 
+    /// Request map information from the underlying device
     void GetMapInfo();
+
+    /// Request data for a specific layer from the underlying device
     void GetLayerData(unsigned layer_index);
 
+    /// Get how many layers are in the map
     int GetLayerCount() const;
+
+    /// Get the names of each of the layers
     std::vector<std::string> GetLayerNames() const;
+
+    /// Get how many features are in a particular layer
     int GetFeatureCount(unsigned layer_index) const;
+
+    /// Get the feature data for a layer and feature
     const uint8_t * GetFeatureData(unsigned layer_index, unsigned feature_index) const;
+
+    /// Get how long the feature data is for a layer and feature
     size_t GetFeatureDataCount(unsigned layer_index, unsigned feature_index) const;
 };
 
@@ -2696,58 +2732,37 @@ class PLAYERCC_EXPORT WiFiProxy: public ClientProxy
     playerc_wifi_t *mDevice;
 
   public:
-    /// constructor
+    /// Constructor
     WiFiProxy(PlayerClient *aPc, uint32_t aIndex=0);
-    /// destructor
+    /// Destructor
     ~WiFiProxy();
 
+    /// Get the playerc wifi link data
     const playerc_wifi_link_t *GetLink(int aLink);
 
-			 int GetLinkCount() const { return mDevice->link_count; };
-			 char* GetOwnIP() const { return mDevice->ip; };
+    /// Get how many links the device sees
+    int GetLinkCount() const { return mDevice->link_count; };
+    /// Get your current IP address
+    char* GetOwnIP() const { return mDevice->ip; };
+    /// Get the IP address from a particular link
+    char* GetLinkIP(int index)  const { return (char*) mDevice->links[index].ip; };
+    /// Get the MAC address from a particular link
+    char* GetLinkMAC(int index)  const { return (char*) mDevice->links[index].mac; };
+    /// Get the ESSID from a particular link
+    char* GetLinkESSID(int index)  const { return (char*)mDevice->links[index].essid; };
+    /// Get the frequency from a particular link
+    double GetLinkFreq(int index)  const {return mDevice->links[index].freq;};
+    /// Get the connection mode from a particular link
+    int GetLinkMode(int index)  const { return mDevice->links[index].mode; };
+    /// Get whether a particular link is encrypted
+    int GetLinkEncrypt(int index)  const {return mDevice->links[index].encrypt; };
+    /// Get the quality of a particular link
+    int GetLinkQuality(int index)  const { return mDevice->links[index].qual; };
+    /// Get the signal level of a particular link
+    int GetLinkLevel(int index)  const {return mDevice->links[index].level; };
+    /// Get the noise level of a particular link
+    int GetLinkNoise(int index)  const {return mDevice->links[index].noise; }	;
 
-			 char* GetLinkIP(int index)  const { return (char*) mDevice->links[index].ip; };
-			 char* GetLinkMAC(int index)  const { return (char*) mDevice->links[index].mac; };
-			 char* GetLinkESSID(int index)  const { return (char*)mDevice->links[index].essid; };
-			 double GetLinkFreq(int index)  const {return mDevice->links[index].freq;};
-			 int 	 GetLinkMode(int index)  const { return mDevice->links[index].mode; };
-			 int 	 GetLinkEncrypt(int index)  const {return mDevice->links[index].encrypt; };
-			 int   GetLinkQuality(int index)  const { return mDevice->links[index].qual; };
-			 int 	 GetLinkLevel(int index)  const {return mDevice->links[index].level; };
-			 int 	 GetLinkNoise(int index)  const {return mDevice->links[index].noise; }	;
-
-			//player_wifi_link_t
-//     int GetLinkQuality(char/// ip = NULL);
-//     int GetLevel(char/// ip = NULL);
-//     int GetLeveldBm(char/// ip = NULL) { return GetLevel(ip) - 0x100; }
-//     int GetNoise(char/// ip = NULL);
-//     int GetNoisedBm(char/// ip = NULL) { return GetNoise(ip) - 0x100; }
-//
-//     uint16_t GetMaxLinkQuality() { return maxqual; }
-//     uint8_t GetMode() { return op_mode; }
-//
-//     int GetBitrate();
-//
-//     char/// GetMAC(char *buf, int len);
-//
-//     char/// GetIP(char *buf, int len);
-//     char/// GetAP(char *buf, int len);
-//
-//     int AddSpyHost(char *address);
-//     int RemoveSpyHost(char *address);
-//
-//   private:
-//     int GetLinkIndex(char *ip);
-//
-//     /// The current wifi data.
-//     int link_count;
-//     player_wifi_link_t links[PLAYER_WIFI_MAX_LINKS];
-//     uint32_t throughput;
-//     uint8_t op_mode;
-//     int32_t bitrate;
-//     uint16_t qual_type, maxqual, maxlevel, maxnoise;
-//
-//     char access_point[32];
 };
 
 /**
@@ -2764,21 +2779,29 @@ class PLAYERCC_EXPORT WSNProxy : public ClientProxy
     playerc_wsn_t *mDevice;
 
   public:
-    /// constructor
+    /// Constructor
     WSNProxy(PlayerClient *aPc, uint32_t aIndex=0);
-    /// destructor
+    /// Destructor
     ~WSNProxy();
 
+    /// Get the node's type
     uint32_t GetNodeType    () const { return GetVar(mDevice->node_type);      };
+    /// Get the node's ID
     uint32_t GetNodeID      () const { return GetVar(mDevice->node_id);        };
+    /// Get the node's parent ID
     uint32_t GetNodeParentID() const { return GetVar(mDevice->node_parent_id); };
 
+    /// Get a WSN node packet
     player_wsn_node_data_t
        GetNodeDataPacket() const { return GetVar(mDevice->data_packet);    };
 
+    /// Set a WSN device State
     void SetDevState(int nodeID, int groupID, int devNr, int value);
+    /// Set WSN device Power
     void Power(int nodeID, int groupID, int value);
+    /// Set WSN device type
     void DataType(int value);
+    /// Set WSN device frequency
     void DataFreq(int nodeID, int groupID, float frequency);
 };
 

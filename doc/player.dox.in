@@ -460,7 +460,23 @@ WARN_LOGFILE           =
 # with spaces.
 
 #INPUT                  = player.txt install.html migration.html tutorials.html utils.html clients.html plugin_driver.html configfile.html protocol.html ../libplayerxdr/playerxdr.html ../libplayerxdr ../libplayercore/playercore.h ../server/libplayerdrivers ../libplayertcp ../libplayercore ../server/drivers/ ../utils/playerv/playerv.c ../utils/playernav/playernav.c ../utils/playercam/playercam.c ../utils/playerjoy/playerjoy.cc ../utils/playerprint/playerprint.cc ../utils/playervcr/playervcr.c ../utils/dgps_server/dgps_server.dox ../client_libs/libplayerc/doc/mainpage.html ../client_libs/libplayerc/doc/libplayerc_py.html ../client_libs/libplayerc/playerc.h ../client_libs/libplayerc++/playerclient.h ../client_libs/libplayerc++/utility.h ../client_libs/libplayerc++/clientproxy.h ../client_libs/libplayerc++/playerc++.h ../client_libs/libplayerc++/playerc++.cc ../client_libs/libplayerc++/playererror.h
-INPUT                  = player.txt quick_start.txt architecture.txt supported_hardware.txt tutorial_devices.txt tutorial_migration.txt tutorial_cameras.txt tutorial_automake.txt tutorial_crosscompiling.txt tutorial_args.txt tutorial_datalog.txt tutorial_config.txt tutorial_interface.txt tutorial_plugins.txt tutorial_maps.txt install.txt ../server/server.cc ../libplayerinterface/player.h @PROJECT_BINARY_DIR@/libplayerinterface/player_interfaces.h ../libplayercommon/error.h ../libplayercore/configfile.h ../libplayercore/driver.h ../libplayercore/device.h ../libplayercore/message.h ../server/drivers ../libplayerinterface/interface_util.h ../libplayersd/playersd.h ../libplayertcp/playertcp.h ../libplayerinterface/playerxdr.html @PROJECT_BINARY_DIR@/libplayerinterface/playerxdr.h ../server/libplayerdrivers/driverregistry.h ../utils/playerv/playerv.c ../utils/playernav/playernav.c ../utils/playercam/playercam.c ../utils/playerjoy/playerjoy.cc ../utils/playerprint/playerprint.cc ../utils/playervcr/playervcr.c ../utils/dgps_server/dgps_server.dox ../utils/playerwritemap/playerwritemap.c ../client_libs/libplayerc/playerc.h ../client_libs/libplayerc/bindings/python/libplayerc_py.html ../client_libs/libplayerc++/playerclient.h ../client_libs/libplayerc++/playerc++.h ../client_libs/libplayerc++/playerc++.cc ../client_libs/libplayerc++/playererror.h ../client_libs/libplayerc++/utility.h ../client_libs/libplayerc++/clientproxy.h ../libplayercore/property.h
+INPUT                  = player.txt quick_start.txt architecture.txt \
+supported_hardware.txt tutorial_devices.txt tutorial_migration.txt \
+tutorial_cameras.txt tutorial_automake.txt tutorial_crosscompiling.txt \
+tutorial_args.txt tutorial_datalog.txt tutorial_config.txt tutorial_interface.txt \
+tutorial_plugins.txt tutorial_maps.txt install.txt ../server/server.cc \
+../libplayerinterface/player.h @PROJECT_BINARY_DIR@/libplayerinterface/player_interfaces.h \
+../libplayercommon/error.h ../libplayercore/configfile.h ../libplayercore/driver.h \
+../libplayercore/device.h ../libplayercore/message.h ../server/drivers \
+../libplayerinterface/interface_util.h ../libplayersd/playersd.h ../libplayertcp/playertcp.h \
+../libplayerinterface/playerxdr.html @PROJECT_BINARY_DIR@/libplayerinterface/playerxdr.h \
+../server/libplayerdrivers/driverregistry.h ../utils/playerv/playerv.c ../utils/playernav/playernav.c \
+../utils/playercam/playercam.c ../utils/playerjoy/playerjoy.cc ../utils/playerprint/playerprint.cc \
+../utils/playervcr/playervcr.c ../utils/dgps_server/dgps_server.dox ../utils/playerwritemap/playerwritemap.c \
+../client_libs/libplayerc/playerc.h ../client_libs/libplayerc/bindings/python/libplayerc_py.html \
+../client_libs/libplayerc++/playerclient.h ../client_libs/libplayerc++/playerc++.h  \
+../client_libs/libplayerc++/playerc++.cc ../client_libs/libplayerc++/playererror.h ../client_libs/libplayerc++/utility.h \
+../client_libs/libplayerc++/clientproxy.h ../libplayercore/property.h
 
 # If the value of the INPUT tag contains directories, you can use the
 # FILE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp
@@ -469,7 +485,7 @@ INPUT                  = player.txt quick_start.txt architecture.txt supported_h
 # *.c *.cc *.cxx *.cpp *.c++ *.java *.ii *.ixx *.ipp *.i++ *.inl *.h *.hh *.hxx
 # *.hpp *.h++ *.idl *.odl *.cs *.php *.php3 *.inc *.m *.mm *.py
 
-FILE_PATTERNS          = *.cc *.h *.cpp
+FILE_PATTERNS          = *.cc *.h *.cpp *.hh *.hpp
 # The RECURSIVE tag can be used to turn specify whether or not subdirectories
 # should be searched for input files as well. Possible values are YES and NO.
 # If left blank NO is used.

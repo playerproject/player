@@ -601,7 +601,7 @@ class PLAYERCORE_EXPORT ThreadedDriver : public Driver
 	 @param section Current section in configuration file
 	 @param overwrite_cmds Do new commands overwrite old ones?
 	 @param queue_maxlen How long can the incoming queue grow?
-	 @param interface The interface that you want this driver to provide*/
+	 @param interface_ The interface that you want this driver to provide*/
 	 ThreadedDriver(ConfigFile *cf,
 			int section,
 			bool overwrite_cmds,
