@@ -23,8 +23,8 @@
 %module playerc
 
 %{
-#include "playerc_wrap.h"
 #include "stdint.h"
+#include "playerc_wrap.h"
 
 %}
 
