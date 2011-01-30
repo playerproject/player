@@ -29,6 +29,7 @@
 #define LOCALIZATION_HH
 
 #include <libplayerinterface/player.h>
+#include <math.h>
 
 /** Calculates the 2d uncertainty ellipsis parameters for a given hypothesis
  *

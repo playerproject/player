@@ -1,0 +1,189 @@
+/** @ingroup tutorials
+@defgroup tutorial_cmake Using Player and CMake
+@brief A brief overview of how CMake works
+
+Table of contents:
+
+- @ref directory
+- @ref configuration
+- @ref example
+    - @ref basedir
+    - @ref sourcedir
+    - @ref docdir
+- @ref generate
+- @ref build
+
+@p CMake is a tool designed to help developers get rid of the challenges
+associated with writing @p Makefiles in projects.  @p CMake is designed
+to be portable across many types of systems, and can generate native build
+scripts for many different compilers on several different operating systems.
+We will be giving a cursory overview of the @p CMake and explain
+how you can use it with your own client applications.
+
+@section directory Directory structure
+
+A project directory typically contains the following subdirectories:
+
+- @b src : Contains the source code that gets compiled.  Often times, the
+          @p src folder contains information for only one executable or
+          libarary, but it is possible to have multiple executables per
+          directory.
+
+- @b doc : Contains the project documentation.  If you use doxygen or any other
+          program for autogenerating your documentation, it is a good idea
+          to build a @p Makefile so you can run @p make @p doc
+          to automatically generate the documentation.
+
+Player has a slightly different (and larger directory structure), which works
+with generally the same principles.
+
+@section configuration Configuration files
+
+CMake uses various @b CMakeLists.txt files, usually one in each directory of
+the project.  These files contain logic to set build options, resolve external
+project dependencies, and add executable and library targets.  Custom targets
+and macros can also be defined and included into the @p CMake files.
+
+@section example A brief example
+
+Sometimes the best way to explain a topic is by showing an example.  Here, we
+will be building a project that uses @p CMake to build a c++
+client application.  All of the code for this example is include in
+examples/tutorials/cmake
+
+@subsection basedir Base directory
+
+@p CMake requires at least one CMakeLists.txt file for project configuration.
+Generally, projects distribute the configuration, and place a CMakeLists.txt
+in each subdirectory of the source tree as well.  This allows you to keep 
+things modular: the base directory CMakeLists.txt can handle setting global
+configuration (project name, version, project dependency discovery), and the
+subdirectory files can handle.
+
+@include /tutorials/cmake/CMakeLists.txt
+
+The command CMAKE_MINIMUM_VERSION defines the minimum version of @p CMake
+that is required to process the CMakeLists.txt file.  This is to handle
+@p CMake API compatibility; as new functions are added, older versions of
+@p CMake won't be able process newer files.  In general, we recommend
+version 2.6 and above.
+
+The PROJECT macro sets your project's name.  This can be useful in setting
+project install directories, but is not required.  The PROJECT_VERSION variable
+is similar; if you're not creating a large project you probably don't need
+to worry about these variables.
+
+The CMAKE_C_FLAGS and CMAKE_CXX_FLAGS are the build flags that will be applied
+to all C and C++ files in the project.  You can set the @p CMake variable CMAKE_BUILD_TYPE
+to "DEBUG" or "RELEASE" to switch between the two types of build flags.  This 
+can be accomplished in the @p ccmake curses-based UI, or by using the -D option
+on the @p CMake command line.  For example:
+
+@verbatim
+$ cmake -D CMAKE_BUILD_TYPE=RELEASE
+@endverbatim
+
+@p CMake does not generate a "make uninstall" target by default.  ADD_CUSTOM_TARGET
+allows you to add uninstall target.  This particular method was borrowed from the 
+<a href="http://www.cmake.org/Wiki/CMake_FAQ#Can_I_do_.22make_uninstall.22_with_CMake.3F">CMake FAQ</a>.
+
+Finally, the ADD_SUBDIRECTORY commands tell @p CMake to traverse to the "doc" and "src"
+subdirectories and process the CMakeLists.txt files in those directories.
+
+@note If you are installing Player on a machine, you need to make sure that
+the PKG_CONFIG_PATH that the code installed to is included in your search
+path.  If you are using a bash shell, you can enter the following (or something
+similar) in your ~/.bashrc.
+@verbatim
+# for .pc in /usr/local
+export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib/pkgconfig/
+@endverbatim
+
+
+@subsection sourcedir Source directory
+
+A @p CMakeLists.txt contains directives on how to build, link, and install
+libraries and executables.  We will discuss some of the macros that Player
+includes for building plugin drivers and client programs, but the rest are 
+beyond the scope of the document. The following CMakeLists.txt file builds
+a Player C++ client program and a Player example driver library.
+
+@include /tutorials/cmake/src/CMakeLists.txt
+
+Setting the CMAKE_MODULE_PATH tells CMake where it can search for additional
+modules when the INCLUDE command is used.  If Player isn't installed to /usr,
+the path where Player is installed needs to be added so @p CMake will be able to
+find Player's @p CMake modules.
+
+The INCLUDE command will load a @p CMake module for use in your CMakeLists.txt.
+The UsePlayerC++ and UsePlayerPlugin @p CMake modules provide useful macros
+for building and linking C++ clients and plugin drivers, respectively.
+
+PLAYER_ADD_PLAYERCPP_CLIENT is one of the macros in UsePlayerC++.  It uses the
+ADD_EXECUTABLE command from @p CMake to create an executable client program, and handles
+adding all of the include directories and link libraries needed to compile against Player.
+More details about the macros Player provides can be found on the 
+<a href="http://playerstage.sourceforge.net/wiki/Compiling_Player_3_clients_and_plugins">
+Player wiki</a>.
+
+
+@subsection docdir Generating documentation
+
+To demonstrate another aspect of the @p CMakeLists.txt files we will setup
+code to allow you to run the command @p make @p doc and
+build doxygen comments.  To use Doxygen to automatically generate documentation
+you typically type the command:
+
+@verbatim
+$ doxygen example.dox
+@endverbatim
+
+where example.dox is a doxygen configuration file typically generated by a tool
+such as @p doxywizard.  To accomplish the same thing with your @p Makefile, you
+can utilize the fact that you can create custom build targets with any arbitrary
+commands using @ CMake.  The following creates a rudimentary build target to
+build documentation using Doxygen:
+
+@include /tutorials/cmake/doc/CMakeLists.txt
+
+@section generate Generating the build scripts
+
+You need to run the @p CMake program in order to generate project @ Makefiles
+from the @ CMakeLists.txt files.  Generally, it is encourged to do an 
+"out of tree build."  This constitutes creating a separate folder in the base
+directory of your project, usually called build.  From this build folder, 
+you can invoke @p CMake and generate the build scripts.  The out-of-tree build
+has the advantage of keeping all of the generated build scripts away from the
+source files, so they can be easily removed or ignored using a .gitignore
+or .svnignore.  You can do an out-of-tree build like this:
+
+@verbatim
+$ mkdir build
+$ cd build
+$ cmake ..
+@endverbatim
+
+After generating the scripts, you can run the typical @p make command as usual to
+build the project.
+
+@section build Build options
+
+After successfully running the @p CMake program the following options
+are avaliable for make
+
+- @p make :  Builds the project and creates the executables and libraries.
+- @p make @p clean : Cleans the project i.e removes all the executables.
+- @p make @p install  : Builds and installs the project i.e the executable is
+                     copied in the /prefix/bin,headers in /prefix/include and
+                     libraries in /prefix/lib where prefix is usually /usr/local.
+- @p make @p uninstall : Uninstalls the project i.e removes the files added to
+                       /prefix/bin, /prefix/include and /prefix/lib directories.
+- @p make @p doc : Creates project documentation
+
+@section references References
+
+- <a href="http://www.cmake.org/cmake/help/cmake-2-8-docs.html">
+    CMake Documentation</a>
+- <a href="http://www.cmake.org/Wiki/CMake_FAQ">CMake FAQ</a>
+
+*/

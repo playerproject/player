@@ -478,7 +478,7 @@ to represent the empty area in the robot's configuration space.</td>
 </tr>
 
 <tr>
-<td>Laser Feature</td>
+<td>LaserFeature</td>
 <td>Uses an Extended Kalman Filter to extract lines and corners from a laser data scan</td>
 <td></td>
 <td>@ref driver_laserfeature</td>
