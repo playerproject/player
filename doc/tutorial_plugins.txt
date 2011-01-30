@@ -38,15 +38,15 @@ Sample code for a very basic plugin driver is provided in the
 <tt>examples</tt> directory; for a default install, this will be:
 
 @verbatim
-/usr/local/src/player/examples/plugins/exampledriver/
+/usr/local/share/player/examples/plugins/exampledriver/
 @endverbatim
 
-Copy the files from this directory and rename
-<tt>Makefile.example</tt> to <tt>Makefile</tt>.  Try building the
-example:
+Copy the files from this directory into a new directory somewhere
+on your disk.  Try building the example:
 
 @verbatim
-$ make 
+$ cmake .
+$ make
 @endverbatim
 
 This produces a plugin driver named <tt>exampledriver.so</tt>.
@@ -73,8 +73,8 @@ driver
 @section plugin_drivers_simple Writing a simple driver
 
 The first step in creating a new driver is to decide which interface
-it will support.  The existing interfaces are described in the <a
-href="modules.html">reference</a> section, and their various message
+it will support.  The existing interfaces are described in the 
+@ref interfaces section, and their various message
 structures and constants are defined in player.h.  Although you can
 create a new interface, you should try to fit your driver to an
 existing interface, of which there are many.  By deciding to support
@@ -274,8 +274,26 @@ prevent C++ name mangling of the intialization function.
 
 @section plugin_drivers_building Building the shared library
 
-The example driver includes a Makefile for building shared objects.
-To manually build a shared object, try:
+The example driver includes a CMakeLists.txt file set up for building the
+driver's shared objects.  The process for building a plugin driver with 
+CMake is very much like the process for building and installing Player.
+From within your source directory, try:
+
+@verbatim
+$ mkdir build
+$ cd build
+$ cmake ..
+$ make
+@endverbatim
+
+The build directory should now contain <tt>exampledriver.so</tt> built from the
+C++ source.  Note that if your plugin driver file is in a separate directory 
+than your Player configuration file, you may have to edit the config file to
+reflect the path to the plugin.
+
+CMake is the preferred method for building Player plugins, but plugin
+drivers are also easy to build manually from the command line.  To skip the
+CMake steps and manually build a shared object, try:
 
 @verbatim
 $ g++ -Wall -g3 -c exampledriver.cc

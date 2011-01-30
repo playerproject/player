@@ -2,6 +2,198 @@
 @defgroup tutorial_interface Adding a new interface
 @brief How to add an interface for a new kind of device
 
-@todo Write this
+There are two ways to add an interface to Player:
+
+- <i>Static</i> interfaces are part of the Player distribution
+and are defined in libplayerinterface.  These interfaces handle most
+of the default messages in Player.
+
+- <i>Plugin</i> interfaces are built as shared objects and loaded
+at runtime.  Plugin interfaces are recommended for custom and experimental
+applications.
+
+Plugin interfaces have several advantages over their static
+counterparts:
+
+- They allow for custom applications 
+
+- They allow for rapid development and changes; libplayerinterface doesn't
+need to be regenerated each time the interface definition is changed
+
+- They are portable: Plugin interface definitions can be kept in separate
+repositories with their companion drivers.  
+
+This document describes the process for creating new plugin interfaces.
+
+
+@section plugin_interfaces_example A plugin interface example
+
+Sample code for a rudimentary plugin interface is included in the 
+<tt> examples</tt> directory; for a default install, this will be:
+
+@verbatim
+/usr/local/share/player/examples/plugins/exampleplugin/
+@endverbatim
+
+This directory example contains three objects: an interface plugin, a driver 
+plugin for the new interface, and a client program that uses the new interface
+in conjunction with the plugin driver.
+
+To start, copy the files in this directory into a new folder.  Enter the folder,
+and try building the examples:
+
+@verbatim
+$ cmake .
+$ make
+@endverbatim
+
+This produces several outputs:
+
+ - A new plugin interface: defined in <tt>example_interface.h</tt> and contained
+in <tt>example.so</tt>
+
+- A plugin driver, <tt>libexample_driver.so</tt> that uses the example interface.
+For more information on writing a plugin driver, see @ref tutorial_plugins.
+
+- A sample playerc client program, <tt>example_client</tt>, that accesses
+data from the new interface from playerc.
+
+You can test the example interface using the included configuration file:
+
+@verbatim
+$ player ./example.cfg
+@endverbatim
+
+The config file contains a new interface block that specifies the name, code 
+and path of the plugin interface:
+
+@verbatim
+interface
+(
+  name "example"
+  code 128
+  plugin "libexample"
+)
+@endverbatim
+
+@section plugin_interfaces_simple Writing a simple interface
+
+The first step in creating a new interface is to decide on the messages that
+the interface needs to handle.  Player supports three different messagetypes:
+commands, data, and requests.  Interfaces may one or more of these messagetypes
+as necessary.  For example, the @ref interface_gps interface supports only a
+single message: a data message that contains GPS related state information 
+(latitude, longitude, etc.)  On the other hand, the @ref interface_position2d
+interface has a large number of requests, data, and command messages.  The
+messages the plugin interface implements depend on what the interface needs
+to accomplish.
+
+To create a new interface, you must first create an interface definition file
+which contains the interface specifications (messages, structures, etc.)  Then
+you can create plugin drivers and playerc functions that implement the 
+interface.  We will now describe the steps in detail.
+
+@subsection plugin_interfaces_simple_def The interface definition
+
+Interfaces start with an interface definition file.  Interfaces all have a
+unique number, so a plugin interface needs a new number.  Player's builtin
+interfaces are numbered up to the 60's, so it's safest to create a number
+starting in the 100's to make sure the plugin interface does not conflict
+with any of the Player interfaces.  Once you choose a number, create an
+interface definition file named <tt>###_interfacename.def</tt>
+
+The first part of the interface deinition file is the description block.
+The description block contains a summary of your interface, and can be useful
+for documenting the purpose of the interface.
+
+@verbatim
+description{
+* Interface information goes here
+}
+@endverbatim
+
+The next section of the interface definition file contains the messages
+the interface will contain.
+
+@verbatim
+/** Example data */
+message { DATA, EXAMPLE, 1, player_eginterf_data_t };
+/** Example Request */
+message { REQ, EXAMPLE, 1, player_eginterf_req_t };
+/* Another example request */
+message { REQ, ANOTHEREXAMPLE, 2, player_eginterf_req2_t };
+/** Example Command */
+message { CMD, EXAMPLE, 1, player_eginterf_cmd_t };
+@endverbatim
+
+The first field in the message block is the message type.  This must be either
+a CMD (command), REQ (request), or DATA (data) message.  
+
+The second field is the message subtype.  Subtypes can have any name, and depend
+on the functionality of the interface.  For example, most interfaces have a 
+DATA message called STATE, which is used to hold data that is published often 
+by a class of device.  The convention is to capitalize the subtypes, as
+they will be expanded into #define statements.  For example, the data message
+above will be expanded into PLAYER_EXAMPLE_DATA_EXAMPLE.
+
+The third field is a unique identifier for the message type and subtype.  If
+your interface will contain multiple messages of the same type, they must have
+unique identifiers.  In the above example, there are two REQ type messages, each
+with separate identifiers.
+
+The last field is the structure that is to be associated with the message.
+In general, each message passed through the Player server has some kind of
+message payload.  A command will contain a data structure that will hold
+command data, and a request may contain information about what data is being
+requested.  These structures are also part of the interface definition, as
+described below.
+
+The final part of the interface definition file is the structures that will be
+used by each message.  These structures are defined as standard c structs, and
+may contain any arbitraty variables deemed appropriate by the user.  The
+example interface defines the following:
+
+@verbatim
+typedef struct player_eginterf_data
+{
+	uint32_t stuff_count;
+	double *stuff;
+} player_eginterf_data_t;
+
+typedef struct player_eginterf_req
+{
+	int value;
+} player_eginterf_req_t;
+
+typedef struct player_eginterf_cmd
+{
+	char doStuff;
+} player_eginterf_cmd_t;
+@endverbatim
+
+Generally, the structures will be named in some way that corresponds with the
+message types they go with.  The names of the structures are usually in the
+form of "player_interfacename_structname"
+
+@section plugin_interfaces_building Building the interface
+
+The example interface includes a CMakeLists.txt file that builds the interface
+shared objects.  The process for building the plugin interface using CMake is
+a lot like the process for building and installing Player.  From within
+the example interface source directory, try:
+
+@verbatim
+$ mkdir build
+$ cd build
+$ cmake ..
+$ make
+@endverbatim
+
+The build directory should now contain the shared objects for the plugin
+interface, and the header files that generated from the interface definition
+file.
+
+@todo
+- Describe playerc bindings
 
 */

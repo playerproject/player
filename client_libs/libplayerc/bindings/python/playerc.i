@@ -22,6 +22,7 @@
 %module playerc
 
 %{
+#include "stdint.h"
 #include "playerc_wrap.h"
 
 #ifndef Py_RETURN_NONE
