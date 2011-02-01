@@ -67,7 +67,7 @@ IF (BUILD_DOCUMENTATION)
         ENDIF (DOXYGEN_LATEX)
 
         # Upload documentation target (not supported on Windows)
-        SET (docWebDestination "Player-cvs")
+        SET (docWebDestination "Player-svn")
         SET (docName "player")
         IF (NOT PLAYER_OS_WIN)
             ADD_CUSTOM_TARGET (upload_doc

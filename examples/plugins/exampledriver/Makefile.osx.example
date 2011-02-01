@@ -1,7 +1,7 @@
 # Desc: Example plugin makefile
 # CVS: $Id$
 
-all: libexampledriver.dylib
+all: libexampledriver.so
 
 %.o: %.cc
 	$(CXX) `pkg-config --cflags playercore` -Wall -g3 -dynamiclib -c $<
