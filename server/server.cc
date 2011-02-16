@@ -225,13 +225,6 @@ main(int argc, char** argv)
     PLAYER_ERROR("No devices read in configuration file. Is it correct?\nExiting...");
     exit(-1);
   }
-  
-  if(deviceTable->StartAlwaysonDrivers() != 0)
-  {
-    PLAYER_ERROR("failed to start alwayson drivers");
-    Cleanup();
-    exit(-1);
-  }
 
   // Collect the list of ports on which we should listen
   ports = (int*)calloc(deviceTable->Size(),sizeof(int));
@@ -326,6 +319,13 @@ main(int argc, char** argv)
   free(ports);
   free(new_ports);
 
+  if(deviceTable->StartAlwaysonDrivers() != 0)
+  {
+    PLAYER_ERROR("failed to start alwayson drivers");
+    Cleanup();
+    exit(-1);
+  }
+ 
   while(!player_quit)
   {
     // wait until something other than driver requested watches happens
