@@ -103,7 +103,7 @@ std::operator << (std::ostream &os, const PlayerCc::LocalizeProxy &c)
 }
 
 void
-LocalizeProxy::SetPose(double pose[3], double cov[3])
+LocalizeProxy::SetPose(double pose[3], double cov[6])
 {
   scoped_lock_t lock(mPc->mMutex);
   if (0 != playerc_localize_set_pose(mDevice, pose, cov))
