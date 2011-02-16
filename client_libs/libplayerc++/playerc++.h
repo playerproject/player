@@ -1384,7 +1384,7 @@ class PLAYERCC_EXPORT LocalizeProxy : public ClientProxy
     player_pose2d_t GetParticlePose(int index) const;
 
     /// Set the current pose hypothesis (m, m, radians).
-    void SetPose(double pose[3], double cov[3]);
+    void SetPose(double pose[3], double cov[6]);
 
     /// Get the number of localization hypoths.
     uint32_t GetNumHypoths() const { return GetVar(mDevice->hypoth_count); };
