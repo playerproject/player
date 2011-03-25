@@ -48,7 +48,7 @@ IF (BUILD_PLAYERCC)
                 PLAYERCC_ADD_LINK_DIR (${Boost_LIBRARY_DIRS})
 
                 IF (Boost_THREAD_FOUND)
-                    GET_FILENAME_COMPONENT (boostThreadLib ${Boost_THREAD_LIBRARY} NAME_WE CACHE)
+                    GET_FILENAME_COMPONENT (boostThreadLib "${Boost_THREAD_LIBRARY}" NAME_WE CACHE)
                     # Chop off the lib at the front, too, if present
                     STRING (REGEX REPLACE "^lib" "" boostThreadLib ${boostThreadLib})
                     PLAYERCC_ADD_LINK_LIB (${boostThreadLib})
@@ -62,7 +62,7 @@ IF (BUILD_PLAYERCC)
                 ENDIF (Boost_THREAD_FOUND)
 
                 IF (Boost_SIGNALS_FOUND)
-                    GET_FILENAME_COMPONENT (boostSignalsLib ${Boost_SIGNALS_LIBRARY} NAME_WE CACHE)
+                    GET_FILENAME_COMPONENT (boostSignalsLib "${Boost_SIGNALS_LIBRARY}" NAME_WE CACHE)
                     STRING (REGEX REPLACE "^lib" "" boostSignalsLib ${boostSignalsLib})
                     PLAYERCC_ADD_LINK_LIB (${boostSignalsLib})
                     SET (boostIncludeDir ${Boost_INCLUDE_DIR})
