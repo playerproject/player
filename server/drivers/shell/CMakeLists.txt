@@ -60,3 +60,5 @@ PLAYERDRIVER_ADD_DRIVER (opaquecmd build_opaquecmd SOURCES opaquecmd.cc)
 
 PLAYERDRIVER_OPTION (speechcmd build_speechcmd ON)
 PLAYERDRIVER_ADD_DRIVER (speechcmd build_speechcmd SOURCES speechcmd.cc)
+
+ADD_SUBDIRECTORY (guile)

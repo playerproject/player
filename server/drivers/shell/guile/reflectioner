@@ -1,0 +1,304 @@
+#!/bin/bash
+
+outfile=$1
+shift
+echo "#ifdef BUILD_THIS" >${outfile}
+echo "  void * ptr;"  >>${outfile}
+echo ""  >>${outfile}
+echo "  assert(structure);" >>${outfile}
+echo "  assert(desc);" >>${outfile}
+echo "  memset(reinterpret_cast<void *>(desc), 0, sizeof desc[0]);" >>${outfile}
+echo "  desc->ptr = NULL;" >>${outfile}
+num=0
+for f in $@
+do
+  echo "Processing ${f}" >&2
+  while read -r xx yy name
+  do
+    if [ "q${xx}" = "qtypedef" ]
+    then
+      if [ "q${yy}" = "qstruct" ]
+      then
+        echo "  Adding structure \"${name}\"" >&2
+        read -r xx
+        if [ "q${xx}" != "q{" ]
+        then
+          echo "Invalid def file structure: '{' expected" >&2
+          exit 1
+        fi
+        echo -n "  " >>${outfile}
+        if [ ${num} -gt 0 ]; then echo -n "else " >>${outfile}; fi
+        let num=${num}+1
+        echo "if (!strcmp(\"${name}\", structure))" >>${outfile}
+        echo "  {" >>${outfile}
+        echo "    if (!field)" >>${outfile}
+        echo "    {" >>${outfile}
+        echo "      ptr = malloc(sizeof(struct ${name}));" >>${outfile}
+        echo "      if (ptr) memset(ptr, 0, sizeof(struct ${name}));" >>${outfile}
+        echo "      return ptr;" >>${outfile}
+        echo "    }" >>${outfile}
+        echo "    assert(data);" >>${outfile}
+        in_comment=0
+        fields=0
+        while read type field rest1 rest2
+        do
+          if [ "q${field}" = "q**" ]
+          then
+            echo "Unsupported data type: pointer to a pointer" >&2
+            exit 1
+          fi
+          if echo ${rest1} | grep -e "^;" >/dev/null
+          then
+            tmp="${field};"
+            field="${tmp}"
+            tmp=`echo ${rest1}|cut -f2 -d ';'`
+            rest1="${tmp}"
+          fi
+          if [ "q${field}" = "q*" ]
+          then
+            field="*${rest1}"
+            rest="${rest2}"
+          else
+            rest="${rest1}${rest2}"
+          fi
+          if [ "q${type}" = "q" ]; then continue; fi
+          if [ ${in_comment} -eq 0 ]
+          then
+            if echo "${type}" | grep "}" >/dev/null
+            then
+              if echo "${type}" | grep -e "^}" >/dev/null
+              then
+                break
+              else
+                echo "Syntax error (1)" >&2
+                exit 1
+              fi
+            fi
+            if echo "${field}" | grep "}" >/dev/null
+            then
+              echo "Syntax error (2)" >&2
+              exit 1
+            fi
+            if echo "${rest}" | grep "}" >/dev/null
+            then
+              echo "Syntax error (3)" >&2
+              exit 1
+            fi
+            if echo "${type}" | grep "//" >/dev/null
+            then
+              if echo "${type}" | grep -e "^//" >/dev/null
+              then
+                continue
+              else
+                echo "In-line comments not supported yet" >&2
+                exit 1
+              fi
+            fi
+            if echo "${field}" | grep "//" >/dev/null
+            then
+              echo "In-line comments not supported yet" >&2
+              exit 1
+            fi
+            if echo "${type}" | grep "/\*" >/dev/null
+            then
+              if echo "${type}" | grep -e "^/\*" >/dev/null
+              then
+                if echo "${type}" | grep "\*/" >/dev/null
+                then
+                  if echo "${type}" | grep -e "\*/$" >/dev/null
+                  then
+                    if [ "q" != "q${field}" ]
+                    then
+                      echo "In-line comments not supported yet" >&2
+                      exit 1
+                    fi
+                    if [ "q" != "q${rest}" ]
+                    then
+                      echo "In-line comments not supported yet" >&2
+                      exit 1
+                    fi
+                    continue
+                  fi
+                  echo "In-line comments not supported yet" >&2
+                  exit 1
+                fi
+                if echo "${field}" | grep "\*/" >/dev/null
+                then
+                  if echo "${field}" | grep -e "\*/$" >/dev/null
+                  then
+                    if [ "q" != "q${rest}" ]
+                    then
+                      echo "In-line comments not supported yet" >&2
+                      exit 1
+                    fi
+                    continue
+                  fi
+                  echo "In-line comments not supported yet" >&2
+                  exit 1
+                fi
+                if echo "${rest}" | grep "\*/" >/dev/null
+                then
+                  if echo "${rest}" | grep -e "\*/$" >/dev/null
+                  then
+                    continue
+                  else
+                    echo "In-line comments not supported yet" >&2
+                    exit 1
+                  fi
+                else
+                  in_comment=1
+                  continue
+                fi
+              else
+                echo "In-line comments not supported yet" >&2
+                exit 1
+              fi
+            fi
+            if echo "${field}" | grep "/\*" >/dev/null
+            then
+              echo "In-line comments not supported yet" >&2
+              exit 1
+            fi
+            if [ "q" != "q${rest}" ]
+            then
+              if echo "${rest}" | grep -e "^/\*" >/dev/null
+              then
+                if echo "${rest}" | grep "\*/" >/dev/null
+                then
+                  if echo "${rest}" | grep -e "\*/$" >/dev/null
+                  then
+                    true
+                  else
+                    echo "In-line comments not supported yet" >&2
+                    exit 1
+                  fi
+                else
+                  echo "Unsupported multi-line comment type" >&2
+                  exit 1
+                fi
+              else
+                if echo "${rest}" | grep -e "^//" >/dev/null
+                then
+                  true
+                else
+                  echo "Unsupported syntax: more than one definition in one line (1)" >&2
+                  exit 1
+                fi
+              fi
+            fi
+          else
+            if echo "${type}${field}${rest}" | grep "\*/" >/dev/null
+            then
+              if echo "${type}${field}${rest}" | grep -e "\*/$" >/dev/null
+              then
+                in_comment=0
+              else
+                echo "In-line comments not supported yet" >&2
+                exit 1
+              fi
+            fi
+            continue
+          fi
+          if [ "q${type}" = "qunsigned" ]
+          then
+            echo "unsigned types are not supported, use uintX_t instead" >&2
+            exit 1
+          fi
+          if [ "q${type}" = "qlong" ]
+          then
+            echo "long types are not supported, use int{32|64}_t instead" >&2
+            exit 1
+          fi
+          if echo "${type} ${field}" | grep "," >/dev/null
+          then
+            echo "Unsupported syntax: more than one field of one type in a line" >&2
+            exit 1
+          fi
+          if echo "${field}" | grep -e ";$" >/dev/null
+          then
+            true
+          else
+            echo "Syntax error (4)" >&2
+            exit 1
+          fi
+          if [ "q" = "q$(echo ${type}${field}|cut -f2 -d ';')" ]
+          then
+            true
+          else
+            echo "Unsupported syntax: more than one definition in one line (2)" >&2
+            exit 1
+          fi
+          if echo "${type}" | grep -e "\*\*$" >/dev/null
+          then
+            echo "Unsupported data type: pointer to a pointer" >&2
+            exit 1
+          fi
+          if echo "${type}" | grep -e "\*$" >/dev/null
+          then
+            tmp=`echo ${type}|cut -f1 -d '*'`;
+            type="${tmp}"
+            tmp="${field}"
+            field="*${field}"
+          fi
+          echo -n "    " >>${outfile}
+          if [ ${fields} -gt 0 ]; then echo -n "else " >>${outfile}; fi
+          let fields=${fields}+1
+          fieldname=`echo ${field}|cut -f1 -d ';'|cut -f2 -d '*'|cut -f1 -d '['`
+          echo "if (!strcmp(\"${fieldname}\", field))" >>${outfile}
+          echo "    {" >>${outfile}
+          if echo "${field}" | grep -e "^\*\*" >/dev/null
+          then
+            echo "Unsupported data type: pointer to a pointer" >&2
+            exit 1
+          fi
+          echo -n "      desc->type = " >>${outfile}
+          case "${type}" in
+            "char")          echo "PLAYER_FIELD_CHAR;" >>${outfile};;
+            "int")           echo "PLAYER_FIELD_INT;" >>${outfile};;
+            "short")         echo "PLAYER_FIELD_SHORT;" >>${outfile};;
+            "int8_t")        echo "PLAYER_FIELD_INT8;" >>${outfile};;
+            "uint8_t")       echo "PLAYER_FIELD_UINT8;" >>${outfile};;
+            "int16_t")       echo "PLAYER_FIELD_INT16;" >>${outfile};;
+            "uint16_t")      echo "PLAYER_FIELD_UINT16;" >>${outfile};;
+            "int32_t")       echo "PLAYER_FIELD_INT32;" >>${outfile};;
+            "uint32_t")      echo "PLAYER_FIELD_UINT32;" >>${outfile};;
+            "int64_t")       echo "PLAYER_FIELD_INT64;" >>${outfile};;
+            "uint64_t")      echo "PLAYER_FIELD_UINT64;" >>${outfile};;
+            "float")         echo "PLAYER_FIELD_FLOAT;" >>${outfile};;
+            "double")        echo "PLAYER_FIELD_DOUBLE;" >>${outfile};;
+             *)              echo "PLAYER_FIELD_COMPOUND;" >>${outfile}
+          esac
+          echo "      desc->size = sizeof(${type});" >>${outfile}
+          echo "      desc->ptr = reinterpret_cast<void *>(&((reinterpret_cast<struct ${name} *>(data))->${fieldname}));" >>${outfile}
+          if echo "${field}" | grep -e "^\*" >/dev/null
+          then
+            if echo "${field}" | grep "\[" >/dev/null
+            then
+              echo "Unsupported data type: array of pointers" >&2
+              exit 1
+            fi
+            echo "      desc->isptr = !0;" >>${outfile}
+            echo "      desc->array = 0;" >>${outfile}
+            echo "      return ((reinterpret_cast<struct ${name} *>(data))->${fieldname}) ? (reinterpret_cast<void *>(&(((reinterpret_cast<struct ${name} *>(data))->${fieldname})[offset]))) : NULL;" >>${outfile}
+          else
+            echo "      desc->isptr = 0;" >>${outfile}
+            if echo "${field}" | grep "\[" >/dev/null
+            then
+              echo "      desc->array = $(echo ${field}|cut -f2 -d '['|cut -f1 -d ']');" >>${outfile}
+              echo "      return reinterpret_cast<void *>(&(((reinterpret_cast<struct ${name} *>(data))->${fieldname})[offset]));" >>${outfile}
+            else
+              echo "      desc->array = 0;" >>${outfile}
+              echo "      assert(!offset);" >>${outfile}
+              echo "      return reinterpret_cast<void *>(&((reinterpret_cast<struct ${name} *>(data))->${fieldname}));" >>${outfile}
+            fi
+          fi
+          echo "    }" >>${outfile}
+        done
+        echo "  }" >>${outfile}
+      fi
+    fi
+  done < ${f}
+done
+echo "  return NULL;" >>${outfile}
+echo "#endif" >>${outfile}
+echo "Processed ${num} structures" >&2
