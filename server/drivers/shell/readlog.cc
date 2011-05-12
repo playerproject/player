@@ -3404,7 +3404,7 @@ int ReadLog::ParseAIO(player_devaddr_t id, unsigned short type,
             inputs.voltages = new float[inputs.voltages_count];
             for (float *v(inputs.voltages);
                  v != inputs.voltages + inputs.voltages_count; ++v, ++t)
-              *v = static_cast<uint8_t> (atof(*t));
+              *v = static_cast<float> (atof(*t));
 
             Publish(id, static_cast<uint8_t> (type), static_cast<uint8_t> (subtype), (void *)&inputs, sizeof(inputs),
                     &time);
