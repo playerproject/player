@@ -57,9 +57,18 @@ The diocmd driver keeps on repeating configured dio interface command.
 - read_only (integer)
   - Default: 1
   - If set to 1, received commands will not change the state
+- wait_on_normal (double)
+  - Default: 0.0 (no effect)
+  - Wait time in secs.
+- wait_on_opposite (double)
+  - Default: 0.0 (no effect)
+  - Wait time in secs.
 - sleep_nsec (integer)
   - Default: 100000000 (10 sends per second)
   - timespec value for nanosleep()
+
+When wait_on_normal and wait_on_opposite options are given,
+this driver acts as a clock signal source.
 
 @par Example
 
@@ -83,6 +92,8 @@ driver
 #include <string.h> // for memset()
 #include <pthread.h>
 #include <libplayercore/playercore.h>
+
+#define EPS 0.000000000000001
 
 class DioCmd : public ThreadedDriver
 {
@@ -110,9 +121,12 @@ class DioCmd : public ThreadedDriver
     uint32_t bits;
     uint32_t bits_count;
     int read_only;
+    double wait_on_normal;
+    double wait_on_opposite;
     int sleep_nsec;
     uint32_t state;
     uint32_t state_count;
+    int opposite;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -131,9 +145,12 @@ DioCmd::DioCmd(ConfigFile * cf, int section) : ThreadedDriver(cf, section, true,
   this->bits = 0;
   this->bits_count = 0;
   this->read_only = 0;
+  this->wait_on_normal = 0.0;
+  this->wait_on_opposite = 0.0;
   this->sleep_nsec = 0;
   this->state = 0;
   this->state_count = 0;
+  this->opposite = 0;
   if (cf->ReadDeviceAddr(&(this->provided_dio_addr), section, "provides",
                          PLAYER_DIO_CODE, -1, NULL))
   {
@@ -192,6 +209,20 @@ DioCmd::DioCmd(ConfigFile * cf, int section) : ThreadedDriver(cf, section, true,
   this->state = this->bits;
   this->state_count = this->bits_count;
   this->read_only = cf->ReadInt(section, "read_only", 1);
+  this->wait_on_normal = cf->ReadFloat(section, "wait_on_normal", 0.0);
+  if (this->wait_on_normal < 0.0)
+  {
+    PLAYER_ERROR("Invalid wait_on_normal value");
+    this->SetError(-1);
+    return;
+  }
+  this->wait_on_opposite = cf->ReadFloat(section, "wait_on_opposite", 0.0);
+  if (this->wait_on_opposite < 0.0)
+  {
+    PLAYER_ERROR("Invalid wait_on_opposite value");
+    this->SetError(-1);
+    return;
+  }
   this->sleep_nsec = cf->ReadInt(section, "sleep_nsec", 100000000);
   if ((this->sleep_nsec) <= 0)
   {
@@ -236,14 +267,20 @@ void DioCmd::MainQuit()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
-void DioCmd::Main() 
+void DioCmd::Main()
 {
   struct timespec tspec;
   player_dio_cmd_t dio_cmd;
   player_dio_data_t dio_data;
+  double last_time = 0.0;
+  double d = 0.0;
+  uint32_t tmp;
+  int i;
 
   this->state = this->bits;
   this->state_count = this->bits_count;
+  this->opposite = 0;
+  GlobalTime->GetTimeDouble(&last_time);
   for (;;)
   {
     // Test if we are supposed to cancel
@@ -254,6 +291,22 @@ void DioCmd::Main()
 
     // Test if we are supposed to cancel
     pthread_testcancel();
+
+    if (((this->wait_on_normal) > EPS) && ((this->wait_on_opposite) > EPS))
+    {
+      GlobalTime->GetTimeDouble(&d);
+      if (((d - last_time) + EPS) >= ((this->opposite) ? (this->wait_on_opposite) : (this->wait_on_normal)))
+      {
+        tmp = 1;
+        for (i = 0; i < static_cast<int>(this->state_count); i++)
+        {
+          this->state ^= tmp;
+          tmp <<= 1;
+        }
+        last_time = d;
+        (this->opposite) = (!(this->opposite));
+      }
+    }
 
     if (this->use_dio)
     {
@@ -324,6 +377,7 @@ int DioCmd::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, void 
     if (!dio_cmd) return -1;
     this->state = dio_cmd->digout;
     this->state_count = dio_cmd->count;
+    this->opposite = 0;
     return 0;
   }
   return -1;
