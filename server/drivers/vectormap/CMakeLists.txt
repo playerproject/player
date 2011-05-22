@@ -5,11 +5,7 @@ ELSE (HAVE_STL)
 ENDIF (HAVE_STL)
 PLAYERDRIVER_REQUIRE_PKG (postgis build_postgis libpqxx
     postgis_includeDirs postgis_libDirs postgis_linkLibs postgis_linkFlags postgis_cFlags)
-IF (PLAYER_OS_SOLARIS)
-    SET (pqLinkFlag "-lpq")
-ELSE (PLAYER_OS_SOLARIS)
-    SET (pqLinkFlag)
-ENDIF (PLAYER_OS_SOLARIS)
+SET (pqLinkFlag "-lpq")
 PLAYERDRIVER_ADD_DRIVER (postgis build_postgis
     INCLUDEDIRS ${postgis_includeDirs} LIBDIRS ${postgis_libDirs}
     LINKLIBS ${postgis_linkLibs} LINKFLAGS ${postgis_linkFlags} ${pqLinkFlag}
