@@ -98,7 +98,7 @@
 #pragma option -w-inl -w-pch
 #endif
 
-#if ( defined(__BORLANDC__) || _MSC_VER <= 1000 ) && !defined( __GNUG__ )
+#if ( defined(__BORLANDC__) || _MSC_VER <= 1000 ) && !defined( __GNUG__ ) && !defined(__SUNPRO_CC)
 #  include <stdio.h>
 #  include <stdlib.h>
 #  include <math.h>
@@ -110,6 +110,7 @@
 #  include <cstdlib>
 #  include <string>
 #  include <iostream>
+#  include <algorithm>
 #endif
 
 #if defined(_MSC_VER) && _MSC_VER <= 1000
@@ -129,6 +130,10 @@ typedef int bool;
 #endif
 
 #if defined(_MSC_VER) && !defined(_WIN32)
+#  define _NO_EXCEPTION
+#endif
+
+#if defined(__SUNPRO_CC)
 #  define _NO_EXCEPTION
 #endif
 
