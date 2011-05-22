@@ -168,6 +168,8 @@ driver
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <stddef.h>
+#include <unistd.h>
 
 #include <libplayercore/device.h>
 #include <libplayercore/driver.h>
@@ -249,7 +251,7 @@ private:
     Pose GroundTruth(void);
 
     void PublishInterfaces(double timestamp); // Publish all output interfaces
-    
+
     bool PrepareDebug(int port); // False on failure
     void SendDebug(const GuiData &gui_data) const;
     void DrawDebug(const GuiData &gui_data);
@@ -306,9 +308,9 @@ int Ekfvloc::MainSetup()
             localize_.LoadMap(mapfile_.c_str());
             printf("Map loaded from %s\n", mapfile_.c_str());
         }
-        catch (exception &e)
+        catch (...)
         {
-            PLAYER_ERROR1("File could not be loaded: %s", e.what());
+            PLAYER_ERROR("File could not be loaded");
         }
     }
     else

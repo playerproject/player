@@ -91,6 +91,10 @@ driver
 #include <cmath>
 #include <stdexcept>
 
+#if defined(__SUNPRO_CC)
+using namespace std;
+#endif
+
 using namespace driver_differential;
 
 const int kNumMotors = 2;

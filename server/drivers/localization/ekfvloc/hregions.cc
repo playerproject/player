@@ -47,7 +47,7 @@ double randomNormal(double mean, double stdDev)
     double sum            = 0.0;
     const int n           = 20;
     const double half_sum = n * 0.5;
-    const double dt_sum   = sqrt(n / 12);
+    const double dt_sum   = sqrt(static_cast<double>(n) / 12.0); // sqrt(int) fails to compile on SunCC, cast it to double
 
     for (int i = 0; i < n; i++)
         sum += rand() / RAND_MAX;

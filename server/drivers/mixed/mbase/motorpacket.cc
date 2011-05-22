@@ -117,7 +117,7 @@ void mbasedriverMotorPacket::Fill(player_mbasedriver_data_t* data)
 
    		data->position.vel.py = 0.0;
 		//obtengo la velrot y veltrans (funcion inversa del veldrift)
-		int veltransCalculado = (int)(ceil ((this->lvel+this->rvel)/2));
+		int veltransCalculado = (int)(ceil (static_cast<double>((this->lvel+this->rvel)/2)));
 		data->position.vel.px = (double)veltransCalculado / 1e3;
 		data->position.vel.pa = (((double)this->lvel-this->rvel)/(robotParams[param_idx]->RobotWidth));
 
