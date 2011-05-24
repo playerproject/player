@@ -19,6 +19,45 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
+ 
+/** @ingroup utils */
+/** @{ */
+/** @defgroup util_playerprop playerprop
+ * @brief Get and set driver properties from the command line
+
+@par Synopsis
+
+playerprop is a console-based client that allows the user to
+get and set different driver properties.  playerprop supports
+all four property types (double, bool, int, and string)
+
+
+@par Usage
+
+playerprop is installed alongside player in $prefix/bin, so if player is
+in your PATH, then playerprop should also be.  Command-line usage is:
+@verbatim
+$ playerprop -d <device> [-i <index> -h <host> -p <port>] <command> <args>
+@endverbatim
+Where command can be:
+- getbool <prop name>         Get a boolean property
+- getint <prop name>          Get an interger property
+- getdbl <prop name>          Get a double property
+- getstr <prop name>          Get a string property
+- setbool <prop name> <value> Set a boolean property
+- setint <prop name> <value>  Set an interger property
+- setdbl <prop name> <value>  Set a double property
+- setstr <prop name> <value>  Set a string property
+
+The device argument is the interface name to query
+The index argument is the interface index to query
+The host argument is the IP or hostname of the computer running the Player server
+The port argument is the TCP port over which to connect to Player
+
+@author Geoff Biggs, Toby Collett, Brian Gerkey
+*/
+
+/** @} */
 
 #if !defined (WIN32)
   #include <unistd.h>
