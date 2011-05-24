@@ -45,17 +45,24 @@
 
  @par Configuration requests
 
- - None
-
+ - PLAYER_BLACKBOARD_REQ_SUBSCRIBE_TO_KEY
+ - PLAYER_BLACKBOARD_REQ_UNSUBSCRIBE_FROM_KEY
+ - PLAYER_BLACKBOARD_REQ_SET_ENTRY
+ - PLAYER_BLACKBOARD_REQ_SUBSCRIBE_TO_GROUP
+ - PLAYER_BLACKBOARD_REQ_UNSUBSCRIBE_FROM_GROUP
+ - PLAYER_BLACKBOARD_REQ_GET_ENTRY
+ 
  @par Configuration file options
 
+ - None
+ 
  @par Example
 
  @verbatim
  driver
  (
-		name "localbb"
-		provides [ "blackboard:0" ]
+   name "localbb"
+   provides [ "blackboard:0" ]
  )
  @endverbatim
 
@@ -400,6 +407,15 @@ int LocalBB::Shutdown()
 // Process an incoming message.
 int LocalBB::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, void * data)
 {
+  // Capability Requests
+  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
+  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_BLACKBOARD_REQ_SUBSCRIBE_TO_KEY);
+  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_BLACKBOARD_REQ_UNSUBSCRIBE_FROM_KEY);
+  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_BLACKBOARD_REQ_SET_ENTRY);
+  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_BLACKBOARD_REQ_SUBSCRIBE_TO_GROUP);
+  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_BLACKBOARD_REQ_UNSUBSCRIBE_FROM_GROUP);
+  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_BLACKBOARD_REQ_GET_ENTRY);
+  
 	// Request for a subscription
 	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_BLACKBOARD_REQ_SUBSCRIBE_TO_KEY, this->device_addr))
 	{

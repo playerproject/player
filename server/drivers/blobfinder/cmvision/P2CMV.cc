@@ -57,7 +57,8 @@ configuration file.
 
 @par Configuration requests
 
-- none
+- PLAYER_BLOBFINDER_REQ_SET_COLOR
+- PLAYER_BLOBFINDER_REQ_GET_COLOR
 
 @par Configuration file options
 
@@ -442,6 +443,9 @@ CMVisionBF::ProcessMessage(QueuePointer & resp_queue,
                            player_msghdr* hdr,
                            void* data)
 {
+  HANDLE_CAPABILITY_REQUEST(device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
+  HANDLE_CAPABILITY_REQUEST(device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_BLOBFINDER_REQ_SET_COLOR);
+  HANDLE_CAPABILITY_REQUEST(device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_BLOBFINDER_REQ_GET_COLOR);
   // Handle new data from the camera
   if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
                            this->mCameraAddr))
