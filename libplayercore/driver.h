@@ -84,12 +84,12 @@ capability.
 
 */
 #define HANDLE_CAPABILITY_REQUEST(device_addr, queue, hdr, data, cap_type, cap_subtype) \
-  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILTIES_REQ, device_addr)) \
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ, device_addr)) \
   { \
     player_capabilities_req_t & cap_req = * reinterpret_cast<player_capabilities_req_t *> (data);\
     if (cap_req.type == cap_type && cap_req.subtype == cap_subtype) \
     { \
-      Publish(device_addr, queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_CAPABILTIES_REQ); \
+      Publish(device_addr, queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_CAPABILITIES_REQ); \
       return 0; \
     } \
   }

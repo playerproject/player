@@ -2575,7 +2575,7 @@ int Alsa::HandleMixerChannelLevelReq (player_audio_mixer_channel_list_t *data, Q
 int Alsa::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, void *data)
 {
 	// Check for capabilities requests first
-	HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILTIES_REQ);
+	HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
 	if (pbHandle)
 	{
 		HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_CMD_WAV_PLAY);

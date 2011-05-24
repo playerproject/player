@@ -2220,12 +2220,12 @@ P2OS::ProcessMessage(QueuePointer & resp_queue,
                      void * data)
 {
   // Check for capabilities requests first
-  HANDLE_CAPABILITY_REQUEST (position_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILTIES_REQ);
-  HANDLE_CAPABILITY_REQUEST (actarray_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILTIES_REQ);
-  HANDLE_CAPABILITY_REQUEST (lift_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILTIES_REQ);
-  HANDLE_CAPABILITY_REQUEST (limb_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILTIES_REQ);
-  HANDLE_CAPABILITY_REQUEST (gripper_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILTIES_REQ);
-  HANDLE_CAPABILITY_REQUEST (armgripper_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILTIES_REQ);
+  HANDLE_CAPABILITY_REQUEST (position_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
+  HANDLE_CAPABILITY_REQUEST (actarray_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
+  HANDLE_CAPABILITY_REQUEST (lift_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
+  HANDLE_CAPABILITY_REQUEST (limb_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
+  HANDLE_CAPABILITY_REQUEST (gripper_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
+  HANDLE_CAPABILITY_REQUEST (armgripper_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
   // Position2d caps
   HANDLE_CAPABILITY_REQUEST (position_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_VEL);
   // Act array caps
