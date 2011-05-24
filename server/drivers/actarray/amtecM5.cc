@@ -45,7 +45,11 @@ For precise timing, use a recent Linux kernel (2.6.19 should have the hrtimers c
 
 @par Configuration requests
 
-
+- PLAYER_ACTARRAY_REQ_POWER
+- PLAYER_ACTARRAY_REQ_GEOM
+- PLAYER_ACTARRAY_REQ_SPEED
+- PLAYER_ACTARRAY_REQ_ACCEL
+- PLAYER_ACTARRAY_REQ_BRAKES
 
 @par Configuration file options
 
@@ -574,11 +578,15 @@ void AmtecM5::MainQuit()
 int AmtecM5::ProcessMessage(QueuePointer &resp_queue,
                                 player_msghdr * hdr,
                                 void * data) {
-	// Process messages here.  Send a response if necessary, using Publish().
-	// If you handle the message successfully, return 0.  Otherwise,
-	// return -1, and a NACK will be sent for you, if a response is required
+	// Capability requests
+	HANDLE_CAPABILITY_REQUEST(device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_REQ_CAPABILITIES);
+	HANDLE_CAPABILITY_REQUEST(device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_ACTARRAY_REQ_POWER);
+	HANDLE_CAPABILITY_REQUEST(device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_ACTARRAY_REQ_GEOM);
+	HANDLE_CAPABILITY_REQUEST(device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_ACTARRAY_REQ_SPEED);
+	HANDLE_CAPABILITY_REQUEST(device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_ACTARRAY_REQ_ACCEL);
+	HANDLE_CAPABILITY_REQUEST(device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_ACTARRAY_REQ_BRAKES);
 
-	//puts("ProcessMessage.");
+	
 	// Handle Requests and Commands
 	if(hdr->type == PLAYER_MSGTYPE_REQ)
 		return(HandleRequest(resp_queue,hdr,data));
