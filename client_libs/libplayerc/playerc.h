@@ -1616,7 +1616,9 @@ PLAYERC_EXPORT int playerc_fiducial_get_geom(playerc_fiducial_t *device);
 /**************************************************************************/
 
 /***************************************************************************/
-/** @defgroup playerc_proxy_gps gps
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_gps gps
+ *
 
 The gps proxy provides an interface to a GPS-receiver.
 
