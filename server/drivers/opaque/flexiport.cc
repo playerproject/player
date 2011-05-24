@@ -181,7 +181,7 @@ int Flexiport::ProcessMessage (QueuePointer &respQueue, player_msghdr *hdr, void
 {
 	// Check for capability requests
 	HANDLE_CAPABILITY_REQUEST (device_addr, respQueue, hdr, data,
-			PLAYER_MSGTYPE_REQ, PLAYER_CAPABILTIES_REQ);
+			PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
 
 	// Property handlers that need to be done manually due to calling into the urg_nz library.
 	if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_SET_INTPROP_REQ, device_addr))

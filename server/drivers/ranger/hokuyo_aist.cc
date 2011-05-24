@@ -291,7 +291,7 @@ int HokuyoDriver::ProcessMessage(QueuePointer &resp_queue, player_msghdr *hdr,
 {
     // Check for capability requests
     HANDLE_CAPABILITY_REQUEST(device_addr, resp_queue, hdr, data,
-            PLAYER_MSGTYPE_REQ, PLAYER_CAPABILTIES_REQ);
+            PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
     HANDLE_CAPABILITY_REQUEST(device_addr, resp_queue, hdr, data,
             PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_GET_GEOM);
     HANDLE_CAPABILITY_REQUEST(device_addr, resp_queue, hdr, data,

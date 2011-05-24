@@ -88,7 +88,7 @@ static playerxdr_function_t init_ftable[] =
 {
   /* This list is currently alphabetized, please keep it that way! */
   /* universal messages */
-  {0, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILTIES_REQ,
+  {0, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ,
    (player_pack_fn_t)player_capabilities_req_pack, NULL, NULL},
   {0, PLAYER_MSGTYPE_REQ, PLAYER_GET_BOOLPROP_REQ,
    (player_pack_fn_t)player_boolprop_req_pack, (player_copy_fn_t)player_boolprop_req_t_copy, (player_cleanup_fn_t)player_boolprop_req_t_cleanup, 

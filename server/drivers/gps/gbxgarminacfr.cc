@@ -189,7 +189,7 @@ void GbxGarminAcfr::MainQuit (void)
 int GbxGarminAcfr::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, void *data)
 {
     // Check for capability requests
-    HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILTIES_REQ);
+    HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
     return -1;
 }
 
