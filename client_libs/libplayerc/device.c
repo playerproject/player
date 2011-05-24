@@ -111,7 +111,7 @@ int playerc_device_hascapability(playerc_device_t *device, uint32_t type, uint32
   capreq.type = type;
   capreq.subtype = subtype;
 
-  return playerc_client_request(device->client, device, PLAYER_CAPABILTIES_REQ,
+  return playerc_client_request(device->client, device, PLAYER_CAPABILITIES_REQ,
 		  &capreq, NULL) >= 0 ? 1 : 0;
 }
 
