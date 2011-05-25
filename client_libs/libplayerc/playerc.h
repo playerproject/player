@@ -288,7 +288,10 @@ associated with the client proxy; the <TT>client</TT> pointer is now
 invalid and should be not be re-used.
 
 </ul>
+*/
 
+/**
+@ingroup player_clientlib_libplayerc
 @defgroup libplayerc_datamodes Client Data Modes
 @brief Describes the data modes used for delivering data from the server to the client.
 

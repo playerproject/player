@@ -104,6 +104,12 @@ Create research robot</a></td>
 </tr>
 
 <tr>
+<td><a href="http://www.microsoft.com">Microsoft</a></td>
+<td><a href="http://www.xbox.com/kinect">Kinect</a></td>
+<td>@ref driver_kinect</td>
+</tr>
+
+<tr>
 <td><a href="http://www.mobilerobots.com">MobileRobots</a> (formerly
 ActivMedia)</td>
 <td>PSOS/P2OS/AROS-based robots (e.g., 

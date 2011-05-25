@@ -84,8 +84,7 @@ messages when waiting for a PLAYER_MSGTYPE_RESP_ACK, then process them at
 the beginning of their read function after sending the PLAYER_PLAYER_REQ_DATA
 message.
 
-@todo
- - More verbose documentation on this library, including the protocol
+@todo More verbose documentation on this library, including the protocol
 */
 /** @ingroup libplayertcp
 @{ */
