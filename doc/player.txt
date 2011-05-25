@@ -4,10 +4,12 @@
 */
 
 /**
-@mainpage The Player Robot Device Interface
+@mainpage The Player Robot %Device Server
 
-<p>Copyright Brian Gerkey and contributors 1999-2007, and beyond.
-<p>Part of the Player/Stage/Gazebo Project [http://playerstage.sourceforge.net]
+<h3 align="center">3.1.0-svn</h3>
+
+<p>Copyright Brian Gerkey and contributors 1999-2011, and beyond.
+<p>Part of the Player Project (http://playerstage.org)
 
 \section Overview
 
@@ -44,7 +46,7 @@ robot will work (within reason) on another robot.
 Player also provides <i>transport</i> mechanisms that allow data to
 be exchanged among drivers and control programs that are executing on
 different machines.  By far the most common transport in use now is a
-client/server TCP socet-based transport (see @ref start for an example of
+client/server TCP sokcet-based transport (see @ref start for an example of
 this usage).  In this setup, the @ref util_player is executed
 with a configuration file (@ref tutorial_config) that defines which
 drivers to instantiate and how to bind them to hardware.  The drivers
@@ -78,8 +80,8 @@ platform and community code respository for such algorithms.
 
 \section Versions
 
-<p>This document describes Player version 2.1.x, which represents minor
-changes from the 2.0.x line, and significant changes from the 1.6.x line.
+<p>This document describes Player version 3.1.x, which represents minor
+changes from the 3.0.x line, and significant changes from the 2.x line.
 The information contained herein does <b>not</b> apply to earlier versions
 of Player.</p>
 

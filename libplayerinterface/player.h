@@ -503,8 +503,7 @@ to a request.  A common example is geometry.  For many devices geometry
 is fixed and so need only be requested once.  For others geometry may
 change dynamically and so the device will publish it periodically.
 
-@todo
-  - Normalize subtype names (PLAYER_PTZ_REQ_GEOM vs PLAYER_POSITION2D_REQ_GET_GEOM)
+@todo Normalize subtype names (PLAYER_PTZ_REQ_GEOM vs PLAYER_POSITION2D_REQ_GET_GEOM)
 */
 
 #include <libplayerinterface/player_interfaces.h>
