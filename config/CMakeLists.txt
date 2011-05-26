@@ -10,6 +10,7 @@ SET (sampleConfigFiles  afsm.cfg
                         hokuyo_aist.cfg
                         iwspy.cfg
                         joystick.cfg
+                        kinect.cfg
                         lms400.cfg
                         magellan.cfg
                         mapfile.cfg

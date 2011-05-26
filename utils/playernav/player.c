@@ -44,11 +44,13 @@ init_player(playerc_client_t** clients,
   playerc_mclient_t* mclient;
 
   /* Connect to Player */
-  assert(mclient = playerc_mclient_create());
+  mclient = playerc_mclient_create();
+  assert(mclient);
+
   for(i=0; i<num_bots; i++)
   {
-    assert(clients[i] = 
-           playerc_client_create(mclient, hostnames[i], ports[i]));
+    clients[i] = playerc_client_create(mclient, hostnames[i], ports[i]);
+    assert(clients[i]);
     if(playerc_client_connect(clients[i]) < 0)
     {
       fprintf(stderr, "Failed to connect to %s:%d\n", 
@@ -72,7 +74,8 @@ init_player(playerc_client_t** clients,
     // only subscribe to the first robot's map
     if(i==0)
     {
-      assert(maps[i] = playerc_map_create(clients[i], map_idx));
+      maps[i] = playerc_map_create(clients[i], map_idx);
+      assert(maps[i]);
       if(playerc_map_subscribe(maps[i],PLAYER_OPEN_MODE) < 0)
       {
         fprintf(stderr, "Failed to subscribe to map\n");
@@ -81,14 +84,16 @@ init_player(playerc_client_t** clients,
     }
     else
       maps[i] = NULL;
-    assert(localizes[i] = playerc_localize_create(clients[i], 0));
+    localizes[i] = playerc_localize_create(clients[i], 0);
+    assert(localizes[i]);
     if(playerc_localize_subscribe(localizes[i],PLAYER_OPEN_MODE) < 0)
     {
       fprintf(stderr, "Warning: Failed to subscribe to localize on robot %d; you won't be able to set its pose.\n",i);
       playerc_localize_destroy(localizes[i]);
       localizes[i] = NULL;
     }
-    assert(planners[i] = playerc_planner_create(clients[i], planner_idx));
+    planners[i] = playerc_planner_create(clients[i], planner_idx);
+    assert(planners[i]);
     if(playerc_planner_subscribe(planners[i],PLAYER_OPEN_MODE) < 0)
     {
       fprintf(stderr, "Warning: Failed to subscribe to planner on robot %d; you won't be able to give it goals.\n",i);

@@ -401,13 +401,18 @@ main(int argc, char** argv)
                 gui_data.ports, &(gui_data.initial_zoom), &(gui_data.aa),
                 &map_idx, &planner_idx) < 0)
   {
+    // Input problem, print usage and exit with error
     puts(USAGE);
     exit(-1);
   }
 
-  assert(signal(SIGINT, _interrupt_callback) != SIG_ERR);
+  if (signal(SIGINT, _interrupt_callback) ==SIG_ERR)
+  {
+    // Couldn't register signal callback, exit with error
+    exit(-1);
+  }
 
-  assert(gui_data.mclient = init_player(gui_data.clients, 
+  gui_data.mclient = init_player(gui_data.clients, 
                                         gui_data.maps, 
                                         gui_data.localizes, 
                                         gui_data.planners, 
@@ -416,7 +421,12 @@ main(int argc, char** argv)
                                         gui_data.ports, 
                                         DATA_FREQ,
                                         map_idx,
-                                        planner_idx));
+                                        planner_idx);
+  if(! gui_data.mclient )
+  {
+    // Connection to Player failed, exit with error
+    exit(-1);
+  }
 
   // assume the robots all start enabled (should really get the current
   // enable/disable state for each robot from the server).
