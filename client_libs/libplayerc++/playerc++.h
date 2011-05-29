@@ -2275,6 +2275,11 @@ class PLAYERCC_EXPORT RangerProxy : public ClientProxy
     /// Operator to get a range reading
     double operator[] (uint32_t aIndex) const { return GetRange(aIndex); }
 
+    /// Return the number of point readings
+    uint32_t GetPointCount() const { return GetVar(mDevice->points_count); };
+    /// Get a point reading
+    player_point_3d_t GetPoint(uint32_t aIndex) const;
+
     /// Return the number of intensity readings
     uint32_t GetIntensityCount() const { return GetVar(mDevice->intensities_count); } ;
     /// Get an intensity reading

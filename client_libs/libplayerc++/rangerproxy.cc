@@ -97,6 +97,13 @@ double RangerProxy::GetRange(uint32_t aIndex) const
   return GetVar(mDevice->ranges[aIndex]);
 }
 
+player_point_3d_t RangerProxy::GetPoint(uint32_t aIndex) const
+{
+  if (aIndex > mDevice->points_count)
+    throw PlayerError("RangerProxy::GetPoint", "index out of bounds");
+  return GetVar(mDevice->points[aIndex]);
+}
+
 double RangerProxy::GetIntensity(uint32_t aIndex) const
 {
   if (aIndex > mDevice->intensities_count)
