@@ -239,7 +239,7 @@ create_and_bind_socket(char blocking, unsigned int host, int* portnum,
   else
   {
     *portnum = ntohs(serverp.sin_port);
-    printf("listening on %d\n", *portnum);
+    PLAYER_MSG1(9,"listening on %d\n", *portnum);
   }
 
 

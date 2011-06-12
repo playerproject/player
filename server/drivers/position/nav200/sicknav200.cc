@@ -257,7 +257,6 @@ Driver* SickNAV200_Init(ConfigFile* cf, int section) {
 
 // a driver registration function
 void sicknav200_Register(DriverTable* table) {
-	puts("Registering driver");
 	table->AddDriver("sicknav200", SickNAV200_Init);
 }
 
