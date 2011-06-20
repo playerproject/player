@@ -31,9 +31,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sys/time.h>
 
 #include <libplayersd/playersd.h>
-#include <libplayercore/error.h>
-#include <libplayercore/addr_util.h>
-#include <libplayercore/interface_util.h>
+#include <libplayercommon/error.h>
+#include <libplayerinterface/addr_util.h>
+#include <libplayerinterface/interface_util.h>
 #include <libplayerc/playerc.h>
 
 #define MAX_DEVS 16
