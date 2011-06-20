@@ -59,9 +59,9 @@
 
 #include <dns_sd.h>
 
-#include <libplayercore/error.h>
-#include <libplayercore/interface_util.h>
-#include <libplayercore/addr_util.h>
+#include <libplayercommon/error.h>
+#include <libplayerinterface/interface_util.h>
+#include <libplayerinterface/addr_util.h>
 
 #include <replace/replace.h> // for poll(2)
 

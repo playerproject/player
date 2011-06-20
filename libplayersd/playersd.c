@@ -51,8 +51,8 @@
 #include <assert.h>
 #include <stdio.h>
 
-#include <libplayercore/addr_util.h>
-#include <libplayercore/interface_util.h>
+#include <libplayerinterface/addr_util.h>
+#include <libplayerinterface/interface_util.h>
 #include "playersd.h"
 
 #define PLAYER_SD_DEVS_LEN_INITIAL 4

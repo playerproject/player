@@ -64,7 +64,7 @@ extern "C" {
 
 #include <libplayerinterface/player.h>
 
-#define PLAYER_SD_SERVICENAME "_player21._tcp"
+#define PLAYER_SD_SERVICENAME "_player31._tcp"
 #define PLAYER_SD_DEVICE_TXTNAME "device"
 #define PLAYER_SD_NAME_MAXLEN 256
 #define PLAYER_SD_TXT_MAXLEN 256
