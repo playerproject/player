@@ -150,6 +150,9 @@ thinks it has already achieved it.
   - Default: 0
   - If non-zero, map is updated from subscribed map device whenever
     new goal is set
+- update_rate (integer)
+  - Default: 10
+  - How many times a second the driver should attempt to run its main loop
 
 @par Example
 

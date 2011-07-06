@@ -515,7 +515,7 @@ int MrIcp::MainSetup()
         if(system(command)==-1)
         {
             perror("\n Serious Error Happened while trying to create the folder");
-            exit(1);
+            return -1;
         }
         else
             cout<<"\nFolder Created Successfully";
@@ -537,6 +537,11 @@ int MrIcp::MainSetup()
     this->map->ResetProb();
     snprintf(filename,40,"%spatch_config.txt",map_path);
     config_file = fopen(filename,"wb");
+    if (!config_file)
+    {
+        cout << "\nError: could not open file " << filename << " for writing";
+        return -1;
+    }
     // Initial Patch Settings
     fprintf(config_file,"%s %.3f %.3f %.3f\n","MAP_PATCH0",0.0,0.0,0.0);
     delta_pose.p.x=0;
@@ -548,6 +553,11 @@ int MrIcp::MainSetup()
     {
         snprintf(filename,40, "%sicplog.txt",map_path);
         file=fopen(filename,"wb");
+        if (!file)
+        {
+            cout << "\nError: could not open file " << file << " for writing";
+            return -1;
+        }
     }
     usleep((int)(this->start_in*1e6));
     return(0);
