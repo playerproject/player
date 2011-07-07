@@ -501,8 +501,10 @@ ReadLog::ReadLog(ConfigFile* cf, int section)
 
     // if it's sonar, then make a spot to cache geometry info
     if(this->provide_ids[i].interf == PLAYER_SONAR_CODE)
-      assert((this->provide_metadata[i] =
-              calloc(sizeof(player_sonar_geom_t),1)));
+    {
+      this->provide_metadata[i] = calloc(sizeof(player_sonar_geom_t),1);
+      assert(this->provide_metadata[i]);
+    }
 
     // if it's localize, remember address
     if(this->provide_ids[i].interf == PLAYER_LOCALIZE_CODE){
@@ -2734,6 +2736,8 @@ int ReadLog::ParseSonar(player_devaddr_t id,
             assert(geom);
 
             geom->poses_count = atoi(tokens[7]);
+            geom->poses = (player_pose3d_t*)calloc(geom->poses_count, sizeof(player_pose3d_t));
+
             int count = 0;
             for(int i=8;i<token_count;i+=3)
             {
@@ -2746,6 +2750,7 @@ int ReadLog::ParseSonar(player_devaddr_t id,
             {
               PLAYER_ERROR2("range count mismatch at %s:%d",
                             this->filename, linenum);
+              free(geom->poses);
               free(geom);
               return -1;
             }
