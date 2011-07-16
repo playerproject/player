@@ -112,7 +112,7 @@
  - hw_timestamps (boolean)
    - Default: false
    - When false, the server will use server time stamps in data messages. When true, the time stamp
-     in the laser data will be used.
+     in the laser data will be used, offset to the current system time.
 
  @par Example
 
@@ -594,7 +594,7 @@ bool HokuyoDriver::ReadLaser(void)
         rangeData.ranges_count = data_.ranges_length();
         if (hwTimeStamps_.GetValue())
         {
-            double ts = data_.system_time_stamp();
+            double ts = data_.system_time_stamp() / 1000000000.0;
             Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_RANGE,
                     reinterpret_cast<void*>(&rangeData), sizeof(rangeData),
                     &ts);
@@ -610,7 +610,7 @@ bool HokuyoDriver::ReadLaser(void)
         intensityData.intensities_count = data_.intensities_length();
         if (hwTimeStamps_.GetValue())
         {
-            double ts = data_.system_time_stamp();
+            double ts = data_.system_time_stamp() / 1000000000.0;
             Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_INTNS,
                     reinterpret_cast<void*>(&intensityData),
                     sizeof(intensityData), &ts);
@@ -672,7 +672,7 @@ bool HokuyoDriver::ReadLaser(void)
         rangeData.ranges_count = data_.ranges_length();
         if (hwTimeStamps_.GetValue())
         {
-            double ts = data_.system_time_stamp() / 1000.0;
+            double ts = data_.system_time_stamp() / 1000000000.0;
             Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_RANGE,
                     reinterpret_cast<void*> (&rangeData), sizeof(rangeData),
                     &ts);
@@ -748,6 +748,9 @@ int HokuyoDriver::MainSetup(void)
             PLAYER_WARN1("hokuyo_aist: Unable to set sensitivity: %s",
                     e.what());
         }
+	if (hwTimeStamps_.GetValue()) {
+		device_.calibrate_time();
+	}
     }
     catch(hokuyo_aist::BaseError &e)
     {
