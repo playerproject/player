@@ -333,9 +333,11 @@ Device::TimedRequest(QueuePointer &resp_queue,
           dri->Update();
       }
 
+      // Wait until the message arrives in the response queue
       if((msg = resp_queue->Pop()))
         break;
       
+      // Or until we reach our timeout
       if (timeout > 0)
       {
         GlobalTime->GetTimeDouble(&curr_time);

@@ -50,58 +50,59 @@ using namespace std;
 class Sonar
 {
 public:
-double px,py,th;
-double sonar_treshold; //default to 4.5
-double sonar_aperture; // 30 degrees
-double sensor_model(double x,double y,double r);
+  double px,py,th;
+  double sonar_treshold; //default to 4.5
+  double sonar_aperture; // 30 degrees
+  double sensor_model(double x,double y,double r);
+	
 	Sonar() 
 	{
-	sonar_treshold=4.5;
-	sonar_aperture=0.5235987;
+	  sonar_treshold=4.5;
+	  sonar_aperture=0.5235987;
 	}
 };
 
 class MAP_POINT
 {
 public:
-int x;
-int y; // coordinates on map
+  int x;
+  int y; // coordinates on map
 
-MAP_POINT(int x1,int y1)
-{
-  x=x1;
-  y=y1;
-}
+  MAP_POINT(int x1,int y1)
+  {
+    x=x1;
+    y=y1;
+  }
 
- bool operator<(const MAP_POINT &b) const {
-   if (x < b.x) return(1);
-   else if (x == b.x) return(y < b.y);
-   else return(0);
+  bool operator<(const MAP_POINT &b) const 
+  {
+    if (x < b.x) 
+      return(1);
+    else if (x == b.x) 
+      return(y < b.y);
+    else 
+      return(0);
  }
-
 };
 
 class MAP_POSE
 {
 public:
-double px; 
-double py;
-double pa; // where the robot was when this point was added
-double P;  // occupancy probability
+  double px; 
+  double py;
+  double pa; // where the robot was when this point was added
+  double P;  // occupancy probability
 
- MAP_POSE()
-   {pa=px=py=P=0;}
+  MAP_POSE() 
+    {pa=px=py=P=0;}
 
-MAP_POSE(double px1,
-         double py1,
-         double pa1,
-	 double P1)   {
- pa=pa1;
- px=px1;
- py=py1;
- P=P1;
- }
-
+  MAP_POSE(double px1, double py1, double pa1, double P1)
+	{
+        pa=pa1;
+        px=px1;
+        py=py1;
+        P=P1;
+  }
 };
 
 
@@ -111,21 +112,23 @@ class Map : public map<MAP_POINT,MAP_POSE>
 /// the map is defined as x,y -> pose (px,py,pa,P)
 ///
 public:
-int width;
-int height;
-int startx;
-int starty;
-float scale; //default to 0.028
-float sonar_treshold; //default to 4.5
-Map();
-Map(int width,
+  int width;
+  int height;
+  int startx;
+  int starty;
+  float scale; //default to 0.028
+  float sonar_treshold; //default to 4.5
+
+  Map();
+  Map(int width,
     int height,
     int startx,
     int starty,
     int scale,
     int sonar_treshold);
-~Map();
-player_map_data_t ToPlayer();
+  ~Map();
+  
+  player_map_data_t ToPlayer();
 };
 
 Map::~Map() {
@@ -133,13 +136,13 @@ Map::~Map() {
 
 Map::Map()
 {
-//some default values (not always good)
-width=800;
-height=800;
-startx=0;
-starty=0;
-scale=0.028f;
-sonar_treshold=4.5;
+  //some default values (not always good)
+  width=800;
+  height=800;
+  startx=0;
+  starty=0;
+  scale=0.028f;
+  sonar_treshold=4.5;
 }
 
 Map::Map(int width,
@@ -149,15 +152,11 @@ Map::Map(int width,
     int scale,
     int sonar_treshold)
 {
-std::cout<< "not implemented yet" << std::endl;
+  std::cout<< "not implemented yet" << std::endl;
 }
-
-
 
 double Sonar::sensor_model(double x,double y,double r)
 {
-return(
-exp((-pow(x,2)/r)-(pow(y,2)/sonar_aperture))/((double)1.7)
-);
-
+  return(exp((-pow(x,2)/r)-(pow(y,2)/sonar_aperture))/((double)1.7));
 }
+
