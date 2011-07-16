@@ -32,7 +32,13 @@
 The vmapfile driver reads a vector map from a text file and
 provides the map to others via the @ref interface_map interface.
 
-The format of the text file is...
+The text file should contain lines in the format
+
+x1 y1 x2 y2
+
+where (x1,y1) and (x2,y2) are the cartesian coordinates representing
+the endpoints of each vector.  The endpoints are read in as floating
+point numbers, so they can have decimal values.
 
 @par Compile-time dependencies
 
@@ -283,6 +289,9 @@ int VMapFile::ProcessMessage(QueuePointer & resp_queue,
                              player_msghdr * hdr,
                              void * data)
 {
+  HANDLE_CAPABILITY_REQUEST(device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
+  HANDLE_CAPABILITY_REQUEST(device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_MAP_REQ_GET_VECTOR);
+  
   // Is it a request for the map?
   if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
                            PLAYER_MAP_REQ_GET_VECTOR,
