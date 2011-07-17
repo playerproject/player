@@ -276,7 +276,7 @@ SegwayRMP::SegwayRMP(ConfigFile* cf, int section)
 	this->max_xspeed = (int) (1000.0 * cf->ReadLength(section, "max_xspeed", 0.5));
 	if(this->max_xspeed < 0)
 		this->max_xspeed = -this->max_xspeed;
-	this->max_yawspeed = (int) (RTOD(cf->ReadAngle(section, "max_yawspeed", 40)));
+	this->max_yawspeed = (int) (RTOD(cf->ReadAngle(section, "max_yawspeed", DTOR(40))));
 	if(this->max_yawspeed < 0)
 		this->max_yawspeed = -this->max_yawspeed;
 
