@@ -85,7 +85,7 @@
   - Default: 45.0
   - Maximum rotation speed
 - min_angular_vel
-  - Default: 10.0 
+  - Default: 10.0
   - Minimum rotation speed
 
 @par Example
@@ -185,7 +185,6 @@ class Goto : public Driver
     int send_everything;
     int enabled;
     int stopping;
-    int last_dir;
     int stall_state;
     int skip;
     player_msghdr_t rq_hdrs[RQ_QUEUE_LEN];
@@ -213,14 +212,8 @@ double Goto::angle_map(double d)
 
 double Goto::angle_diff(double a, double b)
 {
-  double d1, d2;
-  a = NORMALIZE(a);
-  b = NORMALIZE(b);
-  d1 = a - b;
-  d2 = 2 * M_PI - fabs(d1);
-  if (d1 > 0.0) d2 *= -1.0;
-  if (fabs(d1) < fabs(d2)) return d1;
-  return d2;
+  double d = a - b;
+  return NORMALIZE(d);
 }
 
 Goto::Goto(ConfigFile* cf, int section) : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
@@ -244,7 +237,6 @@ Goto::Goto(ConfigFile* cf, int section) : Driver(cf, section, true, PLAYER_MSGQU
   this->send_everything = 0;
   this->enabled = 0;
   this->stopping = 0;
-  this->last_dir = 0;
   this->stall_state = 0;
   this->skip = 0;
   this->position2d_required_dev = NULL;
@@ -423,7 +415,6 @@ int Goto::Setup()
   this->skip = 0;
   this->enabled = 0;
   this->stopping = !0;
-  this->last_dir = 0;
   GlobalTime->GetTimeDouble(&(this->stopping_time));
   return 0;
 }
@@ -492,7 +483,6 @@ int Goto::ProcessMessage(QueuePointer &resp_queue,
     }
     this->enabled = !0;
     this->stopping = 0;
-    this->last_dir = 0;
     return 0;
   }
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_VEL, this->position2d_provided_addr))
@@ -591,7 +581,7 @@ int Goto::ProcessMessage(QueuePointer &resp_queue,
     this->prev_pos_data = pos_data;
     this->prev_pos_data_valid = true;
     // main routine here:
-    memset(&vel_cmd, 0, sizeof vel_cmd);    
+    memset(&vel_cmd, 0, sizeof vel_cmd);
     if ((this->enabled) && (!(this->stopping)))
     {
       newtx = this->position2d_cmd_pos.pos.px;
@@ -622,35 +612,14 @@ int Goto::ProcessMessage(QueuePointer &resp_queue,
         vel_cmd.vel.px = tv;
         vel_cmd.vel.py = 0.0;
         vel_cmd.vel.pa = av;
-        this->last_dir = 0;
       } else
       {
-        ad = Goto::angle_diff(pos_data.pos.pa, Goto::angle_map(this->position2d_cmd_pos.pos.pa));
+        ad = Goto::angle_diff(Goto::angle_map(this->position2d_cmd_pos.pos.pa),
+                              pos_data.pos.pa);
         if (fabs(ad) > DTOR(this->angle_tol))
         {
-          switch (this->last_dir)
-          {
-          case -1:
-            av = 0.8;
-            break;
-          case 0:
-            if (ad < 0.0)
-            {
-              this->last_dir = -1;
-              av = 0.8;
-            } else
-            {
-              this->last_dir = 1;
-              av = -0.8;
-            }
-            break;
-          case 1:
-            av = -0.8;
-            break;
-          default:
-            PLAYER_ERROR("Invalid internal state!");
-            return -1;
-          }
+          av = DTOR(this->min_angular_vel) + (fabs(ad) / (M_PI)) * (DTOR(this->max_angular_vel) - DTOR(this->min_angular_vel));
+          if (ad < 0.0) av = -av;
           if (this->debug) PLAYER_WARN2("angle diff: %.4f, av: %.4f", ad, av);
           vel_cmd.vel.px = 0.0;
           vel_cmd.vel.py = 0.0;
@@ -661,7 +630,6 @@ int Goto::ProcessMessage(QueuePointer &resp_queue,
           GlobalTime->GetTimeDouble(&(this->stopping_time));
           this->stopping = !0;
           this->enabled = 0;
-          this->last_dir = 0;
         }
       }
     }
