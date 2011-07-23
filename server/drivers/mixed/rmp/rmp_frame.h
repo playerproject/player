@@ -18,10 +18,7 @@
  *
  */
 
-
 #include "canio.h"
-#include "canio_kvaser.h"
-
 
 #define RMP_CAN_ID_SHUTDOWN		0x0412
 #define RMP_CAN_ID_COMMAND		0x0413

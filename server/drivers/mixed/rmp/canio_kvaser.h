@@ -37,5 +37,4 @@ public:
 	virtual int WritePacket(CanPacket &pkt);
 	virtual int Shutdown();
 };
-
 #endif

@@ -1,16 +1,11 @@
-PLAYERDRIVER_OPTION (segwayrmp build_segwayrmp OFF "Disabled by default")
+PLAYERDRIVER_OPTION (segwayrmp build_segwayrmp ON "Build Segway RMP driver")
 SET (CANLIB_DIR "" CACHE STRING "Directory containing the CANLIB headers and libraries")
-MARK_AS_ADVANCED (CANLIB_DIR)
-IF ("${CANLIB_DIR}" STREQUAL "")
-    SET (segwayrmpReqHeader "canlib.h")
-    SET (segwayrmpExtraFlags "")
-    SET (segwayrmpExtraLibs "-lcanlib")
-ELSE ("${CANLIB_DIR}" STREQUAL "")
-    SET (segwayrmpReqHeader "${CANLIB_DIR}/include/canlib.h")
-    SET (segwayrmpExtraFlags "-I${CANLIB_DIR}/include")
-    SET (segwayrmpExtraLibs "-L${CANLIB_DIR}/lib -lcanlib")
-ENDIF ("${CANLIB_DIR}" STREQUAL "")
-PLAYERDRIVER_REQUIRE_HEADER (segwayrmp build_segwayrmp ${segwayrmpReqHeader})
+
+IF (${HAVE_CANLIB})
 PLAYERDRIVER_ADD_DRIVER (segwayrmp build_segwayrmp
-    LINKFLAGS ${segwayrmpExtraLibs} CFLAGS ${segwayrmpExtraFlags}
+    LINKFLAGS ${CANLIB_LINK_FLAGS} CFLAGS ${CANLIB_INCLUDE_FLAGS}
     SOURCES segwayrmp.cc canio_kvaser.cc usb_packet.cc)
+ELSE (${HAVE_CANLIB})
+PLAYERDRIVER_ADD_DRIVER (segwayrmp build_segwayrmp
+    SOURCES segwayrmp.cc usb_packet.cc)
+ENDIF (${HAVE_CANLIB})

@@ -251,6 +251,11 @@ SegwayRMP::SegwayRMP(ConfigFile* cf, int section)
 	{
 		bus_type = CANBUS;
 		PLAYER_MSG0(2, "Got CAN Bus");
+#if !defined HAVE_CANLIB
+    PLAYER_ERROR("CAN bus support not compiled into RMP driver.");
+    PLAYER_ERROR("Please rebuild driver with canlib.h");
+    this->SetError(-1);
+#endif
 
 	}
 	else if(strcmp( bus_setting, "usb" ) == 0 )
@@ -335,6 +340,7 @@ SegwayRMP::MainSetup()
 
 int SegwayRMP::CanBusSetup() {
 
+#if defined HAVE_CANLIB
 	PLAYER_MSG0(2, "CAN bus initializing");
 
 	if(!strcmp(this->caniotype, "kvaser"))
@@ -352,6 +358,11 @@ int SegwayRMP::CanBusSetup() {
 		return(-1);
 	}
 	return 0;
+#else
+  PLAYER_ERROR("Error on CAN Init: CAN support not compiled into RMP driver");
+  PLAYER_ERROR("Please verify canlib.h is present & rebuild RMP driver");
+  return -1;
+#endif
 }
 
 int SegwayRMP::USBSetup()
@@ -581,6 +592,15 @@ SegwayRMP::ProcessMessage(QueuePointer & resp_queue,
 {
 	/// @todo
 	/// Handle config requests
+	HANDLE_CAPABILITY_REQUEST(position_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
+	HANDLE_CAPABILITY_REQUEST(position3d_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
+
+	HANDLE_CAPABILITY_REQUEST(position_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_VEL);
+	HANDLE_CAPABILITY_REQUEST(position_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_MOTOR_POWER);
+	HANDLE_CAPABILITY_REQUEST(position_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_RESET_ODOM);
+	
+	HANDLE_CAPABILITY_REQUEST(position3d_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_POSITION3D_CMD_SET_VEL);
+	HANDLE_CAPABILITY_REQUEST(position3d_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_POSITION3D_REQ_MOTOR_POWER);
 
 	// 2-D velocity command
 	if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD,

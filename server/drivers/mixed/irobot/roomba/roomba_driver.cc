@@ -66,7 +66,11 @@ The roomba driver provides the following device interfaces:
 @par Supported configuration requests
 
 - PLAYER_POSITION2D_REQ_GET_GEOM
+- PLAYER_POSITION2D_REQ_SET_ODOM
+- PLAYER_POSITION2D_REQ_RESET_ODOM
 - PLAYER_BUMPER_REQ_GET_GEOM
+- PLAYER_IR_REQ_POSE
+- PLAYER_OPAQUE_REQ
 
 @par Configuration file options
 
@@ -150,6 +154,9 @@ class Roomba : public ThreadedDriver
     bool bumplocked;
 
     bool roomba500;
+    
+    // Offsets for setting & resetting position2d odometry
+    double x_offset, y_offset, a_offset;
 
     player_devaddr_t position_addr;
     player_devaddr_t power_addr;
@@ -262,6 +269,9 @@ Roomba::Roomba(ConfigFile* cf, int section)
   this->bumplock = cf->ReadInt(section, "bumplock", 0);
   this->roomba500 = cf->ReadBool(section, "roomba500", 0);
   this->bumplocked = false;
+  this->x_offset = 0;
+  this->y_offset = 0;
+  this->a_offset = 0;
   this->roomba_dev = NULL;
 }
 
@@ -329,9 +339,9 @@ Roomba::Main()
      player_position2d_data_t posdata;
      memset(&posdata,0,sizeof(posdata));
 
-     posdata.pos.px = this->roomba_dev->ox;
-     posdata.pos.py = this->roomba_dev->oy;
-     posdata.pos.pa = this->roomba_dev->oa;
+     posdata.pos.px = this->roomba_dev->ox - this->x_offset;
+     posdata.pos.py = this->roomba_dev->oy - this->y_offset;
+     posdata.pos.pa = this->roomba_dev->oa - this->a_offset;
      posdata.stall = static_cast<uint8_t>(this->bumplocked);
 
      this->Publish(this->position_addr,
@@ -462,6 +472,25 @@ Roomba::ProcessMessage(QueuePointer & resp_queue,
 		       player_msghdr * hdr,
 		       void * data)
 {
+  // Let clients know which commands and requests this driver implements
+  HANDLE_CAPABILITY_REQUEST (position_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
+  HANDLE_CAPABILITY_REQUEST (bumper_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
+  HANDLE_CAPABILITY_REQUEST (ir_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
+  HANDLE_CAPABILITY_REQUEST (opaque_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
+  HANDLE_CAPABILITY_REQUEST (gripper_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
+  
+  HANDLE_CAPABILITY_REQUEST (position_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_VEL);
+  HANDLE_CAPABILITY_REQUEST (position_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_REQ_MOTOR_POWER);
+  HANDLE_CAPABILITY_REQUEST (position_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_REQ_SET_ODOM);
+  HANDLE_CAPABILITY_REQUEST (position_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_REQ_RESET_ODOM);
+  HANDLE_CAPABILITY_REQUEST (position_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_REQ_GET_GEOM);
+  HANDLE_CAPABILITY_REQUEST (bumper_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_BUMPER_REQ_GET_GEOM);
+  HANDLE_CAPABILITY_REQUEST (ir_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_IR_REQ_POSE);
+  HANDLE_CAPABILITY_REQUEST (opaque_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_OPAQUE_REQ);
+  HANDLE_CAPABILITY_REQUEST (opaque_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_OPAQUE_CMD);
+  HANDLE_CAPABILITY_REQUEST (gripper_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_GRIPPER_CMD_OPEN);
+  HANDLE_CAPABILITY_REQUEST (gripper_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_GRIPPER_CMD_CLOSE);
+  
   if(Message::MatchMessage(hdr,
                            PLAYER_MSGTYPE_CMD,
                            PLAYER_POSITION2D_CMD_VEL,
@@ -496,6 +525,27 @@ Roomba::ProcessMessage(QueuePointer & resp_queue,
   {
     this->Publish(this->position_addr, resp_queue,
         PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_MOTOR_POWER);
+    return 0;
+  }
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+                                PLAYER_POSITION2D_REQ_SET_ODOM,
+                                this->position_addr))
+  {
+    player_position2d_data_t *positionreq = (player_position2d_data_t*)data;
+    
+    this->x_offset = this->roomba_dev->ox - positionreq->pos.px;
+    this->y_offset = this->roomba_dev->oy - positionreq->pos.py;
+    this->a_offset = this->roomba_dev->oa - positionreq->pos.pa;
+    return 0; 
+     
+  }
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+                                PLAYER_POSITION2D_REQ_RESET_ODOM,
+                                this->position_addr))
+  {
+    this->x_offset = this->roomba_dev->ox;
+    this->y_offset = this->roomba_dev->oy;
+    this->a_offset = this->roomba_dev->oa;
     return 0;
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
