@@ -19,7 +19,10 @@
  */
 
 #include "canio.h"
+#if defined HAVE_CANLIB
 #include "canio_kvaser.h"
+#endif
+
 #include "usb_packet.h"
 #include <libplayercore/playercore.h>
 

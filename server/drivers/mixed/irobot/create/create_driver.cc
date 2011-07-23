@@ -68,7 +68,11 @@ The create driver provides the following device interfaces:
 @par Supported configuration requests
 
 - PLAYER_POSITION2D_REQ_GET_GEOM
+- PLAYER_POSITION2D_REQ_SET_ODOM
+- PLAYER_POSITION2D_REQ_RESET_ODOM
 - PLAYER_BUMPER_REQ_GET_GEOM
+- PLAYER_IR_REQ_POSE
+- PLAYER_OPAQUE_REQ
 
 @par Configuration file options
 
@@ -136,6 +140,9 @@ class Create : public ThreadedDriver
 
     // full control or not
     bool safe;
+    
+    // offsets for position2d odom
+    double x_offset, y_offset, a_offset;
 
     player_devaddr_t position_addr;
     player_devaddr_t power_addr;
@@ -244,6 +251,9 @@ Create::Create(ConfigFile* cf, int section)
   this->serial_port = cf->ReadString(section, "port", "/dev/ttyS0");
   this->safe = cf->ReadInt(section, "safe", 1);
   this->create_dev = NULL;
+  this->x_offset = 0;
+  this->y_offset = 0;
+  this->a_offset = 0;
 }
 
 Create::~Create()
@@ -297,9 +307,9 @@ Create::Main()
      player_position2d_data_t posdata;
      memset(&posdata,0,sizeof(posdata));
 
-     posdata.pos.px = this->create_dev->ox;
-     posdata.pos.py = this->create_dev->oy;
-     posdata.pos.pa = this->create_dev->oa;
+     posdata.pos.px = this->create_dev->ox - this->x_offset;
+     posdata.pos.py = this->create_dev->oy - this->y_offset;
+     posdata.pos.pa = this->create_dev->oa - this->a_offset;
 
      this->Publish(this->position_addr,
                    PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE,
@@ -408,6 +418,24 @@ Create::ProcessMessage(QueuePointer &resp_queue,
 		       player_msghdr * hdr,
 		       void * data)
 {
+  // Let clients know which commands and requests this driver implements
+  HANDLE_CAPABILITY_REQUEST (position_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
+  HANDLE_CAPABILITY_REQUEST (bumper_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
+  HANDLE_CAPABILITY_REQUEST (ir_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
+  HANDLE_CAPABILITY_REQUEST (opaque_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
+  HANDLE_CAPABILITY_REQUEST (gripper_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
+
+  HANDLE_CAPABILITY_REQUEST (position_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_VEL);
+  HANDLE_CAPABILITY_REQUEST (position_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_REQ_MOTOR_POWER);
+  HANDLE_CAPABILITY_REQUEST (position_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_REQ_SET_ODOM);
+  HANDLE_CAPABILITY_REQUEST (position_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_REQ_RESET_ODOM);
+  HANDLE_CAPABILITY_REQUEST (position_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_REQ_GET_GEOM);
+  HANDLE_CAPABILITY_REQUEST (bumper_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_BUMPER_REQ_GET_GEOM);
+  HANDLE_CAPABILITY_REQUEST (ir_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_IR_REQ_POSE);
+  HANDLE_CAPABILITY_REQUEST (opaque_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_OPAQUE_REQ);
+  HANDLE_CAPABILITY_REQUEST (opaque_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_OPAQUE_CMD);
+  HANDLE_CAPABILITY_REQUEST (gripper_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_GRIPPER_CMD_OPEN);
+  HANDLE_CAPABILITY_REQUEST (gripper_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_GRIPPER_CMD_CLOSE);
   if(Message::MatchMessage(hdr,
                            PLAYER_MSGTYPE_CMD,
                            PLAYER_POSITION2D_CMD_VEL,
@@ -433,6 +461,27 @@ Create::ProcessMessage(QueuePointer &resp_queue,
   {
     this->Publish(this->position_addr, resp_queue,
         PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_MOTOR_POWER);
+    return 0;
+  }
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+                                PLAYER_POSITION2D_REQ_SET_ODOM,
+                                this->position_addr))
+  {
+    player_position2d_data_t *positionreq = (player_position2d_data_t*)data;
+    
+    this->x_offset = this->create_dev->ox - positionreq->pos.px;
+    this->y_offset = this->create_dev->oy - positionreq->pos.py;
+    this->a_offset = this->create_dev->oa - positionreq->pos.pa;
+    return 0; 
+     
+  }
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+                                PLAYER_POSITION2D_REQ_RESET_ODOM,
+                                this->position_addr))
+  {
+    this->x_offset = this->create_dev->ox;
+    this->y_offset = this->create_dev->oy;
+    this->a_offset = this->create_dev->oa;
     return 0;
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
