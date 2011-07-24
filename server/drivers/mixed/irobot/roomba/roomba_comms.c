@@ -41,7 +41,7 @@
 #include "roomba_comms.h"
 
 roomba_comm_t*
-roomba_create(const char* serial_port)
+roomba_create(const char* serial_port, unsigned int roomba_type)
 {
   roomba_comm_t* r;
 
@@ -50,6 +50,7 @@ roomba_create(const char* serial_port)
   r->fd = -1;
   r->mode = ROOMBA_MODE_OFF;
   strncpy(r->serial_port,serial_port,sizeof(r->serial_port)-1);
+  r->roomba_type = roomba_type;
   return(r);
 }
 
@@ -60,7 +61,7 @@ roomba_destroy(roomba_comm_t* r)
 }
 
 int
-roomba_open(roomba_comm_t* r, unsigned char fullcontrol, int roomba500)
+roomba_open(roomba_comm_t* r, unsigned char fullcontrol)
 {
   struct termios term;
   int flags;
@@ -99,7 +100,7 @@ roomba_open(roomba_comm_t* r, unsigned char fullcontrol, int roomba500)
 
   cfmakeraw(&term);
   
-  if (roomba500)
+  if (r->roomba_type == ROOMBA_500)
   {
     cfsetispeed(&term, B115200);
     cfsetospeed(&term, B115200);
@@ -398,15 +399,31 @@ roomba_parse_sensor_packet(roomba_comm_t* r, unsigned char* buf, size_t buflen)
   r->button_spot = (flag >> 2) & 0x01;
   r->button_power = (flag >> 3) & 0x01;
 
+  // Distance (in mm) since last poll
   memcpy(&signed_int, buf+idx, 2);
   idx += 2;
   signed_int = (int16_t)ntohs((uint16_t)signed_int);
-  dist = signed_int / 1e3;
+  if (r->roomba_type == ROOMBA_DISCOVERY)
+  {
+    dist = (double)signed_int / 1.0e3;
+  }
+  else // roomba500 readings come in backwards, and off by a factor of 10 maybe?
+  {
+    dist = (double)signed_int / 1.0e3 * -10.0;
+  }
 
+  // Angle since last reading
   memcpy(&signed_int, buf+idx, 2);
   idx += 2;
   signed_int = (int16_t)ntohs((uint16_t)signed_int);
-  angle = (2.0 * (signed_int / 1e3)) / ROOMBA_AXLE_LENGTH;
+  if (r->roomba_type == ROOMBA_DISCOVERY) // Difference between wheel readings, in mm
+  {
+    angle = (2.0 * ((double)signed_int / 1.0e3)) / ROOMBA_AXLE_LENGTH;
+  }
+  else // Angle, in degrees
+  {
+    angle = (double)signed_int * M_PI / 180.0;
+  }
 
   /* First-order odometric integration */
   r->oa = NORMALIZE(r->oa + angle);

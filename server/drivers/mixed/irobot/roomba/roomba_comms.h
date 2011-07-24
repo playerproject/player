@@ -72,6 +72,9 @@ extern "C" {
 
 #define ROOMBA_BUMPER_XOFFSET 0.05
 
+#define ROOMBA_DISCOVERY 0
+#define ROOMBA_500 1
+
 #ifndef MIN
   #define MIN(a,b) ((a < b) ? (a) : (b))
 #endif
@@ -93,6 +96,8 @@ typedef struct
   unsigned char mode;
   /* Integrated odometric position [m m rad] */
   double ox, oy, oa;
+  /* Roomba type (there are differences between roomba discovery & 500 interfaces) */
+  unsigned int roomba_type;
 
   /* Various Boolean flags */
   int bumper_left, bumper_right;
@@ -121,9 +126,9 @@ typedef struct
   double capacity;
 } roomba_comm_t;
 
-roomba_comm_t* roomba_create(const char* serial_port);
+roomba_comm_t* roomba_create(const char* serial_port, unsigned int roomba_type);
 void roomba_destroy(roomba_comm_t* r);
-int roomba_open(roomba_comm_t* r, unsigned char fullcontrol, int roomba500);
+int roomba_open(roomba_comm_t* r, unsigned char fullcontrol);
 int roomba_init(roomba_comm_t* r, unsigned char fullcontrol);
 int roomba_close(roomba_comm_t* r);
 int roomba_set_speeds(roomba_comm_t* r, double tv, double rv);
