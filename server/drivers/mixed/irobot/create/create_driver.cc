@@ -140,9 +140,6 @@ class Create : public ThreadedDriver
 
     // full control or not
     bool safe;
-    
-    // offsets for position2d odom
-    double x_offset, y_offset, a_offset;
 
     player_devaddr_t position_addr;
     player_devaddr_t power_addr;
@@ -251,9 +248,6 @@ Create::Create(ConfigFile* cf, int section)
   this->serial_port = cf->ReadString(section, "port", "/dev/ttyS0");
   this->safe = cf->ReadInt(section, "safe", 1);
   this->create_dev = NULL;
-  this->x_offset = 0;
-  this->y_offset = 0;
-  this->a_offset = 0;
 }
 
 Create::~Create()
@@ -307,9 +301,9 @@ Create::Main()
      player_position2d_data_t posdata;
      memset(&posdata,0,sizeof(posdata));
 
-     posdata.pos.px = this->create_dev->ox - this->x_offset;
-     posdata.pos.py = this->create_dev->oy - this->y_offset;
-     posdata.pos.pa = this->create_dev->oa - this->a_offset;
+     posdata.pos.px = this->create_dev->ox;
+     posdata.pos.py = this->create_dev->oy;
+     posdata.pos.pa = this->create_dev->oa;
 
      this->Publish(this->position_addr,
                    PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE,
@@ -469,9 +463,9 @@ Create::ProcessMessage(QueuePointer &resp_queue,
   {
     player_position2d_data_t *positionreq = (player_position2d_data_t*)data;
     
-    this->x_offset = this->create_dev->ox - positionreq->pos.px;
-    this->y_offset = this->create_dev->oy - positionreq->pos.py;
-    this->a_offset = this->create_dev->oa - positionreq->pos.pa;
+    this->create_dev->ox = positionreq->pos.px;
+    this->create_dev->oy = positionreq->pos.py;
+    this->create_dev->oa = positionreq->pos.pa;
     return 0; 
      
   }
@@ -479,9 +473,9 @@ Create::ProcessMessage(QueuePointer &resp_queue,
                                 PLAYER_POSITION2D_REQ_RESET_ODOM,
                                 this->position_addr))
   {
-    this->x_offset = this->create_dev->ox;
-    this->y_offset = this->create_dev->oy;
-    this->a_offset = this->create_dev->oa;
+    this->create_dev->ox = 0;
+    this->create_dev->oy = 0;
+    this->create_dev->oa = 0;
     return 0;
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
