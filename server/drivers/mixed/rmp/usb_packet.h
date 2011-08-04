@@ -26,22 +26,23 @@
 #include "canio.h"
 #include <libplayercommon/playercommon.h>
 
-typedef struct usb_packet {
-	union {
+
+struct usb_struct {
+	unsigned char usb_message_header;
+	unsigned char usb_command_identifier;
+	unsigned char command_type;
+	unsigned char unused0;
+	unsigned char unused1;
+	unsigned char unused2;
+	unsigned short can_message_header;
+	unsigned char unused3;
+	unsigned char can_message[8];
+	unsigned char usb_message_checksum;
+};
+
+typedef union usb_packet {
 		unsigned char pkt_data[18];
-		struct {
-			unsigned char usb_message_header;
-			unsigned char usb_command_identifier;
-			unsigned char command_type;
-			unsigned char unused0;
-			unsigned char unused1;
-			unsigned char unused2;
-			unsigned short can_message_header;
-			unsigned char unused3;
-			unsigned char can_message[8];
-			unsigned char usb_message_checksum;
-		};
-	};
+		struct usb_struct pkt;
 } usb_packet_t;
 
 class USBpacket {

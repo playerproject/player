@@ -1260,7 +1260,7 @@ int
 SegwayRMP::Diff(uint32_t from, uint32_t to, bool first)
 {
 	int diff1, diff2;
-	static uint32_t max = (uint32_t)pow(2,32)-1;
+	static uint32_t max = (uint32_t)pow(2.0,32)-1;
 
 	// if this is the first time, report no change
 	if(first)

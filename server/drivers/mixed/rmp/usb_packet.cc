@@ -27,18 +27,19 @@
 #include <stdio.h>
 #include <termios.h>
 #include <sys/time.h>
+#include <replace/replace.h>
 #include "usb_packet.h"
 
 
 USBpacket::USBpacket( ) {
-	pkt.usb_message_header = 0xf0;
-	pkt.usb_command_identifier = 0x55;
+	pkt.pkt.usb_message_header = 0xf0;
+	pkt.pkt.usb_command_identifier = 0x55;
 	// the docs say send 0x01 but the sample code sends a 0
-	pkt.command_type = 0;
-	pkt.unused0 = 0;
-	pkt.unused1 = 0;
-	pkt.unused2 = 0;
-	pkt.unused3 = 0;
+	pkt.pkt.command_type = 0;
+	pkt.pkt.unused0 = 0;
+	pkt.pkt.unused1 = 0;
+	pkt.pkt.unused2 = 0;
+	pkt.pkt.unused3 = 0;
 
 	return;
 }
@@ -65,18 +66,18 @@ unsigned short USBpacket::make_can_header( long id, unsigned int dlc, unsigned i
 
 
 USBpacket::USBpacket( const CanPacket &can ) {
-	pkt.usb_message_header = 0xf0;
-	pkt.usb_command_identifier = 0x55;
+	pkt.pkt.usb_message_header = 0xf0;
+	pkt.pkt.usb_command_identifier = 0x55;
 	// the docs say send 0x01 but the sample code sends a 0
-	pkt.command_type = 0;
-	pkt.unused0 = 0;
-	pkt.unused1 = 0;
-	pkt.unused2 = 0;
-	pkt.can_message_header = make_can_header( can.id, can.dlc, can.flags );
-	pkt.unused3 = 0;
-	memcpy( pkt.can_message, can.msg, sizeof(pkt.can_message) );
+	pkt.pkt.command_type = 0;
+	pkt.pkt.unused0 = 0;
+	pkt.pkt.unused1 = 0;
+	pkt.pkt.unused2 = 0;
+	pkt.pkt.can_message_header = make_can_header( can.id, can.dlc, can.flags );
+	pkt.pkt.unused3 = 0;
+	memcpy( pkt.pkt.can_message, can.msg, sizeof(pkt.pkt.can_message) );
 
-	pkt.usb_message_checksum = compute_checksum();
+	pkt.pkt.usb_message_checksum = compute_checksum();
 	return;
 }
 
@@ -84,8 +85,8 @@ USBpacket::operator CanPacket() {
 	CanPacket can;
 	unsigned short hi, lo;
 	/* not really a CANBUS header
-        can.id = pkt.can_message_header >> 5;
-	can.dlc = pkt.can_message_header & 0x000f;
+        can.id = pkt.pkt.can_message_header >> 5;
+	can.dlc = pkt.pkt.can_message_header & 0x000f;
 	 */
 	hi = pkt.pkt_data[5];
 	hi = (hi>>5) & 0x0007;
@@ -93,16 +94,16 @@ USBpacket::operator CanPacket() {
 	lo = (lo<<3);
 	can.id = ( hi | lo ) & 0x0fff;
 
-	if( pkt.can_message_header & 0x0010 )
+	if( pkt.pkt.can_message_header & 0x0010 )
 		can.flags = canMSG_RTR;
 	else
 		can.flags = canMSG_STD;
-	memcpy( can.msg, pkt.can_message, sizeof(can.msg) );
+	memcpy( can.msg, pkt.pkt.can_message, sizeof(can.msg) );
 	return can;
 }
 
 bool USBpacket::check() {
-	return compute_checksum() == pkt.usb_message_checksum;
+	return compute_checksum() == pkt.pkt.usb_message_checksum;
 }
 
 unsigned char USBpacket:: compute_checksum() {
@@ -210,7 +211,7 @@ int USBIO::ReadPacket(CanPacket *pkt) {
 		}
 
 
-		if( p.pkt.usb_message_header != 0xf0 )
+		if( p.pkt.pkt.usb_message_header != 0xf0 )
 			synced = false;
 		else if( !p.check() )
 			continue;
@@ -235,7 +236,7 @@ int USBIO::ReadPacket(CanPacket *pkt) {
 		gettimeofday( &now, 0 );
 	}
 
-	return (int) (p.pkt.can_message_header & 0x000f);
+	return (int) (p.pkt.pkt.can_message_header & 0x000f);
 }
 
 int USBIO::SyncRead( USBpacket &p ) {
