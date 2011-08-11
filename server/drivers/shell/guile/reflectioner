@@ -26,10 +26,9 @@ do
           echo "Invalid def file structure: '{' expected" >&2
           exit 1
         fi
-        echo -n "  " >>${outfile}
-        if [ ${num} -gt 0 ]; then echo -n "else " >>${outfile}; fi
+        if [ ${num} -gt 0 ]; then echo "  else " >>${outfile}; fi
         let num=${num}+1
-        echo "if (!strcmp(\"${name}\", structure))" >>${outfile}
+        echo "  if (!strcmp(\"${name}\", structure))" >>${outfile}
         echo "  {" >>${outfile}
         echo "    if (!field)" >>${outfile}
         echo "    {" >>${outfile}
@@ -240,33 +239,32 @@ do
             tmp="${field}"
             field="*${field}"
           fi
-          echo -n "    " >>${outfile}
-          if [ ${fields} -gt 0 ]; then echo -n "else " >>${outfile}; fi
+          if [ ${fields} -gt 0 ]; then echo "    else " >>${outfile}; fi
           let fields=${fields}+1
           fieldname=`echo ${field}|cut -f1 -d ';'|cut -f2 -d '*'|cut -f1 -d '['`
-          echo "if (!strcmp(\"${fieldname}\", field))" >>${outfile}
+          echo "    if (!strcmp(\"${fieldname}\", field))" >>${outfile}
           echo "    {" >>${outfile}
           if echo "${field}" | grep -e "^\*\*" >/dev/null
           then
             echo "Unsupported data type: pointer to a pointer" >&2
             exit 1
           fi
-          echo -n "      desc->type = " >>${outfile}
+          echo "      desc->type = " >>${outfile}
           case "${type}" in
-            "char")          echo "PLAYER_FIELD_CHAR;" >>${outfile};;
-            "int")           echo "PLAYER_FIELD_INT;" >>${outfile};;
-            "short")         echo "PLAYER_FIELD_SHORT;" >>${outfile};;
-            "int8_t")        echo "PLAYER_FIELD_INT8;" >>${outfile};;
-            "uint8_t")       echo "PLAYER_FIELD_UINT8;" >>${outfile};;
-            "int16_t")       echo "PLAYER_FIELD_INT16;" >>${outfile};;
-            "uint16_t")      echo "PLAYER_FIELD_UINT16;" >>${outfile};;
-            "int32_t")       echo "PLAYER_FIELD_INT32;" >>${outfile};;
-            "uint32_t")      echo "PLAYER_FIELD_UINT32;" >>${outfile};;
-            "int64_t")       echo "PLAYER_FIELD_INT64;" >>${outfile};;
-            "uint64_t")      echo "PLAYER_FIELD_UINT64;" >>${outfile};;
-            "float")         echo "PLAYER_FIELD_FLOAT;" >>${outfile};;
-            "double")        echo "PLAYER_FIELD_DOUBLE;" >>${outfile};;
-             *)              echo "PLAYER_FIELD_COMPOUND;" >>${outfile}
+            "char")          echo "        PLAYER_FIELD_CHAR;" >>${outfile};;
+            "int")           echo "        PLAYER_FIELD_INT;" >>${outfile};;
+            "short")         echo "        PLAYER_FIELD_SHORT;" >>${outfile};;
+            "int8_t")        echo "        PLAYER_FIELD_INT8;" >>${outfile};;
+            "uint8_t")       echo "        PLAYER_FIELD_UINT8;" >>${outfile};;
+            "int16_t")       echo "        PLAYER_FIELD_INT16;" >>${outfile};;
+            "uint16_t")      echo "        PLAYER_FIELD_UINT16;" >>${outfile};;
+            "int32_t")       echo "        PLAYER_FIELD_INT32;" >>${outfile};;
+            "uint32_t")      echo "        PLAYER_FIELD_UINT32;" >>${outfile};;
+            "int64_t")       echo "        PLAYER_FIELD_INT64;" >>${outfile};;
+            "uint64_t")      echo "        PLAYER_FIELD_UINT64;" >>${outfile};;
+            "float")         echo "        PLAYER_FIELD_FLOAT;" >>${outfile};;
+            "double")        echo "        PLAYER_FIELD_DOUBLE;" >>${outfile};;
+             *)              echo "        PLAYER_FIELD_COMPOUND;" >>${outfile}
           esac
           echo "      desc->size = sizeof(${type});" >>${outfile}
           echo "      desc->ptr = reinterpret_cast<void *>(&((reinterpret_cast<struct ${name} *>(data))->${fieldname}));" >>${outfile}

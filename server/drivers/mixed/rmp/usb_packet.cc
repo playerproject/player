@@ -163,9 +163,10 @@ int USBIO::Init( const char *dev ) {
 	}
 
 	cfmakeraw(&term);
+#ifdef B460800
 	cfsetispeed(&term, B460800);
 	cfsetospeed(&term, B460800);
-
+#endif
 	if(tcsetattr(fd, TCSAFLUSH, &term) < 0 ) {
 		PLAYER_ERROR1("tcsetattr() failed: %s", strerror(errno));
 		close(fd);
