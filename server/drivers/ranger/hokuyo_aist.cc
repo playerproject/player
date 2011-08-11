@@ -711,9 +711,6 @@ int HokuyoDriver::MainSetup(void)
         if (!AllocateDataSpace())
             return -1;
 
-        if (powerOnStartup_)
-            device_.set_power(true);
-
         try
         {
             device_.set_baud(baudRate_.GetValue());
@@ -751,6 +748,10 @@ int HokuyoDriver::MainSetup(void)
 	if (hwTimeStamps_.GetValue()) {
 		device_.calibrate_time();
 	}
+
+        if (powerOnStartup_)
+            device_.set_power(true);
+
     }
     catch(hokuyo_aist::BaseError &e)
     {
