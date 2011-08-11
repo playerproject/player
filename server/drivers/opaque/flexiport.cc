@@ -25,12 +25,12 @@
 /*
  *
 The flexiport driver provides access to a data communications device (such as a serial port or a TCP
-network port) via the Gearbox flexiport library. Any data received over this device is published,
+network port) via the Flexiport library. Any data received over this device is published,
 and any writes to this driver are written to the device. It does not process the data in any way.
 
 @par Compile-time dependencies
 
- - flexiport (from Gearbox, see http://gearbox.sourceforge.net)
+ - Flexiport 2.0 (from Github, see https://github.com/gbiggs/flexiport)
 
 @par Provides
 

@@ -7,14 +7,14 @@ PLAYERDRIVER_ADD_DRIVER (gbxsickacfr build_gbxsickacfr
     LINKLIBS ${gbxsickacfr_linkLibs} LINKFLAGS ${gbxsickacfr_linkFlags}
     CFLAGS ${gbxsickacfr_cFlags} SOURCES gbxsickacfr.cc)
 
-PLAYERDRIVER_OPTION (hokuyo_aist build_hokuyo_aist ON)
-PLAYERDRIVER_REQUIRE_PKG (hokuyo_aist build_hokuyo_aist hokuyo_aist
-    hokuyo_aist_includeDirs hokuyo_aist_libDirs hokuyo_aist_linkLibs
-    hokuyo_aist_linkFlags hokuyo_aist_cFlags =2.0.0)
-PLAYERDRIVER_ADD_DRIVER (hokuyo_aist build_hokuyo_aist
-    INCLUDEDIRS ${hokuyo_aist_includeDirs} LIBDIRS ${hokuyo_aist_libDirs}
-    LINKLIBS ${hokuyo_aist_linkLibs} LINKFLAGS ${hokuyo_aist_linkFlags}
-    CFLAGS ${hokuyo_aist_cFlags} SOURCES hokuyo_aist.cc)
+PLAYERDRIVER_OPTION (hokuyoaist build_hokuyoaist ON)
+PLAYERDRIVER_REQUIRE_PKG (hokuyoaist build_hokuyoaist hokuyoaist
+    hokuyoaist_includeDirs hokuyoaist_libDirs hokuyoaist_linkLibs
+    hokuyoaist_linkFlags hokuyoaist_cFlags =3.0.0)
+PLAYERDRIVER_ADD_DRIVER (hokuyoaist build_hokuyoaist
+    INCLUDEDIRS ${hokuyoaist_includeDirs} LIBDIRS ${hokuyoaist_libDirs}
+    LINKLIBS ${hokuyoaist_linkLibs} LINKFLAGS ${hokuyoaist_linkFlags}
+    CFLAGS ${hokuyoaist_cFlags} SOURCES hokuyo_aist.cc)
 
 PLAYERDRIVER_OPTION (lasertoranger build_lasertoranger ON)
 PLAYERDRIVER_ADD_DRIVER (lasertoranger build_lasertoranger SOURCES toranger.cc lasertoranger.cc)
