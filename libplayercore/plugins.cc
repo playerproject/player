@@ -126,7 +126,9 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
     // add $PLAYER_INSTALL_PREFIX/lib
     char installdir[ PATH_MAX ];
     strncpy( installdir, PLAYER_INSTALL_PREFIX, PATH_MAX);
-    strncat( installdir, "/lib/", PATH_MAX);
+    strncat( installdir, "/", PATH_MAX);
+    strncat( installdir, PLAYER_LIBRARY_INSTALL_DIR, PATH_MAX);
+    strncat( installdir, "/", PATH_MAX);
     if( lt_dladdsearchdir( installdir ) )
       PLAYER_ERROR1( "failed to add working directory %s to the plugin path", installdir );
   }
@@ -194,7 +196,9 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
     // add $PLAYER_INSTALL_PREFIX/lib
     char installdir[ PATH_MAX ];
     strncpy_s( installdir, PATH_MAX, PLAYER_INSTALL_PREFIX, PATH_MAX);
-    strncat_s( installdir, PATH_MAX, "/lib/", PATH_MAX);
+    strncat_s( installdir, PATH_MAX, "/", PATH_MAX);
+    strncat_s( installdir, PATH_MAX, PLAYER_LIBRARY_INSTALL_DIR, PATH_MAX);
+    strncat_s( installdir, PATH_MAX, "/", PATH_MAX);
     paths.push_back( installdir );
 
     for (std::vector<std::string>::const_iterator ii = paths.begin (); ii != paths.end (); ii++)
