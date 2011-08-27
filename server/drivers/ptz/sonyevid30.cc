@@ -1204,7 +1204,7 @@ int SonyEVID30::GetAbsZoom(short *zoom_cu)
 int SonyEVID30::GetCameraType()
 {
 	unsigned char command[MAX_VER_MESSAGE_LENGTH];
-	unsigned char reply[MAX_VER_REPLY_LENGTH];
+	unsigned char reply[MAX_PTZ_PACKET_LENGTH];
 	int reply_len;
 
 	command[0] = 0x09;
@@ -1259,7 +1259,7 @@ int SonyEVID30::GetCameraType()
 int SonyEVID30::PowerOn()
 {
 	unsigned char power_inq_command[] =  {0x09, 0x04, 0x00};
-	unsigned char power_inq_reply[MAX_PTZ_MESSAGE_LENGTH];
+	unsigned char power_inq_reply[MAX_PTZ_PACKET_LENGTH];
 
 	int power_inq_rep_len = SendRequest(power_inq_command, 3, power_inq_reply);
 	if (power_inq_rep_len < 4) {
