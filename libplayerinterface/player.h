@@ -392,7 +392,7 @@ HANDLE_CAPABILITY_REQUEST (position_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CM
 
 #define PLAYER_CAPABILITIES_REQ 255
 //misspelled version, for backwards compatibility with v3.0.2 (will be removed in v4.0
-#define PLAYER_CAPBILITIES_REQ 255
+#define PLAYER_CAPABILTIES_REQ 255
 
 /** @brief Structure containing a single capability request */
 typedef struct player_capabilities_req
