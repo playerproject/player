@@ -75,8 +75,8 @@ typedef unsigned char u_char;
 typedef unsigned short u_short;
 typedef unsigned int u_int;
 typedef unsigned long int u_long;
-typedef unsigned long int quad_t;
-typedef unsigned long int u_quad_t;
+typedef unsigned long long int quad_t;
+typedef unsigned long long int u_quad_t;
 #define __u_char_defined
 #endif
 
@@ -88,8 +88,8 @@ typedef unsigned short int uint16_t;
 typedef signed int int32_t;
 typedef unsigned int uint32_t;
 //#if __WORDSIZE == 64
-typedef signed long int int64_t;
-typedef unsigned long int uint64_t;
+typedef signed long long int int64_t;
+typedef unsigned long long int uint64_t;
 //#endif
 
 typedef char* caddr_t;
