@@ -154,6 +154,14 @@ ImuProxy::ResetOrientation(int aValue)
     throw PlayerError("ImuProxy::ResetOrientation()", "error resetting orientation");
 }
 
+void
+ImuProxy::ResetEuler(float aRoll, float aPitch, float aYaw)
+{
+  boost::mutex::scoped_lock lock(mPc->mMutex);
+
+  if (0 != playerc_imu_reset_euler(mDevice, aRoll, aPitch, aYaw))
+    throw PlayerError("ImuProxy::ResetEuler()", "error resetting euler orientation");
+}
 
 std::ostream&
 std::operator << (std::ostream &os, const PlayerCc::ImuProxy &c)

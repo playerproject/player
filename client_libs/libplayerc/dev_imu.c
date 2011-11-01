@@ -175,3 +175,19 @@ playerc_imu_reset_orientation (playerc_imu_t *device, int value)
                                  PLAYER_IMU_REQ_RESET_ORIENTATION,
                                  &config, NULL));
 }
+
+// Reset euler orientation
+int
+playerc_imu_reset_euler (playerc_imu_t *device, float roll,
+        float pitch, float yaw)
+{
+    player_imu_reset_euler_config_t config;
+    config.orientation.proll = roll;
+    config.orientation.ppitch = pitch;
+    config.orientation.pyaw = yaw;
+    
+    return (playerc_client_request(device->info.client,
+                                   &device->info,
+                                   PLAYER_IMU_REQ_RESET_EULER,
+                                   &config, NULL));
+ }
