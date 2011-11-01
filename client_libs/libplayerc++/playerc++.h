@@ -990,6 +990,8 @@ class PLAYERCC_EXPORT ImuProxy : public ClientProxy
     /**  Reset orientation. */
     void ResetOrientation(int aValue);
 
+    /**  Reset euler orientation */
+    void ResetEuler(float aRoll, float aPitch, float aYaw);
 
 };
 

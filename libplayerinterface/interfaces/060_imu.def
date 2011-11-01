@@ -22,6 +22,8 @@ message { DATA, FULLSTATE, 5, player_imu_data_fullstate_t };
 message { REQ, SET_DATATYPE, 1, player_imu_datatype_config_t };
 /** Request/reply subtype: reset orientation */
 message { REQ, RESET_ORIENTATION, 2, player_imu_reset_orientation_config_t };
+/** Request/reply subtype: reset euler values */
+message { REQ, RESET_EULER, 3, player_imu_reset_euler_config_t };
 
 /** @brief Data: calibrated IMU data (@ref PLAYER_IMU_DATA_STATE)
 
@@ -129,3 +131,12 @@ typedef struct player_imu_reset_orientation_config
   /** driver-specific */
   uint32_t value;
 } player_imu_reset_orientation_config_t;
+
+/** @brief Request/reply: Reset euler orientation.
+
+To reset the IMU's euler orientation, send a @ref PLAYER_IMU_REQ_RESET_EULER
+request.  Null response */
+typedef struct player_imu_reset_euler_config
+{
+    player_pose3d_t orientation;
+} player_imu_reset_euler_config_t;

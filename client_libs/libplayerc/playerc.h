@@ -3678,6 +3678,9 @@ PLAYERC_EXPORT int playerc_imu_datatype (playerc_imu_t *device, int value);
 /**  Reset orientation. */
 PLAYERC_EXPORT int playerc_imu_reset_orientation (playerc_imu_t *device, int value);
 
+/**  Reset euler orientation. */
+PLAYERC_EXPORT int playerc_imu_reset_euler(playerc_imu_t *device, float roll, float pitch, float yaw);
+
 /** @} */
 /***************************************************************************/
 
