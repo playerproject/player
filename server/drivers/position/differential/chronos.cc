@@ -25,7 +25,8 @@
 #include <stdexcept>
 // needed for gettimeofday, no sys/time.h on windows
 #if WIN32
-#include "replace/replace.h"
+#include "Winsock2.h"        // for struct timeval definition
+#include "replace/replace.h" // for gettimeofday definition
 #else
 #include <sys/time.h>
 #endif
