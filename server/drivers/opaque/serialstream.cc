@@ -20,10 +20,11 @@
  *
  */
 
-/** @ingroup drivers Drivers */
+/** @ingroup drivers*/
 /** @{ */
-/*
- *
+/** @defgroup driver_serialstream serialstream
+ *  @brief Serial streaming driver
+  
 The serialstream driver reads form a serial port continuously and publishes the data.
 Currently this is usable with the SickS3000 driver and the Nav200 driver. This driver does
 no interpretation of data output, merely reading it and publishing it, or, if it is sent a
@@ -35,7 +36,7 @@ data command it will write whatever it recieves onto the serial port
 
 @par Provides
 
-- @ref opaque
+- @ref interface_opaque
 
 @par Requires
 
@@ -43,8 +44,7 @@ data command it will write whatever it recieves onto the serial port
 
 @par Configuration requests
 
-- PLAYER_LASER_REQ_GET_GEOM
-- PLAYER_LASER_REQ_GET_CONFIG
+- none
 
 @par Configuration file options
 

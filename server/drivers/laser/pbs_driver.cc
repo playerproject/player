@@ -290,6 +290,8 @@ int PBSDriver::ProcessMessage(QueuePointer &resp_queue,
   //! If you handle the message successfully, return 0.  Otherwise,
   //! return -1, and a NACK will be sent for you, if a response is required.
 
+  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
+  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_GET_GEOM);
    // If request for range data has been received
    if (Message::MatchMessage (hdr,PLAYER_MSGTYPE_DATA,
     			  PLAYER_LASER_DATA_SCAN,

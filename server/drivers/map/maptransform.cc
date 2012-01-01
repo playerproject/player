@@ -200,6 +200,9 @@ int MapTransform::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, 
 
   assert(hdr);
  
+  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
+  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_MAP_REQ_GET_INFO);
+  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_MAP_REQ_GET_DATA);
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_MAP_REQ_GET_INFO, device_addr))
   {
     PLAYER_MSG0(9,"ProcessMessage called for MapTransform Driver: PLAYER_MAP_REQ_GET_INFO");

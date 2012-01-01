@@ -406,7 +406,10 @@ int XSensMT::ProcessMessage (QueuePointer &resp_queue,
                              void * data)
 {
     assert (hdr);
-
+    HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
+    HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_IMU_REQ_SET_DATATYPE);
+    HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_IMU_REQ_RESET_ORIENTATION);
+    
     // this holds possible error messages returned by mtcomm.writeMessage
     int err;
 

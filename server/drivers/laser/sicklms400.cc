@@ -387,6 +387,13 @@ int
 {
   assert (hdr);
 
+    HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
+    HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_GET_GEOM);
+    HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_GET_CONFIG);
+    HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_SET_CONFIG);
+    HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_GET_ID);
+    HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_SET_FILTER);
+
   // ---[ Get geometry
   if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ,
 	PLAYER_LASER_REQ_GET_GEOM, device_addr))

@@ -18,10 +18,11 @@
  *
  */
 
-/** @ingroup drivers Drivers */
+/** @ingroup drivers*/
 /** @{ */
-/*
- *
+/** @defgroup driver_tcpstream tcpstream
+ *  @brief TCP streaming driver
+
 The tcpstream driver is based on the serialstream driver. It reads from a socket
 continuously and publishes the data. Currently this is usable with the SickS3000 driver
 and the Nav200 driver. This driver does no interpretation of data output, merely reading
@@ -34,7 +35,7 @@ to the socket.
 
 @par Provides
 
-- @ref opaque
+- @ref interface_opaque
 
 @par Requires
 
@@ -42,8 +43,7 @@ to the socket.
 
 @par Configuration requests
 
-- PLAYER_LASER_REQ_GET_GEOM
-- PLAYER_LASER_REQ_GET_CONFIG
+- none
 
 @par Configuration file options
 

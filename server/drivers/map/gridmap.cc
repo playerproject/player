@@ -34,7 +34,8 @@
 /** @{ */
 /** @defgroup driver_mapping gridmap
   * @brief Provides a map using sonars
-Mapping Driver plugin
+
+Mapping driver plugin
 
 This driver is a very simple start to
 have the robot mapping its own environment.
@@ -47,8 +48,8 @@ this plugin driver uses
 - @ref interface_sonar : source of sonar data
 
 @par Configuration requests
-provides ["map:0"]
-requires ["position2d:0" "sonar:0"]
+- PLAYER_MAP_REQ_GET_INFO
+- PLAYER_MAP_REQ_GET_DATA
 
 @par Configuration file options
   - width (integer)
@@ -505,7 +506,11 @@ void gridmap::Main()
 int gridmap::ProcessMessage(QueuePointer & resp_queue, 
                                 player_msghdr * hdr, 
                                 void * data)
-{ //puts("gridmap processing messages..");
+{ 
+  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
+  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_MAP_REQ_GET_INFO);
+  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_MAP_REQ_GET_DATA);
+  //puts("gridmap processing messages..");
   // Handle new data from the sonar
   if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, PLAYER_SONAR_DATA_RANGES, 
                            this->sonar_addr))

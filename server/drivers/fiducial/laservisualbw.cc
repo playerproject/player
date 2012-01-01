@@ -392,6 +392,8 @@ int LaserVisualBW::Shutdown()
 int LaserVisualBW::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data)
 {
   assert(hdr);
+  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
+  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_FIDUCIAL_REQ_GET_GEOM);
 
   if(Message::MatchMessage (hdr, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN, laser_id))
   {

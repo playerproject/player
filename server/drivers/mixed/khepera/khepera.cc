@@ -28,7 +28,7 @@
 /** @ingroup drivers */
 /** @{ */
 /** @defgroup driver_khepera khepera
- * @brief K-Team Khepera mobile robot
+ * @brief K-Team %Khepera mobile robot
 
 The khepera driver is used to interface to the K-Team khepera robot.
 

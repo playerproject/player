@@ -20,10 +20,11 @@
  *
  */
 
-/** @ingroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/*
- *
+/** @defgroup driver_flexiport flexiport
+ *  @brief Flexiport multi-port driver
+
 The flexiport driver provides access to a data communications device (such as a serial port or a TCP
 network port) via the Flexiport library. Any data received over this device is published,
 and any writes to this driver are written to the device. It does not process the data in any way.
@@ -34,7 +35,7 @@ and any writes to this driver are written to the device. It does not process the
 
 @par Provides
 
- - @ref opaque
+ - @ref interface_opaque
 
 @par Requires
 
