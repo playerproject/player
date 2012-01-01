@@ -70,7 +70,7 @@ void BpsProxy::FillData(player_msghdr_t hdr, const char* buffer)
     if(player_debug_level(-1) >= 1)
       fprintf(stderr,"WARNING: expected %d bytes of bps data, but "
               "received %d. Unexpected results may ensue.\n",
-              sizeof(player_gps_data_t),hdr.size);
+              sizeof(player_bps_data_t),hdr.size);
   }
 
   px = ntohl(((player_bps_data_t*)buffer)->px);
