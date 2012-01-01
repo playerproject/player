@@ -575,19 +575,19 @@ void RazorIMU::RefreshData() {
 		imu_data_fullstate.pose.ppitch = data.pitch;
 		imu_data_fullstate.pose.pyaw = data.yaw;
 
-		imu_data_fullstate.vel.px = data.gyr_x;
-		imu_data_fullstate.vel.py = data.gyr_y;
-		imu_data_fullstate.vel.pz = data.gyr_z;
-		imu_data_fullstate.vel.proll = data.gyr_x;
-		imu_data_fullstate.vel.ppitch = data.gyr_y;
-		imu_data_fullstate.vel.pyaw = data.gyr_z;
+		imu_data_fullstate.vel.px = 0;
+		imu_data_fullstate.vel.py = 0;
+		imu_data_fullstate.vel.pz = 0;
+		imu_data_fullstate.vel.proll = 0;
+		imu_data_fullstate.vel.ppitch = 0;
+		imu_data_fullstate.vel.pyaw = 0;
 
 		imu_data_fullstate.acc.px = data.acc_x;
 		imu_data_fullstate.acc.py = data.acc_y;
 		imu_data_fullstate.acc.pz = data.acc_z;
-		imu_data_fullstate.acc.ppitch = 0;
-		imu_data_fullstate.acc.pyaw = 0;
-		imu_data_fullstate.acc.proll = 0;
+                imu_data_fullstate.acc.ppitch = data.gyr_x;
+                imu_data_fullstate.acc.pyaw = data.gyr_y;
+                imu_data_fullstate.acc.proll = data.gyr_z;
 
 		Publish(device_addr, PLAYER_MSGTYPE_DATA, 
 			PLAYER_IMU_DATA_FULLSTATE, &imu_data_fullstate, 
