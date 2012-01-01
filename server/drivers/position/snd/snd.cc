@@ -89,31 +89,31 @@ underlying "output" @ref interface_position2d device.
 
 @par Configuration file options
 
-- robot_radius (meters)
+- robot_radius (length)
   - Default: 0.25 (m)
   - The radius of the minimum circle  which contains the robot
 
-- min_gap_width (meters)
+- min_gap_width (length)
   - Default: 2*Robot radius
   - Minimum passage width the driver will try to exploit
 
-- obstacle_avoid_dist(meters)
+- obstacle_avoid_dist(length)
   - Default: 4*Robot radius
   - Maximum distance allowed from an obstacle
 
-- max_speed (meters/s)
+- max_speed (length/s)
   - Default: 0.5
   - Maximum speed allowed 
 
-- max_turn_rate (radiants/sec)
+- max_turn_rate (angle/sec)
   - Default: 60 degrees
   - Maximum angular speed allowed 
 
-- goal_position_tol (meters)
+- goal_position_tol (length)
   - Default: Robot radius/2
   - Maximum distance allowed from the final goal for the algorithm to stop.
 
-- goal_angle_tol (radiants)
+- goal_angle_tol (angle)
   - Default: 30 degrees 
   - Maximum angular error from the final goal position for the algorithm to stop
 
@@ -236,13 +236,13 @@ snd::snd(ConfigFile* cf, int section)
     PLAYER_MSG0(3,"INTERFACE INITIALIZED");
     
     
-    robot_radius = cf->ReadTupleLength(section, "robot_radius", 0, 0.25);
-    min_gap_width = cf->ReadTupleLength(section, "min_gap_width", 0, 2*robot_radius);
-	obstacle_avoid_dist = cf->ReadTupleLength(section, "obstacle_avoid_dist", 0, 4*robot_radius);
-	max_speed = cf->ReadTupleLength(section, "max_speed", 0, 0.5);
-	max_turn_rate = cf->ReadTupleLength(section, "max_turn_rate", 0, DTOR(60.0));
-	goal_position_tol = cf->ReadTupleLength(section, "goal_tol", 0, robot_radius/2);
-	goal_angle_tol = cf->ReadTupleLength(section, "goal_tol", 1, DTOR(30.0));
+    robot_radius = cf->ReadLength(section, "robot_radius", 0.25);
+    min_gap_width = cf->ReadLength(section, "min_gap_width", 2*robot_radius);
+	obstacle_avoid_dist = cf->ReadLength(section, "obstacle_avoid_dist", 4*robot_radius);
+	max_speed = cf->ReadLength(section, "max_speed", 0.5);
+	max_turn_rate = cf->ReadAngle(section, "max_turn_rate",  60.0);
+	goal_position_tol = cf->ReadLength(section, "goal_position_tol", robot_radius/2);
+	goal_angle_tol = cf->ReadAngle(section, "goal_angle_tol",  30.0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
