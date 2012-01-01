@@ -39,68 +39,68 @@
 #include <libplayercore/playercore.h>
 
 
-/// SegwayRMP400 Position Driver
+// SegwayRMP400 Position Driver
 class SegwayRMP400 : public ThreadedDriver
 {
 
 public:
 
-	/// Standard Constructor
+	// Standard Constructor
 	SegwayRMP400(ConfigFile* cf, int section);
 
-	/// Initialize (Player Standard)
+	// Initialize (Player Standard)
 	virtual int MainSetup();
 
-	/// Shutdown (Player Standard)
+	// Shutdown (Player Standard)
 	virtual void MainQuit();
 
 private:
 
 	// Devices
-	Device* segwayrmp2d[2];				///< child segwayrmp200 devices for 2d subsrciption
-	Device* segwayrmp3d[2];				///< child segwayrmp200 devices for 3d subsrciption
+	Device* segwayrmp2d[2];				// child segwayrmp200 devices for 2d subsrciption
+	Device* segwayrmp3d[2];				// child segwayrmp200 devices for 3d subsrciption
 
 	// Device Addresses
-	player_devaddr_t segwayrmp2d_id[2];		///< 2d Position Interface Address (Output)
-	player_devaddr_t segwayrmp3d_id[2];		///< 3d Position Interface Address (Output)
+	player_devaddr_t segwayrmp2d_id[2];		// 2d Position Interface Address (Output)
+	player_devaddr_t segwayrmp3d_id[2];		// 3d Position Interface Address (Output)
 
-	player_devaddr_t position3d_id;			///< 3d Position Interface Address (Input)
-	player_devaddr_t position2d_id;			///< 2d Position Interface Address (Input)
+	player_devaddr_t position3d_id;			// 3d Position Interface Address (Input)
+	player_devaddr_t position2d_id;			// 2d Position Interface Address (Input)
 
 	// Device Data Structures
-	player_position2d_data_t rmp2d_data[2];		///< Incoming data from child segwayrmp200 devices 2d
-	player_position3d_data_t rmp3d_data[2];		///< Incoming data from child segwayrmp200 devices 3d
+	player_position2d_data_t rmp2d_data[2];		// Incoming data from child segwayrmp200 devices 2d
+	player_position3d_data_t rmp3d_data[2];		// Incoming data from child segwayrmp200 devices 3d
 
-	player_position2d_data_t position2d_data;	///< Output data for parent segwayrmp400 device 2d
-	player_position2d_cmd_vel_t position2d_cmd;	///< Output cmd for parent segwayrmp400 device 2d
+	player_position2d_data_t position2d_data;	// Output data for parent segwayrmp400 device 2d
+	player_position2d_cmd_vel_t position2d_cmd;	// Output cmd for parent segwayrmp400 device 2d
 
-	player_position3d_data_t position3d_data;	///< Output data for parent segwayrmp400 device 3d
-	player_position3d_cmd_vel_t position3d_cmd;	///< Output cmd for parent segwayrmp400 device 3d
+	player_position3d_data_t position3d_data;	// Output data for parent segwayrmp400 device 3d
+	player_position3d_cmd_vel_t position3d_cmd;	// Output cmd for parent segwayrmp400 device 3d
 
 	// Flags
-	bool provide_2d;				///< Provide 2d interface Flag
-	bool provide_3d;				///< Provide 3d interface Flag
+	bool provide_2d;				// Provide 2d interface Flag
+	bool provide_3d;				// Provide 3d interface Flag
 
 	int counter;
-	/// Main
+	// Main
 	void Main();
 
-	/// Process message function (Player Standard)
+	// Process message function (Player Standard)
 	int ProcessMessage(QueuePointer &resp_queue, player_msghdr_t* hdr, void* data);
 
-	/// Packages position data and publishes
+	// Packages position data and publishes
 	void ProcessData();
 
-	/// Internal method to handle position 3D commands
+	// Internal method to handle position 3D commands
 	int HandlePosition3DCmd(player_position3d_cmd_vel_t* cmd);
 
-	/// Internal method to handle position 2D commands
+	// Internal method to handle position 2D commands
 	int HandlePosition2DCmd(player_position2d_cmd_vel_t* cmd);
 	
-	/// Flags for new data
+	// Flags for new data
 	bool newfront3d, newback3d, newfront2d, newback2d;
 
-	/// Flag for full speed data reporting.
+	// Flag for full speed data reporting.
 	bool fullspeed;
 };
 

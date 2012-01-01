@@ -27,7 +27,7 @@
 /** @ingroup drivers */
 /** @{ */
 /** @defgroup driver_segwayrmp400 segwayrmp400
- * @brief SegwayRMP400 Mobile Robot
+ * @brief Segway RMP 400 Mobile Robot
 
 %Device driver for the Segway RMP 400, subscribes to two "segwayrmp" drivers
 

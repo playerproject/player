@@ -241,7 +241,8 @@ int PlayerNIMU::ProcessMessage (QueuePointer &resp_queue,
 							 void * data)
 {
 	assert (hdr);
-
+  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
+  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_IMU_REQ_SET_DATATYPE);
 	return -1;
 }
 

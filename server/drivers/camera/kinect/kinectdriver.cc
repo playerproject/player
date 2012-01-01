@@ -58,6 +58,9 @@ project.
 
 @par Configuration file options
 
+- See @ref Properties
+
+@par Properties
 - heatmap (bool)
   - Default: false
   - When set to false, the Depth image is published as a greyscale image

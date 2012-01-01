@@ -57,6 +57,7 @@ cost of actually running a localization algorithm.
 @par Configuration requests
 
 - PLAYER_LOCALIZE_REQ_SET_POSE : acknowledged, but ignored
+- PLAYER_LOCALIZE_REQ_GET_PARTICLES
 
 @par Configuration file options
 
@@ -345,6 +346,11 @@ int FakeLocalize::ProcessMessage(QueuePointer &resp_queue,
 				 player_msghdr * hdr,
 				 void * data)
 {
+  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
+  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_LOCALIZE_REQ_SET_POSE);
+  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_LOCALIZE_REQ_GET_PARTICLES);
+
+  
   // Is it a request to set the filter's pose?
   if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_LOCALIZE_REQ_SET_POSE, this->localize_addr))
   {

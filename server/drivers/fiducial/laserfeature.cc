@@ -710,6 +710,8 @@ void LaserFeature::PublishFiducial()
 // Handle all incoming messages
 int LaserFeature::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data)
 {
+  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
+  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_FIDUCIAL_REQ_GET_GEOM);
 	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_FIDUCIAL_REQ_GET_GEOM, this->fiducial_id))
 	{
 		player_fiducial_geom_t geom;

@@ -649,6 +649,11 @@ SickLMS200::ProcessMessage(QueuePointer & resp_queue,
                            player_msghdr * hdr,
                            void * data)
 {
+  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
+  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_GET_GEOM);
+  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_GET_CONFIG);
+  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_SET_CONFIG);
+
   if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
                            PLAYER_LASER_REQ_SET_CONFIG,
                            this->device_addr))

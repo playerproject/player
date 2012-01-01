@@ -72,9 +72,9 @@ using namespace Geom2D;
 /** @ingroup drivers */
 /** @{ */
 /** @defgroup driver_mricp MRICP
- * @brief Map Reference ICP
+ * @brief %Map Reference ICP
 
-This is a Map Reference ICP plugin Driver for real time Map building and
+This is a %Map Reference ICP plugin Driver for real time %Map building and
 Localization using Iterative Closest Point laser scan matching and
 odom correction. Currently The driver is in stable release stage, more modifications
 might be added later on.

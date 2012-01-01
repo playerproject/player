@@ -28,7 +28,7 @@
 /** @ingroup drivers */
 /** @{ */
 /** @defgroup driver_postlog postlog
- * @brief Driver for storing log data into PostgreSQL database
+ * @brief %Driver for storing log data into PostgreSQL database
 
 The postlog driver is for storing log data into given tables of given PostgreSQL
 database.

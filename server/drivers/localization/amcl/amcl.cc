@@ -132,7 +132,9 @@ The @p amcl driver requires the following interfaces, some of them named:
 
 @par Configuration requests
 
-- TODO
+- PLAYER_LOCALIZE_REQ_SET_POSE
+- PLAYER_LOCALIZE_REQ_GET_PARTICLES
+- PLAYER_POSITION2D_REQ_GET_GEOM
 
 @par Configuration file options
 
@@ -1089,6 +1091,13 @@ AdaptiveMCL::ProcessMessage(QueuePointer & resp_queue,
                             player_msghdr * hdr,
                             void * data)
 {
+  HANDLE_CAPABILITY_REQUEST (localize_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
+  HANDLE_CAPABILITY_REQUEST (localize_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_LOCALIZE_REQ_GET_PARTICLES);
+  HANDLE_CAPABILITY_REQUEST (localize_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_LOCALIZE_REQ_SET_POSE);
+  
+  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
+  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_GET_GEOM);
+  
   player_localize_set_pose_t* setposereq;
 
   // Is it a request to set the filter's pose?

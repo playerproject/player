@@ -326,6 +326,10 @@ int RazorIMU::ProcessMessage(QueuePointer &resp_queue,
 				player_msghdr *hdr, void *data) {
 
 	assert(hdr);
+    HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
+    HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_IMU_REQ_SET_DATATYPE);
+    HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_IMU_REQ_RESET_EULER);
+    HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_IMU_REQ_RESET_ORIENTATION);
 
 	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
 			PLAYER_IMU_REQ_SET_DATATYPE, device_addr)) {
