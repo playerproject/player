@@ -85,7 +85,7 @@ void Property::SetKey (const char *newKey)
 	}
 }
 
-const bool Property::KeyIsEqual (const char *rhs)
+bool Property::KeyIsEqual (const char *rhs)
 {
 	if (!strcmp (key, rhs))
 		return true;

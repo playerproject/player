@@ -340,7 +340,7 @@ class PLAYERCORE_EXPORT Driver
     @param addr Address of the device to subscribe to (the driver may
     have more than one interface).
     @returns Returns 0 on success, -ve on error and 1 for unimplemented. */
-    virtual int Subscribe(QueuePointer &queue, player_devaddr_t addr) {return 1;};
+    virtual int Subscribe(QueuePointer &/*queue*/, player_devaddr_t /*addr*/) {return 1;};
 
     /** @brief Unsubscribe from this driver.
 
@@ -366,7 +366,7 @@ class PLAYERCORE_EXPORT Driver
     @param addr Address of the device to unsubscribe from (the driver may
     have more than one interface).
     @returns Returns 0 on success. */
-    virtual int Unsubscribe(QueuePointer &queue, player_devaddr_t addr) {return 1;};
+    virtual int Unsubscribe(QueuePointer &/*queue*/, player_devaddr_t /*addr*/) {return 1;};
 
     /** @brief Terminate the driver.
 
