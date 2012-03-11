@@ -49,6 +49,12 @@ RangerProxy::RangerProxy(PlayerClient *aPc, uint32_t aIndex)
 {
   Subscribe(aIndex);
   mInfo = &(mDevice->info);
+  try {
+    RequestConfigure();
+    RequestGeom();
+  }
+  catch(PlayerCc::PlayerError & e){
+  }
 }
 
 RangerProxy::~RangerProxy()
@@ -65,6 +71,7 @@ void RangerProxy::Subscribe(uint32_t aIndex)
 
   if (playerc_ranger_subscribe(mDevice, PLAYER_OPEN_MODE) != 0)
     throw PlayerError("RangerProxy::RangerProxy()", "could not subscribe");
+
 }
 
 void RangerProxy::Unsubscribe()
@@ -177,7 +184,7 @@ std::ostream& std::operator << (std::ostream &os, const PlayerCc::RangerProxy &c
   os << "Minimum angle: " << c.GetMinAngle () << "\tMaximum angle: " << c.GetMaxAngle () <<
         "\tAngular resolution: " << c.GetAngularRes () << endl;
   os << "Minimum range: " << c.GetMinRange () << "\tMaximum range: " << c.GetMaxRange () <<
-        "Range resolution: " << c.GetRangeRes () << endl;
+        "\tRange resolution: " << c.GetRangeRes () << endl;
   os << "Scanning frequency: " << c.GetFrequency () << endl;
   if (c.GetRangeCount() > 0)
   {
