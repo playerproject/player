@@ -198,7 +198,7 @@ void RazorIMU::uart_init() {
 	struct termios newtio;
 	
 	imufd = open(serialPort, O_RDWR | O_NOCTTY);
-	bzero(&newtio, sizeof(newtio));
+	memset(&newtio, 0, sizeof(newtio));
 
 	if (baudRate == 4800)
 		newtio.c_cflag = B4800 | CS8 | CLOCAL | CREAD;
