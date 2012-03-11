@@ -119,9 +119,9 @@ StereoProxy::SaveFrame(const std::string aPrefix, uint32_t aWidth, playerc_camer
 		
 
   filename << im << aPrefix << std::setw(aWidth) << mFrameNo[aIndex]++;
-  if (aDevice.compression)
-    filename << ".jpg";
-  else
+  //if (aDevice.compression)
+  //  filename << ".jpg";
+  //else
     filename << ".ppm";
 
   scoped_lock_t lock(mPc->mMutex);

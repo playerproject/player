@@ -104,11 +104,15 @@ CameraProxy::SaveFrame(const std::string aPrefix, uint32_t aWidth)
   filename.fill('0');
 
   filename << aPrefix << std::setw(aWidth) << mFrameNo++;
-  if (GetCompression())
-    filename << ".jpg";
-  else
-    filename << ".ppm";
+  // TODO: Teach libplayerjpeg how to write a jpeg to disk.
+  // For now, libplayerc will always write images as ppm, regardless
+  // of player compression state
+  //if (GetCompression())
+  //  filename << ".jpg";
+  //else
+  //  filename << ".ppm";
 
+  filename << ".ppm";
   scoped_lock_t lock(mPc->mMutex);
   playerc_camera_save(mDevice, filename.str().c_str());
 }
