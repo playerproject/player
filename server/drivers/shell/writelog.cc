@@ -89,6 +89,7 @@ The writelog driver can will log data from the following interfaces:
 - @ref interface_power
 - @ref interface_dio
 - @ref interface_aio
+- @ref interface_coopobject
 
 @par Configuration requests
 
@@ -251,6 +252,9 @@ class WriteLog: public ThreadedDriver
 
   // Write WSN data to file
   private: int WriteWSN (player_msghdr_t* hdr, void *data);
+  
+    // Write CO data to file
+  private: int WriteCoopObject (player_msghdr_t* hdr, void *data);
 
   /* HHAA 15-02-2007 */
   // Write bumper data to file
@@ -909,6 +913,9 @@ void WriteLog::Write(WriteLogDevice *device,
       break;
     case PLAYER_WSN_CODE:
       retval = this->WriteWSN(hdr, data);
+      break;
+    case PLAYER_COOPOBJECT_CODE:
+      retval = this->WriteCoopObject(hdr, data);
       break;
     case PLAYER_IMU_CODE:
       retval = this->WriteIMU (hdr, data);
@@ -1980,6 +1987,191 @@ WriteLog::WriteWSN(player_msghdr_t* hdr, void *data)
                     return(-1);
             }
 
+        default:
+            return(-1);
+    }
+}
+
+
+/** @ingroup tutorial_datalog
+ * @defgroup player_driver_writelog_coopobject CoopObject format
+
+@brief CoopObject log format
+
+The format for each @ref interface_coopobject message is:
+  - node_id        	(int): The ID of the WSN node
+  - node_parent_id	(int): The ID of the WSN node's parent (if existing)
+  - node_type		(int): The type of WSN node
+  - data_packet			: The WSN node's data packet
+	- rssi_data				: The WSN node's RSSI data packet
+		- sender_id 			(int): sender node ID
+		- rssi     			(int): RSSI value
+		- stamp	   			(int): Node stamp
+		- nodeTimeHigh		(int): Node time most significant word
+		- nodeTimeLow		(int): Node time less significant word
+		- x					(int): Node position on X-axis (if known)
+		- y					(int): Node position on Y-axis (if known)
+		- z					(int): Node position on Z-axis (if known)
+    - sensor_data_count	(int): Number of measurements from sensors
+	- list of sensor measurements (int,int) (player_coopobject_sensor_t)
+    - alarm_data_count	(int): Number of measurements from alarms
+	- list of alarm measurements (int,int) (player_coopobject_alarm_t)
+	- type_undefined 	(int): Undefined data type
+    - undefined_data_count 	(int): Number of undefined data bytes
+	- list of undefined data bytes (int)
+
+ */
+int
+WriteLog::WriteCoopObject(player_msghdr_t* hdr, void *data)
+{
+	unsigned int i;
+
+  // Check the type
+    switch(hdr->type)
+    {
+        case PLAYER_MSGTYPE_DATA:
+      // Check the subtype
+            switch(hdr->subtype)
+            {
+                case PLAYER_COOPOBJECT_DATA_HEALTH:
+		{
+                    player_coopobject_header_t *wdata = (player_coopobject_header_t*)data;
+
+                    fprintf(this->file,"%d %d %d ",
+                            wdata->id,
+                            wdata->parent_id,
+			    wdata->origin);
+
+                    return(0);
+		    break;
+		}
+                case PLAYER_COOPOBJECT_DATA_RSSI:
+		{
+                    player_coopobject_rssi_t *wdata = (player_coopobject_rssi_t*)data;
+
+                    fprintf(this->file,"%d %d %d %d %d %d %d %d %f %f %f ",
+                            wdata->header.id,
+                            wdata->header.parent_id,
+			    wdata->header.origin,
+                            wdata->sender_id,
+                            wdata->rssi,
+                            wdata->stamp,
+                            wdata->nodeTimeHigh,
+                            wdata->nodeTimeLow,
+                            wdata->x,
+			    wdata->y,
+                            wdata->z);
+                    return(0);
+		    break;
+		}
+                case PLAYER_COOPOBJECT_DATA_SENSOR:
+		{
+                    player_coopobject_data_sensor_t *wdata = (player_coopobject_data_sensor_t*)data;
+                    fprintf(this->file,"%d %d %d ",
+                            wdata->header.id,
+                            wdata->header.parent_id,
+			    wdata->header.origin);
+
+		    fprintf (this->file, "%d ", wdata->data_count);
+		    for (i = 0; i < wdata->data_count; i++)
+			fprintf (this->file,"%d %d ", wdata->data[i].type, wdata->data[i].value);
+
+                    return(0);
+		    break;
+		}
+                case PLAYER_COOPOBJECT_DATA_ALARM:
+		{
+                    player_coopobject_data_sensor_t *wdata = (player_coopobject_data_sensor_t*)data;
+                    fprintf(this->file,"%d %d %d ",
+                            wdata->header.id,
+                            wdata->header.parent_id,
+			    wdata->header.origin);
+
+		    fprintf (this->file, "%d ", wdata->data_count);
+		    for (i = 0; i < wdata->data_count; i++)
+			fprintf (this->file,"%d %d ", wdata->data[i].type, wdata->data[i].value);
+
+                    return(0);
+		    break;
+		}
+                case PLAYER_COOPOBJECT_DATA_USERDEFINED:
+		{
+                    player_coopobject_data_userdefined_t *wdata = (player_coopobject_data_userdefined_t*)data;
+                    fprintf(this->file,"%d %d %d ",
+                            wdata->header.id,
+                            wdata->header.parent_id,
+			    wdata->header.origin);
+
+		    fprintf (this->file, "%d %d ", wdata->type, wdata->data_count);
+		    for (i = 0; i < wdata->data_count; i++)
+			fprintf (this->file,"%d ", wdata->data[i]);
+
+		    return(0);
+		    break;
+		}
+                case PLAYER_COOPOBJECT_DATA_REQUEST:
+		{
+                    player_coopobject_req_t *wdata = (player_coopobject_req_t*)data;
+                    fprintf(this->file,"%d %d %d %d ",
+                            wdata->header.id,
+                            wdata->header.parent_id,
+			    wdata->header.origin);
+
+		    fprintf (this->file, "%d %d ", wdata->request, wdata->parameters_count);
+		    for (i = 0; i < wdata->parameters_count; i++)
+			fprintf (this->file,"%d ", wdata->parameters[i]);
+
+                    return(0);
+		    break;
+		}
+		case PLAYER_COOPOBJECT_DATA_COMMAND:
+		{
+                    player_coopobject_cmd_t *wdata = (player_coopobject_cmd_t*)data;
+                    fprintf(this->file,"%d %d %d %d ",
+                            wdata->header.id,
+                            wdata->header.parent_id,
+			    wdata->header.origin);
+
+		    fprintf (this->file, "%d %d ", wdata->command, wdata->parameters_count);
+		    for (i = 0; i < wdata->parameters_count; i++)
+			fprintf (this->file,"%d ", wdata->parameters[i]);
+
+                    return(0);
+				break;
+				}
+
+                default:
+                    return(-1);
+            }
+
+/*		case PLAYER_MSGTYPE_CMD:
+		fprintf(this->file,"cmd\n");
+      // Check the subtype
+            switch(hdr->subtype)
+            {
+                case PLAYER_COOPOBJECT_CMD_DATA:
+				{
+                    player_coopobject_cmd_data_t *wdata = (player_coopobject_cmd_data_t*)data;
+                    fprintf(this->file,"%d %d %f %f %f %d ",
+                            wdata->node_id,
+                            wdata->source_id,
+			    wdata->pos.px,
+			    wdata->pos.py,
+			    wdata->pos.pa,
+		wdata->status );
+
+			    fprintf (this->file, "%d %d ", wdata->data_type, wdata->data_count);
+			    for (i = 0; i < wdata->data_count; i++)
+			      fprintf (this->file,"%d ", wdata->data[i]);
+
+                    return(0);
+				break;
+				}
+
+                default:
+                    return(-1);
+			}
+*/
         default:
             return(-1);
     }

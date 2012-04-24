@@ -12,6 +12,7 @@ IF (BUILD_PLAYERCC)
         SET (testsSrcs  test.cc
                         test.h
                         test_camera.cc
+                        test_coopobject.cc
                         test_rfid.cc
                         test_wsn.cc
                         test_gripper.cc

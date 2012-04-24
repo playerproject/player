@@ -1,0 +1,189 @@
+description {
+ * @brief intelligent cooperating objects (WSNs, RFIDs, Networked Robots, etc.)
+
+The Cooperating Object interface provides access to a Wireless Sensor Network (driver implementations include xbow_generic for Mica2/MicaZ/TelosB WSN motes).
+
+Suport for further Cooperating OBjects such as RFID tags or Networked Robots is left for future work.
+}
+
+/** Data subtypes      */
+message { DATA, HEALTH, 1, player_coopobject_header_t };
+message { DATA, RSSI, 2, player_coopobject_rssi_t };
+message { DATA, SENSOR, 3, player_coopobject_data_sensor_t };
+message { DATA, ALARM, 4, player_coopobject_data_sensor_t };
+message { DATA, USERDEFINED, 5, player_coopobject_data_userdefined_t };
+message { DATA, REQUEST, 6, player_coopobject_req_t };
+message { DATA, COMMAND, 7, player_coopobject_cmd_t };
+message { DATA, POSITION, 8, player_coopobject_position_t };
+
+/** Command subtypes:    */
+message { CMD, STANDARD, 1, player_coopobject_cmd_t };
+message { CMD, DATA, 2, player_coopobject_data_userdefined_t };
+message { CMD, POSITION, 3, player_coopobject_position_t };
+
+/** Request subtypes:     */
+message { REQ, STANDARD, 1, player_coopobject_req_t };
+
+/** Constants to define the different origins */
+#define  PLAYER_COOPOBJECT_ORIGIN_STATICBASE 0
+#define  PLAYER_COOPOBJECT_ORIGIN_MOBILEBASE 1
+#define  PLAYER_COOPOBJECT_ORIGIN_MOTE 2
+#define  PLAYER_COOPOBJECT_ORIGIN_ROBOT 3
+
+/** Constants to define the different types of message. */
+#define PLAYER_COOPOBJECT_MSG_NONE -1
+#define PLAYER_COOPOBJECT_MSG_HEALTH 0
+#define PLAYER_COOPOBJECT_MSG_POSITION 1
+#define PLAYER_COOPOBJECT_MSG_RSSI 2
+#define PLAYER_COOPOBJECT_MSG_SENSOR 3
+#define PLAYER_COOPOBJECT_MSG_ALARM 4
+#define PLAYER_COOPOBJECT_MSG_REQUEST 5
+#define PLAYER_COOPOBJECT_MSG_COMMAND 6
+
+/* From 7 on, user defined messages */
+
+/** Constants to define the different types of sensor or alarms. */
+#define	PLAYER_COOPOBJECT_TEMPERATURE 0
+#define	PLAYER_COOPOBJECT_HUMIDITY 1
+#define	PLAYER_COOPOBJECT_PRESSURE 2
+#define	PLAYER_COOPOBJECT_LIGHT_1 3
+#define	PLAYER_COOPOBJECT_LIGHT_2 4
+#define	PLAYER_COOPOBJECT_ACCEL_X 5
+#define	PLAYER_COOPOBJECT_ACCEL_Y 6
+#define	PLAYER_COOPOBJECT_ACCEL_Z 7
+#define	PLAYER_COOPOBJECT_MAGNETOMETER_X 8
+#define	PLAYER_COOPOBJECT_MAGNETOMETER_Y 9
+#define	PLAYER_COOPOBJECT_MAGNETOMETER_Z 10
+#define	PLAYER_COOPOBJECT_COMPASS 11
+#define	PLAYER_COOPOBJECT_CO 12
+#define	PLAYER_COOPOBJECT_CO2 13
+#define	PLAYER_COOPOBJECT_H2 14
+
+/** Constants to define the different types of alarms. */
+#define	PLAYER_COOPOBJECT_SMOKE 15
+#define	PLAYER_COOPOBJECT_OPTSWITCH 16
+
+/* From 4 on, user defined messages */
+
+/** @brief Data (@ref PLAYER_COOPOBJECT_DATA_HEALTH)          */
+typedef struct player_coopobject_header
+{
+  /** 0 for fixed from base, 1 for mobile from base, 2 for mote-interface, 3 for Robot */
+  uint8_t origin;
+  /** The ID of the CO.                                             */
+  uint16_t id;
+  /** The ID of the CO parent (if existing).                      */
+  uint16_t parent_id;
+
+
+} player_coopobject_header_t;
+
+/** @brief Data (@ref PLAYER_COOPOBJECT_DATA_RSSI)             */
+typedef struct player_coopobject_rssi
+{
+  player_coopobject_header_t header;
+  /** The node RSSI measurements. All fields 0 if no value read  */
+  uint16_t sender_id;
+  uint16_t rssi;
+  uint16_t stamp;
+  uint32_t nodeTimeHigh;
+  uint32_t nodeTimeLow;
+  float x;
+  float y;
+  float z;
+
+} player_coopobject_rssi_t;
+
+  /** The WSN position packet provides the position of the node.                   */
+typedef struct player_coopobject_position
+{
+  
+  player_coopobject_header_t header;
+
+  float x;
+  float y;
+  float z;
+
+  uint8_t status;
+
+
+
+} player_coopobject_position_t;
+
+/* Structure to store values from a single sensor or alarm or other devices/items. */
+typedef struct player_coopobject_sensor
+{
+  /** The type of sensor (see above) */
+  uint8_t type;
+  /** Value of the sensor/alarm            */
+  int16_t value;
+} player_coopobject_sensor_t;
+
+
+/** @brief Data (@ref PLAYER_COOPOBJECT_DATA_SENSOR)                 */
+/** @brief Data (@ref PLAYER_COOPOBJECT_DATA_ALARM) 		   */
+
+typedef struct player_coopobject_data_sensor
+{
+
+  player_coopobject_header_t header;
+
+  /** Number of sensors included */
+  uint32_t data_count;
+  /** The node sensors measurements. Up to 255 sensors. -1 if no read value or no sensor  */
+  player_coopobject_sensor_t *data;
+
+} player_coopobject_data_sensor_t;
+
+
+/** @brief Data (@ref PLAYER_COOPOBJECT_DATA_USERDEFINED)
+
+The WSN data packet describes a wireless sensor network node.                   */
+typedef struct player_coopobject_data_userdefined
+{
+  player_coopobject_header_t header;
+  /** Type of the user defined message */
+  uint8_t type;
+  /** Size of the undefined message (in bytes) */
+  uint32_t data_count;
+  /** The node info not previously included. To be user defined. Up to 255 fields	*/
+  uint8_t *data;
+
+} player_coopobject_data_userdefined_t;
+
+/** @brief Request: send request from robot to any or all WSN nodes or viceversa       */
+/** @brief (@ref PLAYER_COOPOBJECT_DATA_REQUEST)	   */
+/** @brief (@ref PLAYER_COOPOBJECT_REQUEST_STANDARD) */
+typedef struct player_coopobject_req
+{
+
+  player_coopobject_header_t header;
+
+  /** Type of the request. Default: 0 (status). Up to 255 different request types*/
+  uint8_t request;
+  /** Size of the request message parameters (in bytes) */
+  uint32_t parameters_count;
+  /** Request message parameters	*/
+  uint8_t *parameters;
+
+} player_coopobject_req_t;
+
+
+/** @brief Command: send command from robot to any or all WSN nodes or viceversa        */
+/** @brief (@ref PLAYER_COOPOBJECT_DATA_COMMAND)	   */
+/** @brief (@ref PLAYER_COOPOBJECT_COMMAND_STANDARD) */
+
+typedef struct player_coopobject_cmd
+{
+  player_coopobject_header_t header;
+
+  /** Command. Up to 256 possible types   */
+  uint8_t command;
+
+  /** Size of the data of the message (in bytes) */
+  uint32_t parameters_count;
+  /** The comand info not previously included. To be user defined. Up to 255 fields	*/
+  uint8_t *parameters;
+
+} player_coopobject_cmd_t;
+

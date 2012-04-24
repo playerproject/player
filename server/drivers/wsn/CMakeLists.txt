@@ -30,3 +30,16 @@ ENDIF (HAVE_PHIDGET)
 PLAYERDRIVER_ADD_DRIVER (phidgetAcc build_phidgetAcc
     LINKFLAGS ${phidgetLinkFlags} CFLAGS ${phidgetCFlags}
     SOURCES phidgetAcc.cc)
+
+
+IF(HAVE_LIBSERIAL)
+  add_subdirectory(mote)
+
+  IF (HAVE_STL)
+      PLAYERDRIVER_OPTION (generic_xbow build_generic_xbow ON)
+  ELSE (HAVE_STL)
+      PLAYERDRIVER_OPTION (generic_xbow build_generic_xbow OFF "STL not found.")
+  ENDIF (HAVE_STL)
+  PLAYERDRIVER_REQUIRE_HEADER(generic_xbow build_generic_xbow SerialStream.h)
+  PLAYERDRIVER_ADD_DRIVER (generic_xbow build_generic_xbow LINKFLAGS "-L${CMAKE_CURRENT_BINARY_DIR}/mote" "-lmote" "-lserial" SOURCES generic_xbow.cc generic_xbow_structdef.cc)
+ENDIF(HAVE_LIBSERIAL)
