@@ -82,6 +82,7 @@ int main(int argc, const char *argv[])
         "Available interfaces to test are:\n"
         "  rfid\n"\
         "  wsn\n"\
+        "  coopobject\n"\
         "  power\n"\
         "  dio\n"\
         "  position2d\n"\
@@ -133,6 +134,8 @@ int main(int argc, const char *argv[])
         test_rfid(&client, index);
       if(strcmp(device, "wsn") == 0 || strcmp(device, "all") == 0)
         test_wsn(&client, index);
+      if(strcmp(device, "coopobject") == 0 || strcmp(device, "all") == 0)
+        test_coopobject(&client, index);
       if(strcmp(device, "power") == 0 || strcmp(device, "all") == 0)
         test_power(&client, index);
       if(strcmp(device, "dio") == 0 || strcmp(device, "all") == 0)

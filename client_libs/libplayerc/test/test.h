@@ -60,7 +60,7 @@ extern int test_simulation(playerc_client_t *client, int index);
 extern int test_sonar(playerc_client_t *client, int index);
 extern int test_speech(playerc_client_t *client, int index);
 extern int test_wsn(playerc_client_t *client, int index);
-
+extern int test_coopobject(playerc_client_t *client, int index);
 
 
 #if 0

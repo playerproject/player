@@ -176,6 +176,7 @@ IF (BUILD_PLAYERCC)
                         blobfinderproxy.cc
                         bumperproxy.cc
                         cameraproxy.cc
+                        coopobjectproxy.cc
                         dioproxy.cc
                         fiducialproxy.cc
                         gpsproxy.cc
