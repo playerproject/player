@@ -1516,6 +1516,119 @@ PLAYERC_EXPORT unsigned playerc_camera_get_pixel_component(playerc_camera_t * de
 /** @} */
 /**************************************************************************/
 
+/**************************************************************************/
+/** @ingroup playerc_proxies
+    @defgroup playerc_proxy_coopobject cooperating object
+
+The coopobject proxy provides an interface to a networked Cooperating Object (Wireless Sensor Network, Networked Robot, etc.)
+
+@{
+*/
+
+/** Note: the structure describing the Cooperating Object's data packet is declared in Player. */
+
+/** @brief Cooperating Object proxy data. */
+
+typedef struct
+{
+  /** Device info; must be at the start of all device structures.         */
+  playerc_device_t info;
+
+  /** Flag to indicate that new info has come. If WSN_NONE (-1), old info which should be discarded */
+  int messageType;
+
+  /** The type of Cooperating Object. 	
+    0 PLAYER_COOPOBJECT_ORIGIN_STATICBASE
+    1 PLAYER_COOPOBJECT_ORIGIN_MOBILEBASE
+    2 PLAYER_COOPOBJECT_ORIGIN_MOTE
+    3 PLAYER_COOPOBJECT_ORIGIN_ROBOT					*/
+  uint8_t origin;
+  /** Cooperating Object ID */
+  uint16_t id;
+  /** Cooperating Object Parent ID (if existing) */
+  uint16_t parent_id;
+
+  /** Cooperating Object data packet */
+
+  /** Radio Signal Strength measurement. All fields 0 if no value read  */
+  uint16_t RSSIsender;
+  uint16_t RSSIvalue;
+  uint16_t RSSIstamp;
+  uint32_t RSSInodeTimeHigh;
+  uint32_t RSSInodeTimeLow;
+
+  /** Cooperating Object Position. All fields 0 if no value read  */
+  float x;
+  float y;
+  float z;
+  
+  uint8_t status;
+
+  /** Number of sensors included */
+  uint32_t sensor_data_count;
+  /** Sensor measurements array. Up to 255 sensors. -1 if no read value or no sensor  */
+  player_coopobject_sensor_t *sensor_data;
+  /** Number of alarms included */
+  uint32_t alarm_data_count;
+  /** Active alarms array. 1 if active, 0 if inactive or no alarm read. Up to 255 Alarms */
+  player_coopobject_sensor_t *alarm_data;
+
+  /** User defined message size (in bytes) */
+  uint32_t user_data_count;
+  /** User defined data array. Up to 255 fields	*/
+  uint8_t *user_data;
+
+  /** Command type. Default: 0 (status). Up to 255 different command types*/
+  uint8_t command;
+  /** Request type. Default: 0 (status). Up to 255 different request types*/
+  uint8_t request;
+  /** Request/command parameters array size (in bytes) */
+  uint32_t parameters_count;
+  /** Request/command parameters array	*/
+  uint8_t *parameters;
+
+} playerc_coopobject_t;
+
+
+/** @brief Create a cooperating object proxy. */
+playerc_coopobject_t *playerc_coopobject_create(playerc_client_t *client, int index);
+
+/** @brief Destroy a cooperating object proxy. */
+void playerc_coopobject_destroy(playerc_coopobject_t *device);
+
+/** @brief Subscribe to the cooperating object device. */
+int playerc_coopobject_subscribe(playerc_coopobject_t *device, int access);
+
+/** @brief Un-subscribe from the cooperating object device. */
+int playerc_coopobject_unsubscribe(playerc_coopobject_t *device);
+
+/** @brief Send data to cooperating object. */
+int
+playerc_coopobject_send_position(playerc_coopobject_t *device, uint16_t node_id, uint16_t source_id, player_pose2d_t pos, uint8_t status);
+
+/** @brief Send data to cooperating object. */
+int
+playerc_coopobject_send_data(playerc_coopobject_t *device, int node_id, int source_id, int data_type, int data_size, unsigned char *extradata);
+
+/** @brief Send command to cooperating object. */
+int
+playerc_coopobject_send_cmd(playerc_coopobject_t *device, int node_id, int source_id, int cmd, int parameters_size, unsigned char *parameters);
+
+/** @brief Send request to cooperating object. */
+int
+playerc_coopobject_send_req(playerc_coopobject_t *device, int node_id, int source_id, int req, int parameters_size, unsigned char *parameters);
+
+// /** Put the node in sleep mode (0) or wake it up (1). */
+//int playerc_coopobject_power(playerc_coopobject_t *device, int node_id, int group_id, int value);
+
+// /** Change the data type to RAW or converted engineering units. */
+//int playerc_coopobject_datatype(playerc_coopobject_t *device, int value);
+
+// /** Change data delivery frequency. */
+//int playerc_coopobject_datafreq(playerc_coopobject_t *device, int node_id, int group_id, double frequency);
+
+/** @} */
+/***************************************************************************/
 
 /**************************************************************************/
 /** @ingroup playerc_proxies

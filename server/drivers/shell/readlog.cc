@@ -76,6 +76,7 @@ The readlog driver can provide the following device interfaces.
 - @ref interface_power
 - @ref interface_dio
 - @ref interface_aio
+- @ref interface_coopobject
 
 The driver also provides an interface for controlling the playback:
 
@@ -315,7 +316,11 @@ class ReadLog: public ThreadedDriver
                         unsigned short type, unsigned short subtype,
                         int linenum,
                         int token_count, char **tokens, double time);
-
+  // Parse WSN data
+  private: int ParseCoopObject(player_devaddr_t id,
+                        unsigned short type, unsigned short subtype,
+                        int linenum,
+                        int token_count, char **tokens, double time);
   // Parse IMU data
   private: int ParseIMU (player_devaddr_t id,
                          unsigned short type, unsigned short subtype,
@@ -1416,6 +1421,9 @@ int ReadLog::ParseData(player_devaddr_t id,
                            token_count, tokens, time);
   else if (id.interf == PLAYER_WSN_CODE)
       return this->ParseWSN(id, type, subtype, linenum,
+                            token_count, tokens, time);
+  else if (id.interf == PLAYER_COOPOBJECT_CODE)
+      return this->ParseCoopObject(id, type, subtype, linenum,
                             token_count, tokens, time);
   else if (id.interf == PLAYER_IMU_CODE)
       return this->ParseIMU (id, type, subtype, linenum,
@@ -3085,6 +3093,217 @@ int ReadLog::ParseWSN(player_devaddr_t id,
             return(-1);
     }
 }
+
+////////////////////////////////////////////////////////////////////////////
+// Parse WSN data
+int ReadLog::ParseCoopObject(player_devaddr_t id,
+                      unsigned short type, unsigned short subtype,
+                      int linenum,
+                      int token_count, char **tokens, double time)
+{
+	unsigned int i;
+
+    switch(type)
+    {
+        case PLAYER_MSGTYPE_DATA:
+            switch(subtype)
+            {
+                case PLAYER_COOPOBJECT_DATA_HEALTH:
+                {
+					player_coopobject_header_t data;
+                    if(token_count < 11)
+                    {
+                        PLAYER_ERROR2("invalid line at %s:%d", this->filename, linenum);
+                        return -1;
+                    }
+                    data.id        = atoi(tokens[7]);
+                    data.parent_id = atoi(tokens[8]);
+                    data.origin      = atoi(tokens[9]);
+
+                    this->Publish(id, type, subtype,
+                                  (void*)&data, sizeof(data), &time);
+                    return(0);
+                }
+		case PLAYER_COOPOBJECT_DATA_RSSI:
+                {
+					player_coopobject_rssi_t data;
+                    if(token_count < 19)
+                    {
+                        PLAYER_ERROR2("invalid line at %s:%d", this->filename, linenum);
+                        return -1;
+                    }
+                    data.header.id        = atoi(tokens[7]);
+                    data.header.parent_id	= atoi(tokens[8]);
+		    data.header.origin      = atoi(tokens[9]);
+
+                    data.sender_id     = atoi(tokens[10]);
+                    data.rssi     = atoi(tokens[11]);
+                    data.stamp      = atoi(tokens[12]);
+                    data.nodeTimeHigh      = atoi(tokens[13]);
+                    data.nodeTimeLow      = atoi(tokens[14]);
+                    data.x = atof(tokens[15]);
+                    data.y     = atof(tokens[16]);
+		    data.z      = atof(tokens[17]);
+
+                    this->Publish(id, type, subtype,
+                                  (void*)&data, sizeof(data), &time);
+                    return(0);
+                }
+		case PLAYER_COOPOBJECT_DATA_SENSOR:
+                {
+					player_coopobject_data_sensor_t data;
+                    if(token_count < 13)
+                    {
+                        PLAYER_ERROR2("invalid line at %s:%d", this->filename, linenum);
+                        return -1;
+                    }
+                    data.header.id        = atoi(tokens[7]);
+                    data.header.parent_id	= atoi(tokens[8]);
+		    data.header.origin      = atoi(tokens[9]);
+				
+		    data.data_count = atoi(tokens[10]);
+		    data.data = new player_coopobject_sensor_t[ data.data_count ];	
+		    for (i = 0; i < data.data_count; i++) {
+			data.data[i].type = atoi(tokens[11+2*i]);
+			data.data[i].value = atoi(tokens[11+2*i]);
+		    }
+                    this->Publish(id, type, subtype,
+                                  (void*)&data, sizeof(data), &time);
+                    return(0);
+                }
+		case PLAYER_COOPOBJECT_DATA_ALARM:
+                {
+					player_coopobject_data_sensor_t data;
+                    if(token_count < 13)
+                    {
+                        PLAYER_ERROR2("invalid line at %s:%d", this->filename, linenum);
+                        return -1;
+			}
+                    data.header.id        = atoi(tokens[7]);
+                    data.header.parent_id	= atoi(tokens[8]);
+		    data.header.origin      = atoi(tokens[9]);
+
+		    data.data_count = atoi(tokens[10]);
+		    data.data = new player_coopobject_sensor_t[ data.data_count ];		
+		    for (i = 0; i < data.data_count; i++) {
+			data.data[i].type = atoi(tokens[11+2*i]);
+			data.data[i].value = atoi(tokens[11+2*i]);
+		    }
+                    this->Publish(id, type, subtype,
+                                  (void*)&data, sizeof(data), &time);
+                    return(0);
+                }
+		case PLAYER_COOPOBJECT_DATA_USERDEFINED:
+                {
+					player_coopobject_data_userdefined_t data;
+                    if(token_count < 12)
+                    {
+                        PLAYER_ERROR2("invalid line at %s:%d", this->filename, linenum);
+                        return -1;
+                    }
+                    data.header.id        = atoi(tokens[7]);
+                    data.header.parent_id	= atoi(tokens[8]);
+		    data.header.origin      = atoi(tokens[9]);
+
+		    data.type = atoi (tokens[10]);
+		    data.data_count = atoi(tokens[11]);
+		    data.data = new uint8_t[ data.data_count ];	
+		    for (i = 0; i < data.data_count; i++)
+			data.data[i] = atoi(tokens[12+i]);
+
+                    this->Publish(id, type, subtype,
+                                  (void*)&data, sizeof(data), &time);
+                    return(0);
+                }
+		case PLAYER_COOPOBJECT_DATA_REQUEST:
+                {
+					player_coopobject_req_t data;
+                    if(token_count < 13)
+                    {
+                        PLAYER_ERROR2("invalid line at %s:%d", this->filename, linenum);
+                        return -1;
+                    }
+                        data.header.id        = atoi(tokens[7]);
+                    data.header.parent_id	= atoi(tokens[8]);
+		    data.header.origin      = atoi(tokens[9]);
+
+		    data.request = atoi (tokens[10]);
+		    data.parameters_count = atoi(tokens[11]);
+		    data.parameters = new uint8_t[ data.parameters_count ];	
+		    for (i = 0; i < data.parameters_count; i++)
+		      data.parameters[i] = atoi(tokens[12+i]);
+
+                    this->Publish(id, type, subtype,
+                                  (void*)&data, sizeof(data), &time);
+                    return(0);
+                }
+				case PLAYER_COOPOBJECT_DATA_COMMAND:
+                {
+					player_coopobject_cmd_t data;
+                    if(token_count < 13)
+                    {
+                        PLAYER_ERROR2("invalid line at %s:%d", this->filename, linenum);
+                        return -1;
+                    }
+                    data.header.id        = atoi(tokens[7]);
+                    data.header.parent_id	= atoi(tokens[8]);
+		    data.header.origin      = atoi(tokens[9]);
+
+		    data.command = atoi (tokens[10]);
+		    data.parameters_count = atoi(tokens[11]);
+		    data.parameters = new uint8_t[ data.parameters_count ];	
+		    for (i = 0; i < data.parameters_count; i++)
+		      data.parameters[i] = atoi(tokens[12+i]);
+
+                    this->Publish(id, type, subtype,
+                                  (void*)&data, sizeof(data), &time);
+                    return(0);
+                }
+                default:
+                    PLAYER_ERROR1("unknown WSN data subtype %d\n", subtype);
+                    return(-1);
+            }
+
+/*		 case PLAYER_MSGTYPE_CMD:
+            switch(subtype)
+            {
+                case PLAYER_COOPOBJECT_CMD_DATA:
+                {
+					player_coopobject_cmd_data_t data;
+                    if(token_count < 16)
+                    {
+                        PLAYER_ERROR2("invalid line at %s:%d", this->filename, linenum);
+                        return -1;
+                    }
+                    data.node_id		= atoi(tokens[7]);
+                    data.source_id		= atoi(tokens[8]);
+                    data.pos.px			= atof(tokens[9]);
+                    data.pos.py			= atof(tokens[10]);
+                    data.pos.pa			= atof(tokens[11]);
+					data.status			= atoi(tokens[12]);
+
+					data.data_type = atoi (tokens[12]);
+					data.data_count = atoi(tokens[13]);
+					data.data = new uint8_t[ data.data_count ];
+					for (i = 0; i < data.data_count; i++)
+						data.data[i] = atoi(tokens[14+i]);
+
+                    this->Publish(id, type, subtype, (void*)&data, sizeof(data), &time);
+                    return(0);
+                }
+
+				default:
+                    PLAYER_ERROR1("unknown WSN data subtype %d\n", subtype);
+                    return(-1);
+
+			}
+*/
+        default:
+            PLAYER_ERROR1("unknown WSN message type %d\n", type);
+            return(-1);
+    }
+}
+
 
 ////////////////////////////////////////////////////////////////////////////
 // Parse IMU data

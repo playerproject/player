@@ -254,7 +254,9 @@ int main(int argc, const char *argv[])
       case PLAYER_WSN_CODE:
         test_wsn(client, client->devinfos[i].addr.index);
         break;
-
+      case PLAYER_COOPOBJECT_CODE:
+        test_coopobject(client, client->devinfos[i].addr.index);
+        break;
       // AIO device
       case PLAYER_AIO_CODE:
         test_aio(client, client->devinfos[i].addr.index);

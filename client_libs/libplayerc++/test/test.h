@@ -82,7 +82,7 @@ int test_gripper_holdsubscribe(PlayerClient* client, int index);
 int test_actarray(PlayerClient* client, int index);
 int test_aio(PlayerClient* client, int index);
 int test_ranger(PlayerClient* client, int index);
-
+int test_coopobject(PlayerClient* client, int index);
 //int test_bps(PlayerClient* client, int index);
 
 #endif // TEST_H
