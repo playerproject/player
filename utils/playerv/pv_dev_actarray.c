@@ -71,6 +71,7 @@ actarray_t *actarray_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *cl
   rtk_menuitem_check(actarray->subscribe_item, actarray->proxy->info.subscribed);
 
   // Construct figures
+  actarray->fig_count = 0;
   actarray->actuator_fig = NULL;
   actarray->actuator_fig_cmd = NULL;
   actarray->lastvalue = NULL;
