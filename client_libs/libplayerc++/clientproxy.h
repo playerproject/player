@@ -38,7 +38,7 @@
  ********************************************************************/
 
 /***************************************************************************
- * Desc: Player v2.0 C++ client
+ * Desc: Player C++ client
  * Authors: Brad Kratochvil, Toby Collett
  *
  * Date: 23 Sep 2005
@@ -83,7 +83,7 @@ class PLAYERCC_EXPORT ClientProxy
   public:
 
 #ifdef HAVE_BOOST_SIGNALS
-    /// A connection type.  This is usefull when attaching signals to the
+    /// A connection type.  This is useful when attaching signals to the
     /// ClientProxy because it allows for detatching the signals.
     typedef boost::signals::connection connection_t;
 
@@ -188,37 +188,73 @@ class PLAYERCC_EXPORT ClientProxy
 
   public:
 
-    ///  Returns true if we have received any data from the device.
+    /// @brief Proxy has any information
+    ///
+    /// This function can be used to see if any data has been received
+    /// from the driver since the ClientProxy was created.
+    ///
+    /// @return true if we have received any data from the device.
     bool IsValid() const { return 0!=GetVar(mInfo->datatime); };
 
+    /// @brief Check for fresh data.
+    ///
     /// Fresh is set to true on each new read.  It is up to the user to
-    /// set it to false if the data has already been read.  This is most
-    /// useful when used in conjunction with the PlayerMultiClient
+    /// set it to false if the data has already been read, by using @ref NotFresh()
+    /// This is most useful when used in conjunction with the PlayerMultiClient
+    ///
+    /// @return True if new data was read since the Fresh flag was last set false
     bool IsFresh() const { return GetVar(mFresh); };
 
-    /// This states that the data in a client is currently not Fresh
+    /// @brief Reset Fresh flag
+    ///
+    /// This sets the client's "Fresh" flag to false.  After this is called, 
+    /// @ref IsFresh() will return false until new information is available
+    /// after a call to a @ref Read() method.
     void NotFresh();
 
-    ///  Returns the driver name
-    ///  @todo GetDriverName isn't guarded by locks yet
+    /// @brief Get the underlying driver's name
+    ///
+    /// Get the name of the driver that the ClientProxy is connected to.
+    ///
+    /// @return Driver name
+    /// @todo GetDriverName isn't guarded by locks yet
     std::string GetDriverName() const { return mInfo->drivername; };
 
-    /// Returns the received timestamp [s]
+    /// Returns the received timestamp of the last data sample [s]
     double GetDataTime() const { return GetVar(mInfo->datatime); };
 
-    /// Returns the received timestamp [s]
+    /// Returns the time between the current data time and the time of
+    /// the last data sample [s]
     double GetElapsedTime() const
       { return GetVar(mInfo->datatime) - GetVar(mInfo->lasttime); };
 
-    /// Returns a pointer to the Player Client
+    /// @brief Get a pointer to the Player Client
+    ///
+    /// Returns a pointer to the PlayerClient object that this client proxy
+    /// is connected through.
     PlayerClient * GetPlayerClient() const { return mPc;}
-    /// Returns device index
+    
+    /// @brief Get device index
+    ///
+    /// Returns the device index of the interface the ClientProxy object
+    /// is connected to.
+    ///
+    /// @return interface's device index
     uint32_t GetIndex() const { return GetVar(mInfo->addr.index); };
 
-    /// Returns device interface
+    /// @brief Get Interface Code
+    ///
+    /// Get the interface code of the underlying proxy.  See @ref message_codes for
+    /// a list of supported interface codes.
+    /// 
+    /// @return Interface code
     uint32_t GetInterface() const { return GetVar(mInfo->addr.interf); };
 
-    /// Returns device interface
+    /// @brief Get Interface Name
+    ///
+    /// Get the interface type of the proxy as a string.
+    ///
+    /// @return Interface name
     std::string GetInterfaceStr() const
       { return interf_to_str(GetVar(mInfo->addr.interf)); };
 
@@ -226,6 +262,7 @@ class PLAYERCC_EXPORT ClientProxy
     ///
     /// If a rule with the same pattern already exists, it will be replaced
     /// with the new rule (i.e., its setting to replace will be updated).
+    ///
     /// @param aReplace Should we replace these messages
     /// @param aType The type to set replace rule for (-1 for wildcard),
     ///        see @ref message_types.
@@ -243,33 +280,97 @@ class PLAYERCC_EXPORT ClientProxy
     ///
     /// Send a message asking if the device supports the given message
     /// type and subtype. If it does, the return value will be 1, and 0 otherwise.
+    ///
+    /// @param aType The capability type
+    /// @param aSubtype The capability subtype
+    /// @return 1 if capability is supported, 0 otherwise.
     int HasCapability(uint32_t aType, uint32_t aSubtype);
 
     /// @brief Request a boolean property
+    ///
+    /// Request a boolean property from the driver.  If the has the property requested,
+    /// the current value of the property will be returned.
+    ///
+    /// @param[in] aProperty String containing the desired property name
+    /// @param[out] aValue Value of the requested property, if available
+    /// @return 0 If property request was successful, nonzero otherwise
     int GetBoolProp(char *aProperty, bool *aValue);
 
     /// @brief Set a boolean property
+    ///
+    /// Set a boolean property to a given value in the driver.  If the property exists and
+    /// can be set, it will be set to the new value.
+    ///
+    /// @param[in] aProperty String containing the property name
+    /// @param aValue The value to set the property to
+    /// @return 0 if property change was successful, nonzero otherwise
     int SetBoolProp(char *aProperty, bool aValue);
 
     /// @brief Request an integer property
+    ///
+    /// Request an integer property from the driver.  If the has the property requested,
+    /// the current value of the property will be returned.
+    ///
+    /// @param[in] aProperty String containing the desired property name
+    /// @param[out] aValue Value of the requested property, if available
+    /// @return 0 If property request was successful, nonzero otherwise.                   
     int GetIntProp(char *aProperty, int32_t *aValue);
 
     /// @brief Set an integer property
+    ///
+    /// Set an integer property to a given value in the driver.  If the property exists and
+    /// can be set, it will be set to the new value.
+    ///
+    /// @param[in] aProperty String containing the property name
+    /// @param aValue The value to set the property to
+    /// @return 0 if property change was successful, nonzero otherwise
     int SetIntProp(char *aProperty, int32_t aValue);
 
     /// @brief Request a double property
+    ///
+    /// Request a double property from the driver.  If the has the property requested,
+    /// the current value of the property will be returned.
+    ///
+    /// @param[in] aProperty String containing the desired property name
+    /// @param[out] aValue Value of the requested property, if available
+    /// @return 0 If property request was successful, nonzero otherwise.
     int GetDblProp(char *aProperty, double *aValue);
 
     /// @brief Set a double property
+    ///
+    /// Set an integer property to a given value in the driver.  If the property exists and
+    /// can be set, it will be set to the new value.
+    ///
+    /// @param[in] aProperty String containing the property name
+    /// @param aValue The value to set the property to
+    /// @return 0 if property change was successful, nonzero otherwise
     int SetDblProp(char *aProperty, double aValue);
 
     /// @brief Request a string property
+    ///
+    /// Request a double property from the driver.  If the has the property requested,
+    /// the current value of the property will be returned.
+    ///
+    /// @param[in] aProperty String containing the desired property name
+    /// @param[out] aValue Value of the requested property, if available
+    /// @return 0 If property request was successful, nonzero otherwise.
     int GetStrProp(char *aProperty, char **aValue);
 
     /// @brief Set a string property
+    ///
+    /// Set a string property to a given value in the driver.  If the property exists and
+    /// can be set, it will be set to the new value.
+    ///
+    /// @param[in] aProperty String containing the property name
+    /// @param aValue The value to set the property to
+    /// @return 0 if property change was successful, nonzero otherwise
     int SetStrProp(char *aProperty, char *aValue);
 
-    /// Connect a signal to this proxy
+    /// @brief Connect a read signal to this proxy
+    ///
+    /// Connects a signal to the proxy to trigger.  This functionality depends on
+    /// boost::signals, and will fail if Player was not compiled against the boost
+    /// signal library.
     /// For more information check out @ref player_clientlib_multi
     template<typename T>
     connection_t ConnectReadSignal(T aSubscriber)
@@ -282,7 +383,10 @@ class PLAYERCC_EXPORT ClientProxy
 #endif
       }
 
-    /// Disconnect a signal to this proxy
+    /// @brief Disconnect a signal from this proxy
+    ///
+    /// Disconnects a connected read signal from the proxy
+    /// For more information check out @ref player_clientlib_multi
     void DisconnectReadSignal(connection_t aSubscriber)
       {
 #ifdef HAVE_BOOST_SIGNALS

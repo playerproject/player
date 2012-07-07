@@ -39,6 +39,11 @@
 #ifndef _ADDR_UTIL_H
 #define _ADDR_UTIL_H
 
+/** @ingroup libplayerinterface
+    @defgroup addrutil Address Utilities
+Utilities for converting between IP address formats.
+*/
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -56,10 +61,20 @@ extern "C" {
 #else
   #define PLAYERINTERFACE_EXPORT
 #endif
-
+/** @ingroup addrutil
+@{
+*/
+/// Convert a packed address to a dotted IP address string
+/// @param dest The destination buffer for the IP address string
+/// @param len The length of the destination buffer
+/// @param addr The packed address to be converted
 PLAYERINTERFACE_EXPORT void packedaddr_to_dottedip(char* dest, size_t len, uint32_t addr);
+/// Convert a hostname to a packed IP address
+/// @param dest The destination for the packed IP address
+/// @param hostname The null-terminated string containing the host name.
+//  @return 0 if successful, nonzero otherwise
 PLAYERINTERFACE_EXPORT int hostname_to_packedaddr(uint32_t* dest, const char* hostname);
-
+/** @} */
 #ifdef __cplusplus
 }
 #endif
