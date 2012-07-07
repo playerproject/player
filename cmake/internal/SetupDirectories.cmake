@@ -1,8 +1,8 @@
 # Default installation directory, based on operating system
 IF (PLAYER_OS_WIN)
-    SET (CMAKE_INSTALL_PREFIX "C:\\Program Files\\Player" CACHE PATH "Installation directory")
+    SET (CMAKE_INSTALL_PREFIX "C:\\Program Files\\Player" CACHE PATH "Installation prefix")
 ELSE (PLAYER_OS_WIN)
-    SET (CMAKE_INSTALL_PREFIX "/usr/local" CACHE PATH "Installation directory")
+    SET (CMAKE_INSTALL_PREFIX "/usr/local" CACHE PATH "Installation prefix")
 ENDIF (PLAYER_OS_WIN)
 
 MESSAGE (STATUS "Player will be installed to ${CMAKE_INSTALL_PREFIX}")
@@ -11,11 +11,13 @@ MESSAGE (STATUS "Player will be installed to ${CMAKE_INSTALL_PREFIX}")
 STRING (TOLOWER ${PROJECT_NAME} projectNameLower)
 SET (PLAYER_INCLUDE_INSTALL_DIR "include/${projectNameLower}-${PLAYER_MAJOR_VERSION}.${PLAYER_MINOR_VERSION}")
 
-IF (PLAYER_PROC_64BIT)
-    SET (LIB_SUFFIX "64" CACHE STRING "Suffix for library installation directory")
-ELSE (PLAYER_PROC_64BIT)
-    SET (LIB_SUFFIX "" CACHE STRING "Suffix for library installation directory")
-ENDIF (PLAYER_PROC_64BIT)
+# Let the user take care of this
+SET(LIB_SUFFIX "" CACHE STRING "Suffix for library installation directory")
+#IF (PLAYER_PROC_64BIT)
+#    SET (LIB_SUFFIX "64" CACHE STRING "Suffix for library installation directory")
+#ELSE (PLAYER_PROC_64BIT)
+#    SET (LIB_SUFFIX "" CACHE STRING "Suffix for library installation directory")
+#ENDIF (PLAYER_PROC_64BIT)
 
 SET (PLAYER_LIBRARY_INSTALL_DIR "lib${LIB_SUFFIX}")
 

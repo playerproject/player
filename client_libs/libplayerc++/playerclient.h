@@ -166,10 +166,13 @@ class PLAYERCC_EXPORT PlayerClient
     /// destructor
     ~PlayerClient();
 
-    /// Are we currently connected?
+    /// @brief Query connection to Player server
+    ///
+    /// Check if the PlayerClient is currently connected to the server.
+    /// @return true if connected, false if not.
     bool Connected() { return (NULL!=mClient && mClient->connected == 1) ? true : false; } 
 
-    /// A mutex for handling synchronization
+    /// @brief A mutex for handling synchronization
     mutex_t mMutex;
 
     // ideally, we'd use the read_write mutex, but I was having some problems
@@ -268,7 +271,7 @@ class PLAYERCC_EXPORT PlayerClient
     ///          This can be used to set the replace rule for all members of a
     ///          certain interface type.  See @ref interfaces.
     ///
-    /// @exception throws PlayerError if unsuccessfull
+    /// @exception throws PlayerError if unsuccessful
     ///
     /// @see ClientProxy::SetReplaceRule, PlayerClient::SetDataMode
     void SetReplaceRule(bool aReplace,

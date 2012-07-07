@@ -18,7 +18,10 @@ MACRO (PLAYER_ADD_LIBRARY _name)
                             INSTALL_NAME_DIR ${RPATH_VAL}
                             INSTALL_RPATH "${INSTALL_RPATH};${CMAKE_INSTALL_PREFIX}/${PLAYER_LIBRARY_INSTALL_DIR}"
                             BUILD_WITH_INSTALL_RPATH TRUE)
-    INSTALL (TARGETS ${_name} DESTINATION ${PLAYER_LIBRARY_INSTALL_DIR}/ COMPONENT libraries)
+    INSTALL (TARGETS ${_name} RUNTIME DESTINATION bin/ 
+                              LIBRARY DESTINATION ${PLAYER_LIBRARY_INSTALL_DIR}/
+                              ARCHIVE DESTINATION ${PLAYER_LIBRARY_INSTALL_DIR}/
+                              COMPONENT libraries)
 ENDMACRO (PLAYER_ADD_LIBRARY)
 
 

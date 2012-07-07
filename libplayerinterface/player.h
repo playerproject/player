@@ -385,13 +385,18 @@ is not supported and an ACK if it is.
 The HANDLE_CAPABILITY_REQUEST macro (from driver.h) can be used to make this process
 simpler, an example call would be something like this at the start of ProcessMessage
 
+@verbatim
 HANDLE_CAPABILITY_REQUEST (position_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
 HANDLE_CAPABILITY_REQUEST (position_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_VEL);
+@endverbatim
 
+@{
 */
 
+/// Capability request message type
 #define PLAYER_CAPABILITIES_REQ 255
-//misspelled version, for backwards compatibility with v3.0.2 (will be removed in v4.0
+/// Capability request message type
+/// (Misspelled for backwards compatibility with v3.0.2 and earler, will be removed in v4.0)
 #define PLAYER_CAPABILTIES_REQ 255
 
 /** @brief Structure containing a single capability request */
@@ -403,21 +408,39 @@ typedef struct player_capabilities_req
   uint32_t subtype;
 } player_capabilities_req_t;
 
+/** @} */
+
 
 /**
 @ingroup message_basics
 @defgroup propbags Property Bags
 Querying driver properties
 
+All drivers will respond to requests for driver properties.
+
+If a driver implements a configuration option as a driver property, then the driver property
+is available to get and set while the driver is running.  Driver properties are a solution to static configuration
+file options which force the Player server to be stopped before a driver's configuration can be changed.
+
+Driver properties are implemented as four basic types:  IntProp, DoubleProp, StringProp, and BoolProp.
+@{
 */
 
+/// Integer property get request subtype
 #define PLAYER_GET_INTPROP_REQ 254
+/// Integer property set request subtype
 #define PLAYER_SET_INTPROP_REQ 253
+/// Double property get request subtype
 #define PLAYER_GET_DBLPROP_REQ 252
+/// Double property set request subtype
 #define PLAYER_SET_DBLPROP_REQ 251
+/// String property get request subtype
 #define PLAYER_GET_STRPROP_REQ 250
+/// String property set request subtype
 #define PLAYER_SET_STRPROP_REQ 249
+/// Boolean property get request subtype
 #define PLAYER_GET_BOOLPROP_REQ 248
+/// Boolean property get request subtype
 #define PLAYER_SET_BOOLPROP_REQ 247
 
 /** @brief Request to get a boolean property */
@@ -433,38 +456,41 @@ typedef struct player_boolprop_req
 
 /** @brief Request to get an integer property */
 typedef struct player_intprop_req
+
 {
-	/** The property key's length */
-	uint32_t key_count;
-	/** The property key */
-	char *key;
-	/** The property value */
-	int32_t value;
+  /** The property key's length */
+  uint32_t key_count;
+  /** The property key */
+  char *key;
+  /** The property value */
+  int32_t value;
 } player_intprop_req_t;
 
 /** @brief Request to get a double property */
 typedef struct player_dblprop_req
 {
-	/** The property key's length */
-	uint32_t key_count;
-	/** The property key */
-	char *key;
-	/** The property value */
-	double value;
+  /** The property key's length */
+  uint32_t key_count;
+  /** The property key */
+  char *key;
+  /** The property value */
+  double value;
 } player_dblprop_req_t;
 
 /** @brief Request to get a string property */
 typedef struct player_strprop_req
 {
-	/** The property key's length */
-	uint32_t key_count;
-	/** The property key */
-	char *key;
-	/** The property's length */
-	uint32_t value_count;
-	/** The property value */
-	char *value;
+  /** The property key's length */
+  uint32_t key_count;
+  /** The property key */
+  char *key;
+  /** The property's length */
+  uint32_t value_count;
+  /** The property value */
+  char *value;
 } player_strprop_req_t;
+
+/** @} */
 
 // /////////////////////////////////////////////////////////////////////////////
 //
