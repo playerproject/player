@@ -89,6 +89,7 @@ driver
 #include <flexiport/flexiport.h>
 #include <flexiport/port.h>
 #include <string>
+#include <unistd.h> // for usleep
 
 const int DEFAULT_OPAQUE_BUFFER_SIZE    = 4096;
 
