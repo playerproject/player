@@ -672,7 +672,7 @@ void ReadLog::Main()
       // back up to the beginning of the file
 #if HAVE_Z
       if (this->gzfile)
-        ret = gzseek(this->file,0,SEEK_SET);
+        ret = gzseek((gzFile)this->file,0,SEEK_SET);
       else
         ret = fseek(this->file,0,SEEK_SET);
 #else
@@ -718,7 +718,7 @@ void ReadLog::Main()
       // compared to fgets (on uncompressed files), so use the latter.
 #if HAVE_Z
       if (this->gzfile)
-        ret = (gzgets(this->file, this->line, this->line_size) == NULL);
+        ret = (gzgets((gzFile)this->file, this->line, this->line_size) == NULL);
       else
         ret = (fgets(this->line, this->line_size, (FILE*) this->file) == NULL);
 #else
