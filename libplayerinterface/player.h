@@ -456,7 +456,6 @@ typedef struct player_boolprop_req
 
 /** @brief Request to get an integer property */
 typedef struct player_intprop_req
-
 {
   /** The property key's length */
   uint32_t key_count;
