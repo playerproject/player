@@ -71,12 +71,12 @@ void BlackBoardProxy::Subscribe(uint32_t aIndex)
   mDevice = playerc_blackboard_create(mClient, aIndex);
   if (NULL==mDevice)
   {
-    throw PlayerError("BlackBoardProxy::Subscribe(uint aIndex)", "could not create");
+    throw PlayerError("BlackBoardProxy::Subscribe(uint32_t aIndex)", "could not create");
   }
 
   if (0 != playerc_blackboard_subscribe(mDevice, PLAYER_OPEN_MODE))
   {
-    throw PlayerError("BlackBoardProxy::Subscribe(uint aIndex)", "could not subscribe");
+    throw PlayerError("BlackBoardProxy::Subscribe(uint32_t aIndex)", "could not subscribe");
   }
   
   mDevice->on_blackboard_event = NULL;

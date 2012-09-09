@@ -633,22 +633,22 @@ class PLAYERCC_EXPORT CoopObjectProxy : public ClientProxy
     /// - @ref PLAYER_COOPOBJECT_ORIGIN_MOBILEBASE
     /// - @ref PLAYER_COOPOBJECT_ORIGIN_MOTE
     /// - @ref PLAYER_COOPOBJECT_ORIGIN_ROBOT
-    uint GetOrigin	() const { return GetVar(mDevice->origin); };
+    uint32_t GetOrigin	() const { return GetVar(mDevice->origin); };
     
     /// @brief Cooperating Object ID
-    uint GetID      	() const { return GetVar(mDevice->id); };
+    uint32_t GetID     	() const { return GetVar(mDevice->id); };
     
     /// @brief Cooperating Object Parent ID
-    uint GetParentID	() const { return GetVar(mDevice->parent_id); };
+    uint32_t GetParentID() const { return GetVar(mDevice->parent_id); };
     
     /// @brief Get robot ID
-    uint GetProxyID 	() const { return id; };
+    uint32_t GetProxyID	() const { return id; };
     
     /// @brief Set robot ID
-    void SetProxyID	(uint value) { id = value; };
+    void SetProxyID	(uint32_t value) { id = value; };
     
     /// @brief Get number of sensors included in the message
-    uint GetSensorNumber	() const { return GetVar(mDevice->sensor_data_count);    };
+    uint32_t GetSensorNumber	() const { return GetVar(mDevice->sensor_data_count);    };
     
     // int *GetAllSensorData	() const { return GetVar(mDevice->sensor_data);    };
     
@@ -669,13 +669,13 @@ class PLAYERCC_EXPORT CoopObjectProxy : public ClientProxy
     /// - @ref PLAYER_COOPOBJECT_CO
     /// - @ref PLAYER_COOPOBJECT_CO2
     /// - @ref PLAYER_COOPOBJECT_H2  
-    uint8_t GetSensorType	(uint index) const { if ( index < GetSensorNumber() ) return GetVar(mDevice->sensor_data[index].type); else return -1; };
+    uint8_t GetSensorType	(uint32_t index) const { if ( index < GetSensorNumber() ) return GetVar(mDevice->sensor_data[index].type); else return -1; };
     
     /// @brief Sensor value
-    uint16_t GetSensorData	(uint index) const { if ( index < GetSensorNumber() ) return GetVar(mDevice->sensor_data[index].value); else return -1; };
+    uint16_t GetSensorData	(uint32_t index) const { if ( index < GetSensorNumber() ) return GetVar(mDevice->sensor_data[index].value); else return -1; };
 
     /// @brief Get number of alarms included in the message
-    uint GetAlarmNumber	() const { return GetVar(mDevice->alarm_data_count);    };
+    uint32_t GetAlarmNumber	() const { return GetVar(mDevice->alarm_data_count);    };
     
 //	int *GetAllAlarmData	() const { return GetVar(mDevice->alarm_data);    };
 
@@ -698,19 +698,19 @@ class PLAYERCC_EXPORT CoopObjectProxy : public ClientProxy
     /// - @ref PLAYER_COOPOBJECT_H2
     /// - @ref PLAYER_COOPOBJECT_SMOKE
     /// - @ref PLAYER_COOPOBJECT_OPTSWITCH
-    uint8_t GetAlarmType	(uint index) const { if ( index < GetAlarmNumber() ) return GetVar(mDevice->alarm_data[index].type); else return -1; };
+    uint8_t GetAlarmType	(uint32_t index) const { if ( index < GetAlarmNumber() ) return GetVar(mDevice->alarm_data[index].type); else return -1; };
 
     /// @brief Alarm value
-    uint16_t GetAlarmData	(uint index) const { if ( index < GetAlarmNumber() ) return GetVar(mDevice->alarm_data[index].value); else return -1; };
+    uint16_t GetAlarmData	(uint32_t index) const { if ( index < GetAlarmNumber() ) return GetVar(mDevice->alarm_data[index].value); else return -1; };
     
     /// @brief Get number of bytes of user defined data
-    uint GetUserDataNumber	() const { return GetVar(mDevice->user_data_count);    };
+    uint32_t GetUserDataNumber	() const { return GetVar(mDevice->user_data_count);    };
     
     /// @brief User defined data array
     uint8_t *GetAllUserData	() const { return GetVar(mDevice->user_data);    };
     
     /// @brief Indexed user defined byte
-    uint8_t GetUserData	(uint index) const { if ( index < GetUserDataNumber() ) return GetVar(mDevice->user_data[index]); else return 0xFF; };
+    uint8_t GetUserData	(uint32_t index) const { if ( index < GetUserDataNumber() ) return GetVar(mDevice->user_data[index]); else return 0xFF; };
 
     /// @brief Radio Signal Strength sender ID
     uint16_t GetRSSIsenderId	() const { return GetVar(mDevice->RSSIsender);    };
@@ -731,24 +731,24 @@ class PLAYERCC_EXPORT CoopObjectProxy : public ClientProxy
     uint8_t GetStatus () const { return GetVar(mDevice->status);    };
     
     /// @brief Request type
-    uint GetRequest	() const { return GetVar(mDevice->request);    };
+    uint32_t GetRequest	() const { return GetVar(mDevice->request);    };
     /// @brief Command type
-    uint GetCommand	() const { return GetVar(mDevice->command);    };
+    uint32_t GetCommand	() const { return GetVar(mDevice->command);    };
     /// @brief Request/Command parameter array size (in bytes)
-    uint GetParametersSize	() const { return GetVar(mDevice->parameters_count);    };
+    uint32_t GetParametersSize	() const { return GetVar(mDevice->parameters_count);    };
     /// @brief Request/Command parameter array
     uint8_t *GetAllParameters	() const { return GetVar(mDevice->parameters);    };
     /// @brief Indexed user defined byte
-    uint8_t GetParameter	(uint index) const { if ( index < GetParametersSize() ) return GetVar(mDevice->parameters[index]); else return 0xFF; };
+    uint8_t GetParameter	(uint32_t index) const { if ( index < GetParametersSize() ) return GetVar(mDevice->parameters[index]); else return 0xFF; };
 
     /// @brief Send user data to Cooperating Object
     void SendData(int destID, int sourceID, player_pose2d_t pos, int status);
     /// @brief Send user data to Cooperating Object
-    void SendData(int destID, int sourceID, int extradata_type, uint extradata_size, uint8_t *extradata);
+    void SendData(int destID, int sourceID, int extradata_type, uint32_t extradata_size, uint8_t *extradata);
     /// @brief Send command to Cooperating Object
-    void SendCommand(int destID, int sourceID, int command, uint cmd_parameters_size = 0, uint8_t *cmd_parameters = NULL);
+    void SendCommand(int destID, int sourceID, int command, uint32_t cmd_parameters_size = 0, uint8_t *cmd_parameters = NULL);
     /// @brief Send request to Cooperating Object
-    void SendRequest(int destID, int sourceID, int request, uint req_parameters_size = 0, uint8_t *req_parameters = NULL);
+    void SendRequest(int destID, int sourceID, int request, uint32_t req_parameters_size = 0, uint8_t *req_parameters = NULL);
 
 
 };
