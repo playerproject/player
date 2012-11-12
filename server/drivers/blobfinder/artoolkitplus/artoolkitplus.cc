@@ -79,23 +79,14 @@ driver
 
 #include <libplayercore/playercore.h>
 
-#include <ARToolKitPlus/TrackerSingleMarkerImpl.h>
+#include <ARToolKitPlus/TrackerSingleMarker.h>
 #include <ARToolKitPlus/Camera.h>
 #include <ARToolKitPlus/ar.h>
-#include <ARToolKitPlus/Logger.h>
 
 #include "../../base/imagebase.h"
 
 using namespace ARToolKitPlus;
 
-
-class MyLogger : public ARToolKitPlus::Logger
-{
-    void artLog(const char* nStr)
-    {
-        printf(nStr);
-    }
-};
 
 // Driver for detecting laser retro-reflectors.
 class ARToolkitPlusDriver : public ImageBase
@@ -116,7 +107,6 @@ class ARToolkitPlusDriver : public ImageBase
 		ARToolKitPlus::Camera * DummyCam;			//< the camera
 
 	    bool    	useBCH;
-    	MyLogger      logger;
 		ARToolKitPlus::TrackerSingleMarker *tracker;
 
 };
@@ -158,14 +148,9 @@ ARToolkitPlusDriver::ARToolkitPlusDriver( ConfigFile* cf, int section)
     //  - can load a maximum of 1 patterns
     //  - can detect a maximum of 8 patterns in one image
     //  - with an arbitrary default image size
-    tracker = new ARToolKitPlus::TrackerSingleMarkerImpl<6,6,6, 1, 8>(LastFrameWidth,LastFrameHeight);
+    tracker = new ARToolKitPlus::TrackerSingleMarker(LastFrameWidth,LastFrameHeight);
 
 	tracker->setPixelFormat(ARToolKitPlus::PIXEL_FORMAT_LUM);
-
-
-    // set a logger so we can output error messages
-    //
-    tracker->setLogger(&logger);
 
 	if(!tracker->init(NULL, 1.0f, 1000.0f))            // load NULL camera
 	{
@@ -177,7 +162,7 @@ ARToolkitPlusDriver::ARToolkitPlusDriver( ConfigFile* cf, int section)
     tracker->setUndistortionMode(ARToolKitPlus::UNDIST_NONE);
 
     // setup a fake camera so we can set the width and height
-	DummyCam = new CameraImpl;
+	DummyCam = new Camera;
     memset(DummyCam->dist_factor,0,sizeof (DummyCam->dist_factor));
     memset(DummyCam->mat,0,sizeof (DummyCam->mat));
     DummyCam->changeFrameSize(LastFrameWidth,LastFrameHeight);
