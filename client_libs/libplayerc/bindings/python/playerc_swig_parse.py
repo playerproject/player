@@ -195,7 +195,7 @@ if __name__ == '__main__':
 
     # Pattern to recognise structure definitions
     struct=re.compile("""
-        (?P<decl>typedef\s+struct\s*\w*\s*)  # Declaration
+        (?P<decl>typedef\s+struct\s*)\w*\s*  # Declaration
         {(?P<body>.*?)}(?P<footer>\s*        # Body
         (?P<name>playerc_\w+?)(_t)?          # Name
         \s*;)
