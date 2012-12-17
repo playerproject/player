@@ -7,6 +7,11 @@ STRING (REGEX MATCH "BSD" PLAYER_OS_BSD ${CMAKE_SYSTEM_NAME})
 # Or Solaris. I'm seeing a trend, here
 STRING (REGEX MATCH "SunOS" PLAYER_OS_SOLARIS ${CMAKE_SYSTEM_NAME})
 
+# Export CMAKE's UNIX variable to source files
+IF(UNIX)
+  ADD_DEFINITIONS(-DPLAYER_UNIX)
+ENDIF(UNIX)
+
 # Windows is easy (for once)
 IF (WIN32)
     SET (PLAYER_OS_WIN TRUE BOOL INTERNAL)
