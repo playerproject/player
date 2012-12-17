@@ -98,6 +98,18 @@ Listening on ports: 6665
   #include <unistd.h>
 #endif
 
+// Includes for umask() and open
+#ifdef PLAYER_UNIX
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#endif
+
+#include <stdexcept>
+using std::runtime_error;
+#include <string>
+using std::string;
+
 #include <libplayertcp/playertcp.h>
 #include <libplayertcp/playerudp.h>
 #include <libplayerinterface/functiontable.h>
@@ -117,9 +129,18 @@ void PrintCopyrightMsg();
 void PrintUsage();
 int ParseArgs(int* port, int* debuglevel,
               char** cfgfilename, int* gz_serverid, char** logfilename,
+              bool &shoud_daemonize,
               int argc, char** argv);
 void Quit(int signum);
 void Cleanup();
+
+int lockfile_id = -1;
+bool process_is_daemon = false;
+
+#ifdef PLAYER_UNIX
+runtime_error posix_exception(const string &prefix);
+bool daemonize_self();
+#endif
 
 PlayerTCP* ptcp;
 PlayerUDP* pudp;
@@ -135,10 +156,10 @@ main(int argc, char** argv)
   int debuglevel = 1;
   int port = PLAYERTCP_DEFAULT_PORT;
   int gz_serverid = -1;
-  int* ports;
-  int* new_ports;
-  int num_ports;
-  char* cfgfilename;
+  int* ports = NULL;
+  int* new_ports = NULL;
+  int num_ports = 0;
+  char* cfgfilename = NULL;
   char * logfileName = NULL;
 
 #ifdef WIN32
@@ -184,11 +205,80 @@ main(int argc, char** argv)
   assert(pudp);
 
   PrintVersion();
-  if(ParseArgs(&port, &debuglevel, &cfgfilename, &gz_serverid, &logfileName, argc, argv) < 0)
+
+  bool should_daemonize = false;
+
+  char *logfilename_unres = NULL;
+  char *cfgfilename_unres = NULL;
+
+  if(ParseArgs(&port, &debuglevel, &cfgfilename_unres, &gz_serverid,
+               &logfilename_unres, should_daemonize, argc, argv) < 0)
   {
     PrintUsage();
     exit(-1);
   }
+
+#ifdef PLAYER_UNIX
+  // Adjust logfileName and cfgfilename to be absolute paths
+  try
+  {
+      if(logfilename_unres != NULL
+         && (logfileName = realpath(logfilename_unres, logfileName)) == NULL)
+      {
+          throw posix_exception("Call to realpath on supplied"
+                                " log file name failed: ");
+      }
+      
+      if((cfgfilename = realpath(cfgfilename_unres, cfgfilename)) == NULL)
+      {
+          throw posix_exception("Call to realpath on supplied config file name"
+                                " failed: ");
+      }
+  }
+  catch(runtime_error &re)
+  {
+      PLAYER_ERROR1("Error while processing arguments: %s", re.what());
+      Cleanup();
+      return 1;
+  }
+
+  if(should_daemonize)
+  {
+      
+      // Alert the user that we're daemonizing
+      printf("Forking to daemon process...\n");
+
+      try
+      {
+          process_is_daemon = daemonize_self();
+      }
+      catch(runtime_error &re)
+      {
+          PLAYER_ERROR1("Error while daemonizing: %s", re.what());
+          Cleanup();
+          return 1;
+      }
+
+      // Die if we're not the daemon process
+      if(! process_is_daemon)
+      {
+          Cleanup();
+          return 0;
+      }
+  }
+#else
+
+  // Don't do things for daemonization
+  logfileName = logfilename_unres;
+  cfgfilename = cfgfilename_unres;
+
+  if(should_daemonize)
+  {
+      fprintf(stderr, "Cannot daemonize on a non-posix system");
+      Cleanup();
+      exit(1);
+  }
+#endif
 
   FILE* logfile = NULL;
   if (logfileName)
@@ -383,6 +473,16 @@ Cleanup()
     PLAYER_ERROR("failed to stop alwayson drivers");
   }
 
+  // If we are a daemon, close all open file descriptors (this also unlocks the
+  // lockfile)
+  if(process_is_daemon)
+  {
+      for(int fd = sysconf(_SC_OPEN_MAX) - 1; fd <= 0; --fd)
+      {
+          close(fd);
+      }
+  }
+  
   player_globals_fini();
   delete cf;
 }
@@ -390,7 +490,15 @@ Cleanup()
 void
 Quit(int signum)
 {
-  player_quit = true;
+  switch(signum)
+    {
+    case SIGHUP:
+        break;
+    case SIGTERM:
+    default:
+        player_quit = true;
+        break;
+    }
 }
 
 void
@@ -422,6 +530,7 @@ PrintUsage()
           "Default: %d\n", PLAYERTCP_DEFAULT_PORT);
   fprintf(stderr, "  -q             : quiet mode: minimizes the console output on startup.\n");
   fprintf(stderr, "  -l <logfile>   : log player output to the specified file\n");
+  fprintf(stderr, "  -s             : fork to a daemon process as the current user.\n");
   fprintf(stderr, "  <configfile>   : load the the indicated config file\n");
   fprintf(stderr, "\nThe following %d drivers were compiled into Player:\n\n    ",
           driverTable->Size());
@@ -441,11 +550,12 @@ PrintUsage()
 
 
 int
-ParseArgs(int* port, int* debuglevel, char** cfgfilename, int* gz_serverid, char **logfilename,
+ParseArgs(int* port, int* debuglevel, char** cfgfilename, int* gz_serverid,
+          char **logfilename, bool &should_daemonize,
           int argc, char** argv)
 {
   int ch;
-  const char* optflags = "d:p:l:hq";
+  const char* optflags = "d:p:l:hqs";
 
   // Get letter options
   while((ch = getopt(argc, argv, optflags)) != -1)
@@ -464,6 +574,9 @@ ParseArgs(int* port, int* debuglevel, char** cfgfilename, int* gz_serverid, char
       case 'p':
         *port = atoi(optarg);
         break;
+      case 's':
+        should_daemonize = true;
+        break;
       case '?':
       case ':':
       case 'h':
@@ -479,3 +592,154 @@ ParseArgs(int* port, int* debuglevel, char** cfgfilename, int* gz_serverid, char
 
   return(0);
 }
+
+#ifdef PLAYER_UNIX
+// Convenience function to issue an execption containing th output of strerror
+runtime_error posix_exception(const string &prefix)
+{
+    int errno_save = errno;
+    errno = 0;
+
+    return runtime_error(prefix + strerror(errno_save));
+}
+#endif
+
+#ifdef PLAYER_UNIX
+// Turn the server into a daemon.
+// Adapted from Levent Karakas' daemon example:
+// http://www.enderunix.org/docs/eng/daemon.php
+//
+// Returns false for the parent process, true for the daemon process
+bool daemonize_self()
+{
+    
+    // Check if we're already a daemon
+    if(getppid() == 1)
+        return true;
+
+    // fork daemon to remove ourselves from any shell to which we may be subject
+    {
+        int forkval = -1;
+        if((forkval = fork()) < 0)
+        {
+            // Fork error
+            throw posix_exception("Error in daemonize_self:fork(): ");
+        }
+        else if(forkval > 0)
+        {
+            // We are the parent process, and should die
+            return false;
+        }
+    }
+
+    // Set ourselves as the process group leader
+    if(setsid() < 0)
+    {
+        // setsid error
+        throw posix_exception("Error in daemonize_self:setsid(): ");
+    }
+
+    // Close all open file descriptors
+    for(int fd = sysconf(_SC_OPEN_MAX) - 1; fd <= 0; --fd)
+    {
+        close(fd);
+    }
+
+    // Change directory to the tmp directory in case some drivers decide to drop
+    // files in the current directory.
+    if(chdir("/tmp") < 0)
+    {
+        // Chdir error
+        throw posix_exception("Error in daemonize(): chdir(): ");
+    }
+
+    // Set permissions for newly created files
+    umask(027);
+
+    // Direct stdin from /dev/null
+    if(open("/dev/null", O_RDWR) < 0)
+    {
+        throw posix_exception("Error in daemonize_self: open(/dev/null): ");
+    }
+
+    // Direct stdout to temp file in working directory
+    if(open("/tmp/player.stdout", O_RDWR | O_CREAT, 0640) < 0)
+    {
+        throw posix_exception("Error in daemonize_self: open stdout: ");
+    }
+
+    // Direct stderr to temp file in working directory
+    if(open("/tmp/player.stderr", O_RDWR | O_CREAT, 0640) < 0)
+    {
+        throw posix_exception("Error in daemonize_self: open stderr: ");
+    }
+
+    // Open a lock file    
+    lockfile_id = open("/tmp/player.lock", O_RDWR | O_CREAT, 0640);
+    if(lockfile_id < 0)
+    {
+        throw posix_exception("Error in daemonize_self: open lockfile: ");
+    }
+
+    // Lock the lockfile
+    if(lockf(lockfile_id, F_TLOCK, 0) < 0)
+    {
+        // Could not lock lockfile.  There is probably already a player instance
+        // running, and we should exit.
+        throw posix_exception("Error in daemonize_self: lock lockfile: ");
+    }
+        
+    // Write our pid to the lockfile
+    char str [10];
+    if(snprintf(str, 10, "%d\n", getpid()) < 0)
+    {
+        // Error in snprintf
+        throw posix_exception("Error in daemonize: stringize pid: ");
+    }
+    if(write(lockfile_id, str, strlen(str)) < 0)
+    {
+        // Error in write
+        throw posix_exception("Error in daemonize: write pid: ");
+    }
+
+    // Setup our signal mask
+    struct sigaction signal_action = {{0}};
+
+    // Handle SIGHUP and SIGTERM
+    signal_action.sa_handler  = &Quit;
+
+    if(sigaction(SIGHUP, &signal_action, NULL) < 0)
+    {
+        throw posix_exception("Error in daemonize: set SIGHUP action: ");
+    }
+    if(sigaction(SIGTERM, &signal_action, NULL) < 0)
+    {
+        throw posix_exception("Error in daemonize: set SIGTERM action: ");
+    }
+
+    // Ignore SIGCHILD, SIGSTP, SIGTTOU, SIGTTIN (tty signals)
+    signal_action.sa_handler = SIG_IGN;
+
+    if(sigaction(SIGCHLD, &signal_action, NULL) < 0)
+    {
+        throw posix_exception("Error in daemonize: ignore SIGCHILD: ");
+    }
+
+    if(sigaction(SIGTSTP, &signal_action, NULL) < 0)
+    {
+        throw posix_exception("Error in daemonize: ignore SIGSTP: ");
+    }
+
+    if(sigaction(SIGTTOU, &signal_action, NULL) < 0)
+    {
+        throw posix_exception("Error in daemonize: ignore SIGTTOU: ");
+    }
+
+    if(sigaction(SIGTTIN, &signal_action, NULL) < 0)
+    {
+        throw posix_exception("Error in daemonize: ignore SIGTTIN: ");
+    }
+
+    return true;
+}
+#endif
