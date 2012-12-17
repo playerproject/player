@@ -71,6 +71,11 @@
   #include <boost/thread/thread.hpp>
   #include <boost/thread/xtime.hpp>
   #include <boost/bind.hpp>
+  #include <boost/version.hpp>
+  #if BOOST_VERSION < 105000
+    #define TIME_UTC_ TIME_UTC
+  #endif
+
 #else
   // we have to define this so we don't have to
   // comment out all the instances of scoped_lock
