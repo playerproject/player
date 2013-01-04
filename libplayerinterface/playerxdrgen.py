@@ -501,7 +501,7 @@ if __name__ == '__main__':
 #if defined (WIN32)
   #if defined (PLAYER_STATIC)
     #define PLAYERXDR_EXPORT
-  #elif defined (playerxdr_EXPORTS)
+  #elif defined (playerinterface_EXPORTS)
     #define PLAYERXDR_EXPORT    __declspec (dllexport)
   #else
     #define PLAYERXDR_EXPORT    __declspec (dllimport)
