@@ -117,12 +117,6 @@ PLAYERREPLACE_EXPORT double rint (double x);
 PLAYERREPLACE_EXPORT unsigned long compressBound (unsigned long sourceLen);
 #endif // HAVE_COMPRESSBOUND
 
-#if !HAVE_CLOCK_GETTIME
-  #include <time.h>
-  #define CLOCK_REALTIME 0
-PLAYERREPLACE_EXPORT int clock_gettime(int clk_id, struct timespec *tp);
-#endif // !HAVE_CLOCK_GETTIME
-
 #if !HAVE_STRUCT_TIMESPEC
   struct timespec
   {
@@ -132,6 +126,12 @@ PLAYERREPLACE_EXPORT int clock_gettime(int clk_id, struct timespec *tp);
   // Must define it here to stop Win32 pthreads from complaining, since that defines it as well
   #define HAVE_STRUCT_TIMESPEC 1
 #endif
+
+#if !HAVE_CLOCK_GETTIME
+  #include <time.h>
+  #define CLOCK_REALTIME 0
+PLAYERREPLACE_EXPORT int clock_gettime(int clk_id, struct timespec *tp);
+#endif // !HAVE_CLOCK_GETTIME
 
 #if !HAVE_USLEEP
 PLAYERREPLACE_EXPORT int usleep (int usec);
