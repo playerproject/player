@@ -25,14 +25,14 @@
  Author: Radu Bogdan Rusu
  Date  : 20th of September, 2006
 */
+#include <time.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
 #include <stdlib.h>
-#include <time.h>
 #include <math.h>
 #include <sys/stat.h>
-#if !defined (WIN32)
+#if !defined (WIN32) || defined (__MINGW32__)
     #include <unistd.h>
 #endif
 
@@ -241,8 +241,15 @@ main (int argc, const char **argv)
         time_t t = (time_t)t1;
 #if defined (__SVR4) && defined (sun)
         ctime_r (&t, btime, sizeof (btime));
-#elif defined (WIN32)
+#elif defined (WIN32) && !defined (__MINGW32__)
         ctime_s (btime, sizeof (btime), &t);
+#elif defined (__MINGW32__)
+        // ctime_r is a macro in mingw's time.h, but seems to be overridden somewhere.
+        // Implement ctime_r ourselves using ctime instead in the meantime
+        char *result = ctime(&t);
+        if (result) {
+                strcpy(btime, result);
+        }
 #else
         ctime_r (&t, btime);
 #endif

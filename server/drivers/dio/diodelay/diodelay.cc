@@ -97,6 +97,9 @@ driver
 #include <assert.h> // for assert()
 #include <pthread.h> // for pthread_testcancel()
 #include <libplayercore/playercore.h>
+#if !HAVE_NANOSLEEP
+  #include <replace/replace.h>
+#endif
 
 class DioDelay : public ThreadedDriver
 {

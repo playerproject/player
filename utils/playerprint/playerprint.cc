@@ -102,7 +102,7 @@ playerprint can print out data for the following kinds of devices:
 #include <stdlib.h>  // for atoi(3)
 //#include <libplayerc/playerc.h>      // for libplayerc client stuff
 #include <libplayerc++/playerc++.h>  // for libplayerc++ client stuff
-#if !defined (WIN32)
+#if !defined (WIN32) || defined (__MINGW32__)
   #include <unistd.h>
   #include <sys/time.h>
 #endif
