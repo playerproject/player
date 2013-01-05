@@ -94,7 +94,7 @@ Listening on ports: 6665
 #include <stdlib.h>
 #include <signal.h>
 #include <errno.h>
-#if !defined (WIN32)
+#if !defined (WIN32) || defined (__MINGW32__)
   #include <unistd.h>
 #endif
 
@@ -472,7 +472,7 @@ Cleanup()
   {
     PLAYER_ERROR("failed to stop alwayson drivers");
   }
-
+#if PLAYER_UNIX
   // If we are a daemon, close all open file descriptors (this also unlocks the
   // lockfile)
   if(process_is_daemon)
@@ -482,7 +482,7 @@ Cleanup()
           close(fd);
       }
   }
-  
+#endif
   player_globals_fini();
   delete cf;
 }
@@ -492,8 +492,10 @@ Quit(int signum)
 {
   switch(signum)
     {
+#if PLAYER_UNIX
     case SIGHUP:
         break;
+#endif
     case SIGTERM:
     default:
         player_quit = true;
