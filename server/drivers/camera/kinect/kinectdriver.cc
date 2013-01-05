@@ -123,7 +123,7 @@ void ColorImageCallback(freenect_device *dev, void *rgb, uint32_t timestamp);
 // Storage for image data and metadata
 static uint16_t* DepthImage;
 static uint8_t* ColorImage;
-static pthread_mutex_t kinect_mutex;
+pthread_mutex_t kinect_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int newcdata, newddata;
 static freenect_frame_mode colorImageMode;
 static freenect_frame_mode depthImageMode;
@@ -304,7 +304,7 @@ KinectDriver::KinectDriver(ConfigFile* cf, int section)
 int KinectDriver::MainSetup()
 {
 	PLAYER_MSG0(1,"Kinect driver initializing...");
-	kinect_mutex = PTHREAD_MUTEX_INITIALIZER;
+	memset(&kinect_mutex, 0, sizeof(pthread_mutex_t));
 
 	if (freenect_init(&fctx, NULL) < 0)
 	{
