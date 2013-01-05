@@ -82,6 +82,9 @@ driver
 #include <assert.h>
 #include <pthread.h>
 #include <libplayercore/playercore.h>
+#if !HAVE_NANOSLEEP
+  #include <replace/replace.h>
+#endif
 
 #define EPS 0.000000001
 

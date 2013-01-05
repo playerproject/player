@@ -82,6 +82,9 @@ driver
 #include <assert.h>
 #include <libplayercore/playercore.h>
 #include <libplayerwkb/playerwkb.h>
+#if !HAVE_NANOSLEEP
+  #include <replace/replace.h>
+#endif
 
 #define EPS 0.0000001
 #define MAXFABS(a, b) ((fabs(a) > fabs(b)) ? fabs(a) : fabs(b))

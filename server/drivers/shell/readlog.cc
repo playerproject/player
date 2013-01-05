@@ -139,7 +139,7 @@ driver
 #include <ctype.h>
 #include <errno.h>
 #include <sys/types.h>
-#if !defined (WIN32)
+#if !defined (WIN32) || defined (__MINGW32__)
   #include <sys/time.h>
   #include <unistd.h>
   #include <strings.h>

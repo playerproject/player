@@ -97,6 +97,9 @@ driver
 
 // Includes needed for player
 #include <libplayercore/playercore.h>
+#if !HAVE_NANOSLEEP
+  #include <replace/replace.h>
+#endif
 
 // The Dummy driver
 class Dummy: public ThreadedDriver 

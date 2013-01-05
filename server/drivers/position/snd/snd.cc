@@ -134,8 +134,10 @@ driver
 */
 /** @} */
 
-#if !defined (WIN32)
+#if !defined (WIN32) || defined (__MINGW32__)
 	#include <unistd.h>
+#endif
+#if !defined (WIN32)
 	#include <netinet/in.h>
 #endif
 #include <string.h>

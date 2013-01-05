@@ -46,7 +46,7 @@ IF (BUILD_UTILS_PMAP)
                 TARGET_LINK_LIBRARIES (pmap ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})
             ENDIF (GLUT_FOUND)
             SET_SOURCE_FILES_PROPERTIES (${pmapSrcs} PROPERTIES
-                COMPILE_FLAGS "${GSL_CFLAGS} --fast-math")
+                COMPILE_FLAGS "${GSL_CFLAGS} -ffast-math")
             SET_TARGET_PROPERTIES (pmap PROPERTIES LINK_FLAGS "${GSL_LDFLAGS}")
             TARGET_LINK_LIBRARIES (pmap ${GSL_PKG_LIBRARIES})
 
@@ -59,7 +59,7 @@ IF (BUILD_UTILS_PMAP)
                 TARGET_LINK_LIBRARIES (lodo ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})
             ENDIF (GLUT_FOUND)
             SET_SOURCE_FILES_PROPERTIES (${lodoSrcs} PROPERTIES
-                COMPILE_FLAGS "${GSL_CFLAGS} --fast-math")
+                COMPILE_FLAGS "${GSL_CFLAGS} -ffast-math")
             SET_TARGET_PROPERTIES (lodo PROPERTIES LINK_FLAGS "${GSL_LDFLAGS}")
             TARGET_LINK_LIBRARIES (lodo ${GSL_PKG_LIBRARIES})
 

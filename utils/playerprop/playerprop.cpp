@@ -59,7 +59,7 @@ The port argument is the TCP port over which to connect to Player
 
 /** @} */
 
-#if !defined (WIN32)
+#if !defined (WIN32) || defined (__MINGW32__)
   #include <unistd.h>
 #endif
 #include <cstdlib>

@@ -1,4 +1,5 @@
 PLAYERDRIVER_OPTION (segwayrmp build_segwayrmp ON "Build Segway RMP driver")
+PLAYERDRIVER_REJECT_OS(segwayrmp build_segwayrmp PLAYER_OS_WIN)
 SET (CANLIB_DIR "" CACHE STRING "Directory containing the CANLIB headers and libraries")
 
 IF (${HAVE_CANLIB})

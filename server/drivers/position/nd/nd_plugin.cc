@@ -177,7 +177,7 @@ driver
 */
 /** @} */
 #include <math.h>
-#if !defined (WIN32)
+#if !defined (WIN32) || defined (__MINGW32__)
   #include <unistd.h>
 #endif
 #include <stdlib.h>

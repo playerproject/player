@@ -1591,41 +1591,37 @@ typedef struct
 
 
 /** @brief Create a cooperating object proxy. */
-playerc_coopobject_t *playerc_coopobject_create(playerc_client_t *client, int index);
+PLAYERC_EXPORT playerc_coopobject_t *playerc_coopobject_create(playerc_client_t *client, int index);
 
 /** @brief Destroy a cooperating object proxy. */
-void playerc_coopobject_destroy(playerc_coopobject_t *device);
+PLAYERC_EXPORT void playerc_coopobject_destroy(playerc_coopobject_t *device);
 
 /** @brief Subscribe to the cooperating object device. */
-int playerc_coopobject_subscribe(playerc_coopobject_t *device, int access);
+PLAYERC_EXPORT int playerc_coopobject_subscribe(playerc_coopobject_t *device, int access);
 
 /** @brief Un-subscribe from the cooperating object device. */
-int playerc_coopobject_unsubscribe(playerc_coopobject_t *device);
+PLAYERC_EXPORT int playerc_coopobject_unsubscribe(playerc_coopobject_t *device);
 
 /** @brief Send data to cooperating object. */
-int
-playerc_coopobject_send_position(playerc_coopobject_t *device, uint16_t node_id, uint16_t source_id, player_pose2d_t pos, uint8_t status);
+PLAYERC_EXPORT int playerc_coopobject_send_position(playerc_coopobject_t *device, uint16_t node_id, uint16_t source_id, player_pose2d_t pos, uint8_t status);
 
 /** @brief Send data to cooperating object. */
-int
-playerc_coopobject_send_data(playerc_coopobject_t *device, int node_id, int source_id, int data_type, int data_size, unsigned char *extradata);
+PLAYERC_EXPORT int playerc_coopobject_send_data(playerc_coopobject_t *device, int node_id, int source_id, int data_type, int data_size, unsigned char *extradata);
 
 /** @brief Send command to cooperating object. */
-int
-playerc_coopobject_send_cmd(playerc_coopobject_t *device, int node_id, int source_id, int cmd, int parameters_size, unsigned char *parameters);
+PLAYERC_EXPORT int playerc_coopobject_send_cmd(playerc_coopobject_t *device, int node_id, int source_id, int cmd, int parameters_size, unsigned char *parameters);
 
 /** @brief Send request to cooperating object. */
-int
-playerc_coopobject_send_req(playerc_coopobject_t *device, int node_id, int source_id, int req, int parameters_size, unsigned char *parameters);
+PLAYERC_EXPORT int playerc_coopobject_send_req(playerc_coopobject_t *device, int node_id, int source_id, int req, int parameters_size, unsigned char *parameters);
 
 // /** Put the node in sleep mode (0) or wake it up (1). */
-//int playerc_coopobject_power(playerc_coopobject_t *device, int node_id, int group_id, int value);
+//PLAYERC_EXPORT int playerc_coopobject_power(playerc_coopobject_t *device, int node_id, int group_id, int value);
 
 // /** Change the data type to RAW or converted engineering units. */
-//int playerc_coopobject_datatype(playerc_coopobject_t *device, int value);
+//PLAYERC_EXPORT int playerc_coopobject_datatype(playerc_coopobject_t *device, int value);
 
 // /** Change data delivery frequency. */
-//int playerc_coopobject_datafreq(playerc_coopobject_t *device, int node_id, int group_id, double frequency);
+//PLAYERC_EXPORT int playerc_coopobject_datafreq(playerc_coopobject_t *device, int node_id, int group_id, double frequency);
 
 /** @} */
 /***************************************************************************/

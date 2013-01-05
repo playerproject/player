@@ -40,7 +40,9 @@ ADD_LIBRARY (example_driver SHARED ${example_interface_h} ${example_xdr_c} ${exa
 TARGET_LINK_LIBRARIES (example_driver playercore)
 ADD_EXECUTABLE (example_client example_client.c ${example_interface_h})
 TARGET_LINK_LIBRARIES (example_client playerc playerinterface playercommon ${PLAYERC_EXTRA_LINK_LIBRARIES} example)
-
+IF (WIN32)
+    ADD_DEFINITIONS(-Dplayerxdr_EXPORTS)
+ENDIF(WIN32)
 SET (exampleCMakeLists_in ${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt.example.in)
 SET (exampleCMakeLists ${CMAKE_CURRENT_BINARY_DIR}/CMakeLists.txt.example)
 SET (exampleDestDir share/${PROJECT_NAME_LOWER}/examples/plugins/exampleinterface)

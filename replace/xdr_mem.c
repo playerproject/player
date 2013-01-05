@@ -43,7 +43,7 @@
 //#include <rpc/rpc.h>
 #include "rpc/xdr.h"
 #ifdef WIN32
-#include <Winsock2.h>
+#include <winsock2.h>
 #else
 #include <arpa/inet.h>
 #endif
