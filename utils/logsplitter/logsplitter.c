@@ -123,7 +123,7 @@ FILE
 	fflush (rest);
 
 	// Truncate the remainings from the source file
-#if defined (WIN32)
+#if defined (WIN32) && !defined (__MINGW32__)
     _chsize_s (_fileno (input), currentPos - before);
 #else
     ftruncate (fileno (input), currentPos - before);

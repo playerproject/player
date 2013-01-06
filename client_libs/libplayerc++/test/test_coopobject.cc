@@ -28,6 +28,10 @@
   #include <unistd.h>
 #endif
 
+#if !HAVE_USLEEP
+  #include <replace.h>
+#endif
+
 int test_coopobject(PlayerClient* client, int index)
 {
   TEST("CoopObject");
