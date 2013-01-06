@@ -117,7 +117,7 @@ PLAYERREPLACE_EXPORT double rint (double x);
 PLAYERREPLACE_EXPORT unsigned long compressBound (unsigned long sourceLen);
 #endif // HAVE_COMPRESSBOUND
 
-#if !HAVE_STRUCT_TIMESPEC
+#ifndef HAVE_STRUCT_TIMESPEC
   struct timespec
   {
     long tv_sec;
