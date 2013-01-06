@@ -173,7 +173,7 @@ std::ostream& std::operator << (std::ostream &os, const PlayerCc::CoopObjectProx
 					break;
 			}
 			os << " - Position (x,y,z): (" << c.GetX() << "," << c.GetY() << "," << c.GetZ() << ")" << std::endl;
-			os << " - State: 0x" << hex <<(uint)c.GetStatus() << std::endl;
+			os << " - State: 0x" << hex <<static_cast<uint32_t>(c.GetStatus()) << std::endl;
 			os.setf(ios::dec, ios::basefield);
 			break;
 		}
@@ -199,11 +199,11 @@ std::ostream& std::operator << (std::ostream &os, const PlayerCc::CoopObjectProx
 					os << " - Origin: Unknown"<< std::endl;
 					break;
 			}
-			uint sensorNumber = c.GetSensorNumber();
+			uint32_t sensorNumber = c.GetSensorNumber();
 			if (sensorNumber > 0) {
 				os << " - Node SENSOR data:" << std::endl;
-				for (uint i = 0; i < sensorNumber; i++){
-						os << "\t· sensor[" << i << "] of type " << (uint)c.GetSensorType(i) << ": " << c.GetSensorData(i) << std::endl;
+				for (uint32_t i = 0; i < sensorNumber; i++){
+						os << "\t· sensor[" << i << "] of type " << static_cast<uint32_t>(c.GetSensorType(i)) << ": " << c.GetSensorData(i) << std::endl;
 				}	 
 			} else os << "No sensor data available." << std::endl;
 			break;
@@ -230,11 +230,11 @@ std::ostream& std::operator << (std::ostream &os, const PlayerCc::CoopObjectProx
 					os << " - Origin: Unknown"<< std::endl;
 					break;
 			}
-			uint alarmNumber = c.GetAlarmNumber();
+			uint32_t alarmNumber = c.GetAlarmNumber();
 			if (alarmNumber >0) {
 				os << " - Node ALARM data:" << std::endl;
-				for (uint i = 0; i < alarmNumber; i++){
-						os << "\t· alarm[" << i << "] of type " << (uint)c.GetAlarmType(i) << ": " << c.GetAlarmData(i) << std::endl;
+				for (uint32_t i = 0; i < alarmNumber; i++){
+						os << "\t· alarm[" << i << "] of type " << static_cast<uint32_t>(c.GetAlarmType(i)) << ": " << c.GetAlarmData(i) << std::endl;
 				}
 			} else os << "No alarm data available." << std::endl;
 			break;
@@ -268,7 +268,7 @@ std::ostream& std::operator << (std::ostream &os, const PlayerCc::CoopObjectProx
 			if (parameters != NULL && parametersSize > 0) {
 				os << "\t· Parameters: [";
 				for (int i = 0; i < parametersSize; i++)
-					os << " 0x" << hex << (uint)parameters[i];
+					os << " 0x" << hex << static_cast<uint32_t>(parameters[i]);
 				os << " ]" << std::endl;
 				os.setf(ios::dec, ios::basefield);
 			}
@@ -303,7 +303,7 @@ std::ostream& std::operator << (std::ostream &os, const PlayerCc::CoopObjectProx
 			if (parameters != NULL && parametersSize > 0) {
 				os << "\t· Parameters: [";
 				for (int i = 0; i < parametersSize; i++)
-					os << " 0x" << hex << (uint)parameters[i];
+					os << " 0x" << hex << static_cast<uint32_t>(parameters[i]);
 				os << " ]" << std::endl;
 				os.setf(ios::dec, ios::basefield);
 			}
@@ -331,14 +331,14 @@ std::ostream& std::operator << (std::ostream &os, const PlayerCc::CoopObjectProx
 					os << " - Origin: Unknown"<< std::endl;
 					break;
 			}
-			uint userDataNumber = c.GetUserDataNumber();
+			uint32_t userDataNumber = c.GetUserDataNumber();
 			uint8_t *userData = c.GetAllUserData();
 			if (userData != NULL && userDataNumber > 0) {
 				os << " - USER data:" <<  std::endl;
 				os << "\t· Type: " << c.MessageType() << std::endl;
 				os << "\t· Data: [";
-				for (uint i = 0; i < userDataNumber; i++)
-					os << " 0x" << hex << (uint)userData[i];
+				for (uint32_t i = 0; i < userDataNumber; i++)
+					os << " 0x" << hex << static_cast<uint32_t>(userData[i]);
 				os << " ]" << std::endl;
 				os.setf(ios::dec, ios::basefield);
 			} else os << "No user data available." << std::endl;
@@ -356,7 +356,7 @@ CoopObjectProxy::SendData(int nodeID, int sourceID, player_pose2d_t pos, int sta
 }
 
 void
-CoopObjectProxy::SendData(int nodeID, int sourceID, int extradata_type, uint extradata_size, unsigned char *extradata)
+CoopObjectProxy::SendData(int nodeID, int sourceID, int extradata_type, uint32_t extradata_size, unsigned char *extradata)
 {
 //  scoped_lock_t lock(mPc->mMutex);
   playerc_coopobject_send_data(mDevice, nodeID, GetProxyID(), extradata_type, extradata_size, extradata);
@@ -364,14 +364,14 @@ CoopObjectProxy::SendData(int nodeID, int sourceID, int extradata_type, uint ext
 }
 
 void
-CoopObjectProxy::SendCommand(int nodeID, int sourceID, int command, uint cmd_parameters_size, unsigned char *cmd_parameters)
+CoopObjectProxy::SendCommand(int nodeID, int sourceID, int command, uint32_t cmd_parameters_size, unsigned char *cmd_parameters)
 {
 //  scoped_lock_t lock(mPc->mMutex);
   playerc_coopobject_send_cmd(mDevice, nodeID, GetProxyID(), command, cmd_parameters_size, cmd_parameters);
 }
 
 void
-CoopObjectProxy::SendRequest(int nodeID, int sourceID, int request, uint req_parameters_size, unsigned char *req_parameters)
+CoopObjectProxy::SendRequest(int nodeID, int sourceID, int request, uint32_t req_parameters_size, unsigned char *req_parameters)
 {
 //  scoped_lock_t lock(mPc->mMutex);
   playerc_coopobject_send_req(mDevice, nodeID, GetProxyID(), request, req_parameters_size, req_parameters);

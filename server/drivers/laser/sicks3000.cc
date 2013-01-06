@@ -114,7 +114,7 @@ driver
 // 1 second of data at 500kbaud
 #define DEFAULT_RX_BUFFER_SIZE 500*1024/8
 
-#if defined (WIN32)
+#if defined (WIN32) && !defined (__MINGW32__)
   typedef unsigned int ssize_t;
 #endif
 

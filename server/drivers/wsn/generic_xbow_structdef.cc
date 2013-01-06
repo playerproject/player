@@ -55,15 +55,15 @@ namespace mote{
  };
  
  template<> char *defineStruct<player_coopobject_data_sensor_t>(const player_coopobject_data_sensor_t &obj){
-    uint n_elements = 5;
-    uint size = 2*obj.data_count;
+    uint32_t n_elements = 5;
+    uint32_t size = 2*obj.data_count;
     char *result = new char[n_elements+size+1+1];
     result[0] = 'b';
     result[1] = 's';
     result[2] = 's';
     result[3] = 'c';
     result[4] = 'p';
-    uint i = n_elements;
+    uint32_t i = n_elements;
     for (i = n_elements; i < size+n_elements; i+=2) {
       result[i] = 'b';
       result[i+1] = 's';
@@ -74,7 +74,7 @@ namespace mote{
   };
   
   template<> char *defineStruct<player_coopobject_data_userdefined_t>(const player_coopobject_data_userdefined_t &obj){
-    uint n_elements = 6;
+    uint32_t n_elements = 6;
     char *result = new char[n_elements+obj.data_count+1+1];
     result[0] = 'b';
     result[1] = 's';
@@ -82,7 +82,7 @@ namespace mote{
     result[3] = 'b';
     result[4] = 'c';
     result[5] = 'p';
-    uint i = n_elements;
+    uint32_t i = n_elements;
     for (i = n_elements; i < obj.data_count+n_elements; i++)
       result[i] = 'b';
     result[n_elements+obj.data_count] = 'r';
@@ -91,7 +91,7 @@ namespace mote{
   };
   
   template<> char *defineStruct<player_coopobject_req_t>(const player_coopobject_req_t &obj){
-    uint n_elements = 6;
+    uint32_t n_elements = 6;
     char *result = new char[n_elements+obj.parameters_count+1+1];
     result[0] = 'b';
     result[1] = 's';
@@ -99,7 +99,7 @@ namespace mote{
     result[3] = 'b';
     result[4] = 'c';
     result[5] = 'p';
-    uint i = n_elements;
+    uint32_t i = n_elements;
     for (i = n_elements; i < obj.parameters_count+n_elements; i++)
       result[i] = 'b';
     result[n_elements+obj.parameters_count] = 'r';
@@ -108,7 +108,7 @@ namespace mote{
   };
   
   template<> char *defineStruct<player_coopobject_cmd_t>(const player_coopobject_cmd_t &obj){
-    uint n_elements = 6;
+    uint32_t n_elements = 6;
     char *result = new char[n_elements+obj.parameters_count+1+1];
     result[0] = 'b';
     result[1] = 's';
@@ -116,7 +116,7 @@ namespace mote{
     result[3] = 'b';
     result[4] = 'c';
     result[5] = 'p';
-    uint i = n_elements;
+    uint32_t i = n_elements;
     for (i = n_elements; i < obj.parameters_count+n_elements; i++)
       result[i] = 'b';
     result[n_elements+obj.parameters_count] = 'r';
@@ -152,14 +152,14 @@ namespace mote{
     return def;
  };
   template<> char *defineStruct<SensorMsg>(const SensorMsg &obj){
-    uint n_elements = 5;
+    uint32_t n_elements = 5;
     char *result = new char[n_elements+2*obj.sensor_count+1+1];
     result[0] = 'b';
     result[1] = 's';
     result[2] = 's';
     result[3] = 'b';
     result[4] = 'p';
-    uint i = n_elements;
+    uint32_t i = n_elements;
     while (i < 2*obj.sensor_count+n_elements) {
       result[i++] = 'b';
       result[i++] = 's';
@@ -170,14 +170,14 @@ namespace mote{
   };
   
   template<> char *defineStruct<UserDataMsg>(const UserDataMsg &obj){
-    uint n_elements = 5;
+    uint32_t n_elements = 5;
     char *result = new char[n_elements+obj.data_size+1+1];
     result[0] = 'b';
     result[1] = 's';
     result[2] = 's';
     result[3] = 'b';
     result[4] = 'p';
-    uint i = n_elements;
+    uint32_t i = n_elements;
     while (i < obj.data_size+n_elements) {
       result[i++] = 'b';
     }
@@ -187,7 +187,7 @@ namespace mote{
   };
  
   template<> char *defineStruct<RequestMsg>(const RequestMsg &obj){
-    uint n_elements = 6;
+    uint32_t n_elements = 6;
     char *result = new char[n_elements+obj.parameters_size+1+1];
     result[0] = 'b';
     result[1] = 's';
@@ -195,7 +195,7 @@ namespace mote{
     result[3] = 'b';
     result[4] = 'b';
     result[5] = 'p';
-    uint i = n_elements;
+    uint32_t i = n_elements;
     while (i < obj.parameters_size+n_elements) {
       result[i++] = 'b';
     }
@@ -204,7 +204,7 @@ namespace mote{
     return result; 
   };
   template<> char *defineStruct<CommandMsg>(const CommandMsg &obj){
-    uint n_elements = 6;
+    uint32_t n_elements = 6;
     char *result = new char[n_elements+obj.parameters_size+1+1];
     result[0] = 'b';
     result[1] = 's';
@@ -212,7 +212,7 @@ namespace mote{
     result[3] = 'b';
     result[4] = 'b';
     result[5] = 'p';
-    uint i = n_elements;
+    uint32_t i = n_elements;
     while (i < obj.parameters_size+n_elements) {
       result[i++] = 'b';
     }

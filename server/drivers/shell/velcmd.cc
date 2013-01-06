@@ -112,6 +112,9 @@ driver
 #include <string.h> // for memset()
 #include <pthread.h>
 #include <libplayercore/playercore.h>
+#if !HAVE_NANOSLEEP
+  #include <replace/replace.h>
+#endif
 
 class VelCmd : public ThreadedDriver
 {

@@ -24,7 +24,7 @@
 #include <time.h>
 #if defined WIN32
   // For struct timeval
-  #include <Winsock2.h>
+  #include <winsock2.h>
 #else
   #include <sys/time.h>
 #endif

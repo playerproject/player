@@ -122,7 +122,7 @@ driver
 #include <math.h>
 #include <stdlib.h>       // for atoi(3)
 // needed for usleep, no unistd.h on windows.
-#if WIN32
+#if WIN32 && !__MINGW32__
 #include <replace/replace.h>
 #else
 #include <unistd.h>

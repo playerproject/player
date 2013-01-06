@@ -576,7 +576,7 @@ void GenericXBow::RefreshData () {
 	wsn_data.data_count = (uint32_t)(*(uint8_t *)(transparent_msg+indx));
 	indx += sizeof(uint8_t);
 	wsn_data.data = new player_coopobject_sensor_t[wsn_data.data_count];
-	for(uint i = 0; i < wsn_data.data_count; i++) {
+	for(uint32_t i = 0; i < wsn_data.data_count; i++) {
 	  wsn_data.data[i].type = *(uint8_t *)(transparent_msg+indx);
 	  indx += sizeof(uint8_t);
 	  wsn_data.data[i].value = *(int16_t *)(transparent_msg+indx);
@@ -585,7 +585,7 @@ void GenericXBow::RefreshData () {
 	
 	PLAYER_MSG1 (1,"> Received Sensor data from CoopObj %d", wsn_data.header.id);
 #ifdef debug
-	for(uint i = 0; i < wsn_data.data_count; i++)
+	for(uint32_t i = 0; i < wsn_data.data_count; i++)
 	  PLAYER_MSG2 (0,"                                       [%d] %d",wsn_data.data[i].type, wsn_data.data[i].value);
 #endif
         // Publish message
@@ -604,7 +604,7 @@ void GenericXBow::RefreshData () {
 	wsn_data.data_count = (uint32_t)(*(uint8_t *)(transparent_msg+indx));
 	indx += sizeof(uint8_t);
 	wsn_data.data = new player_coopobject_sensor_t[wsn_data.data_count];
-	for(uint i = 0; i < wsn_data.data_count; i++) {
+	for(uint32_t i = 0; i < wsn_data.data_count; i++) {
 	  wsn_data.data[i].type = *(uint8_t *)(transparent_msg+indx);
 	  indx += sizeof(uint8_t);
 	  wsn_data.data[i].value = *(int16_t *)(transparent_msg+indx);
@@ -613,7 +613,7 @@ void GenericXBow::RefreshData () {
 	
 	PLAYER_MSG1 (1,"> Received Alarm data from CoopObj %d", wsn_data.header.id);
 #ifdef debug
-	for(uint i = 0; i < wsn_data.data_count; i++)
+	for(uint32_t i = 0; i < wsn_data.data_count; i++)
 	  PLAYER_MSG2 (0,"                                       [%d] %d",wsn_data.data[i].type, wsn_data.data[i].value);
 #endif
         // Publish message
@@ -634,14 +634,14 @@ void GenericXBow::RefreshData () {
 	wsn_data.parameters_count = (uint32_t)(*(uint8_t *)(transparent_msg+indx));
 	indx += sizeof(uint8_t);
 	wsn_data.parameters = new uint8_t[wsn_data.parameters_count];
-	for(uint i = 0; i < wsn_data.parameters_count; i++) {
+	for(uint32_t i = 0; i < wsn_data.parameters_count; i++) {
 	  wsn_data.parameters[i] = *(uint8_t *)(transparent_msg+indx);
 	  indx += sizeof(uint8_t);
 	}
 	
 	PLAYER_MSG2 (1,"> Received Request %d from CoopObj %d", wsn_data.request, wsn_data.header.id);
  #ifdef debug
-	for(uint i = 0; i < wsn_data.parameters_count; i++)
+	for(uint32_t i = 0; i < wsn_data.parameters_count; i++)
 	  PLAYER_MSG2 (0,"                                        [%d] 0x%02x",i, wsn_data.parameters[i]);
 #endif
 	// Publish message
@@ -662,14 +662,14 @@ void GenericXBow::RefreshData () {
 	wsn_data.parameters_count = (uint32_t)(*(uint8_t *)(transparent_msg+indx));
 	indx += sizeof(uint8_t);
 	wsn_data.parameters = new uint8_t[wsn_data.parameters_count];
-	for(uint i = 0; i < wsn_data.parameters_count; i++) {
+	for(uint32_t i = 0; i < wsn_data.parameters_count; i++) {
 	  wsn_data.parameters[i] = *(uint8_t *)(transparent_msg+indx);
 	  indx += sizeof(uint8_t);
 	}
 	
 	PLAYER_MSG2 (1,"> Received Command %d from CoopObj %d", wsn_data.command, wsn_data.header.id);
  #ifdef debug
-	for(uint i = 0; i < wsn_data.parameters_count; i++)
+	for(uint32_t i = 0; i < wsn_data.parameters_count; i++)
 	  PLAYER_MSG2 (0,"                                        [%d] 0x%02x",i, wsn_data.parameters[i]);
 #endif
 	// Publish message
@@ -688,14 +688,14 @@ void GenericXBow::RefreshData () {
 	wsn_data.data_count = (uint32_t)(*(uint8_t *)(transparent_msg+indx));
 	indx += sizeof(uint8_t);
 	wsn_data.data = new uint8_t[wsn_data.data_count];
-	for(uint i = 0; i < wsn_data.data_count; i++) {
+	for(uint32_t i = 0; i < wsn_data.data_count; i++) {
 	  wsn_data.data[i] = *(uint8_t *)(transparent_msg+indx);
 	  indx += sizeof(uint8_t);
 	}
 	
 	PLAYER_MSG1 (1,"> Received User defined data from CoopObj %d", wsn_data.header.id);
  #ifdef debug
-	for(uint i = 0; i < wsn_data.data_count; i++)
+	for(uint32_t i = 0; i < wsn_data.data_count; i++)
 	  PLAYER_MSG2 (0,"                                       [%d] 0x%02x",i, wsn_data.data[i]);
 #endif
 	// Publish message
@@ -836,13 +836,13 @@ void GenericXBow::RefreshData () {
 	wsn_data.data_count = wsn_msg.sensor_count;
 	wsn_data.data = new player_coopobject_sensor_t[wsn_data.data_count];
 	
-	for(uint i = 0; i < wsn_data.data_count; i++) {
+	for(uint32_t i = 0; i < wsn_data.data_count; i++) {
 		wsn_data.data[i].type = wsn_msg.sensor[i].type;
 		wsn_data.data[i].value = wsn_msg.sensor[i].value;
 	}
 	PLAYER_MSG2 (1,"> Received %d sensors data from CoopObj %d", wsn_data.data_count, wsn_data.header.id);
  #ifdef debug
-	for(uint i = 0; i < wsn_data.data_count; i++)
+	for(uint32_t i = 0; i < wsn_data.data_count; i++)
 	  PLAYER_MSG2 (0,"                                       [%d] %d",wsn_data.data[i].type, wsn_data.data[i].value);
 #endif
 	// Publish message
@@ -871,13 +871,13 @@ void GenericXBow::RefreshData () {
 	wsn_data.data_count = wsn_msg.sensor_count;
 	wsn_data.data = new player_coopobject_sensor_t[wsn_data.data_count];
 	
-	for(uint i = 0; i < wsn_data.data_count; i++) {
+	for(uint32_t i = 0; i < wsn_data.data_count; i++) {
 		wsn_data.data[i].type = wsn_msg.sensor[i].type;
 		wsn_data.data[i].value = wsn_msg.sensor[i].value;
 	}
 	PLAYER_MSG2 (1,"> Received %d alarm data from CoopObj %d", wsn_data.data_count, wsn_data.header.id);
  #ifdef debug
-	for(uint i = 0; i < wsn_data.data_count; i++)
+	for(uint32_t i = 0; i < wsn_data.data_count; i++)
 	  PLAYER_MSG2 (0,"                                       [%d] %d",wsn_data.data[i].type, wsn_data.data[i].value);
 #endif
 	// Publish message
@@ -907,12 +907,12 @@ void GenericXBow::RefreshData () {
 	wsn_data.parameters_count = wsn_msg.parameters_size;
 	wsn_data.parameters = new uint8_t[wsn_data.parameters_count];
 	
-	for(uint i = 0; i < wsn_data.parameters_count; i++)
+	for(uint32_t i = 0; i < wsn_data.parameters_count; i++)
 		wsn_data.parameters[i] = wsn_msg.parameters[i];
 
 	PLAYER_MSG2 (1,"> Received Request %d from CoopObj %d", wsn_data.request, wsn_data.header.id);
  #ifdef debug
-	for(uint i = 0; i < wsn_data.parameters_count; i++)
+	for(uint32_t i = 0; i < wsn_data.parameters_count; i++)
 	  PLAYER_MSG2 (0,"                                        [%d] 0x%02x",i, wsn_data.parameters[i]);
 #endif
 	// Publish message
@@ -941,12 +941,12 @@ void GenericXBow::RefreshData () {
 	wsn_data.parameters_count = wsn_msg.parameters_size;
 	wsn_data.parameters = new uint8_t[wsn_data.parameters_count];
 	
-	for(uint i = 0; i < wsn_data.parameters_count; i++)
+	for(uint32_t i = 0; i < wsn_data.parameters_count; i++)
 		wsn_data.parameters[i] = wsn_msg.parameters[i];
 
 	PLAYER_MSG2 (1,"> Received Command %d from CoopObj %d", wsn_data.command, wsn_data.header.id);
  #ifdef debug
-	for(uint i = 0; i < wsn_data.parameters_count; i++)
+	for(uint32_t i = 0; i < wsn_data.parameters_count; i++)
 	  PLAYER_MSG2 (0,"                                        [%d] 0x%02x",i, wsn_data.parameters[i]);
 #endif
 	// Publish data
@@ -976,11 +976,11 @@ void GenericXBow::RefreshData () {
 	wsn_data.data_count = wsn_msg.data_size;
 	wsn_data.data = new uint8_t[wsn_data.data_count];
 	
-	for(uint i = 0; i < wsn_data.data_count; i++)
+	for(uint32_t i = 0; i < wsn_data.data_count; i++)
 		wsn_data.data[i] = wsn_msg.data[i];
 	PLAYER_MSG2 (1,"> Received User data %d from CoopObj %d", wsn_data.type, wsn_data.header.id);
  #ifdef debug
-	for(uint i = 0; i < wsn_data.data_count; i++)
+	for(uint32_t i = 0; i < wsn_data.data_count; i++)
 	  PLAYER_MSG2 (0,"                                       [%d] 0x%02x",i, wsn_data.data[i]);
 #endif
 	      // Publish message
@@ -1129,7 +1129,7 @@ PLAYER_MSG1(1,"GenericXBow::getData: data_def '%s'",data_def);
 #endif
       *(uint8_t **)(data+data_ind) = new uint8_t[array_size];
       uint8_t *array = *(uint8_t **)(data+data_ind);
-      for(uint j = 1; j <= array_nfields; j++) {
+      for(uint32_t j = 1; j <= array_nfields; j++) {
 	if(data_def[i+j]=='b') {  
 	  *((uint8_t *)array+array_ind) = *((uint8_t *)msg+msg_ind);
 #ifdef debug

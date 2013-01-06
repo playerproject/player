@@ -101,6 +101,9 @@ driver
 #if HAVE_JPEG
   #include <libplayerjpeg/playerjpeg.h>
 #endif
+#if !HAVE_NANOSLEEP
+  #include <replace/replace.h>
+#endif
 
 #define EPS 0.000001
 

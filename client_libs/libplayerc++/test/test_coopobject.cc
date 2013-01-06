@@ -24,6 +24,13 @@
  **************************************************************************/
 
 #include "test.h"
+#if !defined (WIN32) || defined (__MINGW32__)
+  #include <unistd.h>
+#endif
+
+#if !HAVE_USLEEP
+  #include <replace.h>
+#endif
 
 int test_coopobject(PlayerClient* client, int index)
 {
@@ -49,7 +56,7 @@ int test_coopobject(PlayerClient* client, int index)
 
 	delete cp;
 
-	sleep(10);
+	usleep(10000000);
 
 	std::cout << "Suscribing again\n" << std::endl;
 

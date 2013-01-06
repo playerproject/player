@@ -85,6 +85,9 @@ driver
 #include <string.h>
 #include <pthread.h>
 #include <libplayercore/playercore.h>
+#if !HAVE_NANOSLEEP
+  #include <replace/replace.h>
+#endif
 
 class Camerareq : public ThreadedDriver
 {

@@ -33,12 +33,15 @@ interfaces was later added by Toby Collett.
 #include <libplayercore/playercore.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#if !defined (WIN32)
+#if !defined (WIN32) || defined (__MINGW32__)
   #include <sys/time.h>
-  #include <termios.h>
   #include <strings.h>
   #include <unistd.h>
 #endif
+#if !defined (WIN32)
+  #include <termios.h>
+#endif
+
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -48,7 +51,7 @@ interfaces was later added by Toby Collett.
 #include <math.h>
 //#include <stdint.h>
 
-#if defined (WIN32)
+#if defined (WIN32) && !defined (__MINGW32__)
   typedef unsigned int ssize_t;
 #endif
 

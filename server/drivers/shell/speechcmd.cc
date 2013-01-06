@@ -84,6 +84,9 @@ driver
 #include <stdio.h>  // for snprintf()
 #include <pthread.h>
 #include <libplayercore/playercore.h>
+#if !HAVE_NANOSLEEP
+  #include <replace/replace.h>
+#endif
 
 #define MAX_MSG_LEN 255
 

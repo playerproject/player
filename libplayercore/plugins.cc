@@ -41,7 +41,7 @@
 #include <string.h>
 #include <stdlib.h>
 #if defined (WIN32)
-  #if defined (HAVE_SETDLLDIRECTORY)
+  #if defined (HAVE_SETDLLDIRECTORY) && !defined (__MINGW32__)
     #define _WIN32_WINNT 0x0502
   #endif
   #include <windows.h>
@@ -164,7 +164,7 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
   }
   else
   {
-#if defined (HAVE_SETDLLDIRECTORY)
+#if defined (HAVE_SETDLLDIRECTORY) && !defined (__MINGW32__)
     // Add the various search paths to the list
     // Start with $PLAYERPATH, if set
     char playerpath[PATH_MAX];
@@ -232,7 +232,7 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
       LPVOID buffer = NULL;
       FormatMessage( FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
                      GetLastError(), 0, reinterpret_cast<LPTSTR> (&buffer), 0, NULL );
-      PLAYER_ERROR2( "Failed to load plugin: %s\n", reinterpret_cast<LPTSTR> (buffer) );
+      PLAYER_ERROR1( "Failed to load plugin: %s\n", reinterpret_cast<LPTSTR> (buffer) );
       LocalFree( buffer );
       return NULL;
     }

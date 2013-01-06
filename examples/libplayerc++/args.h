@@ -30,7 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cstring>
 #include <libplayerc++/playerc++.h>
 #include <iostream>
-#if !defined (WIN32)
+#if !defined (WIN32) || defined (__MINGW32__)
   #include <unistd.h>
 #endif
 #if !HAVE_GETOPT

@@ -127,7 +127,7 @@ void playerc_camera_putmsg(playerc_camera_t *device, player_msghdr_t *header,
       if (device->image)
         memcpy(device->image, data->image, device->image_count);
       else
-        PLAYERC_ERR1("failed to allocate memory for image, needed %u bytes\n", sizeof(device->image[0])*device->image_count);
+        PLAYERC_ERR1("failed to allocate memory for image, needed %lu bytes\n", sizeof(device->image[0])*device->image_count);
     } else
     {
       if (device->image) free(device->image);
@@ -163,7 +163,7 @@ void playerc_camera_decompress(playerc_camera_t *device)
     if (device->image)
       memcpy(device->image, dst, dst_size);
     else
-      PLAYERC_ERR1("failed to allocate memory for image, needed %u bytes\n", (sizeof device->image[0]) * device->image_count);
+      PLAYERC_ERR1("failed to allocate memory for image, needed %lu bytes\n", (sizeof device->image[0]) * device->image_count);
     free(dst);
 
     // Pixels are now raw
@@ -290,7 +290,7 @@ playerc_camera_get_image(playerc_camera_t *device)
     if (device->image)
       memcpy(device->image, data->image, device->image_count);
     else
-      PLAYERC_ERR1("failed to allocate memory for image, needed %u bytes\n", (sizeof device->image[0]) * device->image_count);
+      PLAYERC_ERR1("failed to allocate memory for image, needed %lu bytes\n", (sizeof device->image[0]) * device->image_count);
   } else
   {
     if (device->image) free(device->image);

@@ -82,6 +82,9 @@ driver
 #include <strings.h> // for strcasecmp()
 #endif
 #include <pthread.h>
+#if !HAVE_NANOSLEEP
+  #include <replace/replace.h>
+#endif
 
 class GripCmd : public ThreadedDriver
 {

@@ -1280,6 +1280,7 @@ void Powershot::Main()
       {
         if (this->imgData.image) free(this->imgData.image);
         this->imgData.image_count = 0;
+        this->imgData.image = NULL;
         continue;
       }
       if (!(IS_JPEG(this->imgData.image)))
@@ -1411,7 +1412,7 @@ void Powershot::Main()
       if (i != nblocks)
       {
         PLAYER_ERROR("cannot get image (ptp_canon_getpartialobject)");
-        free(this->imgData.image);
+        if (this->imgData.image) free(this->imgData.image);
         this->imgData.image_count = 0;
         this->imgData.image = NULL;
         continue;
@@ -1425,7 +1426,7 @@ void Powershot::Main()
           if (image) free(image);
           image = NULL;
           PLAYER_ERROR("cannot get image tail (ptp_canon_getpartialobject)");
-          free(this->imgData.image);
+          if (this->imgData.image) free(this->imgData.image);
           this->imgData.image_count = 0;
           this->imgData.image = NULL;
           continue;
@@ -1433,7 +1434,7 @@ void Powershot::Main()
         if (!image)
         {
           PLAYER_ERROR("cannot get image tail (NULL image)");
-          free(this->imgData.image);
+          if (this->imgData.image) free(this->imgData.image);
           this->imgData.image_count = 0;
           this->imgData.image = NULL;
           continue;
@@ -1443,7 +1444,7 @@ void Powershot::Main()
           PLAYER_ERROR("cannot get image tail (wrong chunk size)");
           free(image);
           image = NULL;
-          free(this->imgData.image);
+          if (this->imgData.image) free(this->imgData.image);
           this->imgData.image_count = 0;
           this->imgData.image = NULL;
           continue;
@@ -1457,14 +1458,14 @@ void Powershot::Main()
       if (!(IS_JPEG(this->imgData.image)))
       {
         PLAYER_ERROR("not a JPEG image");
-        free(this->imgData.image);
+        if (this->imgData.image) free(this->imgData.image);
         this->imgData.image_count = 0;
         this->imgData.image = NULL;
         continue;
       }
       if (Powershot::image_size_from_exif(&(this->imgData)))
       {
-        free(this->imgData.image);
+        if (this->imgData.image) free(this->imgData.image);
         this->imgData.image_count = 0;
         this->imgData.image = NULL;
         continue;

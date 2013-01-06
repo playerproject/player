@@ -61,7 +61,10 @@
 
 #if defined WIN32
   // For struct timeval
-  #include <Winsock2.h>
+  #include <winsock2.h>
+  #if defined __MINGW32__
+  #include <sys/time.h>
+  #endif
 #else
   #include <sys/time.h>
 #endif

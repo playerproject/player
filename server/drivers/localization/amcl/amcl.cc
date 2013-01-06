@@ -286,7 +286,7 @@ changed to match your particular configuration.
 #include <math.h>
 #include <stdlib.h>       // for atoi(3)
 #include <sys/types.h>
-#if !defined (WIN32)
+#if !defined (WIN32) || defined (__MINGW32__)
   #include <unistd.h>
   #include <sys/time.h>
 #endif
@@ -295,7 +295,9 @@ changed to match your particular configuration.
 #define PLAYER_ENABLE_MSG 1
 
 #include <libplayercore/playercore.h>
-
+#if !HAVE_NANOSLEEP
+  #include <replace/replace.h>
+#endif
 #include "amcl.h"
 // Sensors
 #include "amcl_odom.h"
