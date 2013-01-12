@@ -64,6 +64,9 @@ ELSE (NOT PKG_CONFIG_FOUND)
     ENDIF (PLAYERCORE_PKG_LDFLAGS_OTHER)
 ENDIF (NOT PKG_CONFIG_FOUND)
 
+# Set Player's global plugin directory so third parties can drop their plugins
+# there when installing system-wide
+SET(PLAYER_PLUGIN_INSTALL_DIR "@CMAKE_INSTALL_PREFIX@/@PLAYER_PLUGIN_INSTALL_DIR@")
 
 # This is slightly different from the one used by the Player build system itself.
 # It takes a single file instead of a directory. It also expects playerinterfacegen.py
