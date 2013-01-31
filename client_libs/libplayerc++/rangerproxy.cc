@@ -85,35 +85,35 @@ void RangerProxy::Unsubscribe()
 
 player_pose3d_t RangerProxy::GetElementPose(uint32_t aIndex) const
 {
-  if (aIndex > mDevice->element_count)
+  if (aIndex >= mDevice->element_count)
     throw PlayerError("RangerProxy::GetSensorPose", "index out of bounds");
   return GetVar(mDevice->element_poses[aIndex]);
 }
 
 player_bbox3d_t RangerProxy::GetElementSize(uint32_t aIndex) const
 {
-  if (aIndex > mDevice->element_count)
+  if (aIndex >= mDevice->element_count)
     throw PlayerError("RangerProxy::GetSensorSize", "index out of bounds");
   return GetVar(mDevice->element_sizes[aIndex]);
 }
 
 double RangerProxy::GetRange(uint32_t aIndex) const
 {
-  if (aIndex > mDevice->ranges_count)
+  if (aIndex >= mDevice->ranges_count)
     throw PlayerError("RangerProxy::GetRange", "index out of bounds");
   return GetVar(mDevice->ranges[aIndex]);
 }
 
 player_point_3d_t RangerProxy::GetPoint(uint32_t aIndex) const
 {
-  if (aIndex > mDevice->points_count)
+  if (aIndex >= mDevice->points_count)
     throw PlayerError("RangerProxy::GetPoint", "index out of bounds");
   return GetVar(mDevice->points[aIndex]);
 }
 
 double RangerProxy::GetIntensity(uint32_t aIndex) const
 {
-  if (aIndex > mDevice->intensities_count)
+  if (aIndex >= mDevice->intensities_count)
     throw PlayerError("RangerProxy::GetIntensity", "index out of bounds");
   return GetVar(mDevice->intensities[aIndex]);
 }
