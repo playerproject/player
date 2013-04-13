@@ -60,7 +60,7 @@ logfile_t *logfile_alloc(const char *filename)
 void logfile_free(logfile_t *self)
 {
   fclose(self->file);
-  delete self->line;
+  delete [] self->line;
   delete self;
 }
 

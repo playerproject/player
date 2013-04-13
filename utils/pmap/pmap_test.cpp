@@ -925,7 +925,7 @@ int main(int argc, char **argv)
   // Create omap handle
   omap = omap_alloc(laser_range_count, laser_range_max, laser_angle_min, laser_angle_step,
                       opt_grid_width, opt_grid_height, opt_grid_scale); 
-  if (!rmap)
+  if (!omap)
     return -1;
 
   gettimeofday(&tv_a, NULL);
