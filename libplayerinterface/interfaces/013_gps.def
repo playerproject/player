@@ -29,6 +29,11 @@ typedef struct player_gps_data
   /** Altitude, in millimeters.  Positive is above reference (e.g.,
       sea-level), and negative is below. */
   int32_t altitude;
+  /** Speed over ground, in meters/second . */
+  double speed;
+  /** Course made good (heading if the robot moves along its longitudinal
+   * axis), in radians. */
+  double course;
   /** UTM WGS84 coordinates, easting [m] */
   double utm_e;
   /** UTM WGS84 coordinates, northing [m] */

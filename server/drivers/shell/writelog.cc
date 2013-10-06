@@ -3010,6 +3010,8 @@ The format for each @ref interface_gps message is:
   - err_vert (float): vertical error, in meters
   - quality (int): quality of fix (0 = invalid, 1 = GPS fix, 2 = DGPS fix)
   - num_sats (int): number of satellites in view
+  - speed (float): in meters per second
+  - course made good (float): in radians 
 */
 int WriteLog::WriteGps(player_msghdr_t* hdr, void *data)
 {
@@ -3023,6 +3025,7 @@ int WriteLog::WriteGps(player_msghdr_t* hdr, void *data)
 				"%.3f %.3f "
 				"%.3f %.3f %.3f %.3f "
 				"%d %d",
+				"%.3f %.3f",
 				(double)gdata->time_sec +
 				(double)gdata->time_sec * 1e-6,
 				(double)gdata->latitude / (1e7),
@@ -3035,7 +3038,9 @@ int WriteLog::WriteGps(player_msghdr_t* hdr, void *data)
 				gdata->err_horz,
 				gdata->err_vert,
 				gdata->quality,
-				gdata->num_sats);
+				gdata->num_sats,
+				(double)gdata->speed,
+				(double)gdata->course);
 			return (0);
 		default:
 			return (-1);

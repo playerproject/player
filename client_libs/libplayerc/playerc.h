@@ -1755,6 +1755,13 @@ typedef struct
       below. */
   double alt;
 
+  /** Speed over ground, in m/s. */
+  double speed;
+
+  /** Course made good (heading if the robot moves along its longitudinal
+   * axis), in radians. */
+  double course;
+
   /** UTM easting and northing (meters). */
   double utm_e, utm_n;
 

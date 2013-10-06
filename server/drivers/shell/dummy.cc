@@ -356,6 +356,8 @@ void Dummy::Main(void)
                 data.latitude = 1e7;
                 data.longitude = 1e7;
                 data.altitude = 1e3;
+                data.course = 10;
+                data.speed = 5;
                 data.utm_e = 10.0;
                 data.utm_n = 10.0;
                 data.quality = 2;
