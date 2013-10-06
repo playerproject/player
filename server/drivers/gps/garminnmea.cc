@@ -846,7 +846,7 @@ GarminNMEA::ParseSentence(const char* buf)
   if(!strcmp(tmp,NMEA_GPGGA))
     ParseGPGGA(ptr);
 
-  // the RMC msg has the date and time
+  // the RMC msg has the date, time, speed and course
   if(!strcmp(tmp,NMEA_GPRMC))
     ParseGPRMC(ptr);
 
@@ -994,7 +994,7 @@ int GarminNMEA::ParseGPGGA(const char *buf)
 
 
 /*
- * Parse the GPRMC sentence, which has date/time
+ * Parse the GPRMC sentence, which has date/time and speed and course.
  */
 int GarminNMEA::ParseGPRMC(const char *buf)
 {
@@ -1002,6 +1002,7 @@ int GarminNMEA::ParseGPRMC(const char *buf)
   char field[32];
   char tmp[8];
   struct tm tms;
+  int usec;
   time_t utc;
   static bool short_time_field = 0;
 
@@ -1010,6 +1011,7 @@ int GarminNMEA::ParseGPRMC(const char *buf)
 
   memset(&tms, 0, sizeof(tms));
 
+  // Time
   if(!(ptr = GetNextField(field, sizeof(field), ptr)))
     return(-1);
 
@@ -1040,20 +1042,67 @@ int GarminNMEA::ParseGPRMC(const char *buf)
   tmp[2]='\0';
   tms.tm_sec = atoi(tmp);
 
+  // Let's see if we have finer grained timing info.
+  if (strlen(field) > 6)
+  {
+     // field + 6 is '.', field + 7... is fractions of seconds.
+     int length = strlen(field) - 7;
+     if (length > 6)
+        length = 6; // At most microseconds.
+     strncpy(tmp, field + 7, length);
+     tmp[length] = '\0';
+     usec = atoi(tmp) * pow(10, 6 - length);
+  }
+  else
+  {
+     usec = 0;
+  }
+
+  // Validity
   if(!(ptr = GetNextField(field, sizeof(field), ptr)))
     return(-1);
+  // Latitude
   if(!(ptr = GetNextField(field, sizeof(field), ptr)))
     return(-1);
+  // North / south
   if(!(ptr = GetNextField(field, sizeof(field), ptr)))
     return(-1);
+  // Longitude
   if(!(ptr = GetNextField(field, sizeof(field), ptr)))
     return(-1);
+  // East / west
   if(!(ptr = GetNextField(field, sizeof(field), ptr)))
     return(-1);
+
+  // Speed
   if(!(ptr = GetNextField(field, sizeof(field), ptr)))
     return(-1);
+
+  if (strlen(field) == 0)
+  {
+     PLAYER_WARN("No speed information in string; ignoring");
+//      return -1;
+  }
+  else
+  {
+     data.speed = atof(field) * 0.51444; // knots to m/sec
+  }
+
+  // Course
   if(!(ptr = GetNextField(field, sizeof(field), ptr)))
     return(-1);
+
+  if (strlen(field) == 0)
+  {
+     PLAYER_WARN("No course information in string; ignoring");
+//      return -1;
+  }
+  else
+  {
+     data.course = atof(field) * M_PI / 180.0; // degrees to radians
+  }
+
+  // Date
   if(!(ptr = GetNextField(field, sizeof(field), ptr)))
     return(-1);
 
@@ -1081,11 +1130,12 @@ int GarminNMEA::ParseGPRMC(const char *buf)
   //       tms.tm_hour, tms.tm_min, tms.tm_sec);
 
   // Compute to time since the epoch.  We only get it to the nearest
-  // second, unfortunately.
+  // second, but microseconds possibly extracted from RMC string if it
+  // contains it.
   utc = mktime(&tms);
 
   data.time_sec = (uint32_t) utc;
-  data.time_usec = (uint32_t) 0;
+  data.time_usec = (uint32_t) usec;
 
   /* Dont write here
   // Need to parse to sentences before write data

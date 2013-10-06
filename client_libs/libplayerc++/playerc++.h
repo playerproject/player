@@ -876,6 +876,13 @@ class PLAYERCC_EXPORT GpsProxy : public ClientProxy
     /// Altitude, in meters.
     double GetAltitude() const { return GetVar(mDevice->alt); };
 
+    /// Spped over ground, in m/s.
+    double GetSpeed() const { return GetVar(mDevice->speed); };
+
+    /** Course made good (heading if the robot moves along its longitudinal
+     * axis), in radians. */
+    double GetCourse() const { return GetVar(mDevice->course); };
+
     /// Number of satellites in view.
     uint32_t GetSatellites() const { return GetVar(mDevice->sat_count); };
 

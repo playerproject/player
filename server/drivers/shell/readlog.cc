@@ -1689,6 +1689,14 @@ int ReadLog::ParseGps(player_devaddr_t id,
   data.quality = atoi(tokens[17]);
   data.num_sats = atoi(tokens[18]);
 
+  // Read in course and heading, while staying backwards compatible with
+  // player 3.0
+  if (token_count == 21)
+  {
+    data.speed = atof(tokens[19]);
+    data.course = atof(tokens[20]);
+  }
+  
   this->Publish(id,type,subtype, (void*) &data, sizeof(data), &time);
 
   return 0;
