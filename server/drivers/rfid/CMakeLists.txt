@@ -17,8 +17,12 @@ ELSE (HAVE_PHIDGET)
   PLAYERDRIVER_OPTION (phidgetAcc build_phidgetRFID OFF "Could not find libphidget")
 ENDIF (HAVE_PHIDGET)
 
+IF (HAVE_PHIDGET_2_1_8)
+  SET (phidgetRFIDCFlags "${phidgetCFlags} -DHAVE_PHIDGET_2_1_8")
+ENDIF (HAVE_PHIDGET_2_1_8)
+
 PLAYERDRIVER_ADD_DRIVER (phidgetRFID build_phidgetRFID
-    LINKFLAGS ${phidgetLinkFlags} CFLAGS "${phidgetCFlags}"
+    LINKFLAGS ${phidgetLinkFlags} CFLAGS "${phidgetRFIDCFlags}"
     SOURCES phidgetRFID.cc)
 
 PLAYERDRIVER_OPTION (acr120u build_acr120u ON)
