@@ -1099,7 +1099,12 @@ int GarminNMEA::ParseGPRMC(const char *buf)
   }
   else
   {
-     data.course = atof(field) * M_PI / 180.0; // degrees to radians
+     float course = atof(field) * M_PI / 180.0; // degrees to radians
+     course = (2.0 * M_PI - course) + M_PI/2.0; // Convert from NED to ENU
+     if (course > M_PI) {
+        course = course - 2.0 * M_PI;           // Constrain betwen +/- pi
+     }
+     data.course = course;
   }
 
   // Date
