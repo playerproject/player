@@ -93,6 +93,8 @@ or sector_angle.
     obstacles
   - @ref interface_sonar : the sonar that will be used to avoid
     obstacles
+  - @ref interface_ranger : the ranger that will be used to avoid
+    obstacles
 
 - @todo : add support for getting the robot's true global pose via the
   @ref interface_simulation interface
@@ -280,8 +282,11 @@ class VFH_Class : public ThreadedDriver
     int ShutdownLaser();
     int SetupSonar();
     int ShutdownSonar();
+    int SetupRanger();
+    int ShutdownRanger();
     void ProcessLaser(player_laser_data_t &);
     void ProcessSonar(player_sonar_data_t &);
+    void ProcessRanger(player_ranger_data_range_t &);
 
     // Send commands to underlying position device
     void PutCommand( int speed, int turnrate );
@@ -330,6 +335,12 @@ class VFH_Class : public ThreadedDriver
     player_devaddr_t sonar_addr;
     int num_sonars;
     player_pose3d_t * sonar_poses;
+    
+    // Ranger device info
+    Device *ranger;
+    player_devaddr_t ranger_addr;
+    int num_rangers;
+    player_pose3d_t * ranger_poses;
 
     // Laser range and bearing values
     int laser_count;
@@ -397,10 +408,12 @@ int VFH_Class::Setup()
   if (this->SetupOdom() != 0)
     return -1;
 
-  // Initialise the laser.
+  // Initialise the laser/sonar/ranger.
   if (this->laser_addr.interf && this->SetupLaser() != 0)
     return -1;
   if (this->sonar_addr.interf && this->SetupSonar() != 0)
+    return -1;
+  if (this->ranger_addr.interf && this->SetupRanger() != 0)
     return -1;
 
   // initialize some navigation state
@@ -430,6 +443,10 @@ int VFH_Class::Shutdown()
   // Stop the sonar
   if(this->sonar)
     this->ShutdownSonar();
+  
+  // Stop the ranger
+  if(this->ranger)
+    this->ShutdownRanger();
 
   // Stop the odom device.
   this->ShutdownOdom();
@@ -572,6 +589,50 @@ int VFH_Class::SetupSonar()
   return 0;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Set up the ranger
+int VFH_Class::SetupRanger()
+{
+  if(!(this->ranger = deviceTable->GetDevice(this->ranger_addr)))
+  {
+    PLAYER_ERROR("unable to locate suitable ranger device");
+    return -1;
+  }
+  if (this->ranger->Subscribe(this->InQueue) != 0)
+  {
+    PLAYER_ERROR("unable to subscribe to ranger device");
+    return -1;
+  }
+
+  player_ranger_geom_t* cfg;
+  Message* msg;
+
+  // Get the ranger poses
+  if(!(msg = this->ranger->Request(this->InQueue,
+                                   PLAYER_MSGTYPE_REQ,
+                                   PLAYER_RANGER_REQ_GET_GEOM,
+                                   NULL, 0, NULL,false)))
+  {
+    PLAYER_ERROR("failed to get ranger geometry");
+    return(-1);
+  }
+
+  // Store the ranger poses
+  cfg = (player_ranger_geom_t*)msg->GetPayload();
+  this->num_rangers = cfg->element_poses_count;
+  this->ranger_poses = new player_pose3d_t[num_rangers];
+  for(int i=0;i<this->num_rangers;i++)
+  {
+    this->ranger_poses[i] = cfg->element_poses[i];
+  }
+
+  delete msg;
+
+  this->laser_count = 0;
+  //this->laser_ranges = NULL;
+  return 0;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shut down the laser
@@ -592,6 +653,18 @@ int VFH_Class::ShutdownSonar()
   //laser_ranges = NULL;
   delete [] sonar_poses;
   sonar_poses = NULL;
+  return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Shut down the ranger
+int VFH_Class::ShutdownRanger()
+{
+  this->ranger->Unsubscribe(this->InQueue);
+  //delete [] laser_ranges;
+  //laser_ranges = NULL;
+  delete [] ranger_poses;
+  ranger_poses = NULL;
   return 0;
 }
 
@@ -723,6 +796,57 @@ VFH_Class::ProcessSonar(player_sonar_data_t &data)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Process new ranger data, in a very crude way.
+void
+VFH_Class::ProcessRanger(player_ranger_data_range_t &data)
+{
+  int i;
+  double b, r;
+  double cone_width = 50.0;  // TODO take the cone with from ranger configuration
+  int count = 361;
+  float rangerDistToCenter = 0.0;
+
+  this->laser_count = count;
+  //if (!laser_ranges)
+	  //this->laser_ranges = new double[laser_count][2];
+
+  for(i = 0; i < laser_count; i++)
+    this->laser_ranges[i][0] = -1;
+
+  //b += 90.0;
+  for(i = 0; i < (int)data.ranges_count; i++)
+  {
+    for(b = RTOD(this->ranger_poses[i].pyaw) + 90.0 - cone_width/2.0;
+        b < RTOD(this->ranger_poses[i].pyaw) + 90.0 + cone_width/2.0;
+        b+=0.5)
+    {
+      if((b < 0) || (rint(b*2) >= count))
+        continue;
+      // Rangers give distance readings from the perimeter of the robot while lasers give distance
+      // from the laser; hence, typically the distance from a single point, like the center.
+      // Since this version of the VFH+ algorithm was written for lasers and we pass the algorithm
+      // laser ranges, we must make the ranger readings appear like laser ranges. To do this, we take
+      // into account the offset of a ranger's geometry from the center. Simply add the distance from
+      // the center of the robot to each device to the ranger's distance reading.
+      rangerDistToCenter = static_cast<float> (sqrt(pow(this->ranger_poses[i].px,2) + pow(this->ranger_poses[i].py,2)));
+      this->laser_ranges[(int)rint(b * 2)][0] = (rangerDistToCenter + data.ranges[i]) * 1e3;
+      this->laser_ranges[(int)rint(b * 2)][1] = b;
+    }
+  }
+
+  r = 1000000.0;
+  for (i = 0; i < laser_count; i++)
+  {
+    if (this->laser_ranges[i][0] != -1) {
+      r = this->laser_ranges[i][0];
+    } else {
+      this->laser_ranges[i][0] = r;
+    }
+  }
+  r = 1000000.0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Send commands to the underlying position device
 void
 VFH_Class::PutCommand( int cmd_speed, int cmd_turnrate )
@@ -794,6 +918,12 @@ int VFH_Class::ProcessMessage(QueuePointer & resp_queue,
     // It's not always that big...
     //assert(hdr->size == sizeof(player_laser_data_t));
     ProcessSonar(*reinterpret_cast<player_sonar_data_t *> (data));
+    return 0;
+  }
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA,
+                                PLAYER_RANGER_DATA_RANGE, this->ranger_addr))
+  {
+    ProcessRanger(*reinterpret_cast<player_ranger_data_range_t *> (data));
     return 0;
   }
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD,
@@ -1221,11 +1351,17 @@ VFH_Class::VFH_Class( ConfigFile* cf, int section)
   memset(&this->sonar_addr,0,sizeof(player_devaddr_t));
   cf->ReadDeviceAddr(&this->sonar_addr, section, "requires",
                      PLAYER_SONAR_CODE, -1, NULL);
+  this->ranger = NULL;
+  memset(&this->ranger_addr,0,sizeof(player_devaddr_t));
+  cf->ReadDeviceAddr(&this->ranger_addr, section, "requires",
+                     PLAYER_RANGER_CODE, -1, NULL);
 
-  if((!this->laser_addr.interf && !this->sonar_addr.interf) ||
-     (this->laser_addr.interf && this->sonar_addr.interf))
+  if((!this->laser_addr.interf && !this->sonar_addr.interf && !this->ranger_addr.interf) ||
+     (this->laser_addr.interf && this->sonar_addr.interf)  ||
+     (this->laser_addr.interf && this->ranger_addr.interf) ||
+     (this->sonar_addr.interf && this->ranger_addr.interf))
   {
-    PLAYER_ERROR("vfh needs exactly one sonar or one laser");
+    PLAYER_ERROR("vfh needs exactly one ranger, one sonar or one laser");
     this->SetError(-1);
     return;
   }
@@ -1276,4 +1412,3 @@ VFH_Class::angle_diff(double a, double b)
   else
     return(RTOD(d2));
 }
-
