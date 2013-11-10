@@ -277,6 +277,11 @@ IF (HAVE_PHIDGET_H)
     CPhidgetInterfaceKit_create(&ifk);
     CPhidgetInterfaceKit_getOutputCount(ifk, &phidget_num_outputs); return 0; }\n")
     CHECK_C_SOURCE_COMPILES ("${CHECK_PHIDGET_SOURCE_CODE}" HAVE_PHIDGET_2_1_7)
+
+    SET(CMAKE_REQUIRED_FLAGS "${phidgetCFlags} ${phidgetLinkFlags} -lphidget21")
+    SET(CHECK_PHIDGET_SOURCE_CODE_218 "#include <phidget21.h>\n int main ()
+    {CPhidgetRFIDHandle handle; CPhidgetRFID_set_OnTag2_Handler(handle,0,0);}")
+    CHECK_C_SOURCE_COMPILES("${CHECK_PHIDGET_SOURCE_CODE_218}" HAVE_PHIDGET_2_1_8) 
 ENDIF (HAVE_PHIDGET_H)
 
 IF (HAVE_PHIDGET_H)
