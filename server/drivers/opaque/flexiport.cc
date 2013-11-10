@@ -159,7 +159,7 @@ int Flexiport::CreatePort (void)
 		_port = flexiport::CreatePort (_portOptions.GetValue ());
 		_port->Open ();
 	}
-	catch (flexiport::PortException e)
+	catch (flexiport::PortException & e)
 	{
 		PLAYER_ERROR1 ("flexiport: Failed to create port instance: %s", e.what ());
 		return 1;
@@ -250,7 +250,7 @@ int Flexiport::ProcessMessage (QueuePointer &respQueue, player_msghdr *hdr, void
 								recv->data_count);
 			}
 		}
-		catch (flexiport::PortException e)
+		catch (flexiport::PortException & e)
 		{
 			PLAYER_ERROR1 ("flexiport: Error writing to port: %s", e.what ());
 		}
