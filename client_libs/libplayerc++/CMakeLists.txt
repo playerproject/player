@@ -33,7 +33,7 @@ IF (BUILD_PLAYERCC)
             MARK_AS_ADVANCED (USE_BOOST_SIGNALS)
 
             IF (USE_BOOST_THREAD)
-                SET (BOOST_COMPONENTS thread)
+                SET (BOOST_COMPONENTS thread system)
             ELSE (USE_BOOST_THREAD)
                 SET (HAVE_BOOST_THREAD FALSE CACHE INTERNAL "Is the Boost::Thread library present")
             ENDIF (USE_BOOST_THREAD)
@@ -48,10 +48,20 @@ IF (BUILD_PLAYERCC)
                 PLAYERCC_ADD_LINK_DIR (${Boost_LIBRARY_DIRS})
 
                 IF (Boost_THREAD_FOUND)
+                    # Thread Library
                     GET_FILENAME_COMPONENT (boostThreadLib "${Boost_THREAD_LIBRARY}" NAME_WE CACHE)
                     # Chop off the lib at the front, too, if present
                     STRING (REGEX REPLACE "^lib" "" boostThreadLib ${boostThreadLib})
                     PLAYERCC_ADD_LINK_LIB (${boostThreadLib})
+
+                    # System Library
+                    if (Boost_SYSTEM_FOUND AND Boost_VERSION GREATER 104900)
+                        GET_FILENAME_COMPONENT (boostSystemLib ${Boost_SYSTEM_LIBRARY} NAME_WE CACHE)
+                        # Chop off the lib at the front, too, if present
+                        STRING (REGEX REPLACE "^lib" "" boostSystemLib ${boostSystemLib})
+                        PLAYERCC_ADD_LINK_LIB (${boostSystemLib})
+                    ENDIF (Boost_SYSTEM_FOUND AND Boost_VERSION GREATER 104900) 
+
                     SET (boostIncludeDir ${Boost_INCLUDE_DIR})
                     SET (HAVE_BOOST_THREAD TRUE CACHE INTERNAL "Is the Boost::Thread library present")
                     MESSAGE (STATUS
@@ -107,6 +117,10 @@ IF (BUILD_PLAYERCC)
                         PLAYERCC_ADD_INCLUDE_DIR (${Boost_INCLUDE_DIR})
                         PLAYERCC_ADD_LINK_DIR (${Boost_LIBRARY_DIRS})
                         SET (boostIncludeDir ${Boost_INCLUDE_DIRS})
+                        IF (Boost_VERSION GREATER 104900)
+                            SET (boostSystemLib boost_system${BOOST_LIB_SUFFIX})
+                            PLAYERCC_ADD_LINK_LIB(${boostSystemLib})
+                        ENDIF (Boost_VERSION GREATER 104900)
                     ELSE (USE_BOOST_THREAD)
                         SET (HAVE_BOOST_THREAD FALSE)
                         MESSAGE (STATUS
