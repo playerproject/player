@@ -23,18 +23,18 @@
 #include "sub_opt.hh"
 
 
-void CalculateEstimationEIFnn(Matrix Fk, Matrix Nk, Matrix &x, Matrix &P){
+void CalculateEstimationEIFnn(MatrixXd Fk, MatrixXd Nk, MatrixXd &x, MatrixXd &P){
 
-	P = !Fk;
+	P = Fk.inverse();
 	x = P * Nk;
 
-	for (unsigned int i = 0; i < x.RowNo(); i++)
+	for (unsigned int i = 0; i < x.rows(); i++)
 		x(i,0) *= -1;
 }
 
-void EIFnn(Matrix H, Matrix G, Matrix h, Matrix S, Matrix &F, Matrix &N){
+void EIFnn(MatrixXd H, MatrixXd G, MatrixXd h, MatrixXd S, MatrixXd &F, MatrixXd &N){
 
-	Matrix R = ~H * !(G * S * ~G);
+	MatrixXd R = H.transpose() * (G * S * G.transpose()).inverse();
 
 	F = R * H;
 	N = R * h;

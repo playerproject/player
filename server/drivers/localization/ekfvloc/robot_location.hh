@@ -53,7 +53,7 @@ public:
 	void PrintState() const;
 
 	Pose   EstimatedPose(void) const;
-	Matrix Covariance(void) const;
+	MatrixXd Covariance(void) const;
 
     // Constants
     const double odom_noise_x_;

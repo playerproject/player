@@ -20,33 +20,34 @@
  */
 
 #include "uloc.hh"
+#include <iostream>
 
 Uloc::Uloc(GeometricEntityKinds ge) {
     // TODO Auto-generated constructor stub
     x_ = Transf();
     entity = ge;
     if (ge == POINT) {
-        b_ = Matrix(2, 3);
+        b_ = MatrixXd(2, 3);
         b_(0, 0) = 1;
         b_(1, 1) = 1;
-        p_ = Matrix(2, 1);
-        c_ = Matrix(2, 2);
+        p_ = MatrixXd(2, 1);
+        c_ = MatrixXd(2, 2);
     }
     else if (ge == EDGE) {
-        b_ = Matrix(2, 3);
+        b_ = MatrixXd(2, 3);
         b_(0, 1) = 1;
         b_(1, 2) = 1;
-        p_ = Matrix(2, 1);
-        c_ = Matrix(2, 2);
+        p_ = MatrixXd(2, 1);
+        c_ = MatrixXd(2, 2);
     }
     else if (ge == ROBOT) {
-        b_ = Matrix(3, 3);
-        b_.Unit();
-        p_ = Matrix(3, 1);
-        c_ = Matrix(3, 3);
+        b_ = MatrixXd(3, 3);
+        b_.setIdentity();
+        p_ = MatrixXd(3, 1);
+        c_ = MatrixXd(3, 3);
     }
     else {
-        cerr << "Uloc: Undefined entity name\n";
+        std::cerr << "Uloc: Undefined entity name\n";
         exit(1);
     }
 }
@@ -63,21 +64,21 @@ void Uloc::SetLoc(Transf loc) {
     x_ = loc;
 }
 
-void Uloc::SetPert(Matrix pert) {
+void Uloc::SetPert(MatrixXd pert) {
     p_ = pert;
 }
 
-void Uloc::SetBind(Matrix bind) {
+void Uloc::SetBind(MatrixXd bind) {
     b_ = bind;
 }
 
-void Uloc::SetCov(Matrix cov) {
+void Uloc::SetCov(MatrixXd cov) {
     c_ = cov;
 }
 
 Transf Uloc::DifferentialLocation() {
     // Returns the differential location vector of the uncertain location.
-    Matrix df = ~b_ * p_;
+    MatrixXd df = b_.transpose() * p_;
     return Transf(df);
 }
 
@@ -87,11 +88,11 @@ Uloc inverse_uloc(Uloc Lab) {
     Lba.SetLoc (Inv(Lab.kX()));
     Lba.SetBind(Lab.kBind());
 
-    Matrix Jab = Jacobian(Lab.kX());
-    Matrix J   = Lba.kBind() * Jab * ~Lba.kBind();
+    MatrixXd Jab = Jacobian(Lab.kX());
+    MatrixXd J   = Lba.kBind() * Jab * Lba.kBind().transpose();
 
     Lba.SetPert(J * Lab.kPert());
-    Lba.SetCov (J * Lab.kCov() * ~J);
+    Lba.SetCov (J * Lab.kCov() * J.transpose());
 
     return Lba;
 }
@@ -103,15 +104,15 @@ void Uloc::CenterUloc() {
 
     x_ = Compose(x_, de);
 
-    Matrix D = b_ * InvJ2zero(de) * ~b_;
-    c_ = D * c_ * ~D;
+    MatrixXd D = b_ * InvJ2zero(de) * b_.transpose();
+    c_ = D * c_ * D.transpose();
 
     if (entity == POINT)
-        p_ = Matrix(2, 1);
+        p_ = MatrixXd(2, 1);
     if (entity == EDGE)
-        p_ = Matrix(2, 1);
+        p_ = MatrixXd(2, 1);
     if (entity == ROBOT)
-        p_ = Matrix(3, 1);
+        p_ = MatrixXd(3, 1);
 }
 
 Uloc compose_uloc_transf(Uloc Lwf, Transf Xfe) {
@@ -120,9 +121,9 @@ Uloc compose_uloc_transf(Uloc Lwf, Transf Xfe) {
     Uloc Lwe(Lwf.uGEntity());
 
     Lwe.SetLoc(Compose(Lwf.kX(), Xfe));
-    Matrix J   = Lwf.kBind() * InvJacobian(Xfe) * ~Lwf.kBind();
+    MatrixXd J   = Lwf.kBind() * InvJacobian(Xfe) * Lwf.kBind().transpose();
     Lwe.Pert() = J * Lwf.kPert();
-    Lwe.Cov()  = J * Lwf.kCov () * ~J;
+    Lwe.Cov()  = J * Lwf.kCov () * J.transpose();
 
     return Lwe;
 }
@@ -132,9 +133,9 @@ Uloc compose_uloc(Uloc Lwf, Uloc Lfe) {
     Uloc Lwe(Lwf.uGEntity());
     Lwe.Loc() = Compose(Lwf.kX(), Lfe.kX());
 
-    Matrix BeJefBft = Lfe.kBind() * InvJacobian(Lfe.kX())   * ~Lwf.kBind();
+    MatrixXd BeJefBft = Lfe.kBind() * InvJacobian(Lfe.kX())   * Lwf.kBind().transpose();
     Lwe.Pert()      = BeJefBft    * Lwf.kPert()             + Lfe.kPert();
-    Lwe.Cov()       = BeJefBft    * Lwf.kCov()  * ~BeJefBft + Lfe.kCov();
+    Lwe.Cov()       = BeJefBft    * Lwf.kCov()  * BeJefBft.transpose() + Lfe.kCov();
 
     return Lwe;
 }
@@ -155,12 +156,12 @@ double mahalanobis_distance_edge_point(Uloc Lwe, Uloc Lwp) {
 
     Transf xep = TRel(Lwe.kX(), Lwp.kX());
 
-    return pow(xep.tY(), 2)
+    return std::pow(xep.tY(), 2)
             / (
                     Lwe.kCov()(0, 0)
                     + xep.x() * (2 * Lwe.kCov()(0, 1) + xep.x() * Lwe.kCov()(1, 1))
-                    + Lwp.kCov()(0, 0) * pow(sin(xep.phi()), 2)
-                    + Lwp.kCov()(1, 1) * pow(cos(xep.phi()), 2)
+                    + Lwp.kCov()(0, 0) * std::pow(sin(xep.phi()), 2)
+                    + Lwp.kCov()(1, 1) * std::pow(cos(xep.phi()), 2)
               );
 }
 
@@ -177,16 +178,16 @@ Uloc CalculateAnalyticalEdge(Transf xp1, Transf xp2) {
     return Lse;
 }
 
-void information_filter(Matrix Hk,
-                        Matrix Gk,
-                        Matrix hk,
-                        Matrix Sk,
-                        Matrix &Fk,
-                        Matrix &Nk) {
+void information_filter(MatrixXd Hk,
+                        MatrixXd Gk,
+                        MatrixXd hk,
+                        MatrixXd Sk,
+                        MatrixXd &Fk,
+                        MatrixXd &Nk) {
     // Calculates de information matrix Fk, and related contribution Nk for the data.
 
-    Matrix Ak =  Gk *  Sk * ~Gk;
-    Matrix Ck = ~Hk * !Ak;
+    MatrixXd Ak =  Gk *  Sk * Gk.transpose();
+    MatrixXd Ck = Hk.transpose() * Ak.inverse();
 
     Fk = Ck * Hk;
     Nk = Ck * hk;
@@ -194,33 +195,33 @@ void information_filter(Matrix Hk,
 
 void integrate_laserpoint_on_laseredge(Uloc Lre,
                                        Uloc Lrp,
-                                       Matrix &Fk,
-                                       Matrix &Nk) {
+                                       MatrixXd &Fk,
+                                       MatrixXd &Nk) {
     // Filter Subfeature (LaserPoint) Feature (LaserEdge) Direct
 
     Transf xep = TRel(Lre.kX(), Lrp.kX());
-    Matrix hk  = Matrix(1, 1);
+    MatrixXd hk  = MatrixXd(1, 1);
     hk(0, 0)   = xep.y();
-    Matrix Hk  = Matrix(1, 2);
+    MatrixXd Hk  = MatrixXd(1, 2);
     Hk(0, 0)   = -1;
     Hk(0, 1)   = -xep.x();
-    Matrix Gk  = Matrix(1, 2);
+    MatrixXd Gk  = MatrixXd(1, 2);
     Gk(0, 0)   = sin(xep.phi());
     Gk(0, 1)   = cos(xep.phi());
 
     information_filter(Hk, Gk, hk, Lrp.kCov(), Fk, Nk);
 }
 
-void calculate_estimation(Matrix Q, Matrix N, Matrix &P, Matrix &X) {
-    P = !Q;
-    X = P * -N;
+void calculate_estimation(MatrixXd Q, MatrixXd N, MatrixXd &P, MatrixXd &X) {
+    P = Q.inverse();
+    X = P * N.transpose();
 }
 
 Uloc integrateEndpointsInEdge(Uloc Lsp1, Uloc Lsp2) {
     //Computes an uncertain edge from two uncertain points
 
     Uloc Lse = CalculateAnalyticalEdge(Lsp1.kX(), Lsp2.kX());
-    Matrix Fk, Nk, Q, N;
+    MatrixXd Fk, Nk, Q, N;
 
     integrate_laserpoint_on_laseredge(Lse, Lsp1, Q, N);
     integrate_laserpoint_on_laseredge(Lse, Lsp2, Fk, Nk);
@@ -234,70 +235,70 @@ Uloc integrateEndpointsInEdge(Uloc Lsp1, Uloc Lsp2) {
     return Lse;
 }
 
-void estimate_relative_location(Uloc Lwe, Uloc Lwm, Transf &Xem, Matrix &Cem) {
+void estimate_relative_location(Uloc Lwe, Uloc Lwm, Transf &Xem, MatrixXd &Cem) {
 
     Xem = Compose(Inv(Lwe.kX()), Lwm.kX());
-    Matrix Ja = J1zero(Xem);
-    Matrix Jb = J2zero(Xem);
-    Matrix Ca = Ja * ~Lwe.kBind() * Lwe.kCov() * Lwe.kBind() * ~Ja;
-    Matrix Cb = Jb * ~Lwm.kBind() * Lwm.kCov() * Lwm.kBind() * ~Jb;
+    MatrixXd Ja = J1zero(Xem);
+    MatrixXd Jb = J2zero(Xem);
+    MatrixXd Ca = Ja * Lwe.kBind().transpose() * Lwe.kCov() * Lwe.kBind() * Ja.transpose();
+    MatrixXd Cb = Jb * Lwm.kBind().transpose() * Lwm.kCov() * Lwm.kBind() * Jb.transpose();
     Cem = Ca + Cb;
 }
 
-double mahalanobis_distance(Uloc Lwa, Uloc Lwb, Matrix Bab) {
+double mahalanobis_distance(Uloc Lwa, Uloc Lwb, MatrixXd Bab) {
     Transf Xab;
-    Matrix Cab;
+    MatrixXd Cab;
 
     estimate_relative_location(Lwa, Lwb, Xab, Cab);
-    Matrix Ca = Bab * Cab * ~Bab;
+    MatrixXd Ca = Bab * Cab * Bab.transpose();
 
-    Matrix v = Bab * Xab;
-    Matrix d = ~v * !Ca * v;
+    MatrixXd v = Bab * Xab;
+    MatrixXd d = v.transpose() * Ca.inverse() * v;
 
     return d(0, 0);
 }
 
-void Uloc::ChangeBinding(Matrix newb) {
+void Uloc::ChangeBinding(MatrixXd newb) {
 
-    c_ = newb * ~b_ * c_ * b_ * ~newb;
+    c_ = newb * b_.transpose() * c_ * b_ * newb.transpose();
     p_ = newb * DifferentialLocation();
     b_ = newb;
 }
 
 void Uloc::FilterFeatureRobotDirect(Uloc Lre,
                                        Transf Xmw,
-                                       Matrix &Fk,
-                                       Matrix &Nk) {
+                                       MatrixXd &Fk,
+                                       MatrixXd &Nk) {
     //El (This) es Lwr
 
     Transf Xmr = Compose(Xmw, x_);
     Transf Xme = Compose(Xmr, Lre.kX());
-    Matrix Be = Lre.kBind();
+    MatrixXd Be = Lre.kBind();
 
-    Matrix hk = Be * Xme;
-    Matrix Hk = (Be * J1zero(Xme) * ~Be) * (Be * Jacobian(Xmr));
-    Matrix Gk = Be * J2zero(Xme) * ~Be;
+    MatrixXd hk = Be * Xme;
+    MatrixXd Hk = (Be * J1zero(Xme) * Be.transpose()) * (Be * Jacobian(Xmr));
+    MatrixXd Gk = Be * J2zero(Xme) * Be.transpose();
 
     information_filter(Hk, Gk, hk, Lre.kCov(), Fk, Nk);
 }
 
-void integrate_innovation(Matrix Fk,
-                          Matrix Nk,
-                          Matrix P,
-                          Matrix X,
-                          Matrix &Pk,
-                          Matrix &Xk) {
+void integrate_innovation(MatrixXd Fk,
+                          MatrixXd Nk,
+                          MatrixXd P,
+                          MatrixXd X,
+                          MatrixXd &Pk,
+                          MatrixXd &Xk) {
 
-    Matrix Q = !P;
-    Matrix Qk = Q + Fk;
+    MatrixXd Q = P.inverse();
+    MatrixXd Qk = Q + Fk;
 
-    Pk = !Qk;
+    Pk = Qk.inverse();
     Xk = Pk * (Q * X - Nk);
 }
 
 void Uloc::IntegrateEdge(Uloc Lre, Transf Xma) {
 
-    Matrix Fk, Nk;
+    MatrixXd Fk, Nk;
 
     FilterFeatureRobotDirect(Lre, Xma, Fk, Nk);
     integrate_innovation(Fk, Nk, c_, p_, c_, p_);
