@@ -21,6 +21,7 @@
 
 
 #include <fstream>
+#include <stdexcept>
 #include "segment_map.hh"
 
 SegmentMap::SegmentMap()
@@ -34,7 +35,7 @@ SegmentMap::SegmentMap(string filename)
     fmap.open(filename.c_str());
     if (fmap.fail())
     {
-        throw invalid_argument(std::string("Error opening file: " + filename));
+        throw std::invalid_argument(std::string("Error opening file: " + filename));
     }
 
     double p1x, p1y, p2x, p2y;

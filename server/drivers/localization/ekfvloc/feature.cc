@@ -51,7 +51,7 @@ const Transf& Feature::Loc() const
     return uloc_.kX();
 }
 
-const Matrix& Feature::Cov() const
+const MatrixXd& Feature::Cov() const
 {
     return uloc_.kCov();
 }
@@ -92,38 +92,42 @@ const Feature & ObservedFeatures::features(int f) const
     return features_[f];
 }
 
-void IntegrateScanPoint(Uloc segment, Uloc point, Matrix &Fk, Matrix &Nk)
+void IntegrateScanPoint(Uloc segment, Uloc point, MatrixXd &Fk, MatrixXd &Nk)
 {
-    Matrix hk = Matrix(0, 0);
-    Matrix Hk = Matrix(0, 0);
-    Matrix Gk = Matrix(0, 0);
-    Matrix Sk = Matrix(0, 0);
+    //MatrixXd hk = MatrixXd(0, 0);
+    //MatrixXd Hk = MatrixXd(0, 0);
+    //MatrixXd Gk = MatrixXd(0, 0);
+    //MatrixXd Sk = MatrixXd(0, 0);
 
     const Transf xep = Compose(Inv(segment.kX()), point.kX());
 
-    Matrix bep = Matrix(1, 3);
+    MatrixXd bep = MatrixXd(1, 3);
     bep(0, 1) = 1;
 
-    const Matrix hp = bep * xep;
-    hk.Include(hp, 0, 0);
+    const MatrixXd hp = bep * xep;
+    MatrixXd hk(hp);
+    //hk.Include(hp, 0, 0);
 
-    const Matrix Hp = -bep * J1zero(xep) * ~segment.kBind();
-    Hk.Include(Hp, 0, 0);
+    const MatrixXd Hp = -bep * J1zero(xep) * segment.kBind().transpose();
+    MatrixXd Hk(Hp);
+    //Hk.Include(Hp, 0, 0);
 
-    const Matrix Gp = bep * J2zero(xep) * ~point.kBind();
-    Gk.Include(Gp, 0, 0);
+    const MatrixXd Gp = bep * J2zero(xep) * point.kBind().transpose();
+    MatrixXd Gk(Gp);
+    //Gk.Include(Gp, 0, 0);
 
-    Sk.Include(point.kCov(), 0, 0);
+    MatrixXd Sk(point.kCov());
+    //Sk.Include(point.kCov(), 0, 0);
 
     EIFnn(Hk, Gk, hk, Sk, Fk, Nk);
 }
 
 void IntegrateScanPoints(Uloc *seg, Scan sTbl, int pFrom, int pEnd, int step)
 {
-    Matrix FkTotal = Matrix(2, 2);
-    Matrix NkTotal = Matrix(2, 1);
+    MatrixXd FkTotal = MatrixXd(2, 2);
+    MatrixXd NkTotal = MatrixXd(2, 1);
 
-    Matrix Nk, Fk;
+    MatrixXd Nk, Fk;
 
     for (int pk = pFrom; pk < pEnd; pk += step)
     {
@@ -136,7 +140,7 @@ void IntegrateScanPoints(Uloc *seg, Scan sTbl, int pFrom, int pEnd, int step)
     FkTotal = FkTotal + Fk;
     NkTotal = NkTotal + Nk;
 
-    Matrix Mean(FkTotal.RowNo(), 1);
+    MatrixXd Mean(FkTotal.rows(), 1);
     CalculateEstimationEIFnn(FkTotal, NkTotal, Mean, seg->Cov());
 
     seg->Pert()(0, 0) = Mean(0, 0);

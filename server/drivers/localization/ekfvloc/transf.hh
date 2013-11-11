@@ -22,23 +22,24 @@
 #ifndef TRANSF_H_
 #define TRANSF_H_
 
-#include "string.h" // Somehow this is needed by matrix.h
-#include "matrix.h"
+#include <string>
+#include "Eigen/Dense"
 #include "replace/replace.h"
 
-typedef math::matrix<double> Matrix;
+using namespace Eigen;
+using namespace std;
 
 // #define X(t)   (t(0,0))
 // #define Y(t)   (t(1,0))
 // #define Phi(t) (t(2,0))
 
-class Transf: public Matrix {
+class Transf: public MatrixXd {
 
 public:
 	//Constructor and destructor
 	Transf();
 	Transf(double x, double y, double phi);
-	Transf(Matrix &m);
+	Transf(MatrixXd &m);
 	virtual ~Transf();
 
 	//////////////
@@ -60,21 +61,21 @@ public:
 Transf Compose(Transf Tab, Transf Tbc);
 Transf Inv(Transf Tab);
 Transf TRel(Transf Twa, Transf Twb);
-Matrix Jacobian (Transf Tab);
-Matrix InvJacobian (Transf Tab);
-Matrix J1 (Transf Ta, Transf Tb);
-Matrix InvJ1 (Transf Ta, Transf Tb);
-Matrix J1zero (Transf Ta);
-Matrix InvJ1zero (Transf Ta);
-Matrix J2 (Transf Ta, Transf Tb);
-Matrix InvJ2 (Transf Ta, Transf Tb);
-Matrix J2zero (Transf Ta);
-Matrix InvJ2zero (Transf Ta);
+MatrixXd Jacobian (Transf Tab);
+MatrixXd InvJacobian (Transf Tab);
+MatrixXd J1 (Transf Ta, Transf Tb);
+MatrixXd InvJ1 (Transf Ta, Transf Tb);
+MatrixXd J1zero (Transf Ta);
+MatrixXd InvJ1zero (Transf Ta);
+MatrixXd J2 (Transf Ta, Transf Tb);
+MatrixXd InvJ2 (Transf Ta, Transf Tb);
+MatrixXd J2zero (Transf Ta);
+MatrixXd InvJ2zero (Transf Ta);
 double spAtan2 (double y, double x);
 double Normalize (double p);
 
 // Added by Alex
-void Eigenv(Matrix M, Matrix *vectors, Matrix *values);
+void Eigenv(MatrixXd M, MatrixXd *vectors, MatrixXd *values);
    // Compute eigenvalues/vectors.
    // Results are reset, so the original content/dimensions do not matter.
    // Results are of same dimensions (NxN) as This, with the caveat that

@@ -21,7 +21,7 @@
 
 
 #include <cassert>
-
+#include <stdexcept>
 #include "scan.hh"
 
 Scan::Scan(
@@ -88,7 +88,7 @@ void Scan::SetLastScan (const DoublesVector& ranges,
                         const DoublesVector& bearings) {
 
 	if (ranges.size() != bearings.size())
-		throw range_error("Mismatching ranges in SetLastScan");
+		throw std::range_error("Mismatching ranges in SetLastScan");
 
 	ulocs_.clear();
 	rho_.clear();

@@ -41,9 +41,9 @@ public:
     double codimension() const;
     const Transf& Loc() const;
 
-    const Matrix& Cov() const;
+    const MatrixXd& Cov() const;
     double Cov(int i, int j) const;
-    void SetCov(const Matrix& c) { uloc_.SetCov(c); };
+    void SetCov(const MatrixXd& c) { uloc_.SetCov(c); };
 
     const Uloc& uloc(void) const { return uloc_; };
     void set_uloc(const Uloc& u) { uloc_ = u; };

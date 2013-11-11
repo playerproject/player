@@ -742,31 +742,31 @@ void Ekfvloc::DrawEllipse(void)
     const player_color_t black = {0, 0, 0, 0};
     const player_color_t blue  = {0, 0, 0, 255};
 
-    const Matrix cov = localize_.GetCovariance();
-    Matrix sigma(2, 2);
+    const MatrixXd cov = localize_.GetCovariance();
+    MatrixXd sigma(2, 2);
 
     for (int r = 0; r < 2; r++)
         for (int c = 0; c < 2; c++)
             sigma(r, c) = cov(r, c);
 
-    sigma *= k; // Matrix * scalar
+    sigma *= k; // MatrixXd * scalar
 
-    Matrix D, V; // eigenvalues & eigenvectors
+    MatrixXd D, V; // eigenvalues & eigenvectors
     Eigenv(sigma, &V, &D);
 
-    Matrix Dsqrt = D; // Keep sqrt(D) for reuse
+    MatrixXd Dsqrt = D; // Keep sqrt(D) for reuse
     for (int r = 0; r < 2; r++)
         for (int c = 0; c < 2; c++)
             Dsqrt(r, c) = sqrt(Dsqrt(r, c));
 
-    Matrix U(2, points); // 2 x points, to approximate the ellipse
+    MatrixXd U(2, points); // 2 x points, to approximate the ellipse
     for (int c = 0; c < points; c++)
     {
         U(0, c) = cos(2.0 * M_PI / points * c);
         U(1, c) = sin(2.0 * M_PI / points * c);
     }
 
-    const Matrix W = (V * Dsqrt) * U; // ((2x2)*(2x2))*(2xn) = (2xn)
+    const MatrixXd W = (V * Dsqrt) * U; // ((2x2)*(2x2))*(2xn) = (2xn)
     // This does the ellipse approximation somehow
 
     // Obtain relative position if we have ground truth:
@@ -788,11 +788,11 @@ void Ekfvloc::DrawEllipse(void)
     
     // 2 points for angular incertitude
     {
-    Matrix Z(2, 2);
+    MatrixXd Z(2, 2);
     Z(0, 0) = Z(0, 1) = cos(3.84 * 2.0 * sqrt(cov(2, 2)));
     Z(1, 0) =           sin(3.84 * 2.0 * sqrt(cov(2, 2)));
     Z(1, 1) = -Z(1, 0);
-    const Matrix WZ = V * Z; // Apply orientation somehow, but don't scale to ellipse
+    const MatrixXd WZ = V * Z; // Apply orientation somehow, but don't scale to ellipse
     // This does the ellipse approximation somehow
     const player_point_2d_t ow = { nu.tX(), nu.tY() };
     const player_point_2d_t p1 = { WZ(0, 0) + nu.tX(), WZ(1, 0) + nu.tY()};
@@ -947,7 +947,7 @@ void Ekfvloc::PublishInterfaces(double timestamp)
     PLAYER_MSG4(3, "Ekfvloc loclz pose: %8.3f %8.3f %8.3f (%d)", new_pose.x, new_pose.y, new_pose.th, scan_count_);
 
     // Publish localize data
-    const Matrix cov = localize_.GetCovariance();
+    const MatrixXd cov = localize_.GetCovariance();
     player_localize_hypoth_t hyp[1] =
         {{{new_pose.x, new_pose.y, new_pose.th}, {cov(0, 0), cov(1, 1), cov(2, 2)}, 1.0}};
     //    {{{new_pose.x, new_pose.y, new_pose.th}, {cov(0, 0), cov(1, 1), cov(2, 2),

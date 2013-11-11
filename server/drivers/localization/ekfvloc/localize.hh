@@ -64,7 +64,7 @@ public:
                 DoublesVector ranges, DoublesVector bearings);
 
     Pose pose(void) const;
-    Matrix GetCovariance(void) const { return robot_.Covariance(); };
+    MatrixXd GetCovariance(void) const { return robot_.Covariance(); };
 private:
     Scan scan_;
     RobotLocation robot_;

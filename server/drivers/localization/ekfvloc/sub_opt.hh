@@ -25,7 +25,7 @@
 
 #include "transf.hh"
 
-void EIFnn(Matrix H, Matrix G, Matrix h, Matrix S, Matrix &F, Matrix &N);
-void CalculateEstimationEIFnn(Matrix Fk, Matrix Nk, Matrix &x, Matrix &P);
+void EIFnn(MatrixXd H, MatrixXd G, MatrixXd h, MatrixXd S, MatrixXd &F, MatrixXd &N);
+void CalculateEstimationEIFnn(MatrixXd Fk, MatrixXd Nk, MatrixXd &x, MatrixXd &P);
 
 #endif /* SUB_OPT_H_ */
