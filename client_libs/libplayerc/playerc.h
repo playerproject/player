@@ -562,7 +562,6 @@ typedef struct _playerc_client_t
 
   /** @internal Temp buffers for incoming / outgoing packets. */
   char *data;
-  char *write_xdrdata;
   char *read_xdrdata;
   size_t read_xdrdata_len;
 
