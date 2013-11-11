@@ -185,11 +185,9 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient, const char *
 
   // TODO: make this memory allocation more conservative
   client->data = (char*)malloc(PLAYER_MAX_MESSAGE_SIZE);
-  client->write_xdrdata = (char*)malloc(PLAYERXDR_MAX_MESSAGE_SIZE);
   client->read_xdrdata = (char*)malloc(PLAYERXDR_MAX_MESSAGE_SIZE);
   client->read_xdrdata_len = 0;
   assert(client->data);
-  assert(client->write_xdrdata);
   assert(client->read_xdrdata);
 
   client->qfirst = 0;
@@ -231,7 +229,6 @@ void playerc_client_destroy(playerc_client_t *client)
 #endif
 
   free(client->data);
-  free(client->write_xdrdata);
   free(client->read_xdrdata);
   free(client->host);
   free(client);
@@ -1297,10 +1294,12 @@ int playerc_client_writepacket(playerc_client_t *client,
   player_pack_fn_t packfunc;
   int encode_msglen;
   struct timeval curr;
+  char *write_xdrdata = (char *)malloc(sizeof(char[PLAYERXDR_MAX_MESSAGE_SIZE]));
 
   if (client->sock < 0)
   {
     PLAYERC_WARN("no socket to write to");
+    free(write_xdrdata);
     return -1;
   }
 
@@ -1316,16 +1315,18 @@ int playerc_client_writepacket(playerc_client_t *client,
       // messages
       PLAYERC_ERR4("skipping message to %s:%u with unsupported type %s:%u",
                    interf_to_str(header->addr.interf), header->addr.index, msgtype_to_str(header->type), header->subtype);
+      free(write_xdrdata);
       return(-1);
     }
 
     if((encode_msglen =
-        (*packfunc)(client->write_xdrdata + PLAYERXDR_MSGHDR_SIZE,
+        (*packfunc)(write_xdrdata + PLAYERXDR_MSGHDR_SIZE,
                     PLAYER_MAX_MESSAGE_SIZE - PLAYERXDR_MSGHDR_SIZE,
                     (void*) data, PLAYERXDR_ENCODE)) < 0)
     {
       PLAYERC_ERR4("encoding failed on message from %s:%u with type %s:%u",
                    interf_to_str(header->addr.interf), header->addr.index, msgtype_to_str(header->type), header->subtype);
+      free(write_xdrdata);
       return(-1);
     }
   }
@@ -1337,10 +1338,11 @@ int playerc_client_writepacket(playerc_client_t *client,
   gettimeofday(&curr,NULL);
   header->timestamp = curr.tv_sec + curr.tv_usec / 1e6;
   // Pack the header
-  if(player_msghdr_pack(client->write_xdrdata, PLAYERXDR_MSGHDR_SIZE,
+  if(player_msghdr_pack(write_xdrdata, PLAYERXDR_MSGHDR_SIZE,
                         header, PLAYERXDR_ENCODE) < 0)
   {
     PLAYERC_ERR("failed to pack header");
+    free(write_xdrdata);
     return -1;
   }
 
@@ -1349,7 +1351,7 @@ int playerc_client_writepacket(playerc_client_t *client,
   bytes = PLAYERXDR_MSGHDR_SIZE + encode_msglen;
   do
   {
-    ret = send(client->sock, &client->write_xdrdata[length-bytes],
+    ret = send(client->sock, &write_xdrdata[length-bytes],
                bytes, 0);
     if (ret > 0)
     {
@@ -1363,10 +1365,12 @@ int playerc_client_writepacket(playerc_client_t *client,
     {
       STRERROR (PLAYERC_ERR2, "send on body failed with error [%d: %s]");
       //playerc_client_disconnect(client);
+      free(write_xdrdata);
       return(playerc_client_disconnect_retry(client));
     }
   } while (bytes);
 
+  free(write_xdrdata);
   return 0;
 }
 
