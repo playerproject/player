@@ -93,11 +93,6 @@
 
  @par Properties
 
- - baud_rate (integer)
-   - Default: 19200bps
-   - Change the baud rate of the connection to the laser. See HokuyoAIST documentation for valid
-     values. This is separate from the scanner's power-on default baud rate, which should be
-     specified in portopts.
  - speed_level (integer, 0 to 10 or 99)
    - Default: 0
    - The speed at which the laser operates, as a level down from maximum speed. See the HokuyoAIST
@@ -135,7 +130,6 @@
 #include <hokuyoaist/hokuyoaist.h>
 #include <libplayercore/playercore.h>
 
-const int DEFAULT_BAUDRATE = 19200;
 const int DEFAULT_SPEED_LEVEL = 0;
 const int DEFAULT_SENSITIVITY = 0;
 const int DEFAULT_GET_INTENSITIES = 0;
@@ -166,7 +160,7 @@ class HokuyoDriver : public ThreadedDriver
         bool verbose_, invert_, powerOnStartup_, getIntensities_,
              ignoreUnknowns_;
         double minAngle_, maxAngle_;
-        IntProperty baudRate_, speedLevel_, highSensitivity_;
+        IntProperty speedLevel_, highSensitivity_;
         DoubleProperty minDist_;
         BoolProperty hwTimeStamps_;
         std::string portOpts_;
@@ -190,7 +184,6 @@ class HokuyoDriver : public ThreadedDriver
 HokuyoDriver::HokuyoDriver(ConfigFile* cf, int section) :
     ThreadedDriver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
             PLAYER_RANGER_CODE),
-    baudRate_("baud_rate", DEFAULT_BAUDRATE, false),
     speedLevel_("speed_level", DEFAULT_SPEED_LEVEL, false),
     highSensitivity_("high_sensitivity", DEFAULT_SENSITIVITY, false),
     minDist_("min_dist", DEFAULT_MIN_DIST, false),
@@ -198,7 +191,6 @@ HokuyoDriver::HokuyoDriver(ConfigFile* cf, int section) :
     _ranges(NULL), _intensities(NULL)
 {
     // Get the baudrate, speed and sensitivity
-    RegisterProperty("baud_rate", &baudRate_, cf, section);
     RegisterProperty("speed_level", &speedLevel_, cf, section);
     RegisterProperty("high_sensitivity", &highSensitivity_, cf, section);
     RegisterProperty("min_dist", &minDist_, cf, section);
@@ -310,38 +302,7 @@ int HokuyoDriver::ProcessMessage(QueuePointer &resp_queue, player_msghdr *hdr,
     {
         player_intprop_req_t *req =
             reinterpret_cast<player_intprop_req_t*> (data);
-        // Change in the baud rate
-        if (strncmp(req->key, "baud_rate", 9) == 0)
-        {
-            try
-            {
-                // Change the baud rate
-                device_.set_baud(req->value);
-            }
-            catch(hokuyoaist::NotSerialError)
-            {
-                PLAYER_WARN(
-                    "HokuyoAIST: Cannot change the baud rate of a non-serial connection.");
-                Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK,
-                        PLAYER_SET_INTPROP_REQ, NULL, 0, NULL);
-                return 0;
-            }
-            catch(hokuyoaist::BaseError &e)
-            {
-                PLAYER_ERROR1("HokuyoAIST: Error while changing baud rate: %s",
-                        e.what());
-                SetError(-1);
-
-                Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK,
-                        PLAYER_SET_INTPROP_REQ, NULL, 0, NULL);
-                return 0;
-            }
-            baudRate_.SetValueFromMessage(data);
-            Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK,
-                    PLAYER_SET_INTPROP_REQ, NULL, 0, NULL);
-            return 0;
-        }
-        else if (strncmp(req->key, "speed_level", 11) == 0)
+        if (strncmp(req->key, "speed_level", 11) == 0)
         {
             try
             {
@@ -694,7 +655,7 @@ int HokuyoDriver::MainSetup(void)
     {
         device_.ignore_unknowns(ignoreUnknowns_);
         // Open the laser
-        device_.open_with_probing(portOpts_);
+        device_.open(portOpts_);
         // Get the sensor information and check minAngle_ and maxAngle_ are OK
         hokuyoaist::SensorInfo info;
         device_.get_sensor_info(info);
@@ -711,20 +672,6 @@ int HokuyoDriver::MainSetup(void)
         if (!AllocateDataSpace())
             return -1;
 
-        try
-        {
-            device_.set_baud(baudRate_.GetValue());
-        }
-        catch(hokuyoaist::NotSerialError)
-        {
-            PLAYER_WARN(
-                "HokuyoAIST: Cannot change the baud rate of a non-serial connection.");
-        }
-        catch(hokuyoaist::BaseError &e)
-        {
-            PLAYER_WARN1("HokuyoAIST: Error while changing baud rate: %s",
-                    e.what());
-        }
         try
         {
             // Catch any errors here as this is an optional setting not supported by all models

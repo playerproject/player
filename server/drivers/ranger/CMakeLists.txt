@@ -10,7 +10,7 @@ PLAYERDRIVER_ADD_DRIVER (gbxsickacfr build_gbxsickacfr
 PLAYERDRIVER_OPTION (hokuyoaist build_hokuyoaist ON)
 PLAYERDRIVER_REQUIRE_PKG (hokuyoaist build_hokuyoaist hokuyoaist
     hokuyoaist_includeDirs hokuyoaist_libDirs hokuyoaist_linkLibs
-    hokuyoaist_linkFlags hokuyoaist_cFlags =3.0.0)
+    hokuyoaist_linkFlags hokuyoaist_cFlags >=3.0.0)
 PLAYERDRIVER_ADD_DRIVER (hokuyoaist build_hokuyoaist
     INCLUDEDIRS ${hokuyoaist_includeDirs} LIBDIRS ${hokuyoaist_libDirs}
     LINKLIBS ${hokuyoaist_linkLibs} LINKFLAGS ${hokuyoaist_linkFlags}
