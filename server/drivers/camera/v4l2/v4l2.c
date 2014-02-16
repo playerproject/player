@@ -72,6 +72,7 @@ int set_channel(void * fg, int channel, const char * mode)
  }
  if (!strcmp(mode, "UNKNOWN")) m = 0;
  else if (!strcmp(mode, "PAL")) m = V4L2_STD_PAL;
+ else if (!strcmp(mode, "PAL60")) m = V4L2_STD_PAL_60;
  else if (!strcmp(mode, "NTSC")) m = V4L2_STD_NTSC;
  else
  {
@@ -418,6 +419,19 @@ void * open_fg(const char * dev, const char * pixformat, int width, int height, 
  } else if ((fg->pixformat) == v4l2_fmtbyname("BA81"))
  {
   fg->depth = 1;
+  fg->r = 0; fg->g = 1; fg->b = 2;
+  fg->bayerbuf_size = width * height * 3;
+  fg->bayerbuf = malloc(fg->bayerbuf_size);
+  if (!(fg->bayerbuf))
+  {
+   fprintf(stderr, "out of memory\n");
+   fg->bayerbuf_size = 0;
+   free(fg);
+   return NULL;
+  }
+ } else if ((fg->pixformat) == v4l2_fmtbyname("YUYV"))
+ {
+  fg->depth = 2;
   fg->r = 0; fg->g = 1; fg->b = 2;
   fg->bayerbuf_size = width * height * 3;
   fg->bayerbuf = malloc(fg->bayerbuf_size);
