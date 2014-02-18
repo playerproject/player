@@ -197,7 +197,7 @@ driver
 driver
 (
   name "wavefront"
-  provides ["planner:0"]
+  provides ["planner:0" "offline:::planner:1"]
   requires ["output:::position2d:1" "input:::position2d:2" "map:0"]
   safety_dist 0.15
   distance_epsilon 0.5
@@ -208,12 +208,6 @@ driver
 @author Brian Gerkey, Andrew Howard
 */
 /** @} */
-
-// TODO:
-//
-//  - allow for computing a path, without actually executing it.
-//
-//  - compute and return path length
 
 #include <string.h>
 #include <stddef.h>
@@ -249,6 +243,8 @@ class Wavefront : public ThreadedDriver
     player_devaddr_t map_id;
     player_devaddr_t laser_id;
     player_devaddr_t graphics2d_id;
+    player_devaddr_t offline_planner_id;
+
     double map_res;
     double robot_radius;
     double safety_dist;
@@ -261,6 +257,8 @@ class Wavefront : public ThreadedDriver
 
     // the plan object
     plan_t* plan;
+    // another plan object for offline path computation
+    plan_t* offline_plan;
 
     // pointers to the underlying devices
     Device* position;
@@ -325,6 +323,14 @@ class Wavefront : public ThreadedDriver
     double* scan_points;
     int scan_points_size;
     int scan_points_count;
+    
+
+    // Do we have an offline planner
+    bool have_offline_planner;
+    // offline planner goal postion
+    player_pose2d_t offline_goal;
+    // offline planner start position
+    player_pose2d_t offline_start;
 
     // methods for internal use
     int SetupLocalize();
@@ -352,6 +358,7 @@ class Wavefront : public ThreadedDriver
     void LocalizeToPosition(double* px, double* py, double* pa,
                             double lx, double ly, double la);
     void SetWaypoint(double wx, double wy, double wa);
+    void ComputeOfflineWaypoints(player_planner_waypoints_req_t* req, player_planner_waypoints_req_t* reply);
 
   public:
     // Constructor
@@ -385,9 +392,9 @@ void wavefront_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 Wavefront::Wavefront( ConfigFile* cf, int section)
-  : ThreadedDriver(cf, section, true,
-           PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_PLANNER_CODE)
+  : ThreadedDriver(cf, section, true)
 {
+  this->have_offline_planner = false;
   // Must have a position device to control
   if (cf->ReadDeviceAddr(&this->position_id, section, "requires",
                          PLAYER_POSITION2D_CODE, -1, "output") != 0)
@@ -408,6 +415,20 @@ Wavefront::Wavefront( ConfigFile* cf, int section)
   {
     this->SetError(-1);
     return;
+  }
+
+  if (cf->ReadDeviceAddr(&this->device_addr, section, "provides",
+                         PLAYER_PLANNER_CODE, -1, "") != 0)
+  {
+    PLAYER_ERROR("Wavefront must provide a Planner");
+    this->SetError(-1);
+    return;
+  }
+  if (cf->ReadDeviceAddr(&this->offline_planner_id, section, "provides",
+                         PLAYER_PLANNER_CODE, -1, "offline") != 0)
+  {
+    this->have_offline_planner = true;
+    PLAYER_WARN("Wavefront providing offline planner");
   }
 
   // Can use a laser device
@@ -460,6 +481,8 @@ Wavefront::Wavefront( ConfigFile* cf, int section)
     if(this->velocity_control)
       PLAYER_WARN("Wavefront doing direct velocity control, but without a laser for obstacle detection; this is not safe!");
   }
+  memset((void*)(&this->offline_goal), 0, sizeof(player_pose2d_t));
+  memset((void*)(&this->offline_start), 0, sizeof(player_pose2d_t));
 }
 
 
@@ -500,7 +523,7 @@ Wavefront::MainSetup()
     PLAYER_ERROR("failed to allocate plan");
     return(-1);
   }
-
+  this->offline_plan = NULL;
   if(SetupMap() < 0)
     return(-1);
   if(SetupLocalize() < 0)
@@ -539,6 +562,8 @@ Wavefront::MainQuit()
 
   if(this->plan)
     plan_free(this->plan);
+  if(this->offline_plan)
+    plan_free(this->offline_plan);
   free(this->waypoints);
   this->waypoints = NULL;
 
@@ -577,6 +602,68 @@ Wavefront::ProcessCommand(player_planner_cmd_t* cmd)
   }
 #endif
 }
+
+void
+Wavefront::ComputeOfflineWaypoints(player_planner_waypoints_req_t* req, player_planner_waypoints_req_t* reply)
+{
+  double sx, sy, sa, gx, gy, ga;
+
+  sx = this->offline_start.px;
+  sy = this->offline_start.py;
+  sa = this->offline_start.pa;
+
+  gx = this->offline_goal.px;
+  gy = this->offline_goal.py;
+  ga = this->offline_goal.pa;
+
+  // If there is no offline_plan, create by duplicating plan
+  if(!this->offline_plan)
+    this->offline_plan = plan_copy(this->plan);
+
+  // Compute path in offline plan
+  if(plan_do_global(this->offline_plan, sx, sy, gx, gy) < 0)
+  {
+    puts("Wavefront: offline path computation failed");
+  }
+
+  // Extract waypoints along the path to the goal from the start position
+  plan_update_waypoints(this->offline_plan, sx, sy);
+
+  // Fill in reply
+  // - waypoints
+  if((reply->waypoints_count = this->offline_plan->waypoint_count))
+  {
+    reply->waypoints = (player_pose2d_t*)calloc(sizeof(reply->waypoints[0]),reply->waypoints_count);
+
+    double distance = 0;
+    double last_wx, last_wy;
+    for(int i=0;i<(int)reply->waypoints_count;i++)
+    {
+      // Convert and copy waypoint
+      double wx, wy;
+      plan_convert_waypoint(this->offline_plan,
+                            this->offline_plan->waypoints[i],
+                            &wx, &wy);
+      reply->waypoints[i].px = wx;
+      reply->waypoints[i].py = wy;
+      reply->waypoints[i].pa = 0.0;
+      // Update path length
+      if(i != 0)
+      {
+        distance += sqrt(pow(wx-last_wx, 2) + pow(wy-last_wy, 2));
+      }
+      last_wx = wx;
+      last_wy = wy;
+    }
+    reply->waypoints_distance = distance;
+  }
+  else  // no waypoints
+  {
+    reply->waypoints = NULL;
+    reply->waypoints_distance = 0.0;
+  }
+}
+
 
 void
 Wavefront::ProcessLaserScan(player_laser_data_scanpose_t* data)
@@ -1543,6 +1630,10 @@ Wavefront::GetMap(bool threaded)
   plan_compute_cspace(this->plan);
   //draw_cspace(this->plan,"cspace.png");
 
+  if (this->offline_plan) {
+    plan_free(this->offline_plan);
+    this->offline_plan = NULL;
+  }
   return(0);
 }
 
@@ -1659,7 +1750,13 @@ Wavefront::ProcessMessage(QueuePointer & resp_queue,
   HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_PLANNER_REQ_GET_WAYPOINTS);
   HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_PLANNER_REQ_ENABLE);
   HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_PLANNER_CMD_GOAL);
-
+  if (this->have_offline_planner)
+  {
+    HANDLE_CAPABILITY_REQUEST (offline_planner_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
+    HANDLE_CAPABILITY_REQUEST (offline_planner_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_PLANNER_REQ_GET_WAYPOINTS);
+    HANDLE_CAPABILITY_REQUEST (offline_planner_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_PLANNER_CMD_GOAL);
+    HANDLE_CAPABILITY_REQUEST (offline_planner_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_PLANNER_CMD_START);
+  }
   // Is it new odometry data?
   if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA,
                            PLAYER_POSITION2D_DATA_STATE,
@@ -1721,18 +1818,69 @@ Wavefront::ProcessMessage(QueuePointer & resp_queue,
 
     reply.waypoints_count = this->waypoint_count;
     reply.waypoints = (player_pose2d_t*)calloc(sizeof(reply.waypoints[0]),this->waypoint_count);
+    double distance = 0;
+    double px, py, last_px, last_py;
     for(int i=0;i<(int)reply.waypoints_count;i++)
     {
-      reply.waypoints[i].px = this->waypoints[i][0];
-      reply.waypoints[i].py = this->waypoints[i][1];
+      // copy waypoint for length computation
+      px = reply.waypoints[i].px = this->waypoints[i][0];
+      py = reply.waypoints[i].py = this->waypoints[i][1];
       reply.waypoints[i].pa = 0.0;
+      if(i != 0) 
+      {
+        distance += sqrt(pow(px-last_px, 2) + pow(py-last_py, 2));
+      }
+      last_px = px;
+      last_py = py;
     }
+    reply.waypoints_distance = distance;
 
     this->Publish(this->device_addr, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_PLANNER_REQ_GET_WAYPOINTS,
                   (void*)&reply);
     free(reply.waypoints);
+    return(0);
+  }
+  // Is it a start position for an offline computed path?
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD,
+                                PLAYER_PLANNER_CMD_START,
+                                this->offline_planner_id))
+  {
+    assert(data);
+    this->offline_start.px = ((player_planner_cmd_t*)data)->goal.px;
+    this->offline_start.py = ((player_planner_cmd_t*)data)->goal.py;
+    this->offline_start.pa = ((player_planner_cmd_t*)data)->goal.pa;
+    return(0);
+  }
+  // Is it a goal position for an offline computed path?
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD,
+                                PLAYER_PLANNER_CMD_GOAL,
+                                this->offline_planner_id))
+  {
+    assert(data);
+    this->offline_goal.px = ((player_planner_cmd_t*)data)->goal.px;
+    this->offline_goal.py = ((player_planner_cmd_t*)data)->goal.py;
+    this->offline_goal.pa = ((player_planner_cmd_t*)data)->goal.pa;
+    return(0);
+  }
+
+  // Is it a request for an offline computed path?
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
+                                PLAYER_PLANNER_REQ_GET_WAYPOINTS,
+                                this->offline_planner_id))
+  {
+    player_planner_waypoints_req_t reply;
+
+    assert(data);
+    this->ComputeOfflineWaypoints((player_planner_waypoints_req_t*)data, &reply);
+
+    this->Publish(this->offline_planner_id, resp_queue,
+                  PLAYER_MSGTYPE_RESP_ACK,
+                  PLAYER_PLANNER_REQ_GET_WAYPOINTS,
+                  (void*)&reply);
+    if(reply.waypoints)
+      free(reply.waypoints);
     return(0);
   }
   // Is it a request to enable or disable the planner?
