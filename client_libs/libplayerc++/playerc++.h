@@ -1738,6 +1738,9 @@ class PLAYERCC_EXPORT PlannerProxy : public ClientProxy
     /// Set the goal pose (gx, gy, ga)
     void SetGoalPose(double aGx, double aGy, double aGa);
 
+    /// Set the start pose (sx, sy, sa)
+    void SetStartPose(double aSx, double aSy, double aSa);
+
     /// Get the list of waypoints. Writes the result into the proxy
     /// rather than returning it to the caller.
     void RequestWaypoints();
@@ -1751,6 +1754,10 @@ class PLAYERCC_EXPORT PlannerProxy : public ClientProxy
 
     /// Have we arrived at the goal?
     uint32_t GetPathDone() const { return GetVar(mDevice->path_done); };
+
+    /// Get straight-line distance along path.  Call RequestWaypoints() to
+    /// fill in.
+    double GetPathLength() const {return GetVar(mDevice->waypoint_distance); };
 
     /// @brief Current pose (m)
     /// @deprecated use GetPose() instead
