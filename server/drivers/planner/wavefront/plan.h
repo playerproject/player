@@ -133,6 +133,9 @@ void plan_compute_dist_kernel(plan_t* plan);
 // Destroy a planner
 void plan_free(plan_t *plan);
 
+// Copy a planner
+plan_t *plan_copy(plan_t *plan);
+
 // Initialize the plan
 void plan_init(plan_t *plan);
 
