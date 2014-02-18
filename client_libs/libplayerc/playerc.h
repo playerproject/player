@@ -2733,6 +2733,10 @@ typedef struct
       playerc_planner_get_waypoints() to fill this in. */
   double (*waypoints)[3];
 
+  /** Straight-line distance along allwaypoints in the current plan.  Call
+      playerc_planner_get_waypoints() to fill this in. */
+  double waypoint_distance;
+
 } playerc_planner_t;
 
 /** @brief Create a planner device proxy. */
@@ -2750,6 +2754,10 @@ PLAYERC_EXPORT int playerc_planner_unsubscribe(playerc_planner_t *device);
 /** @brief Set the goal pose (gx, gy, ga) */
 PLAYERC_EXPORT int playerc_planner_set_cmd_pose(playerc_planner_t *device,
                                   double gx, double gy, double ga);
+
+/** @brief Set the start pose (sx, sy, sa) */
+PLAYERC_EXPORT int playerc_planner_set_cmd_start(playerc_planner_t *device,
+                                  double sx, double sy, double sa);
 
 /** @brief Get the list of waypoints.
 

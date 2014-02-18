@@ -139,6 +139,21 @@ playerc_planner_set_cmd_pose(playerc_planner_t *device,
                               &cmd, NULL);
 }
 
+int
+playerc_planner_set_cmd_start(playerc_planner_t *device,
+                                 double sx, double sy, double sa)
+{
+  player_planner_cmd_t cmd;
+  
+  cmd.goal.px = sx;
+  cmd.goal.py = sy;
+  cmd.goal.pa = sa;
+
+  return playerc_client_write(device->info.client, &device->info,
+                              PLAYER_PLANNER_CMD_START,
+                              &cmd, NULL);
+}
+
 // Get the list of waypoints.  The writes the result into the proxy
 // rather than returning it to the caller.
 int playerc_planner_get_waypoints(playerc_planner_t *device)
@@ -160,6 +175,7 @@ int playerc_planner_get_waypoints(playerc_planner_t *device)
     device->waypoints[i][1] = config->waypoints[i].py;
     device->waypoints[i][2] = config->waypoints[i].pa;
   }
+  device->waypoint_distance = config->waypoints_distance;
   player_planner_waypoints_req_t_free(config);
   return 0;
 }

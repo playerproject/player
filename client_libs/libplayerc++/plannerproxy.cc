@@ -102,6 +102,15 @@ std::operator << (std::ostream &os, const PlayerCc::PlannerProxy &c)
 }
 
 void
+PlannerProxy::SetStartPose(double aSx, double aSy, double aSa)
+{
+  scoped_lock_t lock(mPc->mMutex);
+  if (0 != playerc_planner_set_cmd_start(mDevice, aSx, aSy, aSa))
+    throw PlayerError("PlannerProxy::SetStartPose()", "error setting start");
+  return;
+}
+
+void
 PlannerProxy::SetGoalPose(double aGx, double aGy, double aGa)
 {
   scoped_lock_t lock(mPc->mMutex);
