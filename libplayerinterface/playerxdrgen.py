@@ -5,6 +5,8 @@
 #    header gets installed for general use, has copyright boilerplate,
 #    etc.) or a user XDR lib
 
+from __future__ import print_function
+
 import re
 import string
 import sys
@@ -82,7 +84,7 @@ class DataType:
   declpattern = re.compile('\s*([^;]*?;)', re.MULTILINE)
   
   def __init__(self, body):
-    split = string.split(body)
+    split = body.split()
     self.prefix = split[2]
     self.typename = split[-1]
     self.dynamic = False
@@ -93,8 +95,8 @@ class DataType:
     # pick out the contents of the struct
     varpart = self.contentspattern.findall(body)
     if len(varpart) != 1:
-      print 'skipping nested / empty struct ' + typename
-      raise "Empty Struct"
+      print('skipping nested / empty struct ' + typename)
+      raise Exception("Empty Struct")
     # separate the variable declarations
     decls = self.declpattern.findall(varpart[0])
     for dstring in decls:
@@ -456,7 +458,7 @@ unsigned int %(typename)s_sizeof(%(typename)s *msg)
 if __name__ == '__main__':
 
   if len(sys.argv) < 4:
-    print USAGE
+    print(USAGE)
     sys.exit(-1)
 
   distro = 0
@@ -464,7 +466,7 @@ if __name__ == '__main__':
   idx = 1
   if sys.argv[1] == '-distro':
     if len(sys.argv) < 5:
-      print USAGE
+      print(USAGE)
       sys.exit(-1)
     distro = 1
     idx += 1
@@ -478,7 +480,7 @@ if __name__ == '__main__':
   if len(sys.argv) > idx:
     for opt in sys.argv[idx:]:
       infilenames.append(opt)
-      print "processeing extra file ", opt
+      print("processeing extra file ", opt)
 
 
   # Read in the entire file
@@ -568,7 +570,7 @@ if __name__ == '__main__':
                    re.MULTILINE)
   structs = pattern.findall(instream)
 
-  print 'Found ' + `len(structs)` + ' struct(s)'
+  print('Found ' + repr(len(structs)) + ' struct(s)')
   
   #arraypattern = re.compile('\[\s*(\w*?)\s*\]')
 #  pointerpattern = re.compile('[A-Za-z0-9_]+\*|\*[A-Za-z0-9_]+')
