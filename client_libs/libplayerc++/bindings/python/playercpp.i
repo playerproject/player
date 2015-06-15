@@ -39,3 +39,8 @@
 %include "libplayerc++/playerc++.h"
 %include "libplayerinterface/player.h"
 
+%include "cpointer.i"    // Grab the SWIG pointer library
+/* Create some functions for working with "double *" */
+%pointer_functions(double, doublePtr);
+/* Now, use them according to SWIG instructions at:
+   http://www.swig.org/Doc3.0/SWIGDocumentation.html#Library_nn3 */
