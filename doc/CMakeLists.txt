@@ -52,7 +52,7 @@ IF (BUILD_DOCUMENTATION)
         ADD_DEPENDENCIES (doc playercore playerinterface)
 
         # Install documentation
-        SET (docInstallDir "share/doc/player-${PLAYER_VERSION}")
+        SET (docInstallDir "${PLAYER_DATA_INSTALL_DIR}/doc/player-${PLAYER_VERSION}")
         SET (docSourceDir "${CMAKE_CURRENT_BINARY_DIR}/player-docs/")
         # Make the output directory now so install doesn't complain that it doesn't exist
         FILE (MAKE_DIRECTORY ${docSourceDir})
