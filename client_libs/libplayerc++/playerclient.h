@@ -63,7 +63,7 @@
 #endif
 
 #ifdef HAVE_BOOST_SIGNALS
-  #include <boost/signal.hpp>
+  #include <boost/signals2.hpp>
 #endif
 
 #ifdef HAVE_BOOST_THREAD

@@ -78,7 +78,7 @@
 // Don't think we need to include these here
 /*
 #ifdef HAVE_BOOST_SIGNALS
-  #include <boost/signal.hpp>
+  #include <boost/signals2.hpp>
   #include <boost/bind.hpp>
 #endif
 

@@ -85,13 +85,13 @@ class PLAYERCC_EXPORT ClientProxy
 #ifdef HAVE_BOOST_SIGNALS
     /// A connection type.  This is useful when attaching signals to the
     /// ClientProxy because it allows for detatching the signals.
-    typedef boost::signals::connection connection_t;
+    typedef boost::signals2::connection connection_t;
 
     /// A scoped lock
     typedef boost::mutex::scoped_lock scoped_lock_t;
 
     /// the function pointer type for read signals signal
-    typedef boost::signal<void (void)> read_signal_t;
+    typedef boost::signals2::signal<void (void)> read_signal_t;
 #else
     // if we're not using boost, just define them.
     typedef int connection_t;
