@@ -1193,8 +1193,8 @@ int P2OS::MainSetup()
   {
     accel_command[0] = SETA;
     accel_command[1] = ARGNINT;
-    accel_command[2] = abs(this->motor_max_trans_decel) & 0x00FF;
-    accel_command[3] = (abs(this->motor_max_trans_decel) & 0xFF00) >> 8;
+    accel_command[2] = abs((int)this->motor_max_trans_decel) & 0x00FF;
+    accel_command[3] = (abs((int)this->motor_max_trans_decel) & 0xFF00) >> 8;
     accel_packet.Build(accel_command, 4);
     this->SendReceive(&accel_packet,false);
   }
@@ -1211,8 +1211,8 @@ int P2OS::MainSetup()
   {
     accel_command[0] = SETRA;
     accel_command[1] = ARGNINT;
-    accel_command[2] = abs(this->motor_max_rot_decel) & 0x00FF;
-    accel_command[3] = (abs(this->motor_max_rot_decel) & 0xFF00) >> 8;
+    accel_command[2] = abs((int)this->motor_max_rot_decel) & 0x00FF;
+    accel_command[3] = (abs((int)this->motor_max_rot_decel) & 0xFF00) >> 8;
     accel_packet.Build(accel_command, 4);
     this->SendReceive(&accel_packet,false);
   }

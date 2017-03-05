@@ -94,6 +94,7 @@ driver
 @author Alejandro R. Mosteo
 */
 /** @} */
+#include <cmath>
 
 #include "chronos.hh"
 #include "libplayercore/playercore.h"
@@ -368,7 +369,7 @@ int Nxt::ProcessMessage ( QueuePointer  & resp_queue,
       max_power_[motor] *= ( prof.speed / max_speed_[motor] ); // Adjust power proportionally
       max_speed_[motor]  = prof.speed;
 
-      if ( abs ( max_power_[motor] ) > 100 )
+      if ( std::abs ( max_power_[motor] ) > 100.0 )
         PLAYER_WARN2 ( "nxt: requested speed would require excess power: [speed/power] = [ %8.2f / %8.2f ]",
                        max_speed_[motor], max_power_[motor] );
       return 0;
@@ -400,7 +401,7 @@ T sign ( T x )
 int8_t Nxt::GetPower ( float vel, NXT::motors motor ) const
 {
   const int8_t power = vel / max_speed_[motor] * max_power_[motor];
-  if ( abs ( power ) > abs ( max_power_[motor] ) )
+  if ( std::abs ( power ) > std::abs ( max_power_[motor] ) )
     {
       PLAYER_WARN3 ( "nxt: exceeded max power [motor/reqvel/reqpwr] = [ %s / %8.2f / %d ]",
                      motor_names[motor], vel, power );
