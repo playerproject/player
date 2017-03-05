@@ -1,3 +1,22 @@
+# 3.1.0 (2017-03-05)
+## Backwards incompatible changes:  
+- Added course and speed to GPS interface player_gps_data message
+- Added waypoints_distance to planner interface player_planner_waypoints_req message
+
+## New Drivers:  
+- hemmison
+- kinect
+- mbase
+- RazorIMU
+- wlanscan
+
+## Other Highlights:  
+- Fixes for generated Python bindings
+- Interface and XDR generation scripts now compatible with Python 3
+- Add MONO16 support to playercam
+- Added Unix daemonization support to Player server
+- Lots of fixes and new features
+
 3.0.2 (2010-06-28)
  - Various small warning fixes
  - Fixes for documentation build process
