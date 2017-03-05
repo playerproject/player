@@ -14,7 +14,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  *
  */
 /*
@@ -356,6 +356,8 @@ void Dummy::Main(void)
                 data.latitude = 1e7;
                 data.longitude = 1e7;
                 data.altitude = 1e3;
+                data.course = 10;
+                data.speed = 5;
                 data.utm_e = 10.0;
                 data.utm_n = 10.0;
                 data.quality = 2;

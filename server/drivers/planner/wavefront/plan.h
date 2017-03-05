@@ -16,7 +16,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  *
  */
 
@@ -132,6 +132,9 @@ void plan_compute_dist_kernel(plan_t* plan);
 
 // Destroy a planner
 void plan_free(plan_t *plan);
+
+// Copy a planner
+plan_t *plan_copy(plan_t *plan);
 
 // Initialize the plan
 void plan_init(plan_t *plan);

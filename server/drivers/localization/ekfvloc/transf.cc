@@ -16,32 +16,34 @@
  *
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
 #include <gsl/gsl_eigen.h>
 #include <gsl/gsl_matrix.h>
+#include <stdexcept>
+#include <cmath>
 #include "transf.hh"
 
 Transf::Transf() :
-        Matrix(3, 1)
+        MatrixXd(3, 1)
 {
 }
 
 Transf::Transf(double x, double y, double phi) :
-        Matrix(3, 1)
+        MatrixXd(3, 1)
 {
     operator()(0, 0) = x;
     operator()(1, 0) = y;
     operator()(2, 0) = phi;
 }
 
-Transf::Transf(Matrix &m) :
-        Matrix(3, 1)
+Transf::Transf(MatrixXd &m) :
+        MatrixXd(3, 1)
 {
-    if ((m.RowNo() != 3) or(m.ColNo() != 1))
+    if ((m.rows() != 3) or(m.cols() != 1))
     {
-        throw range_error("Impossible conversion from Matrix to Transf\n");
+        throw std::range_error("Impossible conversion from MatrixXd to Transf\n");
     }
     else
     {
@@ -139,9 +141,9 @@ Transf TRel(Transf Twa, Transf Twb)
     return Compose(Inv(Twa), Twb);
 }
 
-Matrix Jacobian(Transf Tab)
+MatrixXd Jacobian(Transf Tab)
 {
-    Matrix Jab(3, 3);
+    MatrixXd Jab(3, 3);
 
     Jab(0, 0) =  cos(Tab.tPhi());
     Jab(0, 1) = -sin(Tab.tPhi());
@@ -156,9 +158,9 @@ Matrix Jacobian(Transf Tab)
     return Jab;
 }
 
-Matrix InvJacobian(Transf Tab)
+MatrixXd InvJacobian(Transf Tab)
 {
-    Matrix Jba(3, 3);
+    MatrixXd Jba(3, 3);
 
     Jba(0, 0) =  cos(Tab.tPhi());
     Jba(0, 1) =  sin(Tab.tPhi());
@@ -173,9 +175,9 @@ Matrix InvJacobian(Transf Tab)
     return Jba;
 }
 
-Matrix J1(Transf Ta, Transf Tb)
+MatrixXd J1(Transf Ta, Transf Tb)
 {
-    Matrix J1(3, 3);
+    MatrixXd J1(3, 3);
 
     J1(0, 0) =  1;
     J1(0, 1) =  0;
@@ -190,9 +192,9 @@ Matrix J1(Transf Ta, Transf Tb)
     return J1;
 }
 
-Matrix InvJ1(Transf Ta, Transf Tb)
+MatrixXd InvJ1(Transf Ta, Transf Tb)
 {
-    Matrix InvJ1(3, 3);
+    MatrixXd InvJ1(3, 3);
 
     InvJ1(0, 0) =  1;
     InvJ1(0, 1) =  0;
@@ -207,9 +209,9 @@ Matrix InvJ1(Transf Ta, Transf Tb)
     return InvJ1;
 }
 
-Matrix J1zero(Transf Ta)
+MatrixXd J1zero(Transf Ta)
 {
-    Matrix J1z(3, 3);
+    MatrixXd J1z(3, 3);
 
     J1z(0, 0) =  1;
     J1z(0, 1) =  0;
@@ -224,9 +226,9 @@ Matrix J1zero(Transf Ta)
     return J1z;
 }
 
-Matrix InvJ1zero(Transf Ta)
+MatrixXd InvJ1zero(Transf Ta)
 {
-    Matrix InvJ1z(3, 3);
+    MatrixXd InvJ1z(3, 3);
 
     InvJ1z(0, 0) =  1;
     InvJ1z(0, 1) =  0;
@@ -241,9 +243,9 @@ Matrix InvJ1zero(Transf Ta)
     return InvJ1z;
 }
 
-Matrix J2(Transf Ta, Transf Tb)
+MatrixXd J2(Transf Ta, Transf Tb)
 {
-    Matrix J2(3, 3);
+    MatrixXd J2(3, 3);
 
     J2(0, 0) =  cos(Ta.tPhi());
     J2(0, 1) = -sin(Ta.tPhi());
@@ -258,9 +260,9 @@ Matrix J2(Transf Ta, Transf Tb)
     return J2;
 }
 
-Matrix InvJ2(Transf Ta, Transf Tb)
+MatrixXd InvJ2(Transf Ta, Transf Tb)
 {
-    Matrix InvJ2(3, 3);
+    MatrixXd InvJ2(3, 3);
 
     InvJ2(0, 0) =  cos(Ta.tPhi());
     InvJ2(0, 1) =  sin(Ta.tPhi());
@@ -275,9 +277,9 @@ Matrix InvJ2(Transf Ta, Transf Tb)
     return InvJ2;
 }
 
-Matrix J2zero(Transf Ta)
+MatrixXd J2zero(Transf Ta)
 {
-    Matrix J2z(3, 3);
+    MatrixXd J2z(3, 3);
 
     J2z(0, 0) =  cos(Ta.tPhi());
     J2z(0, 1) = -sin(Ta.tPhi());
@@ -294,9 +296,9 @@ Matrix J2zero(Transf Ta)
     return J2z;
 }
 
-Matrix InvJ2zero(Transf Ta)
+MatrixXd InvJ2zero(Transf Ta)
 {
-    Matrix InvJ2z(3, 3);
+    MatrixXd InvJ2z(3, 3);
 
     InvJ2z(0, 0) =  cos(Ta.tPhi());
     InvJ2z(0, 1) =  sin(Ta.tPhi());
@@ -329,36 +331,36 @@ double spAtan2(double y, double x)
 
 double Transf::Distance(const Transf &b) const
 {
-    return sqrt(pow(tX() - b.tX(), 2.0) + pow(tY() - b.tY(), 2.0));
+    return std::sqrt(std::pow(tX() - b.tX(), 2.0) + std::pow(tY() - b.tY(), 2.0));
 }
 
-void Eigenv(Matrix M, Matrix *vectors, Matrix *values)
+void Eigenv(MatrixXd M, MatrixXd *vectors, MatrixXd *values)
 {
-    if (!M.IsSquare())
-        throw range_error("Matrix isn't square");
+    if (M.cols() != M.rows())
+        throw std::range_error("MatrixXd isn't square");
 
-    gsl_matrix *m = gsl_matrix_alloc(M.RowNo(), M.ColNo());
+    gsl_matrix *m = gsl_matrix_alloc(M.rows(), M.cols());
 
-    for (uint32_t r = 0; r < M.RowNo(); r++)
-        for (uint32_t c = 0; c < M.ColNo(); c++)
+    for (uint32_t r = 0; r < M.rows(); r++)
+        for (uint32_t c = 0; c < M.cols(); c++)
             gsl_matrix_set(m, r, c, M(r, c));
 
-    gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc(M.RowNo());
-    gsl_vector *d = gsl_vector_alloc(M.RowNo());
-    gsl_matrix *v = gsl_matrix_alloc(M.RowNo(), M.ColNo());
+    gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc(M.rows());
+    gsl_vector *d = gsl_vector_alloc(M.rows());
+    gsl_matrix *v = gsl_matrix_alloc(M.rows(), M.cols());
 
     const int err = gsl_eigen_symmv(m, d, v, w);
 
     if (err == 0)
     {
-        *values = Matrix(M.RowNo(), M.ColNo());
+        *values = MatrixXd(M.rows(), M.cols());
         (*values) *= 0;
-        for (uint32_t r = 0; r < M.RowNo(); r++)
+        for (uint32_t r = 0; r < M.rows(); r++)
             (*values)(r, r) = gsl_vector_get(d, r);
 
-        *vectors = Matrix(M.RowNo(), M.ColNo());
-        for (uint32_t r = 0; r < M.RowNo(); r++)
-            for (uint32_t c = 0; c < M.ColNo(); c++)
+        *vectors = MatrixXd(M.rows(), M.cols());
+        for (uint32_t r = 0; r < M.rows(); r++)
+            for (uint32_t c = 0; c < M.cols(); c++)
                 (*vectors)(r, c) = gsl_matrix_get(v, r, c);
     }
 

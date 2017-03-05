@@ -16,10 +16,10 @@
  *
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-
+#include <iostream>
 #include <cfloat>
 #include <libplayercore/playercore.h>
 #include "params.hh"
@@ -51,7 +51,7 @@ void RobotLocation::SetPoses(double ox, double oy, double oth,
 void RobotLocation::SetCurrentError(double ex, double ey, double eth)
 {
 
-    Matrix cov = Matrix(3, 3);
+    MatrixXd cov = MatrixXd(3, 3);
     cov(0, 0) = pow(ex / 2, 2);
     cov(1, 1) = pow(ey / 2, 2);
     cov(2, 2) = pow(eth / 2, 2);
@@ -70,15 +70,15 @@ void RobotLocation::Prediction()
     d = sqrt((Xrk_1rk.tX() * Xrk_1rk.tX()) +
              (Xrk_1rk.tY() * Xrk_1rk.tY()));
 
-    Matrix Crk_1rk = Matrix(3, 3);
+    MatrixXd Crk_1rk = MatrixXd(3, 3);
     Crk_1rk(0, 0)  = pow(sx * d, 2);
     Crk_1rk(1, 1)  = pow(sy * d, 2);
     Crk_1rk(2, 2)  = pow(sphi * Xrk_1rk.tPhi(), 2);
 
-    const Matrix JRkRk_1 = InvJacobian(Xrk_1rk);
+    const MatrixXd JRkRk_1 = InvJacobian(Xrk_1rk);
 
     XwRk.SetLoc(Compose(XwRk_1.kX(), Xrk_1rk));
-    XwRk.SetCov(JRkRk_1 * XwRk_1.kCov() * ~JRkRk_1 + Crk_1rk);
+    XwRk.SetCov(JRkRk_1 * XwRk_1.kCov() * JRkRk_1.transpose() + Crk_1rk);
 }
 
 ///////////////////////////////////////////////////////////////
@@ -90,71 +90,71 @@ bool verifyOverlapping(Transf XME, double mLen, double eLen)
 double MahalaDist(const Uloc &robot, const Feature &obs, const Transf &feat,
         Transf *Xme)
 {
-    Matrix Bme = Matrix(2, 3);
+    MatrixXd Bme = MatrixXd(2, 3);
     Bme(0, 1)  = 1;
     Bme(1, 2)  = 1;
 
     const Transf Xre = obs.Loc();
-    const Matrix Ce  = obs.Cov();
+    const MatrixXd Ce  = obs.Cov();
 
     const Transf &Xwm = feat;
     *Xme = TRel(Xwm, Compose(robot.kX(), Xre));
 
     // Compute h
-    const Matrix h = Bme * (*Xme);
+    const MatrixXd h = Bme * (*Xme);
 
     // Compute HR
-    const Matrix Jer = InvJacobian(Xre);
-    const Matrix J2  = J2zero(*Xme);
-    const Matrix HR  = Bme * J2 * Jer;
+    const MatrixXd Jer = InvJacobian(Xre);
+    const MatrixXd J2  = J2zero(*Xme);
+    const MatrixXd HR  = Bme * J2 * Jer;
 
     // Compute GE
-    const Matrix GE = Bme * J2 * ~Bme;
+    const MatrixXd GE = Bme * J2 * Bme.transpose();
 
     // Hypothesis test -> Mahalanobis distance
-    Matrix Cinn = !(HR * robot.kCov() * (~HR) + GE * Ce * (~GE));
-    Matrix d2   = (~h) * Cinn * h;
+    MatrixXd Cinn = (HR * robot.kCov() * (HR.transpose()) + GE * Ce * (GE.transpose())).inverse();
+    MatrixXd d2   = (h.transpose()) * Cinn * h;
 
     return d2(0, 0);
 }
 
 void UpdateWithMatch(Uloc *XwRk, const Feature &obs, const Transf &feat)
 {
-    Matrix Bme = Matrix(2, 3);
+    MatrixXd Bme = MatrixXd(2, 3);
     Bme(0, 1)  = 1;
     Bme(1, 2)  = 1;
 
     const Transf Xre = obs.Loc();
-    const Matrix Ce  = obs.Cov();
+    const MatrixXd Ce  = obs.Cov();
 
     const Transf &Xwm = feat;
     const Transf Xme = TRel(Xwm, Compose(XwRk->kX(), Xre));
 
-    const Matrix h = Bme * Xme;
+    const MatrixXd h = Bme * Xme;
 
-    const Matrix Jer = InvJacobian(Xre);
-    const Matrix J2  = J2zero(Xme);
-    const Matrix HR  = Bme * J2 * Jer;
+    const MatrixXd Jer = InvJacobian(Xre);
+    const MatrixXd J2  = J2zero(Xme);
+    const MatrixXd HR  = Bme * J2 * Jer;
 
-    const Matrix GE = Bme * J2 * ~Bme;
+    const MatrixXd GE = Bme * J2 * Bme.transpose();
 
-    Matrix Cinn = !(HR * XwRk->kCov() * (~HR) + GE * Ce * (~GE));
+    MatrixXd Cinn = (HR * XwRk->kCov() * (HR.transpose()) + GE * Ce * (GE.transpose())).inverse();
 
-    Matrix K  = XwRk->kCov() * ~HR * Cinn;
-    Matrix Xk = -K * h;
+    MatrixXd K  = XwRk->kCov() * HR.transpose() * Cinn;
+    MatrixXd Xk = -K * h;
 
-    const Matrix P = XwRk->kCov() - K * HR * XwRk->kCov();
+    const MatrixXd P = XwRk->kCov() - K * HR * XwRk->kCov();
 
     //Centering
     XwRk->SetLoc(Compose(XwRk->kX(), Xk));
-    XwRk->SetCov(InvJ2zero(Xk) * P * ~InvJ2zero(Xk));
+    XwRk->SetCov(InvJ2zero(Xk) * P * InvJ2zero(Xk).transpose());
 }
 
 void RobotLocation::Update(ObservedFeatures obs)
 {
     int matched = 0;
 
-    Matrix Bme = Matrix(2, 3);
+    MatrixXd Bme = MatrixXd(2, 3);
     Bme(0, 1)  = 1;
     Bme(1, 2)  = 1;
 
@@ -266,7 +266,7 @@ void RobotLocation::Update(ObservedFeatures obs)
     for (int i = 0; i < obs.Count(); i++)
     {
         const Transf Xre = obs.features(i).Loc();
-        const Matrix Ce  = obs.features(i).Cov();
+        const MatrixXd Ce  = obs.features(i).Cov();
         
         for (int j = 0; j < map_.NumSegments(); j++)
         {
@@ -274,19 +274,19 @@ void RobotLocation::Update(ObservedFeatures obs)
             const Transf Xme = TRel(Xwm, Compose(XwRk.kX(), Xre));
 
             // Compute h
-            const Matrix h = Bme * Xme;
+            const MatrixXd h = Bme * Xme;
 
             // Compute HR
-            const Matrix Jer = InvJacobian(Xre);
-            const Matrix J2  = J2zero(Xme);
-            const Matrix HR  = Bme * J2 * Jer;
+            const MatrixXd Jer = InvJacobian(Xre);
+            const MatrixXd J2  = J2zero(Xme);
+            const MatrixXd HR  = Bme * J2 * Jer;
 
             // Compute GE
-            const Matrix GE = Bme * J2 * ~Bme;
+            const MatrixXd GE = Bme * J2 * ~Bme;
 
             // Hypothesis test -> Mahalanobis distance
-            Matrix Cinn = !(HR * XwRk.kCov() * (~HR) + GE * Ce * (~GE));
-            Matrix d2   = (~h) * Cinn * h;
+            MatrixXd Cinn = !(HR * XwRk.kCov() * (~HR) + GE * Ce * (~GE));
+            MatrixXd d2   = (~h) * Cinn * h;
 
             if (d2(0, 0) <= 5.99) // TODO name this constant
             {
@@ -298,10 +298,10 @@ void RobotLocation::Update(ObservedFeatures obs)
                            fabs(Xme.x()), obs.features(i).dimension(), map_.lengths(j),
                            fabs(Xme.x()) - ((obs.features(i).dimension() + map_.lengths(j))/2.0));
                     
-                    Matrix K  = XwRk.kCov() * ~HR * Cinn;
-                    Matrix Xk = -K * h;
+                    MatrixXd K  = XwRk.kCov() * ~HR * Cinn;
+                    MatrixXd Xk = -K * h;
 
-                    const Matrix P = XwRk.kCov() - K * HR * XwRk.kCov();
+                    const MatrixXd P = XwRk.kCov() - K * HR * XwRk.kCov();
 
                     //Centering
                     XwRk.SetLoc(Compose(XwRk.kX(), Xk));
@@ -375,7 +375,7 @@ bool RobotLocation::Locate(const Transf odom, const Scan s)
 
 void RobotLocation::PrintState() const
 {
-    cout << "Location: "    << ~XwRk.kX()   <<
+    std::cout << "Location: "    << XwRk.kX().transpose()   <<
             "Covariance:\n" <<  XwRk.kCov() << endl;
 }
 
@@ -386,7 +386,7 @@ Pose RobotLocation::EstimatedPose(void) const
                 XwRk.kX().tPhi());
 }
 
-Matrix RobotLocation::Covariance(void) const
+MatrixXd RobotLocation::Covariance(void) const
 {
     return XwRk.kCov();
 }

@@ -16,7 +16,7 @@
  *
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
 
@@ -25,7 +25,7 @@
 
 #include "transf.hh"
 
-void EIFnn(Matrix H, Matrix G, Matrix h, Matrix S, Matrix &F, Matrix &N);
-void CalculateEstimationEIFnn(Matrix Fk, Matrix Nk, Matrix &x, Matrix &P);
+void EIFnn(MatrixXd H, MatrixXd G, MatrixXd h, MatrixXd S, MatrixXd &F, MatrixXd &N);
+void CalculateEstimationEIFnn(MatrixXd Fk, MatrixXd Nk, MatrixXd &x, MatrixXd &P);
 
 #endif /* SUB_OPT_H_ */

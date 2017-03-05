@@ -15,7 +15,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  *
  */
 ///////////////////////////////////////////////////////////////////////////
@@ -530,7 +530,7 @@ void ShapeTracker::ContrastStretch( IplImage *src, IplImage *gray )
   cvCalcHist(&gray, this->hist, 0, NULL);
 
   for(index = 0; index < this->histSize; index++){
-    hist_value = cvQueryHistValue_1D(this->hist, index);
+    hist_value = cvGetReal1D(this->hist, index);
     if(hist_value != 0){
       low = index;
       break;
@@ -538,7 +538,7 @@ void ShapeTracker::ContrastStretch( IplImage *src, IplImage *gray )
   } 
 
   for(index = this->histSize-1; index >= 0; index--){
-    hist_value = cvQueryHistValue_1D(this->hist, index);
+    hist_value = cvGetReal1D(this->hist, index);
     if(hist_value != 0){
       high = index;
       break;
@@ -554,11 +554,11 @@ void ShapeTracker::ContrastStretch( IplImage *src, IplImage *gray )
     if(index > high) this->lut[index] = 255;
   }
 
-  cvCvtPixToPlane(src, R, G, B, NULL);
+  cvSplit(src, R, G, B, NULL);
   cvLUT(R, R, this->lutMat);
   cvLUT(G, G, this->lutMat);
   cvLUT(B, B, this->lutMat);
-  cvCvtPlaneToPix(R, G, B, NULL, src);
+  cvMerge(R, G, B, NULL, src);
 
   cvReleaseImage(&R);
   cvReleaseImage(&G);

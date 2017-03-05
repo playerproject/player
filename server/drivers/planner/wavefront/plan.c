@@ -16,7 +16,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  *
  */
 
@@ -210,6 +210,51 @@ void plan_free(plan_t *plan)
   free(plan);
 
   return;
+}
+
+// Copy the planner
+plan_t *plan_copy(plan_t *plan)
+{
+  int i;
+  plan_t* ret_plan;
+
+  ret_plan = plan_alloc(plan->abs_min_radius,
+                        plan->des_min_radius,
+                        plan->max_radius,
+                        plan->dist_penalty,
+                        plan->hysteresis_factor);
+
+  assert(ret_plan);
+
+  // Fill in the map structure
+  // First, get the map info
+  ret_plan->scale = plan->scale;
+  ret_plan->size_x = plan->size_x;
+  ret_plan->size_y = plan->size_y;
+  ret_plan->origin_x = plan->origin_x;
+  ret_plan->origin_y = plan->origin_y;
+
+  // Now get the map data
+  // Allocate space for map cells
+  ret_plan->cells = (plan_cell_t*)realloc(ret_plan->cells,
+                                            (ret_plan->size_x *
+                                             ret_plan->size_y *
+                                             sizeof(plan_cell_t)));
+  assert(ret_plan->cells);
+
+  // Do initialization
+  plan_init(ret_plan);
+
+  // Copy the map data
+  for (i = 0; i < ret_plan->size_x * ret_plan->size_y; i++)
+  {
+    ret_plan->cells[i].occ_dist = plan->cells[i].occ_dist;
+    ret_plan->cells[i].occ_state = plan->cells[i].occ_state;
+    ret_plan->cells[i].occ_state_dyn = plan->cells[i].occ_state_dyn;
+    ret_plan->cells[i].occ_dist_dyn = plan->cells[i].occ_dist_dyn;
+  }
+
+  return ret_plan;
 }
 
 // Initialize the plan

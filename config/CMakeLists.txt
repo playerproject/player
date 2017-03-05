@@ -42,4 +42,4 @@ SET (sampleConfigFiles  afsm.cfg
                         writelog.cfg
                         wsn.cfg)
 
-INSTALL (FILES ${sampleConfigFiles} DESTINATION "share/${PROJECT_NAME_LOWER}/config" COMPONENT samplecfg)
+INSTALL (FILES ${sampleConfigFiles} DESTINATION "${PLAYER_DATA_INSTALL_DIR}/${PROJECT_NAME_LOWER}/config" COMPONENT samplecfg)

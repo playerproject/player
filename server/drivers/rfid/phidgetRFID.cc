@@ -15,7 +15,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  *
  */
 
@@ -109,8 +109,13 @@ inline float timediffms(struct timeval start, struct timeval end) {
     return(end.tv_sec*1000.0 + end.tv_usec/1000.0 - (start.tv_sec*1000.0 + start.tv_usec/1000.0));
 }
 
+#ifdef HAVE_PHIDGET_2_1_8
+int TagLost(CPhidgetRFIDHandle rfid, void *hola, char *usrchar, CPhidgetRFID_Protocol protocol);
+int TagFound(CPhidgetRFIDHandle rfid, void *hola, char *usrchar,  CPhidgetRFID_Protocol protocol);
+#else
 int TagLost(CPhidgetRFIDHandle rfid,void *hola, unsigned char *usrchar);
 int TagFound(CPhidgetRFIDHandle rfid,void *hola, unsigned char *usrchar);
+#endif
 
 
 
@@ -220,8 +225,13 @@ int Phidgetrfid::MainSetup() {
         PLAYER_MSG0(1,"Connection granted to the PhidgetRFID Reader.");
     }
 
+#ifdef HAVE_PHIDGET_2_1_8
+    CPhidgetRFID_set_OnTagLost2_Handler(rfid,TagLost,NULL);
+    CPhidgetRFID_set_OnTag2_Handler(rfid,TagFound,NULL);
+#else
     CPhidgetRFID_set_OnTagLost_Handler(rfid,TagLost,NULL);
     CPhidgetRFID_set_OnTag_Handler(rfid,TagFound,NULL);
+#endif
     //Turning on the Antena.
     CPhidgetRFID_setAntennaOn(rfid,1);
     CPhidgetRFID_setLEDOn(rfid,1);
@@ -359,10 +369,13 @@ void Phidgetrfid::Main() {
         // called on each message.
         ProcessMessages();
 
-
-
-        unsigned char tag[20];
+        char* tag = new char[20];
+#ifdef HAVE_PHIDGET_2_1_8
+        CPhidgetRFID_Protocol proto = PHIDGET_RFID_PROTOCOL_PHIDGETS;
+        CPhidgetRFID_getLastTag2(rfid,&tag,&proto);
+#else
         CPhidgetRFID_getLastTag(rfid,tag);
+#endif
         int ledstate;
         player_rfid_data_t data_rfid;
         data_rfid.tags = new player_rfid_tag_t[1];
@@ -397,7 +410,7 @@ void Phidgetrfid::Main() {
             }
             CPhidgetRFID_setLEDOn(rfid,0);
         }
-
+        delete [] tag;
 
         //Publishing data.
         if (rfid_id.interf !=0) {
@@ -439,13 +452,22 @@ void Phidgetrfid::Main() {
 }
 
 //Handler functions to check if there is a new tag there. They are handlers as seen on the Phidget library.
+
+#ifdef HAVE_PHIDGET_2_1_8
+int TagLost(CPhidgetRFIDHandle rfid, void *dummy, char *usrchar, CPhidgetRFID_Protocol protocol) {
+#else
 int TagLost(CPhidgetRFIDHandle rfid,void *dummy, unsigned char *usrchar) {
+#endif
     tagControl.rfid_present=rfid;
     tagControl.tagPresent=0;
     return (0);
 }
 
+#ifdef HAVE_PHIDGET_2_1_8
+int TagFound(CPhidgetRFIDHandle rfid, void *dummy, char *usrchar, CPhidgetRFID_Protocol protocol) {
+#else
 int TagFound(CPhidgetRFIDHandle rfid,void *dummy, unsigned char *usrchar) {
+#endif
     tagControl.rfid_present=rfid;
     tagControl.tagPresent=1;
     return (0);

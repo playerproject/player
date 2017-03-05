@@ -16,7 +16,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  *
  */
 /********************************************************************
@@ -33,7 +33,7 @@
  *
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  *
  ********************************************************************/
 
@@ -85,13 +85,13 @@ class PLAYERCC_EXPORT ClientProxy
 #ifdef HAVE_BOOST_SIGNALS
     /// A connection type.  This is useful when attaching signals to the
     /// ClientProxy because it allows for detatching the signals.
-    typedef boost::signals::connection connection_t;
+    typedef boost::signals2::connection connection_t;
 
     /// A scoped lock
     typedef boost::mutex::scoped_lock scoped_lock_t;
 
     /// the function pointer type for read signals signal
-    typedef boost::signal<void (void)> read_signal_t;
+    typedef boost::signals2::signal<void (void)> read_signal_t;
 #else
     // if we're not using boost, just define them.
     typedef int connection_t;

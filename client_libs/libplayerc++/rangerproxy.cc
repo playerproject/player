@@ -16,7 +16,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  *
  */
 /********************************************************************
@@ -33,7 +33,7 @@
  *
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  *
  ********************************************************************/
 
@@ -85,35 +85,35 @@ void RangerProxy::Unsubscribe()
 
 player_pose3d_t RangerProxy::GetElementPose(uint32_t aIndex) const
 {
-  if (aIndex > mDevice->element_count)
+  if (aIndex >= mDevice->element_count)
     throw PlayerError("RangerProxy::GetSensorPose", "index out of bounds");
   return GetVar(mDevice->element_poses[aIndex]);
 }
 
 player_bbox3d_t RangerProxy::GetElementSize(uint32_t aIndex) const
 {
-  if (aIndex > mDevice->element_count)
+  if (aIndex >= mDevice->element_count)
     throw PlayerError("RangerProxy::GetSensorSize", "index out of bounds");
   return GetVar(mDevice->element_sizes[aIndex]);
 }
 
 double RangerProxy::GetRange(uint32_t aIndex) const
 {
-  if (aIndex > mDevice->ranges_count)
+  if (aIndex >= mDevice->ranges_count)
     throw PlayerError("RangerProxy::GetRange", "index out of bounds");
   return GetVar(mDevice->ranges[aIndex]);
 }
 
 player_point_3d_t RangerProxy::GetPoint(uint32_t aIndex) const
 {
-  if (aIndex > mDevice->points_count)
+  if (aIndex >= mDevice->points_count)
     throw PlayerError("RangerProxy::GetPoint", "index out of bounds");
   return GetVar(mDevice->points[aIndex]);
 }
 
 double RangerProxy::GetIntensity(uint32_t aIndex) const
 {
-  if (aIndex > mDevice->intensities_count)
+  if (aIndex >= mDevice->intensities_count)
     throw PlayerError("RangerProxy::GetIntensity", "index out of bounds");
   return GetVar(mDevice->intensities[aIndex]);
 }

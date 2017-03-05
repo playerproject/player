@@ -16,25 +16,25 @@
  *
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
 
 #include "sub_opt.hh"
 
 
-void CalculateEstimationEIFnn(Matrix Fk, Matrix Nk, Matrix &x, Matrix &P){
+void CalculateEstimationEIFnn(MatrixXd Fk, MatrixXd Nk, MatrixXd &x, MatrixXd &P){
 
-	P = !Fk;
+	P = Fk.inverse();
 	x = P * Nk;
 
-	for (unsigned int i = 0; i < x.RowNo(); i++)
+	for (unsigned int i = 0; i < x.rows(); i++)
 		x(i,0) *= -1;
 }
 
-void EIFnn(Matrix H, Matrix G, Matrix h, Matrix S, Matrix &F, Matrix &N){
+void EIFnn(MatrixXd H, MatrixXd G, MatrixXd h, MatrixXd S, MatrixXd &F, MatrixXd &N){
 
-	Matrix R = ~H * !(G * S * ~G);
+	MatrixXd R = H.transpose() * (G * S * G.transpose()).inverse();
 
 	F = R * H;
 	N = R * h;

@@ -16,7 +16,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  *
  */
 /********************************************************************
@@ -33,7 +33,7 @@
  *
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  *
  ********************************************************************/
 
@@ -87,9 +87,10 @@ std::ostream&
 std::operator << (std::ostream &os, const PlayerCc::GpsProxy &c)
 {
   os << "#GPS (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
-  os << "#lat|long|alt|utm_e|utm_n|err_horz|err_vert|num_sats|quality" << std::endl;
+  os << "#time|lat|long|alt|speed|course|utm_e|utm_n|err_horz|err_vert|num_sats|quality" << std::endl;
+  os << std::setw(14) << std::setprecision(13) << c.GetTime() << " ";
   os << std::setw(11) << std::setprecision(10) << c.GetLatitude() << " " << std::setw(11) << std::setprecision(10) <<  c.GetLongitude() << " " << std::setw(6) << std::setprecision(5) << c.GetAltitude() << " " ;
-
+  os << std::setw(5) << std::setprecision(2) << c.GetSpeed() << " " << std::setw(6) << std::setprecision(5) << c.GetCourse() << " ";
   os << std::setw(11) << std::setprecision(10) << c.GetUtmEasting() << " " << std::setw(11) << std::setprecision(10) << c.GetUtmNorthing() << " " << std::setw(6) << std::setprecision(5) << c.GetErrHorizontal() << " ";
   os << std::setw(6) << std::setprecision(5) << c.GetErrVertical() << " " << setw(3) << c.GetSatellites() << " " << std::setw(3) << c.GetQuality() << std::endl;
   return os;

@@ -16,7 +16,7 @@
  *
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
 #ifndef FEATURE_H_
@@ -41,9 +41,9 @@ public:
     double codimension() const;
     const Transf& Loc() const;
 
-    const Matrix& Cov() const;
+    const MatrixXd& Cov() const;
     double Cov(int i, int j) const;
-    void SetCov(const Matrix& c) { uloc_.SetCov(c); };
+    void SetCov(const MatrixXd& c) { uloc_.SetCov(c); };
 
     const Uloc& uloc(void) const { return uloc_; };
     void set_uloc(const Uloc& u) { uloc_ = u; };

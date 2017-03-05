@@ -16,7 +16,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  *
  */
 /********************************************************************
@@ -33,7 +33,7 @@
  *
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  *
  ********************************************************************/
 
@@ -99,6 +99,15 @@ std::operator << (std::ostream &os, const PlayerCc::PlannerProxy &c)
   os << c.GetPathValid() << "\t" << c.GetPathDone() << std::endl;
 
   return os;
+}
+
+void
+PlannerProxy::SetStartPose(double aSx, double aSy, double aSa)
+{
+  scoped_lock_t lock(mPc->mMutex);
+  if (0 != playerc_planner_set_cmd_start(mDevice, aSx, aSy, aSa))
+    throw PlayerError("PlannerProxy::SetStartPose()", "error setting start");
+  return;
 }
 
 void

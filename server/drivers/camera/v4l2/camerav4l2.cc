@@ -14,7 +14,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  *
  */
 
@@ -74,13 +74,14 @@ The camerav4l2 driver captures images from V4L2-compatible cameras.
 
 - norm (string)
   - Default: "NTSC"
-  - Capture format; "NTSC", "PAL" or "UNKNOWN"
+  - Capture format; "NTSC", "PAL", "PAL60" or "UNKNOWN"
   - Case sensitive!
 
 - size (integer tuple)
   - Default: varies with norm
-    - PAL: [768 576]
-    - NTSC: [640 480]
+    - PAL:   [768 576]
+    - PAL60: [720 480]
+    - NTSC:  [640 480]
     - other: [320 240]
   - Desired image size.   This may not be honoured if the driver does
     not support the requested size).
@@ -197,6 +198,49 @@ driver
   provides ["camera:0"]
 )
 @endverbatim
+
+@par LogiLink USB 2.0 Video Grabber (two sources: 0 = composite, 1 = s-video).
+
+- One camera scenario:
+
+driver
+(
+  name "camerav4l2"
+  port "/dev/video0"
+  sources [0]
+  norm "UNKNOWN"
+  size [720 480]
+  mode "YUYV"
+  buffers 2
+  sleep_nsec 10000
+  provides ["ch0:::camera:0"]
+)
+
+- Two cameras scenario:
+
+@verbatim
+driver
+(
+  name "camerav4l2"
+  port "/dev/video0"
+  sources [0 1]
+  norm "PAL60"
+  size [720 480]
+  mode "YUYV"
+  buffers 2
+  sleep_nsec 10000
+  settle_time 0.1
+  skip_frames 7
+  provides ["ch0:::camera:0" "ch1:::camera:1"]
+)
+@endverbatim
+
+WARNING! This device uses very unstable driver (usbtv.ko), e.g. setting norm
+to "PAL" always resulted in kernel panic. Use "PAL60" instead.
+Buffers should be always set to 2, it won't initialize otherwise.
+The settle_time and skip_frames in two cameras scenario were chosen
+experimentally, may require some tweaking.
+Sizes different than 720x480 seem to be unsupported (messy image).
 
 @author Paul Osmialowski, Takafumi Mizuno
 
@@ -412,7 +456,7 @@ CameraV4L2::CameraV4L2(ConfigFile * cf, int section)
     this->SetError(-1);
     return;
   }
-  // NTSC, PAL or UNKNOWN
+  // NTSC, PAL, PAL60 or UNKNOWN
   str = cf->ReadString(section, "norm", "NTSC");
   if (!str)
   {
@@ -429,6 +473,10 @@ CameraV4L2::CameraV4L2(ConfigFile * cf, int section)
   {
     this->width = 768;
     this->height = 576;
+  } else if (!(strcmp(this->norm, "PAL60")))
+  {
+    this->width = 720;
+    this->height = 480;
   } else
   {
     this->width = 320;

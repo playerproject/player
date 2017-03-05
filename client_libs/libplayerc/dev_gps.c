@@ -14,7 +14,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA.
  *
  */
 /*
@@ -34,7 +34,7 @@
  *
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  */
 /***************************************************************************
  * Desc: GPS device proxy
@@ -113,6 +113,9 @@ void playerc_gps_putmsg(playerc_gps_t *device,
     device->lat = gps_data->latitude / 1e7;
     device->lon = gps_data->longitude / 1e7;
     device->alt = gps_data->altitude / 1e3;
+
+    device->speed = gps_data->speed;
+    device->course = gps_data->course;
 
     device->utm_e = gps_data->utm_e / 100.0;
     device->utm_n = gps_data->utm_n / 100.0;

@@ -16,7 +16,7 @@
  *
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
 
@@ -859,14 +859,13 @@ ND::SetDirection(int dir)
   {
     this->NDparametros.front = static_cast<float> (this->robot_geom.size.sl/2.0 + this->robot_geom.pose.px + this->safety_dist); // Distance to the front
     this->NDparametros.back = static_cast<float> (this->robot_geom.size.sl/2.0 - this->robot_geom.pose.px + this->safety_dist);  // Distance to the back
-    InicializarND(&this->NDparametros);
   }
   else
   {
     this->NDparametros.front = static_cast<float> (this->robot_geom.size.sl/2.0 - this->robot_geom.pose.px + this->safety_dist); // Distance to the front
     this->NDparametros.back = static_cast<float> (this->robot_geom.size.sl/2.0 + this->robot_geom.pose.px + this->safety_dist);  // Distance to the back
-    InicializarND(&this->NDparametros);
   }
+  InicializarND(&this->NDparametros);
   this->current_dir = dir;
 }
 
@@ -1266,7 +1265,7 @@ extern "C" {
   int player_driver_init(DriverTable* table)
   {
     puts("ND driver initializing");
-    ND_Register(table);
+    nd_Register(table);
     puts("ND initialization done");
     return(0);
   }

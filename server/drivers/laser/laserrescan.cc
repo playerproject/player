@@ -15,7 +15,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  *
  */
 ///////////////////////////////////////////////////////////////////////////
@@ -111,6 +111,7 @@ class LaserRescan : public LaserTransform
 
   double min_angle, max_angle, res;
   int scan_count;
+  bool angle_warn;
 };
 
 
@@ -138,6 +139,7 @@ LaserRescan::LaserRescan( ConfigFile* cf, int section)
   this->min_angle = cf->ReadAngle(section, "min_angle", -M_PI/2.0);
   this->scan_count = cf->ReadInt(section, "scan_count", 181);
   res = (max_angle - min_angle) / scan_count;
+  angle_warn = false;
 
   return;
 }
@@ -158,6 +160,11 @@ int LaserRescan::UpdateLaser(player_laser_data_t * data)
   this->data.ranges = new float[scan_count];
   this->data.max_range = data->max_range;
 
+  if ( (data->min_angle > min_angle || data->max_angle < max_angle) && angle_warn == false) {
+    angle_warn = true;
+    PLAYER_WARN("Parts of the interpolated laser configuration lie outside of the source laser range");
+  }
+
   double real_min = data->min_angle;
   double real_res = data->resolution;
 
@@ -166,8 +173,8 @@ int LaserRescan::UpdateLaser(player_laser_data_t * data)
 		double theta = min_angle + i*res;
 		double new_i = (theta - real_min)/real_res;
 
-		unsigned int j = (int) floor(new_i);
-		unsigned int k = (int) ceil(new_i);
+		unsigned int j = (int) floor(new_i) < 0 ? 0 : (int) floor(new_i);
+		unsigned int k = (int) ceil(new_i) < 0 ? 0 : (int) ceil(new_i);
 
 		if (j < 0)
 			j = 0;

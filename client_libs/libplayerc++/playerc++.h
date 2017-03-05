@@ -16,7 +16,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  *
  */
 /********************************************************************
@@ -33,7 +33,7 @@
  *
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  *
  ********************************************************************/
 
@@ -78,7 +78,7 @@
 // Don't think we need to include these here
 /*
 #ifdef HAVE_BOOST_SIGNALS
-  #include <boost/signal.hpp>
+  #include <boost/signals2.hpp>
   #include <boost/bind.hpp>
 #endif
 
@@ -875,6 +875,13 @@ class PLAYERCC_EXPORT GpsProxy : public ClientProxy
 
     /// Altitude, in meters.
     double GetAltitude() const { return GetVar(mDevice->alt); };
+
+    /// Spped over ground, in m/s.
+    double GetSpeed() const { return GetVar(mDevice->speed); };
+
+    /** Course made good (heading if the robot moves along its longitudinal
+     * axis), in radians. */
+    double GetCourse() const { return GetVar(mDevice->course); };
 
     /// Number of satellites in view.
     uint32_t GetSatellites() const { return GetVar(mDevice->sat_count); };
@@ -1731,6 +1738,9 @@ class PLAYERCC_EXPORT PlannerProxy : public ClientProxy
     /// Set the goal pose (gx, gy, ga)
     void SetGoalPose(double aGx, double aGy, double aGa);
 
+    /// Set the start pose (sx, sy, sa)
+    void SetStartPose(double aSx, double aSy, double aSa);
+
     /// Get the list of waypoints. Writes the result into the proxy
     /// rather than returning it to the caller.
     void RequestWaypoints();
@@ -1744,6 +1754,10 @@ class PLAYERCC_EXPORT PlannerProxy : public ClientProxy
 
     /// Have we arrived at the goal?
     uint32_t GetPathDone() const { return GetVar(mDevice->path_done); };
+
+    /// Get straight-line distance along path.  Call RequestWaypoints() to
+    /// fill in.
+    double GetPathLength() const {return GetVar(mDevice->waypoint_distance); };
 
     /// @brief Current pose (m)
     /// @deprecated use GetPose() instead

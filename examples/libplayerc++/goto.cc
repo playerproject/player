@@ -45,7 +45,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <math.h>
 #include <string>
 
-#include <boost/signal.hpp>
+#include <boost/signals2.hpp>
 #include <boost/bind.hpp>
 
 #define USAGE \

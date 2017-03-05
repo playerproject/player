@@ -31,7 +31,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #if !defined (WIN32)
   #include <unistd.h>
 #endif
-#include <boost/signal.hpp>
+#include <boost/signals2.hpp>
 #include <boost/bind.hpp>
 
 using namespace PlayerCc;

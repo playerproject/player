@@ -14,7 +14,7 @@
 
   You should have received a copy of the GNU General Public License
   along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA.
 */
 /*
  * Desc: Simple PF mapper
@@ -925,7 +925,7 @@ int main(int argc, char **argv)
   // Create omap handle
   omap = omap_alloc(laser_range_count, laser_range_max, laser_angle_min, laser_angle_step,
                       opt_grid_width, opt_grid_height, opt_grid_scale); 
-  if (!rmap)
+  if (!omap)
     return -1;
 
   gettimeofday(&tv_a, NULL);

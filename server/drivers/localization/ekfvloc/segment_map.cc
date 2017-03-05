@@ -16,11 +16,12 @@
  *
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
 
 #include <fstream>
+#include <stdexcept>
 #include "segment_map.hh"
 
 SegmentMap::SegmentMap()
@@ -34,7 +35,7 @@ SegmentMap::SegmentMap(string filename)
     fmap.open(filename.c_str());
     if (fmap.fail())
     {
-        throw invalid_argument(std::string("Error opening file: " + filename));
+        throw std::invalid_argument(std::string("Error opening file: " + filename));
     }
 
     double p1x, p1y, p2x, p2y;

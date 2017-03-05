@@ -16,7 +16,7 @@
  *
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
 %module playercpp
@@ -39,3 +39,8 @@
 %include "libplayerc++/playerc++.h"
 %include "libplayerinterface/player.h"
 
+%include "cpointer.i"    // Grab the SWIG pointer library
+/* Create some functions for working with "double *" */
+%pointer_functions(double, doublePtr);
+/* Now, use them according to SWIG instructions at:
+   http://www.swig.org/Doc3.0/SWIGDocumentation.html#Library_nn3 */

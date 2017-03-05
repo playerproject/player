@@ -16,12 +16,12 @@
  *
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
 
 #include <cassert>
-
+#include <stdexcept>
 #include "scan.hh"
 
 Scan::Scan(
@@ -88,7 +88,7 @@ void Scan::SetLastScan (const DoublesVector& ranges,
                         const DoublesVector& bearings) {
 
 	if (ranges.size() != bearings.size())
-		throw range_error("Mismatching ranges in SetLastScan");
+		throw std::range_error("Mismatching ranges in SetLastScan");
 
 	ulocs_.clear();
 	rho_.clear();

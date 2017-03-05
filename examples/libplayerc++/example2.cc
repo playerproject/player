@@ -28,7 +28,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <libplayerc++/playerc++.h>
 #include <iostream>
-#include <boost/signal.hpp>
+#include <boost/signals2.hpp>
 #include <boost/bind.hpp>
 
 // these are our callback functions.  Currently, they all need to return void.

@@ -19,14 +19,17 @@
 # *
 # *  You should have received a copy of the GNU Lesser General Public
 # *  License along with this library; if not, write to the Free Software
-# *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+# *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 # */
+
+from __future__ import print_function
 
 import re
 import string
 import sys
 import os
 import glob
+
 
 HEADER_MODE = "--header"
 FUNCTIONTABLE_MODE = "--functiontable"
@@ -43,14 +46,14 @@ class msg:
 def get_interface(filename):
   interface_filename = os.path.splitext(os.path.split(filename)[-1])[0]
   interface_code = int(interface_filename.split("_")[0])
-  interface_name = string.join(interface_filename.split("_")[1:],'_').lower()
+  interface_name = "_".join(interface_filename.split("_")[1:]).lower()
   return (interface_code, interface_name)
 
 def processfile(mode, filename, plugin):
   interface_code, interface_name = get_interface(filename)
   interface_def = "PLAYER_%s_CODE" % interface_name.upper()
 
-  print >> sys.stderr, "Processing interface: ", interface_code, interface_name
+  print("Processing interface: ", interface_code, interface_name, file=sys.stderr)
   
   # now we process the input file
   interface_file = open(filename, 'r')
@@ -103,13 +106,13 @@ def processfile(mode, filename, plugin):
 
     ifndefsymbol = '_' + interface_name.upper() + '_INTERFACE_H_'
     if plugin:
-      print '#ifndef ' + ifndefsymbol
-      print '#define ' + ifndefsymbol + '\n'
+      print('#ifndef ' + ifndefsymbol)
+      print('#define ' + ifndefsymbol + '\n')
       
-      print "#include <libplayerinterface/player.h>"
+      print("#include <libplayerinterface/player.h>")
     
     
-    print """
+    print("""
 /** @ingroup message_codes
  * @{ */
 #define %(interface_def)s %(interface_code)d
@@ -139,26 +142,26 @@ def processfile(mode, filename, plugin):
   "interface_code" : interface_code,  
   "interface_messages" : message_string,  
   "interface_types" : interface_types,  
-  "interface_comment" : interface_comment}  
+  "interface_comment" : interface_comment})  
     if plugin:
-      print "#endif // " + ifndefsymbol
+      print("#endif // " + ifndefsymbol)
   elif mode == FUNCTIONTABLE_MODE:
     if plugin:
-      print """
+      print("""
 #include "%(interface_name)s_interface.h"
 #include "%(interface_name)s_xdr.h"
 
 // Function table for this interface
 static playerxdr_function_t %(interface_name)s_ftable[] =
 {
-""" % {"interface_name": interface_name}
-    print "\n  /* %s messages */" % interface_name
+""" % {"interface_name": interface_name})
+    print("\n  /* %s messages */" % interface_name)
     for m in interface_messages:
       if m.datatype != "NULL":
-        print "  {", interface_def, ",", m.msg_type, ",", m.msg_subtype_string, ","
-        print "    (player_pack_fn_t)%(dt_base)s_pack, (player_copy_fn_t)%(dt)s_copy, (player_cleanup_fn_t)%(dt)s_cleanup,(player_clone_fn_t)%(dt)s_clone,(player_free_fn_t)%(dt)s_free,(player_sizeof_fn_t)%(dt)s_sizeof}," % { "dt_base": m.datatype[:-2], "dt": m.datatype}
+        print("  {", interface_def, ",", m.msg_type, ",", m.msg_subtype_string, ",")
+        print("    (player_pack_fn_t)%(dt_base)s_pack, (player_copy_fn_t)%(dt)s_copy, (player_cleanup_fn_t)%(dt)s_cleanup,(player_clone_fn_t)%(dt)s_clone,(player_free_fn_t)%(dt)s_free,(player_sizeof_fn_t)%(dt)s_sizeof}," % { "dt_base": m.datatype[:-2], "dt": m.datatype})
     if plugin:
-      print """
+      print("""
   /* This NULL element signals the end of the list */
   {0,0,0,NULL,NULL,NULL}
 };
@@ -179,7 +182,7 @@ PLUGINTF_EXPORT playerxdr_function_t* player_plugininterf_gettable (void)
 {
     return %(interface_name)s_ftable;
 }
-""" % {"interface_name": interface_name}
+""" % {"interface_name": interface_name})
     
 
 def process_for_utils(targetfile):
@@ -188,7 +191,7 @@ def process_for_utils(targetfile):
     for file in glob.glob(os.path.join(targetfile ,"*.def")):
       if not os.path.isdir(file):
         interfaces.append(get_interface(file))
-  print """  
+  print("""  
   /* this array lists the interfaces that Player knows how to load
   * It is important that this list is kept in strict numerical order
   * with respect to the interface numeric codes.
@@ -196,18 +199,18 @@ def process_for_utils(targetfile):
   * NOTE: the last element must be NULL
   */
 static player_interface_t interfaces[] = {  
-  """
+  """)
   interfaces.sort()
   last_code = -1 # start at -1 so that we generate and entry for 0
   for interface in interfaces:
     last_code += 1
     while interface[0] > last_code:
-      print """  {0xFFFF, "nointerf%d"},""" % last_code
+      print("""  {0xFFFF, "nointerf%d"},""" % last_code)
       last_code += 1
-    print """  {PLAYER_%(i)s_CODE, PLAYER_%(i)s_STRING},""" % {"i" : interface[1].upper() }
-  print """
+    print("""  {PLAYER_%(i)s_CODE, PLAYER_%(i)s_STRING},""" % {"i" : interface[1].upper() })
+  print("""
   {0,NULL}
-};""" 
+};""") 
 
 if __name__ == '__main__':
   mode = HEADER_MODE
@@ -216,7 +219,7 @@ if __name__ == '__main__':
 
   for option in sys.argv[1:]:
     if option == "-h" or option == "--help":
-      print USAGE
+      print(USAGE)
       sys.exit(-1)
     elif option == HEADER_MODE or option == FUNCTIONTABLE_MODE or option == UTILS_MODE:
       mode = option
@@ -228,12 +231,12 @@ if __name__ == '__main__':
   if targets == []:
       targets = ["interfaces"]
       
-  print "/* START OF AUTOGENERATED CODE */"
+  print("/* START OF AUTOGENERATED CODE */")
   if plugin:
-    print "/* This file or section was automatically generated by playerinterfacegen.py */"
+    print("/* This file or section was automatically generated by playerinterfacegen.py */")
   else:
-    print "/* This file or section was automatically generated by playerinterfacegen.py"
-    print "To modify the interfaces in this file please edit their interface definition in libplayerinterface/interfaces/ */"
+    print("/* This file or section was automatically generated by playerinterfacegen.py")
+    print("To modify the interfaces in this file please edit their interface definition in libplayerinterface/interfaces/ */")
 
   for target in targets:
     if mode == UTILS_MODE:
@@ -251,5 +254,5 @@ if __name__ == '__main__':
       else:
         processfile(mode, target, plugin)
 
-  print "/* END OF AUTOGENERATED CODE */"
+  print("/* END OF AUTOGENERATED CODE */")
 

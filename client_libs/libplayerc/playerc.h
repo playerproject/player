@@ -14,7 +14,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA.
  *
  */
 
@@ -562,7 +562,6 @@ typedef struct _playerc_client_t
 
   /** @internal Temp buffers for incoming / outgoing packets. */
   char *data;
-  char *write_xdrdata;
   char *read_xdrdata;
   size_t read_xdrdata_len;
 
@@ -1755,6 +1754,13 @@ typedef struct
       below. */
   double alt;
 
+  /** Speed over ground, in m/s. */
+  double speed;
+
+  /** Course made good (heading if the robot moves along its longitudinal
+   * axis), in radians. */
+  double course;
+
   /** UTM easting and northing (meters). */
   double utm_e, utm_n;
 
@@ -2727,6 +2733,10 @@ typedef struct
       playerc_planner_get_waypoints() to fill this in. */
   double (*waypoints)[3];
 
+  /** Straight-line distance along allwaypoints in the current plan.  Call
+      playerc_planner_get_waypoints() to fill this in. */
+  double waypoint_distance;
+
 } playerc_planner_t;
 
 /** @brief Create a planner device proxy. */
@@ -2744,6 +2754,10 @@ PLAYERC_EXPORT int playerc_planner_unsubscribe(playerc_planner_t *device);
 /** @brief Set the goal pose (gx, gy, ga) */
 PLAYERC_EXPORT int playerc_planner_set_cmd_pose(playerc_planner_t *device,
                                   double gx, double gy, double ga);
+
+/** @brief Set the start pose (sx, sy, sa) */
+PLAYERC_EXPORT int playerc_planner_set_cmd_start(playerc_planner_t *device,
+                                  double sx, double sy, double sa);
 
 /** @brief Get the list of waypoints.
 

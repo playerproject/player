@@ -16,7 +16,7 @@
  *
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
 
@@ -25,6 +25,7 @@
 #define ULOC_H_
 
 #include "transf.hh"
+#include <ostream>
 
 enum GeometricEntityKinds { POINT, EDGE, ROBOT };
 
@@ -38,32 +39,32 @@ public:
 
 	GeometricEntityKinds uGEntity();
 
-	Matrix& Loc()  { return x_; };
-	Matrix& Pert() { return p_; };
-	Matrix& Bind() { return b_; };
-	Matrix& Cov()  { return c_; };
+	MatrixXd& Loc()  { return x_; };
+	MatrixXd& Pert() { return p_; };
+	MatrixXd& Bind() { return b_; };
+	MatrixXd& Cov()  { return c_; };
 
 	const Transf& kX()    const { return x_; };
-	const Matrix& kPert() const { return p_; };
-	const Matrix& kBind() const { return b_; };
-	const Matrix& kCov()  const { return c_; };
+	const MatrixXd& kPert() const { return p_; };
+	const MatrixXd& kBind() const { return b_; };
+	const MatrixXd& kCov()  const { return c_; };
 
 	void SetLoc(Transf loc);
-	void SetPert(Matrix pert);
-	void SetBind(Matrix bind);
-	void SetCov(Matrix cov);
+	void SetPert(MatrixXd pert);
+	void SetBind(MatrixXd bind);
+	void SetCov(MatrixXd cov);
 
 	void CenterUloc ();
 	Transf DifferentialLocation ();
-	void ChangeBinding (Matrix newb);
-	void FilterFeatureRobotDirect (Uloc Lre, Transf Xmw, Matrix &Fk, Matrix &Nk);
+	void ChangeBinding (MatrixXd newb);
+	void FilterFeatureRobotDirect (Uloc Lre, Transf Xmw, MatrixXd &Fk, MatrixXd &Nk);
 	void IntegrateEdge (Uloc Lre, Transf Xma);
 
 private:
 	Transf  x_;
-	Matrix  p_;
-	Matrix  b_;
-	Matrix  c_;
+	MatrixXd  p_;
+	MatrixXd  b_;
+	MatrixXd  c_;
 };
 
 inline ostream& operator << (ostream& ostrm, Uloc& u)
@@ -90,10 +91,10 @@ Uloc compose_uloc_transf (Uloc Lwf, Transf Xfe);
 Uloc compose_uloc (Uloc Lwf, Uloc Lfe);
 Uloc compose_transf_uloc (Transf Xwf, Uloc Lfe);
 Uloc CalculateAnalyticalEdge (Transf xp1, Transf xp2);
-void information_filter (Matrix Hk, Matrix Gk, Matrix hk, Matrix Sk, Matrix &Fk, Matrix &Nk);
+void information_filter (MatrixXd Hk, MatrixXd Gk, MatrixXd hk, MatrixXd Sk, MatrixXd &Fk, MatrixXd &Nk);
 Uloc integrateEndpointsInEdge(Uloc Lsp1, Uloc Lsp2);
-void estimate_relative_location (Uloc Lwe, Uloc Lwm, Transf &Xem, Matrix &Cem);
-double mahalanobis_distance (Uloc Lwa, Uloc Lwb, Matrix Bab);
+void estimate_relative_location (Uloc Lwe, Uloc Lwm, Transf &Xem, MatrixXd &Cem);
+double mahalanobis_distance (Uloc Lwa, Uloc Lwb, MatrixXd Bab);
 double mahalanobis_distance_edge_point(Uloc Lwe, Uloc Lwp);
 
 #endif /* ULOC_H_ */
