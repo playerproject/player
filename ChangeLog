@@ -1,4 +1,4 @@
-# 3.1.0 (2017-03-05)
+# 3.1.0 (2017-04-08)
 ## Backwards incompatible changes:  
 - Added course and speed to GPS interface player_gps_data message
 - Added waypoints_distance to planner interface player_planner_waypoints_req message
