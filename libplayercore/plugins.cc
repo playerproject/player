@@ -371,7 +371,7 @@ playerxdr_function_t* InitInterfacePlugin(lt_dlhandle handle)
                     GetLastError(), 0, reinterpret_cast<LPTSTR> (&buffer), 0, NULL);
       PLAYER_ERROR1("failed to resolve player_plugininterf_gettable: %s\n", reinterpret_cast<LPTSTR> (buffer));
       LocalFree(buffer);
-      return(false);
+      return(NULL);
     }
 
     if( (flist = (*initfunc)()) == NULL)
