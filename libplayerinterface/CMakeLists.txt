@@ -90,7 +90,8 @@ SET (playerinterfaceSrcs  ${playerxdr_h}
                           functiontable.c
                           addr_util.c
                           interface_util.c
-                          ${functiontable_gen_h})
+                          ${functiontable_gen_h}
+                          ${player_interfaces_h})
 
 IF (PLAYER_OS_QNX)
     SET (interfaceLibFlag -lrpc)
