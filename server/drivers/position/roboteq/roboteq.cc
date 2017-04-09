@@ -1263,7 +1263,7 @@ int roboteq::ProcessPosition1dCmd(int motor_index, player_position1d_cmd_pos_t *
 	}
 	position_value = (unsigned char) (fabs(position) / rad_per_tick);
 	PLAYER_MSG1(MESSAGE_DEBUG,"Setting position_value to %d",position_value);
-	if (motors_enabled == false || motor_enabled[motor_index] == false) {
+	if (motors_enabled == false || *motor_enabled[motor_index] == false) {
 		position_value = 0;
 		PLAYER_MSG0(MESSAGE_INFO, "Warning, the motors are disabled! Enable them before use.");
 	}

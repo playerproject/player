@@ -48,7 +48,7 @@
  }
  catch (const PlayerCc::PlayerError &e) {
  static VALUE playererror = rb_define_class("PlayerError", rb_eStandardError);
- rb_raise(playererror, e.GetErrorStr().c_str());
+ rb_raise(playererror, "%s", e.GetErrorStr().c_str());
  }
 }
 
