@@ -24,7 +24,7 @@ IF (BUILD_PLAYERCC)
     # Look for Boost libraries
     IF (BUILD_PLAYERCC_BOOST)
         # There is a new, much better, FindBoost.cmake in 2.6
-        IF (CMAKE_MAJOR_VERSION EQUAL 2 AND CMAKE_MINOR_VERSION GREATER 5)
+        IF (CMAKE_MAJOR_VERSION GREATER 2 OR (CMAKE_MAJOR_VERSION EQUAL 2 AND CMAKE_MINOR_VERSION GREATER 5))
             OPTION (Boost_USE_STATIC_LIBS "Use the static versions of the Boost libraries" OFF)
             MARK_AS_ADVANCED (Boost_USE_STATIC_LIBS)
             OPTION (USE_BOOST_THREAD "Use the Boost threading library" ON)
@@ -38,7 +38,7 @@ IF (BUILD_PLAYERCC)
                 SET (HAVE_BOOST_THREAD FALSE CACHE INTERNAL "Is the Boost::Thread library present")
             ENDIF (USE_BOOST_THREAD)
             IF (USE_BOOST_SIGNALS)
-                SET (BOOST_COMPONENTS ${BOOST_COMPONENTS} signals2)
+                SET (BOOST_COMPONENTS ${BOOST_COMPONENTS} signals)
             ELSE (USE_BOOST_SIGNALS)
                 SET (HAVE_BOOST_SIGNALS FALSE CACHE INTERNAL "Is the Boost::Signals library present")
             ENDIF (USE_BOOST_SIGNALS)
@@ -88,7 +88,7 @@ IF (BUILD_PLAYERCC)
                          "Boost libraries were not found. Boost::Signals and Boost::Thread support
                          will not be included in PlayerC++.")
             ENDIF (Boost_FOUND)
-        ELSE (CMAKE_MAJOR_VERSION EQUAL 2 AND CMAKE_MINOR_VERSION GREATER 5)
+        ELSE (CMAKE_MAJOR_VERSION GREATER 2 OR (CMAKE_MAJOR_VERSION EQUAL 2 AND CMAKE_MINOR_VERSION GREATER 5))
             FIND_PACKAGE (Boost)
             IF (Boost_FOUND)
                 # For 2.4, assume that if boost is found then both signals and threads are present
@@ -160,7 +160,7 @@ IF (BUILD_PLAYERCC)
                          "Boost libraries were not found. Boost::Signals and Boost::Thread support
                          will not be included in PlayerC++.")
             ENDIF (Boost_FOUND)
-        ENDIF (CMAKE_MAJOR_VERSION EQUAL 2 AND CMAKE_MINOR_VERSION GREATER 5)
+        ENDIF (CMAKE_MAJOR_VERSION GREATER 2 OR (CMAKE_MAJOR_VERSION EQUAL 2 AND CMAKE_MINOR_VERSION GREATER 5))
     ELSE (BUILD_PLAYERCC_BOOST)
         MESSAGE (STATUS
                  "Boost support disabled. Boost::Signals and Boost::Thread support will not be
