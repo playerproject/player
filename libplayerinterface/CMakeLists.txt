@@ -102,6 +102,8 @@ ENDIF (PLAYER_OS_QNX)
 INCLUDE_DIRECTORIES (${CMAKE_CURRENT_BINARY_DIR})
 PLAYER_ADD_LIBRARY (playerinterface ${playerinterfaceSrcs})
 TARGET_LINK_LIBRARIES (playerinterface playercommon)
+ADD_DEPENDENCIES(playerinterface functiontable_gen playerxdr_src player_interfaces interface_table)
+  
 IF (PLAYER_OS_WIN)
     ADD_DEFINITIONS(-Dplayerxdr_EXPORTS)
     TARGET_LINK_LIBRARIES (playerinterface ws2_32)
