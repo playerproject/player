@@ -197,7 +197,7 @@ driver
 driver
 (
   name "wavefront"
-  provides ["planner:0" "offline:::planner:1"]
+  provides ["online:::planner:0" "offline:::planner:1"]
   requires ["output:::position2d:1" "input:::position2d:2" "map:0"]
   safety_dist 0.15
   distance_epsilon 0.5
@@ -416,19 +416,28 @@ Wavefront::Wavefront( ConfigFile* cf, int section)
     this->SetError(-1);
     return;
   }
-
-  if (cf->ReadDeviceAddr(&this->device_addr, section, "provides",
-                         PLAYER_PLANNER_CODE, -1, "") != 0)
+  
+  // Optionally provide an offline planner
+  if (cf->ReadDeviceAddr(&this->offline_planner_id, section, "provides",
+                         PLAYER_PLANNER_CODE, -1, "offline") == 0)
   {
-    PLAYER_ERROR("Wavefront must provide a Planner");
+    if (this->AddInterface(this->offline_planner_id) == 0) {
+      this->have_offline_planner = true;
+      PLAYER_WARN("Wavefront providing offline planner");
+    }
+  }
+
+  // Must provide an online planner
+  if (cf->ReadDeviceAddr(&this->device_addr, section, "provides",
+                         PLAYER_PLANNER_CODE, -1, "online") != 0)
+  {
+    PLAYER_ERROR("Wavefront must provide a planner interface with the 'online' key");
     this->SetError(-1);
     return;
   }
-  if (cf->ReadDeviceAddr(&this->offline_planner_id, section, "provides",
-                         PLAYER_PLANNER_CODE, -1, "offline") != 0)
-  {
-    this->have_offline_planner = true;
-    PLAYER_WARN("Wavefront providing offline planner");
+  if (this->AddInterface(this->device_addr) != 0) {
+    PLAYER_ERROR("Wavefront failed to add 'online' planner interface");
+    this->SetError(-1);
   }
 
   // Can use a laser device
