@@ -316,7 +316,7 @@ driver
 #include <libplayercore/playercore.h>
 #include <libplayerinterface/playerxdr.h>
 
-extern int               RFLEX::joy_control;
+int RFLEX::joy_control;
 
 // help function to rotate sonar positions
 void SonarRotate(double heading, double x1, double y1, double t1, double *x2, double *y2, double *t2)
