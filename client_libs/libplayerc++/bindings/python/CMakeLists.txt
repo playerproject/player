@@ -1,4 +1,5 @@
 INCLUDE (FindPythonInterp)
+INCLUDE (FindPythonLibs)
 
 IF(BUILD_PLAYERCC)
     IF (PYTHONINTERP_FOUND)
@@ -6,6 +7,7 @@ IF(BUILD_PLAYERCC)
 
         IF (BUILD_PYTHONCPP_BINDINGS)
             FIND_PACKAGE (SWIG)
+            FIND_PACKAGE (PythonInterp)
             FIND_PACKAGE (PythonLibs)
             IF (SWIG_FOUND AND PYTHONLIBS_FOUND)
                 MESSAGE (STATUS "Python bindings for C++ client library will be built")
@@ -29,11 +31,7 @@ IF(BUILD_PLAYERCC)
                 IF (PYTHON_OS_WIN)
                     GET_FILENAME_COMPONENT (playercpyInstallDir ${PYTHON_EXECUTABLE} PATH)
                 ELSE (PYTHON_OS_WIN)
-                    # Get the Python version
-                    EXECUTE_PROCESS (COMMAND ${PYTHON_EXECUTABLE} -V
-                                    ERROR_VARIABLE pythonVersionString
-                                    ERROR_STRIP_TRAILING_WHITESPACE)
-                    STRING (REGEX REPLACE "^Python ([0-9]+\\.[0-9]+).*" "\\1" pythonVersion ${pythonVersionString})
+                    SET (pythonVersion "${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}")
                     SET (playercpppyInstallDir ${PLAYER_LIBRARY_INSTALL_DIR}/python${pythonVersion}/site-packages)
                 ENDIF (PYTHON_OS_WIN)
                 SET (PYTHON_BINDINGS_INSTALL_DIR ${playercpppyInstallDir} CACHE PATH "Python bindings installation directory under $prefix")
