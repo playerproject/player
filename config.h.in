@@ -8,6 +8,7 @@
 /* enable TCP_NODELAY */
 #cmakedefine ENABLE_TCP_NODELAY 1
 
+#cmakedefine HAVE_STDINT_H 1
 #cmakedefine HAVE_GETADDRINFO 1
 #cmakedefine HAVE_I2C 1
 #cmakedefine HAVE_JPEG 1

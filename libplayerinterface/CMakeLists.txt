@@ -95,6 +95,10 @@ SET (playerinterfaceSrcs  ${playerxdr_h}
 
 IF (PLAYER_OS_QNX)
     SET (interfaceLibFlag -lrpc)
+ELSEIF (PLAYER_OS_LINUX AND TIRPC_FOUND)
+    SET (interfaceLibFlag -ltirpc)
+    set (interfaceCflags ${TIRPC_CFLAGS})
+    INCLUDE_DIRECTORIES(${TIRPC_INCLUDE_DIRS})
 ELSE (PLAYER_OS_QNX)
     SET (interfaceLibFlag)
 ENDIF (PLAYER_OS_QNX)
@@ -112,12 +116,17 @@ SET_SOURCE_FILES_PROPERTIES (${playerxdr_h} ${playerxdr_c} PROPERTIES GENERATED 
 IF (PLAYER_OS_QNX)
     TARGET_LINK_LIBRARIES (playerinterface rpc)
     PLAYERCORE_ADD_INT_LINK_LIB (rpc)
+ELSEIF (PLAYER_OS_LINUX AND TIRPC_FOUND)
+    TARGET_LINK_LIBRARIES (playerinterface ${TIRPC_LIBRARIES})
+    PLAYERCORE_ADD_INT_LINK_LIB (tirpc)
+    TARGET_INCLUDE_DIRECTORIES (playerinterface PUBLIC ${TIRPC_INCLUDE_DIRS})
 ENDIF (PLAYER_OS_QNX)
 IF (NOT HAVE_XDR)
     TARGET_LINK_LIBRARIES (playerinterface playerreplace)
+    TARGET_INCLUDE_DIRECTORIES(playerinterface PUBLIC "${PROJECT_SOURCE_DIR}/replace")
 ENDIF (NOT HAVE_XDR)
 PLAYER_MAKE_PKGCONFIG ("playerinterface" "Player Interface library - part of the Player Project"
-                       "" "" "" "${interfaceLibFlag}")
+                       "" "" "${interfaceCflags}" "${interfaceLibFlag}")
 
 PLAYER_INSTALL_HEADERS (playerinterface ${playerxdr_h}
                                         addr_util.h

@@ -35,6 +35,8 @@
 #ifndef _RPC_TYPES_H
 #define _RPC_TYPES_H 1
 
+#include "config.h"
+
 typedef int bool_t;
 typedef int enum_t;
 /* This needs to be changed to uint32_t in the future */
@@ -81,6 +83,9 @@ typedef unsigned long long int u_quad_t;
 #endif
 
 /* Fixed-size types, underlying types depend on word size and compiler.  */
+#if HAVE_STDINT_H
+#include <stdint.h>
+#else
 typedef signed char int8_t;
 typedef unsigned char uint8_t;
 typedef signed short int int16_t;
@@ -91,7 +96,7 @@ typedef unsigned int uint32_t;
 typedef signed long long int int64_t;
 typedef unsigned long long int uint64_t;
 //#endif
-
+#endif
 typedef char* caddr_t;
 
 //#include <sys/time.h>
