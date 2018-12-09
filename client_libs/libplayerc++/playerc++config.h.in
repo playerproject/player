@@ -5,10 +5,15 @@
 #cmakedefine HAVE_BOOST_SIGNALS 1
 
 #if defined (HAVE_BOOST_THREAD)
+
+#if !defined _POSIX_PTHREAD_SEMANTICS
 #define _POSIX_PTHREAD_SEMANTICS
+#endif
+
 #if !defined(_REENTRANT)
 #define _REENTRANT
 #endif
+
 #endif
 
 #endif

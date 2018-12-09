@@ -19,7 +19,7 @@
 # *  License along with this library; if not, write to the Free Software
 # *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 # */
- 
+from __future__ import print_function
 import re
 import string
 import sys
@@ -161,7 +161,7 @@ def genifacestruct(match):
         return text
     # if no match, print a statement to that effect and return the original structure definition.
     # should never happen.
-    print "No match on %s" % match.group('name')
+    print("No match on %s" % match.group('name'))
     return match.group() 
 
 # Used to remove _t from structure references.
