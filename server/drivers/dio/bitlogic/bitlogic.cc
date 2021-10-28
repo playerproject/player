@@ -108,7 +108,7 @@ class Bitlogic : public Driver
     bool data_valid[MAX_SLOTS];
     int ith;
     int jth;
-    uint32_t compute() const throw (const char *);
+    uint32_t compute() const noexcept(false);
 };
 
 Bitlogic::Bitlogic(ConfigFile * cf, int section) : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
@@ -299,7 +299,7 @@ int Bitlogic::Subscribe(player_devaddr_t addr)
   return 0;
 }
 
-uint32_t Bitlogic::compute() const throw (const char *)
+uint32_t Bitlogic::compute() const noexcept(false)
 {
   uint32_t b;
   int i;

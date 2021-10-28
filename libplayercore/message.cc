@@ -506,7 +506,7 @@ MessageQueue::Push(Message & msg)
           hdr->type == PLAYER_MSGTYPE_CMD) && this->Length >= this->Maxlen)
   {
     // record the fact that we are dropping a message
-    this->drop_count++;
+    this->drop_count = 1;
     this->Unlock();
     return(true);
   }
