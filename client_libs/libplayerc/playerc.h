@@ -407,6 +407,7 @@ PLAYERC_EXPORT int playerc_add_xdr_ftable(playerxdr_function_t *flist, int repla
 /* Forward declare types*/
 struct _playerc_client_t;
 struct _playerc_device_t;
+struct playerc_blackboard;
 
 
 /* forward declaration to avoid including <sys/poll.h>, which may not be
