@@ -9,8 +9,11 @@ ENDIF (WIN32)
 IF (COMMAND CMAKE_POLICY)
     CMAKE_POLICY (SET CMP0003 NEW)
     CMAKE_POLICY (SET CMP0004 NEW)
+    #CMAKE_POLICY (SET CMP0148 NEW)
 ENDIF (COMMAND CMAKE_POLICY)
 
+# Fix an issue with a forbidden operand when using C++17
+set (CMAKE_CXX_STANDARD 11)
 
 # Set the project name (helps Visual Studio, mainly)
 PROJECT (Player)
@@ -47,6 +50,9 @@ OPTION (PLAYER_BUILD_TESTS "Enables compilation of the test suites" ON)
 
 # Look for various needed things
 INCLUDE (${PLAYER_CMAKE_DIR}/internal/SearchForStuff.cmake)
+# Find and use OpenCV directories
+find_package(OpenCV REQUIRED)
+include_directories(${OpenCV_INCLUDE_DIRS})
 # Give the user some compile options
 INCLUDE (${PLAYER_CMAKE_DIR}/internal/GeneralCompileOptions.cmake)
 # Write the config.h file

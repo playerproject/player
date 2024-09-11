@@ -26,8 +26,7 @@
 ///////////////////////////////////////////////////////////////////////////
 
 /** @ingroup drivers */
-/** @{ */
-/** @defgroup driver_cvcam cvcam
+/** @{ *//** @defgroup driver_cvcam cvcam
  * @brief OpenCV camera capture
 
 The cvcam driver captures images from cameras through OpenCV infrastructure.
@@ -87,8 +86,11 @@ driver
 #include <pthread.h>
 #include <libplayercore/playercore.h>
 
-#include <cv.h>
-#include <highgui.h>
+#include <opencv2/opencv.hpp>
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/highgui/highgui_c.h"
+#include "opencv2/videoio/videoio.hpp"
+#include "opencv2/videoio/videoio_c.h"
 
 //---------------------------------
 

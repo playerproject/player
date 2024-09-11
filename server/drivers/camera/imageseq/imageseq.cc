@@ -96,9 +96,10 @@ driver
 
 #include <libplayercore/playercore.h>
 
-#include <cv.h>
-#include <highgui.h>
-
+#include <opencv2/opencv.hpp>
+#include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/imgproc/imgproc_c.h"
+#include "opencv2/imgcodecs/legacy/constants_c.h"
 
 class ImageSeq : public ThreadedDriver
 {
@@ -203,10 +204,14 @@ int ImageSeq::LoadImage(const char *filename)
   char *src;
   uint8_t *dst;
   IplImage *image;
+  cv::Mat image2 = cv::cvarrToMat(image);
 
   // Load image; currently forces the image to mono
-  image = cvLoadImage(filename, -1);
-  if(image == NULL)
+  //image = cvLoadImage(filename, -1);
+  image2 = cv::imread( filename, cv::IMREAD_UNCHANGED );
+
+  //if(image == NULL)
+  if( image2.empty() )
   {
   		PLAYER_ERROR1("Could not load image file: %s", filename);
 		return -1;
@@ -224,7 +229,7 @@ int ImageSeq::LoadImage(const char *filename)
   switch (image->depth)
   {
 	case IPL_DEPTH_8U:
-	case IPL_DEPTH_8S:
+	case int IPL_DEPTH_8S:
 	  if (image->nChannels == 1)
 	  {
 	    this->data.bpp = 8;
@@ -236,14 +241,14 @@ int ImageSeq::LoadImage(const char *filename)
 		 this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
 	  }
 	break;
-	case IPL_DEPTH_16S:
+	case int IPL_DEPTH_16S:
 	  if (image->nChannels == 1)
 	  {
 	    this->data.bpp = 16;
 		 this->data.format = PLAYER_CAMERA_FORMAT_MONO16;
 	  }
 	break;
-	case IPL_DEPTH_32S:
+	case int IPL_DEPTH_32S:
 	case IPL_DEPTH_32F:
 	case IPL_DEPTH_64F:
 	default:

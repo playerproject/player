@@ -86,8 +86,9 @@ driver
 #include <libplayercore/playercore.h>
 #include <libplayerjpeg/playerjpeg.h>
 
-#include <cv.h>
-#include <highgui.h>
+#include <opencv2/opencv.hpp>
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/highgui/highgui_c.h"
 
 typedef enum { canny = 0, sobel, laplace } func_t;
 

@@ -50,8 +50,8 @@ the Player 2.0 API.
 #include <libplayercore/playercore.h>
 #include <base/imagebase.h>
 
-#include <cv.h>
-//#include <highgui.h>
+#include <opencv2/opencv.hpp>
+#include "opencv2/highgui/highgui_c.h"
 
 #define winName "ShapeTracker"
 
@@ -100,7 +100,7 @@ class ShapeTracker : public ImageBase
   private: CvHistogram *hist;
   private: int histSize;
   private: unsigned char lut[256];
-  private: CvMat *lutMat; 
+  private: CvMat *lutMat;
 
   private: double threshold;
   private: int vertices;
@@ -109,8 +109,8 @@ class ShapeTracker : public ImageBase
   private: unsigned int shapeCount;
 
   // Kalmna filters used to track a shape
-  private: CvKalman *kalmanX;
-  private: CvKalman *kalmanY;
+  //private: CvKalman *kalmanX;
+  //private: CvKalman *kalmanY;
   private: int kalmanFirst;
 
   private: CvPoint orientPoint;
